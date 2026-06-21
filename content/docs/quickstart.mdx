@@ -1,0 +1,55 @@
+---
+title: Host Quickstart
+description: Scaffold a Lenso host app and run it locally.
+---
+
+Use this path when you want to create and operate the app that loads modules.
+
+## Install The CLI
+
+```sh
+cargo install lenso-cli
+```
+
+## Create A Host
+
+```sh
+lenso host init my-lenso-app
+cd my-lenso-app
+cp .env.example .env
+lenso serve
+```
+
+Published `lenso-cli` builds copy the bundled Runtime Console into the generated
+host, so the API serves it at `/console` without requiring Node.js or pnpm in the
+host application.
+
+## Manual Service Loop
+
+If you do not use `lenso serve`, run the services directly:
+
+```sh
+docker compose up -d postgres
+cargo run --bin migrate
+cargo run --bin api
+```
+
+Run the worker in a second shell:
+
+```sh
+cargo run --bin worker
+```
+
+## Install Auth With Redis Sessions
+
+Generated hosts can opt into Redis-backed auth session lookup through the auth
+module install profile:
+
+```sh
+lenso module install auth --profile redis-session-cache
+```
+
+The profile enables the auth dependency's Redis feature, writes `REDIS_URL` to
+`.env`, and records `auth.session_cache=redis` in
+`.lenso/runtime-config-defaults.json`. Provide Redis separately; the starter
+Docker Compose file starts Postgres only.

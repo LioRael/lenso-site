@@ -1,0 +1,46 @@
+---
+title: Module Authoring
+description: Author modules with explicit manifests, contracts, and checks.
+---
+
+Use this path when you want to add business capability to an existing Lenso
+host.
+
+## Rust Facade
+
+For Rust module-authoring declarations, use the public facade crate:
+
+```sh
+cargo add lenso@0.3.8
+```
+
+The facade focuses on serializable declarations and manifest linting:
+
+- schema-admin declarations
+- runtime function declarations
+- event handler declarations
+- HTTP route declarations
+- Runtime Console surface declarations
+
+## Scaffold A Module
+
+```sh
+lenso module create billing
+```
+
+Add a Runtime Console package when the module needs its own console surface:
+
+```sh
+lenso module create billing --with-console
+```
+
+## Agent-Ready Loop
+
+The public proof loop is intentionally small:
+
+```text
+lenso-start -> lenso-module-authoring -> lenso module create -> checks -> /console
+```
+
+A useful first module should have one data surface, one action, one runtime
+function or workflow, and one smoke check that fails if the module is not wired.

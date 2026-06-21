@@ -1,0 +1,40 @@
+---
+title: Remote Modules
+description: Build out-of-process modules with manifests and host-owned loading.
+---
+
+Remote modules use the same host-owned contract as linked modules, but run in
+their own process or service.
+
+## Install A Manifest
+
+```sh
+lenso module install http://127.0.0.1:4110/lenso/module/v1/manifest
+```
+
+Remote modules declare their source, routes, runtime functions, admin surfaces,
+and optional Runtime Console bundles through a manifest. The host owns loading,
+proxying, receipts, and operator visibility.
+
+## JavaScript And TypeScript Kit
+
+Remote module authors use:
+
+```sh
+pnpm add @lenso/remote-module-kit@0.1.1
+```
+
+The kit lives in the Runtime Console repository and is the public package for
+out-of-process module authoring.
+
+## Local Diagnosis
+
+For long-running remote module services:
+
+```sh
+lenso module doctor
+lenso module doctor billing
+```
+
+The doctor checks installed module service state, ready URLs, and stale lock or
+pid files.
