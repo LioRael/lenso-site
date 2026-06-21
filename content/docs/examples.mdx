@@ -1,0 +1,44 @@
+---
+title: Examples
+description: Runnable modules that prove the public Lenso authoring path.
+---
+
+Use these examples after reading the module docs. They prove that a module can
+be scaffolded, wired into a host, and verified through smoke checks.
+
+The examples repository is
+[LioRael/lenso-examples](https://github.com/LioRael/lenso-examples).
+
+## Run The Smokes
+
+```sh
+pnpm install
+pnpm smoke
+```
+
+## Support Ticket
+
+The support-ticket module is the agent-ready proof point. It turns this prompt
+into a real module:
+
+```text
+Build a support ticket module for a Lenso app.
+```
+
+It includes ticket data, HTTP routes, an admin action, a runtime escalation
+function, Console-visible metadata, and host API smokes.
+
+```sh
+pnpm smoke:support-ticket
+pnpm host-api-smoke:support-ticket
+```
+
+## Account Profile
+
+The account-profile module depends on `auth` while owning profile,
+organization, and membership data.
+
+```sh
+pnpm smoke:account-profile
+pnpm host-api-smoke:account-profile
+```

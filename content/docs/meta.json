@@ -1,0 +1,14 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "---Host---",
+    "quickstart",
+    "runtime-console",
+    "architecture",
+    "---Module---",
+    "module-authoring",
+    "remote-modules",
+    "examples"
+  ]
+}

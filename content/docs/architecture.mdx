@@ -1,0 +1,33 @@
+---
+title: Architecture
+description: The current Lenso runtime shape and ownership boundaries.
+---
+
+## Shape
+
+Lenso starts as one deployable backend with a worker, migrations, Postgres, and a
+bundled Runtime Console. It is service-ready by design: build modular first, then
+move selected modules across process or service boundaries when those boundaries
+harden.
+
+## Runtime Pieces
+
+- API app
+- worker app
+- migration app
+- Postgres
+- optional Redis for auth session lookup
+- bundled Runtime Console
+
+## Boundaries
+
+- `lenso` owns Rust services, platform crates, modules, migrations, and contracts.
+- `lenso-runtime-console` owns the React/Vite Runtime Console and JavaScript module packages.
+- `lenso-cli` owns the standalone `lenso` command and starter template.
+- `lenso-examples` owns runnable module examples and smoke checks.
+
+## Package Rule
+
+The public surface should stay small. Publish packages and commands only when
+they have a clear target author, a minimal install command, a stable import path
+or binary name, and README usage that starts from a blank project.

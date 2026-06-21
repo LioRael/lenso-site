@@ -1,0 +1,41 @@
+---
+title: Lenso Docs
+description: Build and verify modular Rust business systems with Lenso.
+---
+
+Lenso is an agent-ready modular app framework for Rust business systems.
+
+The docs are split by who is doing the work:
+
+- Host builders create and operate one deployable Lenso app.
+- Module authors add business capability through manifests, routes, actions,
+  runtime functions, and optional console surfaces.
+
+## Host
+
+<Cards>
+  <Card title="Quickstart" href="/docs/quickstart" description="Install the CLI, scaffold a host app, and run the API, worker, and bundled console." />
+  <Card title="Runtime Console" href="/docs/runtime-console" description="Use the host-served console to inspect modules, actions, data, and runtime evidence." />
+  <Card title="Architecture" href="/docs/architecture" description="Understand the deployable host shape, package boundaries, and service-ready path." />
+</Cards>
+
+## Module
+
+<Cards>
+  <Card title="Module Authoring" href="/docs/module-authoring" description="Declare module data, routes, actions, runtime functions, and console surfaces." />
+  <Card title="Remote Modules" href="/docs/remote-modules" description="Run modules out of process while the host owns loading, proxying, and receipts." />
+  <Card title="Examples" href="/docs/examples" description="Use support-ticket and account-profile as runnable module proof points." />
+</Cards>
+
+## Current Public Surface
+
+- `lenso@0.3.8` is the public Rust facade for module-authoring declarations and the `host` feature.
+- `lenso-cli` scaffolds host apps with `lenso host init <dir>`.
+- `@lenso/remote-module-kit@0.1.1` supports out-of-process JavaScript and TypeScript modules.
+- Runtime Console is bundled into generated hosts by published CLI builds.
+
+## What Lenso Is Not Yet
+
+Lenso is modular-first and service-ready, but it is not a Kubernetes-first
+microservice platform. Build one deployable system first, then split selected
+modules when their boundaries harden.

@@ -1,0 +1,29 @@
+---
+title: Runtime Console
+description: Verify module data, actions, runtime workflows, and operational visibility.
+---
+
+Runtime Console is the operator UI for a Lenso host. Generated hosts created by
+published CLI builds serve the bundled console at `/console`.
+
+## What It Shows
+
+- loaded modules and manifest health
+- schema-admin data surfaces
+- module actions
+- remote HTTP proxy evidence
+- runtime story and function-run visibility
+
+## Extension Boundary
+
+Module-owned console pages are declared through `ModuleManifest.console` and
+loaded through the host console module registry. Frontend packages use the
+Runtime Console host facade instead of deep-importing host internals.
+
+## Refresh The Hosted Console
+
+After upgrading `lenso-cli`, refresh a generated host with:
+
+```sh
+lenso host update-console
+```

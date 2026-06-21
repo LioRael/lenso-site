@@ -1,0 +1,49 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  font-family:
+    Geist,
+    Arial,
+    Helvetica,
+    sans-serif;
+  letter-spacing: 0;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family:
+    'Geist Mono',
+    'SFMono-Regular',
+    Consolas,
+    monospace;
+}
+
+::selection {
+  background: color-mix(in srgb, #006bff 24%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid #006bff;
+  outline-offset: 2px;
+}
+
+@layer utilities {
+  html.dark #nd-nav > div,
+  html[data-theme='dark'] #nd-nav > div {
+    background-color: rgb(10 10 10 / 82%) !important;
+    border-bottom-color: #2e2e2e !important;
+  }
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
