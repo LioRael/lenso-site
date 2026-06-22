@@ -1,0 +1,9 @@
+{
+  "title": "Host",
+  "defaultOpen": true,
+  "pages": [
+    "quickstart",
+    "runtime-console",
+    "architecture"
+  ]
+}

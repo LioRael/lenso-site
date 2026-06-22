@@ -4,6 +4,8 @@
 # generated content
 .source
 .open-next
+.firecrawl
+.playwright-cli
 
 # test & build
 /coverage

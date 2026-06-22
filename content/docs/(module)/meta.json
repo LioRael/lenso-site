@@ -1,0 +1,9 @@
+{
+  "title": "Module",
+  "defaultOpen": true,
+  "pages": [
+    "module-authoring",
+    "remote-modules",
+    "examples"
+  ]
+}
