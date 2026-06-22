@@ -1,101 +1,89 @@
-import { Check, ChevronDown, FileCode2, Folder, Terminal } from 'lucide-react';
-
-const files = [
-  ['0s', 'lenso.toml'],
-  ['0.35s', 'crates/app-api/'],
-  ['0.7s', 'crates/app-worker/'],
-  ['1.05s', 'modules/support-ticket/'],
-  ['1.4s', 'manifest.toml'],
-  ['1.75s', 'console/'],
+const nodes = [
+  {
+    kind: 'host',
+    label: '01',
+    title: 'Host shell',
+    text: 'routes, config, console mount',
+    position: 'left-[58px] top-24 h-[118px] w-[190px]',
+  },
+  {
+    kind: 'module',
+    label: '02',
+    title: 'Remote module',
+    text: 'manifest, stories, dependencies',
+    position: 'left-[314px] top-[138px] h-[124px] w-[214px]',
+  },
+  {
+    kind: 'console',
+    label: '03',
+    title: 'Runtime console',
+    text: 'status, evidence, update path',
+    position: 'left-[98px] top-[326px] h-[124px] w-[220px]',
+  },
+  {
+    kind: 'proof',
+    label: '04',
+    title: 'Proof log',
+    text: 'smoke check output',
+    position: 'left-[364px] top-[348px] h-[102px] w-[166px]',
+  },
 ];
 
-const checks = [
-  ['2.1s', 'module manifest'],
-  ['2.45s', 'admin data surface'],
-  ['2.8s', 'runtime story'],
-  ['3.15s', '/console proof'],
-];
+const nodeClass =
+  'system-node absolute z-[1] min-h-0 rounded-lg border border-[rgb(0_0_0_/_16%)] bg-white px-[18px] py-4 max-[720px]:static max-[720px]:h-auto max-[720px]:w-auto';
+
+const connectorClass =
+  "absolute z-[1] max-[720px]:hidden after:absolute after:h-2 after:w-2 after:rounded-full after:bg-[var(--site-ink)] after:content-['']";
 
 export function HeroFrameworkDemo() {
   return (
-    <div className="relative hidden min-h-[430px] lg:block" aria-label="Animated Lenso framework demo">
-      <div className="absolute left-[8%] top-[22%] h-8 w-[35%] border border-[#c9c9c9] bg-white/60 dark:border-[#454545] dark:bg-black/60" />
-      <div className="absolute left-[20%] top-[41%] h-8 w-[18%] border border-[#c9c9c9] bg-white/70 dark:border-[#454545] dark:bg-black/70" />
-      <div className="absolute right-[4%] top-[41%] h-8 w-[22%] border border-[#c9c9c9] bg-white/60 dark:border-[#454545] dark:bg-black/60" />
-      <div className="absolute right-[4%] top-[60%] h-8 w-[27%] border border-[#e6e6e6] bg-white/40 dark:border-[#292929] dark:bg-black/40" />
-      <div className="absolute right-[24%] top-[23%] h-32 w-32 rotate-[38deg] border-t border-l border-[#c9c9c9] dark:border-[#454545]" />
+    <figure
+      className="relative h-[540px] w-[586px] min-w-0 border-0 border-l border-t border-solid border-l-[rgb(0_0_0_/_10%)] border-t-[rgb(0_0_0_/_14%)] bg-[var(--site-bg)] shadow-[1px_0_0_rgb(0_0_0_/_10%),0_1px_0_rgb(0_0_0_/_14%)] before:pointer-events-none before:absolute before:left-10 before:top-[38px] before:z-0 before:h-[430px] before:w-[485px] before:bg-[repeating-linear-gradient(90deg,rgb(0_0_0_/_4%)_0_1px,transparent_1px_44px)] before:content-[''] after:pointer-events-none after:absolute after:left-7 after:top-[60px] after:z-0 after:h-[337px] after:w-[520px] after:bg-[repeating-linear-gradient(180deg,rgb(0_0_0_/_4%)_0_1px,transparent_1px_48px)] after:content-[''] max-[720px]:h-auto max-[720px]:w-full max-[720px]:p-4 max-[720px]:before:hidden max-[720px]:after:hidden"
+      aria-label="Lenso host, module, console, and proof map"
+    >
+      <div className="absolute left-7 right-7 top-[26px] z-[1] block font-mono text-xs font-[560] uppercase leading-4 text-[#777777] max-[720px]:static max-[720px]:mb-4 max-[720px]:flex max-[720px]:justify-between">
+        <span className="absolute left-0 top-0 w-[220px] max-[720px]:static">
+          Shared contract surface
+        </span>
+        <span className="absolute right-0 top-0 w-[104px] font-normal normal-case text-[#555555] max-[720px]:static">
+          verified path
+        </span>
+      </div>
 
-      <div className="absolute left-[38%] top-[40%] w-[260px] -translate-y-1/2 overflow-hidden rounded-[8px] border border-[#ebebeb] bg-white shadow-[0_18px_45px_-30px_rgba(0,0,0,0.45)] dark:border-[#2e2e2e] dark:bg-[#0a0a0a]">
-        <div className="flex h-11 items-center justify-between border-b border-[#ebebeb] px-4 dark:border-[#2e2e2e]">
-          <div className="flex items-center gap-2 text-[14px] font-medium leading-5 text-[#171717] dark:text-[#ededed]">
-            <Folder className="size-4" aria-hidden="true" />
-            lenso-app/
+      <div className="static max-[720px]:grid max-[720px]:gap-3">
+        {nodes.map((node) => (
+          <div
+            className={`${nodeClass} system-node-${node.kind} ${node.position}`}
+            key={node.label}
+          >
+            <span className="mb-2 block font-mono text-[11px] font-[560] leading-[14px] text-[#777777]">
+              {node.label}
+            </span>
+            <h2 className="text-lg font-[560] leading-6 text-[var(--site-ink)]">
+              {node.title}
+            </h2>
+            <p className="mt-1.5 text-[13px] leading-5 text-[#5f5f5f]">
+              {node.text}
+            </p>
           </div>
-          <ChevronDown className="size-4 text-[#7d7d7d]" aria-hidden="true" />
-        </div>
-        <div className="grid gap-3 p-4">
-          {files.map(([delay, file]) => (
-            <div
-              key={file}
-              className="lenso-demo-row flex items-center gap-2 text-[13px] leading-5 text-[#4d4d4d] dark:text-[#a0a0a0]"
-              style={{ animationDelay: delay }}
-            >
-              <FileCode2 className="size-4 text-[#8f8f8f]" aria-hidden="true" />
-              {file}
-            </div>
-          ))}
-        </div>
+        ))}
       </div>
 
-      <div className="absolute left-[38%] top-[65%] w-[260px] overflow-hidden rounded-[8px] border border-[#ebebeb] bg-white shadow-[0_18px_45px_-30px_rgba(0,0,0,0.45)] dark:border-[#2e2e2e] dark:bg-[#0a0a0a]">
-        <div className="flex h-11 items-center gap-2 border-b border-[#ebebeb] px-4 font-mono text-[13px] leading-5 text-[#171717] dark:border-[#2e2e2e] dark:text-[#ededed]">
-          <Terminal className="size-4 text-[#7d7d7d]" aria-hidden="true" />
-          lenso module create support
-        </div>
-        <div className="grid gap-2 p-4">
-          {checks.map(([delay, check]) => (
-            <div
-              key={check}
-              className="lenso-demo-row flex items-center gap-2 text-[13px] leading-5 text-[#4d4d4d] dark:text-[#a0a0a0]"
-              style={{ animationDelay: delay }}
-            >
-              <Check className="size-4 text-[#171717] dark:text-[#ededed]" aria-hidden="true" />
-              {check}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <style>{`
-        .lenso-demo-row {
-          opacity: .35;
-          transform: translateY(0);
-          animation: lenso-demo-in 4.8s cubic-bezier(.16,1,.3,1) infinite;
-        }
-
-        @keyframes lenso-demo-in {
-          0%, 8% {
-            opacity: .35;
-            transform: translateY(0);
-          }
-          18%, 78% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-          90%, 100% {
-            opacity: .35;
-            transform: translateY(0);
-          }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .lenso-demo-row {
-            animation: none;
-            opacity: 1;
-            transform: none;
-          }
-        }
-      `}</style>
-    </div>
+      <span
+        className={`${connectorClass} left-[248px] top-[153px] h-px w-[66px] bg-[rgb(0_0_0_/_22%)] after:-right-1 after:-top-1`}
+      />
+      <span
+        className={`${connectorClass} left-[154px] top-[214px] h-28 w-px bg-[rgb(0_0_0_/_18%)] after:-bottom-1 after:-left-1`}
+      />
+      <span
+        className={`${connectorClass} left-[432px] top-[262px] h-[86px] w-px bg-[rgb(0_0_0_/_18%)] after:-bottom-1 after:-left-1`}
+      />
+      <span
+        className={`${connectorClass} left-[318px] top-[390px] h-px w-[46px] bg-[rgb(0_0_0_/_20%)] after:-right-1 after:-top-1`}
+      />
+      <p className="absolute left-[58px] top-[488px] m-0 w-[470px] text-[15px] leading-[23px] text-[#5d5d5d] max-[720px]:static max-[720px]:mt-4 max-[720px]:w-auto">
+        A generated host and every remote module publish the same inspectable contract.
+      </p>
+    </figure>
   );
 }

@@ -3,6 +3,8 @@
 @import 'fumadocs-ui/css/preset.css';
 
 @theme {
+  --font-sans: Geist, Arial, Helvetica, sans-serif;
+  --font-mono: 'Geist Mono', 'SFMono-Regular', Consolas, monospace;
   --color-fd-background: var(--ds-background-100);
   --color-fd-foreground: var(--ds-gray-1000);
   --color-fd-muted: var(--ds-gray-100);
@@ -280,4 +282,55 @@ samp {
 html > body[data-scroll-locked] {
   margin-right: 0px !important;
   --removed-body-scroll-bar-size: 0px !important;
+}
+
+.site-home,
+.site-header {
+  --site-bg: #fafafa;
+  --site-surface: #ffffff;
+  --site-ink: #111111;
+  --site-muted: #444444;
+  --site-border: #cdcdcd;
+}
+
+.site-logo-mark::before {
+  background: transparent;
+  box-shadow:
+    1px 0 #a5a5a5,
+    0 1px #888888,
+    1px 1px #ffffff,
+    0 2px #888888,
+    1px 2px #ffffff,
+    0 3px #888888,
+    1px 3px #ffffff,
+    0 4px #888888,
+    1px 4px #ffffff,
+    0 5px #888888,
+    1px 5px #ffffff,
+    0 6px #888888,
+    1px 6px #ffffff,
+    0 7px #888888,
+    1px 7px #ffffff,
+    0 8px #888888,
+    1px 8px #ffffff,
+    0 9px #888888,
+    1px 9px #ffffff,
+    2px 9px #d2d2d2,
+    3px 9px #c3c3c3,
+    4px 9px #c3c3c3,
+    5px 9px #c3c3c3,
+    6px 9px #c3c3c3,
+    0 10px #888888,
+    1px 10px #ffffff,
+    2px 10px #ffffff,
+    3px 10px #ffffff,
+    4px 10px #ffffff,
+    5px 10px #ffffff,
+    6px 10px #ffffff;
+  content: '';
+  height: 1px;
+  left: 10px;
+  position: absolute;
+  top: 9px;
+  width: 1px;
 }
