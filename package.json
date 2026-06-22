@@ -4,15 +4,17 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "deploy": "pnpm build && wrangler deploy",
-    "deploy:dry-run": "pnpm build && wrangler deploy --dry-run",
+    "worker:build": "opennextjs-cloudflare build",
+    "deploy": "pnpm worker:build && opennextjs-cloudflare deploy",
+    "deploy:dry-run": "pnpm worker:build && wrangler deploy --dry-run",
     "dev": "next dev",
-    "start": "serve out",
+    "start": "opennextjs-cloudflare preview",
     "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
     "postinstall": "fumadocs-mdx",
     "lint": "eslint"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.19.11",
     "@orama/orama": "^3.1.18",
     "fumadocs-core": "16.10.4",
     "fumadocs-mdx": "15.0.12",

@@ -1,8 +1,17 @@
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
   "name": "lenso-site",
   "compatibility_date": "2026-06-21",
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
-    "directory": "./out"
-  }
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "lenso-site"
+    }
+  ]
 }
