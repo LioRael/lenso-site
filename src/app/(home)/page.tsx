@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
 import { SiteScrollEffects } from '@/components/site-scroll-effects';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 
 const navItems = [
   { label: 'Product', href: '/', menu: true },
@@ -242,8 +243,7 @@ const borderMaskStyle = {
 
 const hostBorderMaskStyle = {
   ...borderMaskStyle,
-  background:
-    'radial-gradient(ellipse 360px 160px at 88px 21px, #8f8f8f 0%, #8f8f8f 22%, rgb(143 143 143 / 85%) 34%, rgb(143 143 143 / 48%) 68%, rgb(143 143 143 / 0%) 86%)',
+  background: 'var(--site-host-border-mask)',
 };
 
 function SectionIntro({
@@ -263,7 +263,7 @@ function SectionIntro({
       <h2 className={`${titleWidth} max-w-full text-[40px] font-normal leading-[48px] text-[var(--site-ink)] max-[560px]:text-[32px] max-[560px]:leading-[38px]`}>
         {title}
       </h2>
-      <p className="max-w-[566px] text-lg leading-7 text-[#4d4d4d]">{copy}</p>
+      <p className="max-w-[566px] text-lg leading-7 text-[var(--site-muted)]">{copy}</p>
     </div>
   );
 }
@@ -284,7 +284,7 @@ function Header() {
             <span className="relative h-[18px] w-[21px]">
               <Image
                 alt=""
-                className="absolute left-[1.5px] top-0 h-[18px] w-[18px]"
+                className="site-icon absolute left-[1.5px] top-0 h-[18px] w-[18px]"
                 height={18}
                 src="/lenso-assets/lenso-header-mark.svg"
                 width={18}
@@ -295,7 +295,7 @@ function Header() {
           <div className="ml-3 flex h-16 items-center max-[760px]:hidden">
             {navItems.map((item) => (
               <Link
-                className="inline-flex h-8 items-center px-3 text-sm leading-5 text-[#4d4d4d] first:text-[var(--site-ink)] hover:text-[var(--site-ink)]"
+                className="inline-flex h-8 items-center px-3 text-sm leading-5 text-[var(--site-muted)] first:text-[var(--site-ink)] hover:text-[var(--site-ink)]"
                 href={item.href}
                 key={item.label}
               >
@@ -309,7 +309,7 @@ function Header() {
         <div className="flex h-8 items-center gap-3 text-sm font-medium leading-[21px]">
           {actionItems.map((item) => (
             <Link
-              className="inline-flex h-8 items-center rounded-md bg-white px-3 text-[var(--site-ink)] shadow-[0_1px_1px_rgb(0_0_0_/_2%)] hover:text-[#4d4d4d] max-[560px]:hidden"
+              className="inline-flex h-8 items-center rounded-md bg-[var(--site-surface)] px-3 text-[var(--site-ink)] shadow-[var(--site-shadow-faint)] hover:text-[var(--site-muted)] max-[560px]:hidden"
               href={item.href}
               key={item.label}
             >
@@ -317,7 +317,7 @@ function Header() {
             </Link>
           ))}
           <Link
-            className="inline-flex h-8 items-center rounded-md bg-[var(--site-ink)] px-3 text-white"
+            className="inline-flex h-8 items-center rounded-md bg-[var(--site-ink)] px-3 text-[var(--site-inverse)]"
             href="/docs/quickstart"
           >
             Start
@@ -330,12 +330,12 @@ function Header() {
 
 function Hero() {
   return (
-    <section className="relative mx-auto h-[640px] max-w-[1392px] max-[900px]:h-auto max-[900px]:px-5 max-[900px]:pb-20">
+    <section className="relative mx-auto h-[640px] max-w-[1392px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:h-[760px] max-[900px]:h-[976px] max-[560px]:h-[944px]">
       <div className="absolute -left-6 top-36 h-[376px] w-[1440px] overflow-hidden max-[900px]:static max-[900px]:h-auto max-[900px]:w-full max-[900px]:overflow-visible max-[900px]:pt-20">
-        <div className="ml-6 h-6 w-[75px]">
+        <div className="ml-6 h-6 w-[75px] max-[900px]:ml-0">
           <Image
             alt="Lenso"
-            className="mt-1"
+            className="site-icon mt-1"
             height={16}
             priority
             src="/lenso-assets/lenso-wordmark.svg"
@@ -343,70 +343,72 @@ function Hero() {
           />
         </div>
 
-        <h1 className="ml-6 mt-6 max-w-[620px] text-[72px] font-normal leading-[72px] text-[var(--site-ink)] max-[900px]:text-[52px] max-[900px]:leading-[56px] max-[560px]:text-[42px] max-[560px]:leading-[46px]">
+        <h1 className="ml-6 mt-6 max-w-[620px] text-[72px] font-normal leading-[72px] text-[var(--site-ink)] max-[900px]:ml-0 max-[900px]:mt-10 max-[900px]:max-w-none max-[900px]:text-[64px] max-[900px]:leading-[64px] max-[560px]:mt-2 max-[560px]:text-[40px] max-[560px]:leading-[48px]">
           The framework for
           <br />
           modular Rust apps
         </h1>
 
-        <div className="ml-6 mt-6 flex h-8 w-[175px] items-center text-[13px] leading-4 max-[560px]:ml-0">
+        <div className="ml-6 mt-6 flex h-8 w-[175px] items-center text-[13px] leading-4 max-[900px]:ml-0">
           <button className="h-8 rounded px-3 font-medium text-[var(--site-ink)]">
             For teams
           </button>
-          <span className="h-3 w-px bg-[#ebebeb]" />
-          <button className="h-8 rounded px-3 text-[#4d4d4d]">For agents</button>
+          <span className="h-3 w-px bg-[var(--site-border-muted)]" />
+          <button className="h-8 rounded px-3 text-[var(--site-muted)]">For agents</button>
         </div>
 
-        <div className="ml-6 mt-2 flex h-10 w-[423px] max-w-full items-center gap-3 max-[560px]:ml-0 max-[560px]:h-auto max-[560px]:flex-wrap">
-          <div className="flex h-10 w-[306px] min-w-0 items-center rounded-full bg-white py-1.5 pl-3 pr-2 font-mono text-sm leading-5 shadow-[0_2px_2px_rgb(0_0_0_/_4%)] max-[560px]:w-full">
-            <span className="mr-2 text-base leading-6 text-[#c9c9c9]">$</span>
+        <div className="ml-6 mt-2 flex h-10 w-[423px] max-w-full items-center gap-3 max-[900px]:ml-0 max-[560px]:h-auto max-[560px]:flex-wrap">
+          <div className="flex h-10 w-[306px] min-w-0 items-center rounded-full bg-[var(--site-surface)] py-1.5 pl-3 pr-2 font-mono text-sm leading-5 shadow-[var(--site-shadow-control)] max-[560px]:w-full">
+            <span className="mr-2 text-base leading-6 text-[var(--site-faint)]">$</span>
             <code className="min-w-0 flex-1 overflow-hidden whitespace-nowrap text-[var(--site-ink)]">
               lenso new ops-host --with console
             </code>
             <button aria-label="Copy command" className="ml-1 flex h-7 w-7 items-center justify-center rounded-full">
-              <Image alt="" height={16} src="/lenso-assets/copy-icon.svg" width={16} />
+              <Image alt="" className="site-icon" height={16} src="/lenso-assets/copy-icon.svg" width={16} />
             </button>
           </div>
           <Link
-            className="inline-flex h-10 w-[105px] items-center justify-center rounded-full bg-[var(--site-ink)] px-3 text-sm font-medium leading-[21px] text-white max-[560px]:w-full"
+            className="inline-flex h-10 w-[105px] items-center justify-center rounded-full bg-[var(--site-ink)] px-3 text-sm font-medium leading-[21px] text-[var(--site-inverse)] max-[560px]:w-full"
             href="/docs"
           >
             Read docs
           </Link>
         </div>
 
-        <p className="ml-6 mt-6 max-w-[601px] text-lg leading-7 text-[#4d4d4d]">
+        <p className="ml-6 mt-6 max-w-[601px] text-lg leading-7 text-[var(--site-muted)] max-[1199px]:max-w-[559px] max-[900px]:ml-0 max-[900px]:!max-w-none max-[560px]:text-base max-[560px]:leading-7">
           Like Next.js for web apps, but for Rust business systems. Hosts,
           modules, console state, and proof logs stay inspectable by default.
         </p>
 
         <div
           aria-hidden="true"
-          className="absolute left-[850px] top-12 h-[284px] w-[566px] max-[1120px]:left-[760px] max-[900px]:relative max-[900px]:left-auto max-[900px]:top-auto max-[900px]:mt-12 max-[900px]:h-[284px] max-[900px]:w-full"
+          className="absolute left-[850px] top-12 h-[284px] w-[566px] max-[1199px]:left-[607px] max-[1199px]:w-[393px] max-[900px]:relative max-[900px]:left-auto max-[900px]:top-auto max-[900px]:mt-6 max-[900px]:h-[304px] max-[900px]:w-full"
         >
-          <div className="hero-wordart absolute -left-11 -top-2 h-[195px] w-[622px] max-[900px]:left-1/2 max-[900px]:-translate-x-1/2">
+          <div className="hero-wordart absolute -left-11 -top-2 h-[195px] w-[622px] max-[1199px]:left-[-114.67px] max-[900px]:left-1/2 max-[900px]:top-12 max-[900px]:-translate-x-1/2">
             <span
-              className="absolute inset-0 block bg-[radial-gradient(ellipse_355px_95px_at_311px_97.5px,rgb(208_208_208_/_11%)_0%,rgb(215_215_215_/_7%)_46%,rgb(238_238_238_/_2%)_78%,transparent_100%)] [mask-image:url('/lenso-assets/lenso-hero-wordart-fill-mask.svg')] [mask-position:center] [mask-repeat:no-repeat] [mask-size:100%_100%] [-webkit-mask-image:url('/lenso-assets/lenso-hero-wordart-fill-mask.svg')] [-webkit-mask-position:center] [-webkit-mask-repeat:no-repeat] [-webkit-mask-size:100%_100%]"
+              className="absolute inset-0 block [mask-image:url('/lenso-assets/lenso-hero-wordart-fill-mask.svg')] [mask-position:center] [mask-repeat:no-repeat] [mask-size:100%_100%] [-webkit-mask-image:url('/lenso-assets/lenso-hero-wordart-fill-mask.svg')] [-webkit-mask-position:center] [-webkit-mask-repeat:no-repeat] [-webkit-mask-size:100%_100%]"
+              style={{ background: 'var(--site-wordart-fill)' }}
             />
             <span
-              className="absolute inset-0 block bg-[radial-gradient(ellipse_355px_95px_at_311px_97.5px,rgb(112_112_112_/_72%)_0%,rgb(133_133_133_/_52%)_34%,rgb(156_156_156_/_26%)_62%,rgb(184_184_184_/_12%)_82%,rgb(208_208_208_/_4%)_100%)] [mask-image:url('/lenso-assets/lenso-hero-wordart-stroke-mask.svg')] [mask-position:center] [mask-repeat:no-repeat] [mask-size:100%_100%] [-webkit-mask-image:url('/lenso-assets/lenso-hero-wordart-stroke-mask.svg')] [-webkit-mask-position:center] [-webkit-mask-repeat:no-repeat] [-webkit-mask-size:100%_100%]"
+              className="absolute inset-0 block [mask-image:url('/lenso-assets/lenso-hero-wordart-stroke-mask.svg')] [mask-position:center] [mask-repeat:no-repeat] [mask-size:100%_100%] [-webkit-mask-image:url('/lenso-assets/lenso-hero-wordart-stroke-mask.svg')] [-webkit-mask-position:center] [-webkit-mask-repeat:no-repeat] [-webkit-mask-size:100%_100%]"
+              style={{ background: 'var(--site-wordart-stroke)' }}
             />
           </div>
-          <div className="absolute left-[139px] top-8 flex w-64 flex-col gap-3 max-[900px]:left-1/2 max-[900px]:-translate-x-1/2">
+          <div className="absolute left-[139px] top-8 flex w-64 flex-col gap-3 max-[1199px]:left-[68.5px] max-[900px]:left-1/2 max-[900px]:top-[38px] max-[900px]:-translate-x-1/2">
             <div className="h-[196px] w-64">
-              <div className="mt-9 h-40 rounded-lg bg-white p-2 shadow-[0_0_0_1px_rgb(0_0_0_/_8%),0_1px_1px_rgb(0_0_0_/_2%),0_8px_16px_-4px_rgb(0_0_0_/_4%),0_24px_32px_-8px_rgb(0_0_0_/_6%)]">
+              <div className="mt-9 h-40 rounded-lg bg-[var(--site-surface)] p-2 shadow-[var(--site-shadow-card)]">
                 {treeItems.map((item) => (
                   <div
                     className="flex h-9 items-center gap-2 rounded px-2 text-sm leading-5 text-[var(--site-ink)]"
                     key={item.label}
                     style={{ paddingLeft: 8 + item.depth * 16 }}
                   >
-                    <Image alt="" height={16} src={item.icon} width={16} />
+                    <Image alt="" className="site-icon" height={16} src={item.icon} width={16} />
                     <span>{item.label}</span>
                     {item.trail ? (
                       <Image
                         alt=""
-                        className="ml-auto"
+                        className="site-icon ml-auto"
                         height={16}
                         src="/lenso-assets/tree-chevron.svg"
                         width={16}
@@ -416,8 +418,8 @@ function Hero() {
                 ))}
               </div>
             </div>
-            <div className="flex h-11 w-64 items-center gap-3 rounded-lg bg-white px-4 font-mono text-sm leading-5 shadow-[0_1px_1px_rgb(0_0_0_/_2%),0_4px_8px_rgb(0_0_0_/_4%),0_16px_24px_rgb(0_0_0_/_6%)]">
-              <span className="text-[#7d7d7d]">$</span>
+            <div className="flex h-11 w-64 items-center gap-3 rounded-lg bg-[var(--site-surface)] px-4 font-mono text-sm leading-5 shadow-[var(--site-shadow-float)]">
+              <span className="text-[var(--site-subtle)]">$</span>
               <span>lenso</span>
             </div>
           </div>
@@ -429,13 +431,10 @@ function Hero() {
 
 function LifecyclePanel({
   index,
-  step,
 }: {
   index: number;
   step: (typeof lifecycleSteps)[number];
 }) {
-  const folder = step.tag.endsWith('/') ? step.tag : 'host/';
-
   return (
     <article
       className="lifecycle-panel absolute inset-0 rounded-xl"
@@ -451,29 +450,28 @@ function LifecyclePanel({
       <div className="absolute left-3 right-3 top-3 z-10 flex h-[76px] flex-col gap-1">
         <div className="flex h-9 items-center px-3 py-2.5">
           <span className="text-[13px] font-medium leading-4 text-[var(--site-ink)]">
-            {folder}
+            host/
           </span>
         </div>
-        <div className="flex h-9 items-center gap-2 rounded-md bg-[#f2f2f2] py-2.5 pl-6 pr-3">
-          <span className="text-[13px] leading-4 text-[var(--site-ink)]">{step.tag}</span>
+        <div className="flex h-9 items-center gap-2 rounded-md bg-[var(--site-surface-muted)] py-2.5 pl-6 pr-3">
+          <span className="text-[13px] leading-4 text-[var(--site-ink)]">host.toml</span>
         </div>
       </div>
-      <div className="absolute left-3 right-3 top-[104px] z-10 h-[142px] overflow-hidden rounded-md border border-[#ebebeb]">
+      <div className="absolute left-3 right-3 top-[104px] z-10 h-[142px] overflow-hidden rounded-md border border-[var(--site-border-muted)]">
         <div className="absolute inset-px overflow-hidden">
           <div className="absolute left-0 top-5 h-[100px] w-full whitespace-nowrap font-mono text-[13px] leading-5 text-[var(--site-ink)]">
             <p className="absolute left-5 top-[-1px] h-5 font-bold leading-5">
-              # {step.title}
+              # Identity
             </p>
             <p className="absolute left-5 top-[39px] h-5 leading-5">
-              {step.text}
+              You are an expert weather assistant.
             </p>
-            {step.links ? (
-              <div className="absolute left-[20.203125px] top-[60px] h-5 w-[257px]">
-                <p className="absolute left-[-0.203125px] top-[-1px] h-5 leading-5">
-                  Leverages {step.links.map((link) => link.label).join(', ')}
-                </p>
-              </div>
-            ) : null}
+            <p className="absolute left-5 top-[59px] h-5 leading-5 text-[var(--site-subtle)]">
+              You can fetch the weather for any
+            </p>
+            <p className="absolute left-5 top-[79px] h-5 leading-5 text-[var(--site-faint)]">
+              city in the world.
+            </p>
           </div>
         </div>
       </div>
@@ -488,7 +486,7 @@ function LifecyclePanel({
 
 function LifecycleSection() {
   return (
-    <section className="mx-auto max-w-[1392px] py-[120px] max-[900px]:px-5">
+    <section className="mx-auto max-w-[1392px] py-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none">
       <div data-lifecycle>
         <SectionIntro
           copy="Define hosts, modules, console state, and proof evidence in small manifest files. Lenso wires the runtime so agents and humans review the same facts."
@@ -499,7 +497,7 @@ function LifecycleSection() {
           <div className="w-full">
             {lifecycleSteps.map((step, index) => (
               <article
-                className="lifecycle-step min-h-[420px] max-[900px]:min-h-0 max-[900px]:border-t max-[900px]:border-[var(--site-border)] max-[900px]:py-10 max-[900px]:first:border-t-0"
+                className="lifecycle-step min-h-[356px] last:min-h-[420px] max-[900px]:border-t max-[900px]:border-[var(--site-border)] max-[900px]:py-10 max-[900px]:first:border-t-0"
                 data-active={index === 0 ? 'true' : 'false'}
                 data-lifecycle-step
                 key={step.index}
@@ -512,16 +510,16 @@ function LifecycleSection() {
                     <h3 className="text-base font-normal leading-6 text-[var(--site-ink)]">
                       {step.title}
                     </h3>
-                    <span className="rounded-full bg-[#ebebeb] px-3 py-0.5 text-xs font-medium leading-[18px] text-[var(--site-ink)]">
+                    <span className="rounded-full bg-[var(--site-border-muted)] px-3 py-0.5 text-xs font-medium leading-[18px] text-[var(--site-ink)]">
                       {step.tag}
                     </span>
                   </div>
-                  <p className="ml-10 mt-4 max-w-[526px] text-base leading-6 text-[#4d4d4d]">
+                  <p className="ml-10 mt-4 max-w-[526px] text-base leading-6 text-[var(--site-muted)]">
                     {step.text}
                   </p>
                   {step.links ? (
                     <div className="ml-10 mt-4">
-                      <p className="font-mono text-xs uppercase leading-4 text-[#4d4d4d]">
+                      <p className="font-mono text-xs uppercase leading-4 text-[var(--site-muted)]">
                         Leverages
                       </p>
                       <div className="mt-2 grid gap-2 text-[13px] font-medium leading-4 text-[var(--site-ink)]">
@@ -529,7 +527,7 @@ function LifecycleSection() {
                           <span className="inline-flex items-center gap-1.5" key={link.label}>
                             <Image
                               alt=""
-                              className="h-4 w-4 shrink-0"
+                              className="site-icon h-4 w-4 shrink-0"
                               height={16}
                               loading="eager"
                               src={link.icon}
@@ -559,13 +557,13 @@ function LifecycleSection() {
 
 function RuntimePrimitiveSection() {
   return (
-    <section className="mx-auto max-w-[1392px] pt-[120px] max-[900px]:px-5">
+    <section className="mx-auto min-h-[588px] max-w-[1392px] pt-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:min-h-[664px] max-[900px]:min-h-[1132px] max-[560px]:!min-h-0 max-[560px]:pt-16">
       <SectionIntro
         copy="Starter hosts, remote modules, Runtime Console, proof logs, and skills share one boring contract surface. No point-solution glue."
         title="Leverages every Lenso runtime primitive"
       />
 
-      <div className="mt-[72px]" data-scroll-reveal>
+      <div className="mt-[72px] max-[560px]:mt-10" data-scroll-reveal>
         <Image
           alt="Lenso"
           className="ml-1"
@@ -578,7 +576,7 @@ function RuntimePrimitiveSection() {
             <p className="font-mono text-sm font-medium uppercase leading-5 text-[var(--site-ink)]">
               Runtime
             </p>
-            <p className="mt-1 text-sm leading-5 text-[#4d4d4d]">
+            <p className="mt-1 text-sm leading-5 text-[var(--site-muted)]">
               Durable execution, state persistence, event streaming.
             </p>
             <div className="mt-4 grid gap-4">
@@ -594,7 +592,7 @@ function RuntimePrimitiveSection() {
               className={borderMaskClass}
               style={{
                 ...borderMaskStyle,
-                background: 'linear-gradient(180deg, rgb(0 0 0 / 8%) 0%, transparent 100%)',
+                background: 'var(--site-border-mask)',
               }}
             />
           </div>
@@ -603,10 +601,10 @@ function RuntimePrimitiveSection() {
             <p className="font-mono text-sm font-medium uppercase leading-5 text-[var(--site-ink)]">
               Channel
             </p>
-            <p className="mt-1 text-sm leading-5 text-[#4d4d4d]">
+            <p className="mt-1 text-sm leading-5 text-[var(--site-muted)]">
               Where your runtime facts are surfaced.
             </p>
-            <div className="relative mt-4 h-[168px] overflow-hidden rounded-lg bg-white p-4 shadow-[0_0_0_1px_rgb(0_0_0_/_8%),0_2px_2px_rgb(0_0_0_/_4%)]">
+            <div className="relative mt-4 h-[168px] overflow-hidden rounded-lg bg-[var(--site-surface)] p-4 shadow-[var(--site-shadow-control)]">
               <div
                 className="flex h-full gap-3"
                 style={{
@@ -616,7 +614,7 @@ function RuntimePrimitiveSection() {
               >
                 <Image
                   alt=""
-                  className="mt-0.5 h-[18px] w-[18px]"
+                  className="site-icon mt-0.5 h-[18px] w-[18px]"
                   height={18}
                   loading="eager"
                   src="/lenso-assets/runtime-chat-sdk.svg"
@@ -639,7 +637,7 @@ function RuntimePrimitiveSection() {
               className={borderMaskClass}
               style={{
                 ...borderMaskStyle,
-                background: 'linear-gradient(180deg, rgb(0 0 0 / 8%) 0%, transparent 100%)',
+                background: 'var(--site-border-mask)',
               }}
             />
           </div>
@@ -657,11 +655,11 @@ function RuntimeCard({
   card: { icon: string; text: string; title: string };
 }) {
   return (
-    <div className={`${large ? 'min-h-[76px]' : 'min-h-[76px]'} rounded-lg bg-white p-4 shadow-[0_2px_2px_rgb(0_0_0_/_4%)]`}>
+    <div className={`${large ? 'min-h-[76px]' : 'min-h-[76px]'} rounded-lg bg-[var(--site-surface)] p-4 shadow-[var(--site-shadow-control)]`}>
       <div className="flex items-start gap-3">
         <Image
           alt=""
-          className="mt-0.5 h-[18px] w-[18px] shrink-0"
+          className="site-icon mt-0.5 h-[18px] w-[18px] shrink-0"
           height={18}
           loading="eager"
           src={card.icon}
@@ -669,7 +667,7 @@ function RuntimeCard({
         />
         <div className="min-w-0">
           <p className="text-sm font-medium leading-5 text-[var(--site-ink)]">{card.title}</p>
-          <p className="mt-1 text-sm leading-5 text-[#4d4d4d]">{card.text}</p>
+          <p className="mt-1 text-sm leading-5 text-[var(--site-muted)]">{card.text}</p>
         </div>
       </div>
     </div>
@@ -678,7 +676,7 @@ function RuntimeCard({
 
 function SystemsSection() {
   return (
-    <section className="mx-auto max-w-[1392px] pb-[120px] pt-[168px] max-[900px]:px-5">
+    <section className="mx-auto min-h-[965px] max-w-[1392px] pb-[120px] pt-[168px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:min-h-[1103px] max-[900px]:min-h-[2359px] max-[560px]:!min-h-0 max-[560px]:pb-16 max-[560px]:pt-24">
       <SectionIntro
         copy="Ownership, reviewable changes, generated evidence, and hosted console delivery come standard."
         title="Everything you need for Rust business systems"
@@ -686,7 +684,7 @@ function SystemsSection() {
       />
 
       <div
-        className="mt-[72px] grid min-h-[509px] grid-cols-3 gap-y-[72px] max-[1000px]:grid-cols-1"
+        className="mt-[72px] grid min-h-[509px] grid-cols-3 gap-y-[72px] max-[1000px]:grid-cols-1 max-[560px]:mt-12 max-[560px]:gap-y-10"
         data-scroll-reveal
       >
         <div>
@@ -719,17 +717,17 @@ function SystemsSection() {
 
 function ProofChart() {
   return (
-    <div className="mb-6 h-[261px] rounded-l-sm border border-[#e6e6e6] p-5 font-mono text-xs leading-4 text-[var(--site-ink)]">
+    <div className="mb-6 h-[261px] rounded-l-sm border border-[var(--site-border)] p-5 font-mono text-xs leading-4 text-[var(--site-ink)] max-[560px]:h-40">
       <div className="flex h-full flex-col justify-center gap-2.5">
         {proofRows.map(([label, left, width]) => (
           <div className="grid grid-cols-[122px_1fr] items-center gap-3" key={label}>
             <span>{label}</span>
             <span className="relative h-6">
-              <span className="absolute left-0 right-0 top-[11px] h-px bg-[#c9c9c9]" />
-              <span className="absolute left-0 top-1 h-4 w-px bg-[#c9c9c9]" />
-              <span className="absolute right-0 top-1 h-4 w-px bg-[#c9c9c9]" />
+              <span className="absolute left-0 right-0 top-[11px] h-px bg-[var(--site-faint)]" />
+              <span className="absolute left-0 top-1 h-4 w-px bg-[var(--site-faint)]" />
+              <span className="absolute right-0 top-1 h-4 w-px bg-[var(--site-faint)]" />
               <span
-                className="absolute top-0.5 h-5 rounded border border-[#6cda75] bg-[#effbef]"
+                className="absolute top-0.5 h-5 rounded border border-[var(--site-success-border)] bg-[var(--site-success-bg)]"
                 style={{
                   left: `${(left / proofAxisWidth) * 100}%`,
                   width: `${(width / proofAxisWidth) * 100}%`,
@@ -745,29 +743,29 @@ function ProofChart() {
 
 function AgentTable() {
   return (
-    <div className="relative mb-6 h-[261px] overflow-hidden border-y border-r border-[#e6e6e6] text-xs leading-4 text-[var(--site-ink)]">
+    <div className="relative mb-6 h-[261px] overflow-hidden border-y border-r border-[var(--site-border)] text-xs leading-4 text-[var(--site-ink)] max-[560px]:h-40">
       <div className="-mt-5">
         {agentRows.map(([agent, status, size]) => (
           <div
-            className="grid h-[41px] grid-cols-[minmax(0,205px)_88px_66px] items-center gap-3 border-b border-[rgb(0_0_0_/_8%)] px-5"
+            className="grid h-[41px] grid-cols-[minmax(0,205px)_88px_66px] items-center gap-3 border-b border-[var(--site-border)] px-5"
             key={agent}
           >
             <span className="overflow-hidden text-ellipsis whitespace-nowrap">{agent}</span>
             <span className="flex items-center gap-2">
-              <span className={`h-2 w-2 rounded-full ${status === 'Running' ? 'bg-[#50e3c2]' : 'bg-[#c9c9c9]'}`} />
+              <span className={`h-2 w-2 rounded-full ${status === 'Running' ? 'bg-[var(--site-success)]' : 'bg-[var(--site-faint)]'}`} />
               {status}
             </span>
-            <span className="text-[#4d4d4d]">{size}</span>
+            <span className="text-[var(--site-muted)]">{size}</span>
           </div>
         ))}
       </div>
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-0 top-0 h-10 w-full bg-[linear-gradient(180deg,var(--site-bg)_0%,rgb(250_250_250_/_93%)_7.1429%,rgb(250_250_250_/_86%)_14.286%,rgb(250_250_250_/_79%)_21.429%,rgb(250_250_250_/_71%)_28.571%,rgb(250_250_250_/_64%)_35.714%,rgb(250_250_250_/_57%)_42.857%,rgb(250_250_250_/_50%)_50%,rgb(250_250_250_/_43%)_57.143%,rgb(250_250_250_/_36%)_64.286%,rgb(250_250_250_/_29%)_71.429%,rgb(250_250_250_/_21%)_78.571%,rgb(250_250_250_/_14%)_85.714%,rgb(250_250_250_/_7%)_92.857%,transparent_100%)]"
+        className="site-fade-top pointer-events-none absolute left-0 top-0 h-10 w-full"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-0 h-10 w-full bg-[linear-gradient(0deg,var(--site-bg)_0%,rgb(250_250_250_/_93%)_7.1429%,rgb(250_250_250_/_86%)_14.286%,rgb(250_250_250_/_79%)_21.429%,rgb(250_250_250_/_71%)_28.571%,rgb(250_250_250_/_64%)_35.714%,rgb(250_250_250_/_57%)_42.857%,rgb(250_250_250_/_50%)_50%,rgb(250_250_250_/_43%)_57.143%,rgb(250_250_250_/_36%)_64.286%,rgb(250_250_250_/_29%)_71.429%,rgb(250_250_250_/_21%)_78.571%,rgb(250_250_250_/_14%)_85.714%,rgb(250_250_250_/_7%)_92.857%,transparent_100%)]"
+        className="site-fade-bottom pointer-events-none absolute bottom-0 left-0 h-10 w-full"
       />
     </div>
   );
@@ -775,12 +773,12 @@ function AgentTable() {
 
 function ChannelCloud() {
   return (
-    <div className="relative mb-6 flex h-[261px] flex-col justify-center gap-3 overflow-hidden rounded-r-sm border-y border-r border-[#e6e6e6] text-sm leading-5 text-[var(--site-ink)]">
+    <div className="relative mb-6 flex h-[261px] flex-col justify-center gap-3 overflow-hidden rounded-r-sm border-y border-r border-[var(--site-border)] text-sm leading-5 text-[var(--site-ink)] max-[560px]:h-40">
       {channelRows.map((row) => (
         <div className="flex justify-center gap-3" key={row.map((item) => item.label).join('-')}>
           {row.map((item) => (
             <span
-              className="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-white px-3 shadow-[0_2px_2px_rgb(0_0_0_/_4%)]"
+              className="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-[var(--site-surface)] px-3 shadow-[var(--site-shadow-control)]"
               key={item.label}
             >
               <Image
@@ -798,11 +796,11 @@ function ChannelCloud() {
       ))}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-0 top-0 w-16 bg-[linear-gradient(90deg,var(--site-bg)_0%,rgb(250_250_250_/_93%)_7.1429%,rgb(250_250_250_/_86%)_14.286%,rgb(250_250_250_/_79%)_21.429%,rgb(250_250_250_/_71%)_28.571%,rgb(250_250_250_/_64%)_35.714%,rgb(250_250_250_/_57%)_42.857%,rgb(250_250_250_/_50%)_50%,rgb(250_250_250_/_43%)_57.143%,rgb(250_250_250_/_36%)_64.286%,rgb(250_250_250_/_29%)_71.429%,rgb(250_250_250_/_21%)_78.571%,rgb(250_250_250_/_14%)_85.714%,rgb(250_250_250_/_7%)_92.857%,transparent_100%)]"
+        className="site-fade-left pointer-events-none absolute bottom-0 left-0 top-0 w-16"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 right-0 top-0 w-16 bg-[linear-gradient(270deg,var(--site-bg)_0%,rgb(250_250_250_/_93%)_7.1429%,rgb(250_250_250_/_86%)_14.286%,rgb(250_250_250_/_79%)_21.429%,rgb(250_250_250_/_71%)_28.571%,rgb(250_250_250_/_64%)_35.714%,rgb(250_250_250_/_57%)_42.857%,rgb(250_250_250_/_50%)_50%,rgb(250_250_250_/_43%)_57.143%,rgb(250_250_250_/_36%)_64.286%,rgb(250_250_250_/_29%)_71.429%,rgb(250_250_250_/_21%)_78.571%,rgb(250_250_250_/_14%)_85.714%,rgb(250_250_250_/_7%)_92.857%,transparent_100%)]"
+        className="site-fade-right pointer-events-none absolute bottom-0 right-0 top-0 w-16"
       />
     </div>
   );
@@ -815,14 +813,14 @@ function FeatureCard({ card }: { card: { icon: string; title: string; text: stri
         <Image alt="" className="h-4 w-4" height={16} loading="eager" src={card.icon} width={16} />
         <span>{card.title}</span>
       </h3>
-      <p className="max-w-[452px] text-base leading-6 text-[#4d4d4d]">{card.text}</p>
+      <p className="max-w-[452px] text-base leading-6 text-[var(--site-muted)]">{card.text}</p>
     </article>
   );
 }
 
 function CtaSection() {
   return (
-    <section className="mx-auto h-[350px] max-w-[1392px] pt-[120px] max-[900px]:h-auto max-[900px]:px-5 max-[900px]:pb-20">
+    <section className="mx-auto h-[361px] max-w-[1392px] pt-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:h-[224px] max-[900px]:!h-[240px] max-[900px]:pb-0 max-[900px]:pt-[88px] max-[560px]:!h-[248px]">
       <div
         className="flex min-h-14 items-start justify-between gap-8 max-[760px]:flex-col"
         data-scroll-reveal
@@ -831,7 +829,7 @@ function CtaSection() {
           Build your first modular app today.
         </h2>
         <Link
-          className="mt-1 inline-flex h-12 w-[121px] items-center justify-center rounded-full bg-[var(--site-ink)] px-3 text-base font-medium leading-6 text-white"
+          className="mt-1 inline-flex h-12 w-[121px] items-center justify-center rounded-full bg-[var(--site-ink)] px-3 text-base font-medium leading-6 text-[var(--site-inverse)]"
           href="/docs/quickstart"
         >
           Get started
@@ -843,7 +841,7 @@ function CtaSection() {
 
 function Footer() {
   return (
-    <footer className="mx-auto max-w-[1440px] px-6 pb-10 pt-10">
+    <footer className="mx-auto max-w-[1440px] px-6 pb-11 pt-10 max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1439px]:px-0">
       <nav
         aria-label="Footer"
         className="relative grid min-h-[684px] auto-rows-[288px] grid-cols-6 content-start gap-x-6 gap-y-6 max-[1100px]:grid-cols-3 max-[640px]:grid-cols-2"
@@ -853,13 +851,13 @@ function Footer() {
             <h2 className="h-6 pt-3 font-mono text-xs font-medium uppercase leading-3 text-[var(--site-ink)]">
               {heading}
             </h2>
-            <ul className="mt-3.5 text-sm leading-5 text-[#666666]">
+            <ul className="mt-3.5 text-sm leading-5 text-[var(--site-subtle)]">
               {items.map((item, index) => (
                 <li className="h-7" key={`${heading}-${item}-${index}`}>
                   <Link className="-ml-0.5 inline-flex h-6 items-center gap-1.5 px-0.5 hover:text-[var(--site-ink)]" href="/docs">
                     {item}
                     {newLabels.has(item) ? (
-                      <span className="rounded-full bg-[#f2f2f2] px-1 py-0.5 font-mono text-[8px] leading-4 text-[#777777]">
+                      <span className="rounded-full bg-[var(--site-surface-muted)] px-1 py-0.5 font-mono text-[8px] leading-4 text-[var(--site-subtle)]">
                         New
                       </span>
                     ) : null}
@@ -870,31 +868,16 @@ function Footer() {
           </div>
         ))}
         <Link aria-label="Lenso home" className="absolute bottom-0 left-0 flex h-8 w-[212px] items-center" href="/">
-          <Image alt="" className="h-4 w-4" height={16} loading="eager" src="/lenso-assets/lenso-footer-mark.svg" width={16} />
+          <Image alt="" className="site-icon h-4 w-4" height={16} loading="eager" src="/lenso-assets/lenso-footer-mark.svg" width={16} />
         </Link>
       </nav>
 
-      <div className="flex h-[66px] items-end justify-between pb-1 text-sm leading-5 text-[#4d4d4d]">
-        <Link className="-ml-5 inline-flex h-[34px] items-center gap-2 px-5 font-mono text-[11px] font-semibold uppercase tracking-normal text-[#7d7d7d]" href="/">
-          <span className="h-2 w-2 rounded-full bg-[#7d7d7d]" />
+      <div className="flex h-[66px] items-end justify-between pb-1 text-sm leading-5 text-[var(--site-muted)]">
+        <Link className="-ml-5 inline-flex h-[34px] items-center gap-2 px-5 font-mono text-[11px] font-semibold uppercase tracking-normal text-[var(--site-subtle)]" href="/">
+          <span className="h-2 w-2 rounded-full bg-[var(--site-subtle)]" />
           Loading status…
         </Link>
-        <fieldset className="relative isolate flex h-6 w-[72px] rounded-full">
-          <legend className="sr-only">Theme</legend>
-          <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full bg-white/[0.002] shadow-[0_0_0_1px_rgb(0_0_0_/_8%),0_0_0_1px_#fafafa]" />
-          {[
-            ['system', '/lenso-assets/theme-system.svg', 'left-[2.5px] top-0.5 h-3 w-[11px]'],
-            ['light', '/lenso-assets/theme-light.svg', 'left-[1.25px] top-[1.25px] h-[13.5px] w-[13.5px]'],
-            ['dark', '/lenso-assets/theme-dark.svg', 'left-[2.25px] top-[2.25px] h-[11.5px] w-[11.5px]'],
-          ].map(([theme, icon, iconClassName]) => (
-            <label className="relative flex h-6 w-6 items-center justify-center rounded-full pb-[4.5px] pl-[3.5px] pr-[4.5px] pt-[3.5px] has-[:checked]:bg-white has-[:checked]:shadow-[0_0_0_1px_#ebebeb,0_1px_2px_rgb(0_0_0_/_5%)]" key={theme}>
-              <input aria-label={`${theme} theme`} className="sr-only" defaultChecked={theme === 'system'} name="theme" type="radio" value={theme} />
-              <span aria-hidden="true" className="relative h-4 w-4 shrink-0 overflow-hidden">
-                <Image alt="" className={`absolute ${iconClassName}`} height={16} loading="eager" src={icon} width={16} />
-              </span>
-            </label>
-          ))}
-        </fieldset>
+        <ThemeSwitcher />
       </div>
     </footer>
   );
