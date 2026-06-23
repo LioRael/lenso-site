@@ -30,7 +30,6 @@ export function SiteScrollEffects() {
         const revealItems = Array.from(scope.querySelectorAll<HTMLElement>('[data-scroll-reveal]'));
         const steps = Array.from(scope.querySelectorAll<HTMLElement>('[data-lifecycle-step]'));
         const stepCopies = steps.map((step) => step.querySelector<HTMLElement>('.lifecycle-step-copy'));
-        const panels = Array.from(scope.querySelectorAll<HTMLElement>('[data-lifecycle-panel]'));
         const badges = steps.map((step) => step.querySelector<HTMLElement>('.lifecycle-step-index'));
         let currentIndex = -1;
 
@@ -87,7 +86,6 @@ export function SiteScrollEffects() {
             const duration = immediate || reduceMotion ? 0 : 0.26;
 
             steps[index].dataset.active = String(active);
-            if (panels[index]) panels[index].dataset.active = String(active);
 
             gsap.to(steps[index], {
               duration,
@@ -95,16 +93,6 @@ export function SiteScrollEffects() {
               opacity: isDesktop ? (active ? 1 : 0.32) : 1,
               overwrite: 'auto',
             });
-
-            if (panels[index]) {
-              gsap.set(panels[index], { pointerEvents: active ? 'auto' : 'none' });
-              gsap.to(panels[index], {
-                autoAlpha: active ? 1 : 0,
-                duration: immediate || reduceMotion ? 0 : 0.18,
-                ease: 'power1.out',
-                overwrite: 'auto',
-              });
-            }
           }
         };
 
