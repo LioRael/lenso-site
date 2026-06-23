@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
+import { SiteScrollEffects } from '@/components/site-scroll-effects';
 
 const navItems = [
   { label: 'Product', href: '/', menu: true },
@@ -255,7 +256,10 @@ function SectionIntro({
   titleWidth?: string;
 }) {
   return (
-    <div className="grid min-h-24 grid-cols-[minmax(0,560px)_minmax(0,566px)] justify-between gap-12 max-[900px]:grid-cols-1">
+    <div
+      className="grid min-h-24 grid-cols-[minmax(0,560px)_minmax(0,566px)] justify-between gap-12 max-[900px]:grid-cols-1"
+      data-scroll-reveal
+    >
       <h2 className={`${titleWidth} max-w-full text-[40px] font-normal leading-[48px] text-[var(--site-ink)] max-[560px]:text-[32px] max-[560px]:leading-[38px]`}>
         {title}
       </h2>
@@ -266,7 +270,7 @@ function SectionIntro({
 
 function Header() {
   return (
-    <header className="site-header h-16 bg-[var(--site-bg)] text-[var(--site-ink)]">
+    <header className="site-header sticky top-0 z-50 h-16 text-[var(--site-ink)]">
       <nav
         aria-label="Main navigation"
         className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-6"
@@ -331,7 +335,7 @@ function Hero() {
         <div className="ml-6 h-6 w-[75px]">
           <Image
             alt="Lenso"
-            className="mt-1 h-4 w-[75px]"
+            className="mt-1"
             height={16}
             priority
             src="/lenso-assets/lenso-wordmark.svg"
@@ -423,10 +427,69 @@ function Hero() {
   );
 }
 
+function LifecyclePanel({
+  index,
+  step,
+}: {
+  index: number;
+  step: (typeof lifecycleSteps)[number];
+}) {
+  const folder = step.tag.endsWith('/') ? step.tag : 'host/';
+
+  return (
+    <article
+      className="lifecycle-panel absolute inset-0 rounded-xl"
+      data-active={index === 0 ? 'true' : 'false'}
+      data-lifecycle-panel
+    >
+      <div
+        aria-hidden="true"
+        className="absolute left-3 right-3 top-[88px] h-[158px] pt-4"
+      >
+        <div className="h-[142px] w-full" />
+      </div>
+      <div className="absolute left-3 right-3 top-3 z-10 flex h-[76px] flex-col gap-1">
+        <div className="flex h-9 items-center px-3 py-2.5">
+          <span className="text-[13px] font-medium leading-4 text-[var(--site-ink)]">
+            {folder}
+          </span>
+        </div>
+        <div className="flex h-9 items-center gap-2 rounded-md bg-[#f2f2f2] py-2.5 pl-6 pr-3">
+          <span className="text-[13px] leading-4 text-[var(--site-ink)]">{step.tag}</span>
+        </div>
+      </div>
+      <div className="absolute left-3 right-3 top-[104px] z-10 h-[142px] overflow-hidden rounded-md border border-[#ebebeb]">
+        <div className="absolute inset-px overflow-hidden">
+          <div className="absolute left-0 top-5 h-[100px] w-full whitespace-nowrap font-mono text-[13px] leading-5 text-[var(--site-ink)]">
+            <p className="absolute left-5 top-[-1px] h-5 font-bold leading-5">
+              # {step.title}
+            </p>
+            <p className="absolute left-5 top-[39px] h-5 leading-5">
+              {step.text}
+            </p>
+            {step.links ? (
+              <div className="absolute left-[20.203125px] top-[60px] h-5 w-[257px]">
+                <p className="absolute left-[-0.203125px] top-[-1px] h-5 leading-5">
+                  Leverages {step.links.map((link) => link.label).join(', ')}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-20 rounded-[inherit] p-px"
+        style={hostBorderMaskStyle}
+      />
+    </article>
+  );
+}
+
 function LifecycleSection() {
   return (
     <section className="mx-auto max-w-[1392px] py-[120px] max-[900px]:px-5">
-      <div className="min-h-[3920px] max-[900px]:min-h-0">
+      <div data-lifecycle>
         <SectionIntro
           copy="Define hosts, modules, console state, and proof evidence in small manifest files. Lenso wires the runtime so agents and humans review the same facts."
           title="A Lenso app is a contract"
@@ -436,95 +499,57 @@ function LifecycleSection() {
           <div className="w-full">
             {lifecycleSteps.map((step, index) => (
               <article
-                className={`min-h-[420px] ${index === 0 ? 'opacity-100' : 'opacity-40'} max-[900px]:min-h-0 max-[900px]:border-t max-[900px]:border-[var(--site-border)] max-[900px]:py-10 max-[900px]:first:border-t-0`}
+                className="lifecycle-step min-h-[420px] max-[900px]:min-h-0 max-[900px]:border-t max-[900px]:border-[var(--site-border)] max-[900px]:py-10 max-[900px]:first:border-t-0"
+                data-active={index === 0 ? 'true' : 'false'}
+                data-lifecycle-step
                 key={step.index}
               >
-                <div className="flex min-h-6 items-center gap-4">
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--site-ink)] font-mono text-sm font-semibold leading-5 text-[var(--site-ink)]">
-                    {step.index}
-                  </span>
-                  <h3 className="text-base font-normal leading-6 text-[var(--site-ink)]">
-                    {step.title}
-                  </h3>
-                  <span className="rounded-full bg-[#ebebeb] px-3 py-0.5 text-xs font-medium leading-[18px] text-[var(--site-ink)]">
-                    {step.tag}
-                  </span>
-                </div>
-                <p className="ml-10 mt-4 max-w-[526px] text-base leading-6 text-[#4d4d4d]">
-                  {step.text}
-                </p>
-                {step.links ? (
-                  <div className="ml-10 mt-4">
-                    <p className="font-mono text-xs uppercase leading-4 text-[#4d4d4d]">
-                      Leverages
-                    </p>
-                    <div className="mt-2 grid gap-2 text-[13px] font-medium leading-4 text-[var(--site-ink)]">
-                      {step.links.map((link) => (
-                        <span className="inline-flex items-center gap-1.5" key={link.label}>
-                          <Image
-                            alt=""
-                            className="h-4 w-4 shrink-0"
-                            height={16}
-                            loading="eager"
-                            src={link.icon}
-                            width={16}
-                          />
-                          {link.label}
-                        </span>
-                      ))}
-                    </div>
+                <div className="lifecycle-step-copy">
+                  <div className="flex min-h-6 items-center gap-4">
+                    <span className="lifecycle-step-index inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--site-ink)] font-mono text-sm font-semibold leading-5 text-[var(--site-ink)]">
+                      {step.index}
+                    </span>
+                    <h3 className="text-base font-normal leading-6 text-[var(--site-ink)]">
+                      {step.title}
+                    </h3>
+                    <span className="rounded-full bg-[#ebebeb] px-3 py-0.5 text-xs font-medium leading-[18px] text-[var(--site-ink)]">
+                      {step.tag}
+                    </span>
                   </div>
-                ) : null}
+                  <p className="ml-10 mt-4 max-w-[526px] text-base leading-6 text-[#4d4d4d]">
+                    {step.text}
+                  </p>
+                  {step.links ? (
+                    <div className="ml-10 mt-4">
+                      <p className="font-mono text-xs uppercase leading-4 text-[#4d4d4d]">
+                        Leverages
+                      </p>
+                      <div className="mt-2 grid gap-2 text-[13px] font-medium leading-4 text-[var(--site-ink)]">
+                        {step.links.map((link) => (
+                          <span className="inline-flex items-center gap-1.5" key={link.label}>
+                            <Image
+                              alt=""
+                              className="h-4 w-4 shrink-0"
+                              height={16}
+                              loading="eager"
+                              src={link.icon}
+                              width={16}
+                            />
+                            {link.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               </article>
             ))}
           </div>
 
-          <div className="relative h-[258px] rounded-xl max-[900px]:max-w-full">
-            <div
-              aria-hidden="true"
-              className="absolute left-3 right-3 top-[88px] h-[158px] pt-4"
-            >
-              <div className="h-[142px] w-full" />
-            </div>
-            <div className="absolute left-3 right-3 top-3 z-10 flex h-[76px] flex-col gap-1">
-              <div className="flex h-9 items-center px-3 py-2.5">
-                <span className="text-[13px] font-medium leading-4 text-[var(--site-ink)]">
-                  host/
-                </span>
-              </div>
-              <div className="flex h-9 items-center gap-2 rounded-md bg-[#f2f2f2] py-2.5 pl-6 pr-3">
-                <span className="text-[13px] leading-4 text-[var(--site-ink)]">
-                  host.toml
-                </span>
-              </div>
-            </div>
-            <div className="absolute left-3 right-3 top-[104px] z-10 h-[142px] overflow-hidden rounded-md border border-[#ebebeb]">
-              <div className="absolute inset-px overflow-hidden">
-                <div className="absolute left-0 top-5 h-[100px] w-full whitespace-nowrap font-mono text-[13px] leading-5 text-[var(--site-ink)]">
-                  <p className="absolute left-5 top-[-1px] h-5 font-bold leading-5">
-                    # Identity
-                  </p>
-                  <p className="absolute left-5 top-[39px] h-5 leading-5">
-                    You are an expert weather assistant.
-                  </p>
-                  <div className="absolute left-[20.203125px] top-[60px] h-5 w-[257px]">
-                    <p className="absolute left-[-0.203125px] top-[-1px] h-5 leading-5">
-                      You can fetch the weather for any
-                    </p>
-                  </div>
-                  <div className="absolute left-[20.203125px] top-20 h-5 w-[140px]">
-                    <p className="absolute left-[-0.203125px] top-[-1px] h-5 leading-5">
-                      city in the world.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 z-20 rounded-[inherit] p-px"
-              style={hostBorderMaskStyle}
-            />
+          <div aria-hidden="true" className="lifecycle-visual relative h-[258px] rounded-xl max-[900px]:max-w-full">
+            {lifecycleSteps.map((step, index) => (
+              <LifecyclePanel index={index} key={step.index} step={step} />
+            ))}
           </div>
         </div>
       </div>
@@ -540,10 +565,10 @@ function RuntimePrimitiveSection() {
         title="Leverages every Lenso runtime primitive"
       />
 
-      <div className="mt-[72px]">
+      <div className="mt-[72px]" data-scroll-reveal>
         <Image
           alt="Lenso"
-          className="ml-1 h-3 w-[37px]"
+          className="ml-1"
           height={8}
           src="/lenso-assets/lenso-wordmark.svg"
           width={37}
@@ -660,7 +685,10 @@ function SystemsSection() {
         titleWidth="w-[560px]"
       />
 
-      <div className="mt-[72px] grid min-h-[509px] grid-cols-3 gap-y-[72px] max-[1000px]:grid-cols-1">
+      <div
+        className="mt-[72px] grid min-h-[509px] grid-cols-3 gap-y-[72px] max-[1000px]:grid-cols-1"
+        data-scroll-reveal
+      >
         <div>
           <ProofChart />
           <div className="pr-3">
@@ -795,7 +823,10 @@ function FeatureCard({ card }: { card: { icon: string; title: string; text: stri
 function CtaSection() {
   return (
     <section className="mx-auto h-[350px] max-w-[1392px] pt-[120px] max-[900px]:h-auto max-[900px]:px-5 max-[900px]:pb-20">
-      <div className="flex min-h-14 items-start justify-between gap-8 max-[760px]:flex-col">
+      <div
+        className="flex min-h-14 items-start justify-between gap-8 max-[760px]:flex-col"
+        data-scroll-reveal
+      >
         <h2 className="max-w-[540px] text-[40px] font-normal leading-[48px] text-[var(--site-ink)] max-[560px]:text-[32px] max-[560px]:leading-[38px]">
           Build your first modular app today.
         </h2>
@@ -848,16 +879,19 @@ function Footer() {
           <span className="h-2 w-2 rounded-full bg-[#7d7d7d]" />
           Loading status…
         </Link>
-        <fieldset className="flex h-6 w-[72px]">
+        <fieldset className="relative isolate flex h-6 w-[72px] rounded-full">
           <legend className="sr-only">Theme</legend>
+          <span aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-full bg-white/[0.002] shadow-[0_0_0_1px_rgb(0_0_0_/_8%),0_0_0_1px_#fafafa]" />
           {[
-            ['system', '/lenso-assets/theme-system.svg', 'left-[6px] top-[5px] h-[13px] w-[11px]'],
-            ['light', '/lenso-assets/theme-light.svg', 'left-1 top-1 h-[15px] w-[15px]'],
-            ['dark', '/lenso-assets/theme-dark.svg', 'left-[5px] top-[5px] h-[13px] w-[13px]'],
+            ['system', '/lenso-assets/theme-system.svg', 'left-[2.5px] top-0.5 h-3 w-[11px]'],
+            ['light', '/lenso-assets/theme-light.svg', 'left-[1.25px] top-[1.25px] h-[13.5px] w-[13.5px]'],
+            ['dark', '/lenso-assets/theme-dark.svg', 'left-[2.25px] top-[2.25px] h-[11.5px] w-[11.5px]'],
           ].map(([theme, icon, iconClassName]) => (
-            <label className="relative h-6 w-6" key={theme}>
+            <label className="relative flex h-6 w-6 items-center justify-center rounded-full pb-[4.5px] pl-[3.5px] pr-[4.5px] pt-[3.5px] has-[:checked]:bg-white has-[:checked]:shadow-[0_0_0_1px_#ebebeb,0_1px_2px_rgb(0_0_0_/_5%)]" key={theme}>
               <input aria-label={`${theme} theme`} className="sr-only" defaultChecked={theme === 'system'} name="theme" type="radio" value={theme} />
-              <Image alt="" className={`absolute ${iconClassName}`} height={16} loading="eager" src={icon} width={16} />
+              <span aria-hidden="true" className="relative h-4 w-4 shrink-0 overflow-hidden">
+                <Image alt="" className={`absolute ${iconClassName}`} height={16} loading="eager" src={icon} width={16} />
+              </span>
             </label>
           ))}
         </fieldset>
@@ -869,6 +903,7 @@ function Footer() {
 export default function HomePage() {
   return (
     <>
+      <SiteScrollEffects />
       <Header />
       <main className="site-home bg-[var(--site-bg)] text-[var(--site-ink)]">
         <Hero />

@@ -293,6 +293,65 @@ html > body[data-scroll-locked] {
   --site-border: #cdcdcd;
 }
 
+.site-header {
+  background: var(--site-bg);
+  border-bottom: 1px solid rgb(0 0 0 / 5%);
+}
+
+.site-home {
+  overflow-x: clip;
+}
+
 .hero-wordart {
   pointer-events: none;
+}
+
+.lifecycle-step {
+  margin-bottom: 64px;
+  opacity: 0.32;
+}
+
+.lifecycle-step:last-child {
+  margin-bottom: 0;
+}
+
+.lifecycle-step[data-active='true'] {
+  opacity: 1;
+}
+
+.lifecycle-step-copy {
+  position: sticky;
+  top: 112px;
+}
+
+.lifecycle-visual {
+  align-self: start;
+  position: sticky;
+  top: 96px;
+}
+
+.lifecycle-panel {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lifecycle-panel[data-active='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (max-width: 900px) {
+  .lifecycle-step {
+    margin-bottom: 0;
+    opacity: 1;
+  }
+
+  .lifecycle-step-copy {
+    position: static !important;
+  }
+
+  .lifecycle-visual {
+    position: relative;
+    top: auto;
+  }
 }
