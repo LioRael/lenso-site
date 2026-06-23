@@ -31,7 +31,12 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       lang="en"
       suppressHydrationWarning
     >
-      <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      <head>
+        <script
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+          id="lenso-theme-init"
+        />
+      </head>
       <body className="flex flex-col min-h-screen">
         <Provider>{children}</Provider>
       </body>

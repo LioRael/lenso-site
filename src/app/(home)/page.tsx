@@ -429,17 +429,11 @@ function Hero() {
   );
 }
 
-function LifecyclePanel({
-  index,
-}: {
-  index: number;
-  step: (typeof lifecycleSteps)[number];
-}) {
+function LifecyclePanel() {
   return (
     <article
       className="lifecycle-panel absolute inset-0 rounded-xl"
-      data-active={index === 0 ? 'true' : 'false'}
-      data-lifecycle-panel
+      data-active="true"
     >
       <div
         aria-hidden="true"
@@ -545,9 +539,7 @@ function LifecycleSection() {
           </div>
 
           <div aria-hidden="true" className="lifecycle-visual relative h-[258px] rounded-xl max-[900px]:max-w-full">
-            {lifecycleSteps.map((step, index) => (
-              <LifecyclePanel index={index} key={step.index} step={step} />
-            ))}
+            <LifecyclePanel />
           </div>
         </div>
       </div>
