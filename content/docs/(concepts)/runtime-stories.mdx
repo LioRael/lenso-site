@@ -1,0 +1,189 @@
+---
+title: Runtime Stories
+description: Understand Lenso's business-level runtime evidence model.
+---
+
+A Runtime Story is Lenso's durable record of what one business or operator
+action caused inside the host.
+
+Instead of asking users to piece together logs, queue rows, proxy calls, traces,
+and retries, Lenso groups related runtime evidence by `correlation_id` and shows
+it as one story: the request, the module action, the event or function work, the
+remote calls, the status, and the technical operations behind it.
+
+This is one of Lenso's core ideas. A story is not just a trace viewer and not
+just an audit log. It is the operator-readable narrative for a modular business
+system.
+
+## What a story answers
+
+When a user creates a ticket, syncs a contact, adds an organization membership,
+or runs a module action, the useful questions are:
+
+- What user-facing thing happened?
+- Which module owned it?
+- Did the host route, authorize, and record it?
+- Did it enqueue outbox or runtime work?
+- Did a remote module call succeed or fail?
+- Which technical operation explains the slow or failing node?
+
+A Runtime Story makes those answers visible in Runtime Console.
+
+## How stories are built
+
+Lenso does not ask module authors to manually build story graphs. The host
+records small, durable facts as work moves through platform-owned seams.
+
+| Source | Story role |
+| --- | --- |
+| `platform.story_events` | normalized story nodes such as HTTP requests, admin actions, and remote proxy calls |
+| `platform.outbox` | committed module events and dispatch status |
+| `runtime.function_runs` | queued, running, retried, completed, failed, or dead background work |
+| `platform.remote_http_proxy_calls` | host-owned evidence for out-of-process module traffic |
+| telemetry spans | technical operations linked back to story nodes when possible |
+
+Runtime Console reads those records through `/admin/runtime/stories` and
+renders:
+
+- a story list item with title, status, duration, services, and pattern;
+- a detail graph with nodes and edges;
+- timeline items for runtime work;
+- heatmap and technical-operation views for diagnosis.
+
+## The grouping key
+
+The main key is `correlation_id`.
+
+One incoming request gets a request id and correlation id. Anything the host
+does on behalf of that request should preserve the same correlation id. Causation
+ids connect a child node to the node that caused it.
+
+```text
+POST /v1/support/tickets
+  correlation_id = corr_ticket_123
+  request_id     = req_create_ticket
+
+story nodes:
+  httpreq_req_create_ticket
+  outbox_evt_ticket_created
+  fnrun_support_ticket_escalate
+  remoteproxy_rproxy_notify_crm
+```
+
+This is why Lenso can show a business-level story without coupling every module
+to a single workflow engine.
+
+## Naming the story
+
+Good story names come from module metadata. For normal HTTP routes, set
+`display_name` for the node and `story_title` for the story.
+
+```rust
+use lenso::{ModuleHttpMethod, ModuleHttpRoute};
+
+let route = ModuleHttpRoute {
+    method: ModuleHttpMethod::Post,
+    path: "/v1/support/tickets".to_owned(),
+    capability: Some("support.tickets.write".to_owned()),
+    display_name: Some("Create ticket".to_owned()),
+    story_title: Some("Support ticket created".to_owned()),
+};
+```
+
+For runtime functions or other execution names, declare `story_display`
+metadata.
+
+```rust
+use lenso::{ModuleManifest, StoryDisplayDescriptor, StoryDisplaySource};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("identity")
+        .story_display(vec![StoryDisplayDescriptor {
+            source: StoryDisplaySource::ExecutionName {
+                name: "identity.create_user".to_owned(),
+            },
+            display_name: "Create User".to_owned(),
+            story_title: Some("User Registration".to_owned()),
+        }])
+        .build()
+}
+```
+
+Remote TypeScript modules use the same idea through route metadata.
+
+```ts
+import { defineRemoteModule, postRoute } from "@lenso/remote-module-kit";
+
+export const manifest = defineRemoteModule({
+  capabilities: ["account_profile.organizations.write"],
+  httpRoutes: [
+    postRoute("/organizations/{id}/memberships", {
+      capability: "account_profile.organizations.write",
+      displayName: "Add membership",
+      storyTitle: "Organization membership added",
+    }),
+  ],
+  name: "account-profile",
+  version: "0.1.0",
+});
+```
+
+If metadata is missing, the story builder falls back to humanized execution
+names or event names. That keeps the page useful, but intentional story metadata
+is better for users.
+
+## API shape
+
+Runtime Console calls the host-owned runtime APIs:
+
+```sh
+curl -sS \
+  -H "Authorization: Bearer $LENSO_DEV_TOKEN" \
+  "http://127.0.0.1:3000/admin/runtime/stories?limit=10" | jq .
+
+curl -sS \
+  -H "Authorization: Bearer $LENSO_DEV_TOKEN" \
+  "http://127.0.0.1:3000/admin/runtime/stories/corr_ticket_123" | jq .
+```
+
+The list response includes title, `correlation_id`, status, duration,
+`node_count`, `error_count`, services, pattern, and root error. The detail
+response includes summary, nodes, edges, and timeline items.
+
+## Authoring for good stories
+
+Treat story quality as part of module quality:
+
+- give user-facing routes a clear `display_name` and `story_title`;
+- keep capability names stable so the story can be tied to permissions;
+- preserve request and correlation context when enqueueing work;
+- use outbox events and runtime functions for follow-up work instead of hidden
+  side effects;
+- avoid raw secrets, tokens, passwords, or sensitive payloads in story metadata;
+- add a smoke check that triggers the module path and asserts a story appears.
+
+The smoke check can be simple:
+
+```ts
+await waitFor("account-profile runtime story", async () => {
+  const stories = await fetchJson(`${apiBaseUrl}/admin/runtime/stories?limit=5`);
+  return stories.data?.some(
+    (story) =>
+      story.title === "Organization membership added" &&
+      story.status === "completed" &&
+      story.services?.includes("account-profile")
+  );
+});
+```
+
+## What stories are not
+
+Runtime Stories do not replace:
+
+- structured logs for process-level debugging;
+- distributed tracing for low-level latency analysis;
+- audit history for compliance-specific config changes;
+- workflow definitions for long-running business orchestration.
+
+They sit above those layers. A story is the compact answer to "what happened in
+the business system, and where is the evidence?"

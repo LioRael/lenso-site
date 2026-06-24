@@ -3,6 +3,7 @@
   "defaultOpen": false,
   "pages": [
     "platform-concepts",
+    "runtime-stories",
     "manifest-reference",
     "api-clients",
     "contracts-and-checks",
