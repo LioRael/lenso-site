@@ -1,24 +1,8 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
-import Image from 'next/image';
-import { appName, gitConfig } from './shared';
+import { gitConfig } from './shared';
 
 export function baseOptions(): BaseLayoutProps {
   return {
-    nav: {
-      title: (
-        <span className="docs-eve-nav-title">
-          <Image
-            alt=""
-            className="docs-eve-nav-title-mark"
-            height={18}
-            priority
-            src="/lenso-assets/lenso-header-mark.svg"
-            width={18}
-          />
-          <span className="sr-only">{appName}</span>
-        </span>
-      ),
-    },
     links: [
       {
         text: 'Docs',
