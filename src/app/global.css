@@ -76,16 +76,17 @@ samp {
 }
 
 #nd-docs-layout.docs-eve-layout {
-  --fd-sidebar-width: 260px;
+  --fd-layout-width: 1440px;
+  --fd-sidebar-width: 268px;
   --fd-page-width: 900px;
   background: var(--color-fd-background);
 }
 
 .docs-eve-topbar {
-  background: var(--ds-background-100) !important;
+  background: var(--ds-background-200) !important;
   border-bottom: 1px solid var(--color-fd-border);
   grid-area: header;
-  height: 56px;
+  height: 64px;
   left: 0;
   position: fixed;
   right: 0;
@@ -96,7 +97,8 @@ samp {
 .docs-eve-topbar nav {
   align-items: center;
   display: flex;
-  height: 56px;
+  gap: 12px;
+  height: 64px;
   justify-content: space-between;
   margin: 0 auto;
   max-width: 1440px;
@@ -107,6 +109,7 @@ samp {
   color: var(--ds-gray-900);
   font-size: 14px;
   line-height: 20px;
+  text-decoration: none;
 }
 
 .docs-eve-topbar a:hover {
@@ -114,61 +117,134 @@ samp {
 }
 
 .docs-eve-topbar-left,
-.docs-eve-logo,
+.docs-eve-logo-link,
+.docs-eve-main-nav,
+.docs-eve-main-nav a,
+.docs-eve-topbar-actions,
+.docs-eve-action,
 .docs-eve-search {
   align-items: center;
   display: flex;
 }
 
 .docs-eve-topbar-left {
-  gap: 22px;
+  gap: 12px;
+  height: 64px;
 }
 
-.docs-eve-logo {
-  color: var(--ds-gray-1000) !important;
-  font-size: 20px !important;
-  font-weight: 600;
-  gap: 10px;
+.docs-eve-logo-link {
+  height: 34px;
+  position: relative;
+  width: 29px;
 }
 
 .docs-eve-mark {
-  border-bottom: 18px solid var(--ds-gray-1000);
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  display: inline-block;
-  height: 0;
-  width: 0;
+  height: 18px;
+  left: 1.5px;
+  position: absolute;
+  top: 8px;
+  width: 18px;
 }
 
-.docs-eve-slash {
-  color: var(--ds-gray-600);
-  font-weight: 400;
+.docs-eve-main-nav {
+  height: 64px;
 }
 
-.docs-eve-search {
-  background: var(--ds-background-100);
-  border: 1px solid var(--docs-code-border);
-  border-radius: 6px;
-  color: var(--ds-gray-800);
-  font-size: 14px;
-  gap: 8px;
+.docs-eve-main-nav a {
+  box-sizing: border-box;
+  gap: 3px;
   height: 32px;
-  padding: 0 10px;
+  padding: 6px 12px;
+  white-space: nowrap;
 }
 
-.docs-eve-search svg {
+.docs-eve-main-nav a:has(svg) {
+  padding-right: 8px;
+}
+
+.docs-eve-main-nav a.is-active {
+  color: var(--ds-gray-1000);
+}
+
+.docs-eve-main-nav svg {
   height: 14px;
   width: 14px;
 }
 
+.docs-eve-main-nav a:nth-child(1) {
+  width: 88px;
+}
+
+.docs-eve-main-nav a:nth-child(2) {
+  width: 70px;
+}
+
+.docs-eve-main-nav a:nth-child(3) {
+  width: 87px;
+}
+
+.docs-eve-main-nav a:nth-child(4) {
+  width: 78px;
+}
+
+.docs-eve-topbar-actions {
+  gap: 12px;
+  height: 32px;
+}
+
+.docs-eve-search {
+  background: var(--ds-background-200);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 6px;
+  color: var(--ds-gray-800);
+  cursor: pointer;
+  font-size: 14px;
+  height: 32px;
+  justify-content: space-between;
+  padding: 1px 7px 1px 13px;
+  width: 150px;
+}
+
 .docs-eve-search kbd {
+  background: var(--ds-background-100);
   border: 1px solid var(--color-fd-border);
   border-radius: 4px;
   color: var(--ds-gray-800);
   font-family: inherit;
   font-size: 12px;
   line-height: 16px;
-  padding: 0 4px;
+  min-width: 29px;
+  padding: 1px 5px;
+}
+
+.docs-eve-action {
+  background: var(--ds-background-100);
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: var(--ds-gray-1000) !important;
+  font-weight: 500;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+  box-shadow: 0 0 0 1px #ebebeb;
+}
+
+.docs-eve-action:nth-child(2) {
+  width: 78px;
+}
+
+.docs-eve-action:nth-child(3) {
+  width: 70px;
+}
+
+.docs-eve-action:nth-child(4) {
+  width: 57px;
+}
+
+.docs-eve-action-primary {
+  background: var(--ds-gray-1000);
+  box-shadow: none;
+  color: var(--ds-background-100) !important;
 }
 
 #nd-sidebar {
@@ -181,7 +257,11 @@ samp {
 }
 
 #nd-sidebar [data-radix-scroll-area-viewport] {
-  padding-top: 120px !important;
+  padding: 48px 24px 16px !important;
+}
+
+#nd-sidebar [data-radix-scroll-area-viewport] > div {
+  gap: 0 !important;
 }
 
 #nd-sidebar a,
@@ -192,12 +272,30 @@ samp {
   font-size: 14px;
   font-weight: 400;
   line-height: 20px;
-  margin-left: 53px;
+  margin-left: 0;
   min-height: 32px;
   padding-block: 6px !important;
   padding-inline-end: 0 !important;
   padding-inline-start: 0 !important;
-  width: calc(100% - 53px) !important;
+}
+
+#nd-sidebar a {
+  width: 100% !important;
+}
+
+#nd-sidebar button {
+  max-width: 100% !important;
+  width: fit-content !important;
+}
+
+#nd-sidebar [data-state].overflow-hidden a,
+#nd-sidebar [data-state].overflow-hidden button {
+  padding-inline-start: 16px !important;
+}
+
+#nd-sidebar [data-state].overflow-hidden [data-state].overflow-hidden a,
+#nd-sidebar [data-state].overflow-hidden [data-state].overflow-hidden button {
+  padding-inline-start: 32px !important;
 }
 
 #nd-sidebar a:hover,
@@ -216,20 +314,20 @@ samp {
 }
 
 #nd-sidebar button svg.ms-auto {
-  margin-inline-start: 6px !important;
+  margin-inline-start: 0 !important;
 }
 
 #nd-page {
   color: var(--docs-body);
   padding-bottom: 80px;
-  padding-top: 112px;
+  padding-top: 120px;
 }
 
 #nd-page > h1 {
   color: var(--ds-gray-1000);
   font-size: 36px !important;
   font-weight: 600;
-  line-height: 44px !important;
+  line-height: 40px !important;
 }
 
 #nd-page > p {
@@ -277,6 +375,79 @@ samp {
   box-shadow: none;
   font-size: 13px;
   line-height: 20px;
+}
+
+.docs-eve-page-actions {
+  border-top: 1px solid var(--color-fd-border);
+  display: grid;
+  gap: 4px;
+  margin-top: 24px;
+  padding-top: 13px;
+  width: 228px;
+}
+
+.docs-eve-page-actions a,
+.docs-eve-page-actions button {
+  align-items: center;
+  color: var(--ds-gray-800);
+  display: flex;
+  font-size: 14px;
+  gap: 8px;
+  height: 28px;
+  line-height: 20px;
+  text-align: left;
+  width: 100%;
+}
+
+.docs-eve-page-actions svg {
+  color: var(--ds-gray-800);
+  height: 14px;
+  width: 14px;
+}
+
+.docs-eve-site-footer {
+  background: var(--ds-background-100);
+  border-top: 1px solid var(--docs-code-border);
+  color: var(--ds-gray-800);
+  height: 73px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.docs-eve-site-footer > div {
+  align-items: center;
+  display: flex;
+  height: 32px;
+  margin: 20px auto 0;
+  max-width: 1392px;
+}
+
+.docs-eve-site-footer a {
+  color: var(--ds-gray-800);
+  text-decoration: none;
+}
+
+.docs-eve-site-footer span {
+  flex: 1;
+}
+
+.docs-eve-site-footer p {
+  margin-right: 8px;
+}
+
+.docs-eve-site-footer a[aria-label],
+.docs-eve-site-footer button {
+  align-items: center;
+  color: var(--ds-gray-1000);
+  display: flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.docs-eve-site-footer svg {
+  height: 16px;
+  width: 16px;
 }
 
 html > body[data-scroll-locked] {
