@@ -3,17 +3,31 @@ title: Examples
 description: Runnable modules that prove the public Lenso authoring path.
 ---
 
-Use these examples after reading the module docs. They prove that a module can
-be scaffolded, wired into a host, and verified through smoke checks.
+Use these examples when you want working module code instead of a blank scaffold.
+They prove that a module can be wired into a host and verified through smoke
+checks.
 
 The examples repository is
 [LioRael/lenso-examples](https://github.com/LioRael/lenso-examples).
 
-## Run The Smokes
+## Install
 
 ```sh
+git clone https://github.com/LioRael/lenso-examples
+cd lenso-examples
 pnpm install
+```
+
+## Run the smokes
+
+```sh
 pnpm smoke
+```
+
+For host-level verification, run:
+
+```sh
+pnpm host-api-smoke
 ```
 
 ## Support Ticket
@@ -28,6 +42,9 @@ Build a support ticket module for a Lenso app.
 It includes ticket data, HTTP routes, an admin action, a runtime escalation
 function, Console-visible metadata, and host API smokes.
 
+Use [Agent Development](/docs/agent-development) for the full prompt-to-check
+workflow.
+
 ```sh
 pnpm smoke:support-ticket
 pnpm host-api-smoke:support-ticket
@@ -35,10 +52,27 @@ pnpm host-api-smoke:support-ticket
 
 ## Account Profile
 
-The account-profile module depends on `auth` while owning profile,
-organization, and membership data.
+The account-profile module is the follow-on proof. It depends on `auth` while
+owning profile, organization, and membership data.
 
 ```sh
 pnpm smoke:account-profile
 pnpm host-api-smoke:account-profile
 ```
+
+## Which example to read
+
+- Read support-ticket first when you want the full agent-ready module loop.
+- Read account-profile when you want to see a module depend on auth while owning
+  its own product data.
+
+## Local host install
+
+Run an example service, then install its manifest from a generated host:
+
+```sh
+pnpm start:support-ticket
+lenso module install http://127.0.0.1:4110/lenso/module/v1/manifest
+```
+
+Restart the host and open `/console` to confirm the module appears.

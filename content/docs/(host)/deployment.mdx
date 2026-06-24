@@ -1,0 +1,106 @@
+---
+title: Deployment
+description: Deploy the API, worker, migrations, Postgres, and hosted Runtime Console without overfitting to microservices.
+---
+
+Deploy Lenso as one backend system first. Split processes when operations need
+it; split modules into services only when the ownership boundary is real.
+
+## Default shape
+
+A production deployment has:
+
+- one API service
+- one worker service
+- one migration job
+- managed Postgres
+- optional Redis for auth sessions
+- hosted Runtime Console files served by the API at `/console`
+
+For most teams, the practical default is containers plus managed Postgres. A
+container PaaS is enough for early users. Use Kubernetes only if the team
+already operates Kubernetes well.
+
+## Process layout
+
+Run migrations before API and worker:
+
+```sh
+cargo run --bin migrate
+cargo run --bin api
+cargo run --bin worker
+```
+
+For module-owned SQL and migration naming rules, read
+[Database and Migrations](/docs/database-migrations).
+
+For small local or single-node hosts, the public host facade also has an
+embedded API+worker boot helper. Use separate API and worker services when they
+need independent scaling, deploys, or restarts.
+
+## Runtime Console artifact
+
+Generated hosts should serve prebuilt Console assets. Users should not need
+Node.js or pnpm in production just to open `/console`.
+
+After a CLI upgrade:
+
+```sh
+lenso host update-console
+```
+
+Restart the host after refreshing the bundled console.
+
+## Minimal production env
+
+```sh
+APP_ENV=production
+LENSO_COMPOSITION_PROFILE=core
+DATABASE_URL=postgres://...
+HTTP_HOST=0.0.0.0
+HTTP_PORT=3000
+LOG_FORMAT=json
+RUST_LOG=info
+```
+
+Add remote modules only when needed:
+
+```sh
+REMOTE_MODULES=billing=https://billing.example.com/lenso/module/v1
+REMOTE_MODULE_BILLING_TOKEN=...
+REMOTE_MODULE_BILLING_TIMEOUT_MS=8000
+```
+
+## Release gate
+
+Before cutting a backend release candidate:
+
+```sh
+just release-check
+```
+
+Before publishing crates:
+
+```sh
+just package-readiness
+```
+
+For a release artifact:
+
+```sh
+just console-build
+LENSO_RELEASE_VERSION=vX.Y.Z just release-package
+```
+
+The hosted archive includes `.lenso/console/dist` when the console has been
+built, so the deployed API can serve `/console` without frontend source.
+
+## Deployment checklist
+
+- `APP_ENV` and `LENSO_COMPOSITION_PROFILE` are explicit.
+- Postgres migrations run before API and worker.
+- `/console` resolves through the API service.
+- Remote modules use host-to-remote tokens, not caller tokens.
+- `REMOTE_MODULES` changes are followed by API and worker restarts.
+- `LOG_FORMAT=json` is enabled for structured production logs.
+- OpenTelemetry endpoint is configured only when a collector exists.

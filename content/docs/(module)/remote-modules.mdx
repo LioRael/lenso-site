@@ -6,7 +6,22 @@ description: Build out-of-process modules with manifests and host-owned loading.
 Remote modules use the same host-owned contract as linked modules, but run in
 their own process or service.
 
-## Install A Manifest
+Choose a remote module when the module needs a separate runtime, process,
+deployment cadence, or trust boundary. Keep ordinary first-party business logic
+linked until one of those reasons exists.
+
+## Local authoring loop
+
+```sh
+lenso module create billing --remote --output-dir ../module-packages
+cd ../module-packages/billing
+pnpm install
+pnpm dev
+```
+
+Then install the running module into a host.
+
+## Install a manifest
 
 ```sh
 lenso module install http://127.0.0.1:4110/lenso/module/v1/manifest
@@ -16,7 +31,10 @@ Remote modules declare their source, routes, runtime functions, admin surfaces,
 and optional Runtime Console bundles through a manifest. The host owns loading,
 proxying, receipts, and operator visibility.
 
-## JavaScript And TypeScript Kit
+After installation, restart the API and worker so the host reloads the remote
+source list.
+
+## JavaScript and TypeScript kit
 
 Remote module authors use:
 
@@ -27,7 +45,96 @@ pnpm add @lenso/remote-module-kit@0.1.1
 The kit lives in the Runtime Console repository and is the public package for
 out-of-process module authoring.
 
-## Local Diagnosis
+## Remote module code
+
+The generated remote backend is a Node server. A small module looks like this:
+
+```js
+import {
+  defineRemoteModule,
+  defineSchemaEntity,
+  getRoute,
+  runtimeFunction,
+  schemaAdmin,
+  serveRemoteModule,
+  textField,
+  timestampField,
+} from "@lenso/remote-module-kit";
+
+const contacts = [
+  {
+    id: "contact_1",
+    email: "ada@example.com",
+    name: "Ada Lovelace",
+    created_at: "2026-01-01T00:00:00Z",
+  },
+];
+
+const contactsEntity = defineSchemaEntity({
+  name: "contacts",
+  label: "Contacts",
+  readCapability: "crm.contacts.read",
+  fields: [textField("email"), textField("name"), timestampField("created_at")],
+});
+
+const module = defineRemoteModule({
+  name: "crm",
+  version: "0.1.0",
+  capabilities: ["crm.contacts.read"],
+  admin: schemaAdmin([contactsEntity]),
+  httpRoutes: [
+    getRoute("/contacts/{id}", {
+      capability: "crm.contacts.read",
+      displayName: "Fetch Contact",
+      storyTitle: "Fetch Contact",
+    }),
+  ],
+  runtimeFunctions: [
+    runtimeFunction("crm.contacts.enrich.v1", {
+      version: 1,
+      queue: "crm",
+      inputSchema: "crm.contacts.enrich.v1",
+    }),
+  ],
+});
+
+await serveRemoteModule(module, {
+  data: {
+    contacts: {
+      list: async ({ limit }) => ({
+        records: contacts.slice(0, limit),
+        next_cursor: null,
+      }),
+      detail: async (id) => contacts.find((contact) => contact.id === id),
+    },
+  },
+  http: {
+    "GET /contacts/{id}": ({ params }) =>
+      contacts.find((contact) => contact.id === params.id) ?? null,
+  },
+  runtime: {
+    "crm.contacts.enrich.v1": ({ input }) => ({
+      contact_id: input?.contact_id,
+      status: "queued",
+    }),
+  },
+});
+```
+
+The host installs the manifest URL and keeps auth, proxying, runtime receipts,
+and Console visibility on the host side.
+
+## What the host still owns
+
+Remote does not mean unmanaged. The host still owns:
+
+- manifest loading and lint results
+- proxying remote HTTP routes
+- runtime function receipts
+- install receipts and local service state
+- Runtime Console visibility
+
+## Local diagnosis
 
 For long-running remote module services:
 

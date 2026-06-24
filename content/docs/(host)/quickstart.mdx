@@ -3,15 +3,35 @@ title: Host Quickstart
 description: Scaffold a Lenso host app and run it locally.
 ---
 
-Use this path when you want to create and operate the app that loads modules.
+Use this path when you want a local Lenso host that can load modules and serve
+the Runtime Console.
 
-## Install The CLI
+You will finish with:
+
+- a generated host app
+- local Postgres
+- API and worker processes
+- Runtime Console at `/console`
+
+## Prerequisites
+
+- Rust and Cargo
+- Docker for local Postgres
+- a terminal that can run long-lived local services
+
+## Install the CLI
 
 ```sh
 cargo install lenso-cli
 ```
 
-## Create A Host
+You can also install the packaged CLI with npm:
+
+```sh
+npm install -g @lenso/cli
+```
+
+## Create a host
 
 ```sh
 lenso host init my-lenso-app
@@ -20,13 +40,19 @@ cp .env.example .env
 lenso serve
 ```
 
-Published `lenso-cli` builds copy the bundled Runtime Console into the generated
-host, so the API serves it at `/console` without requiring Node.js or pnpm in the
-host application.
+`lenso serve` starts the starter Postgres service, runs migrations, then keeps
+the API and worker running until Ctrl-C. Published `lenso-cli` builds also copy
+the bundled Runtime Console into the host, so the API serves it at `/console`
+without requiring Node.js or pnpm in the host application.
 
-## Manual Service Loop
+Open these URLs after the command prints that the services are ready:
 
-If you do not use `lenso serve`, run the services directly:
+- `/v1/app/status` for host API health
+- `/console` for Runtime Console
+
+## Manual service loop
+
+If you want to run each process yourself:
 
 ```sh
 docker compose up -d postgres
@@ -40,10 +66,10 @@ Run the worker in a second shell:
 cargo run --bin worker
 ```
 
-## Install Auth With Redis Sessions
+## Add auth with Redis sessions
 
-Generated hosts can opt into Redis-backed auth session lookup through the auth
-module install profile:
+Generated hosts do not install auth by default. Add Redis-backed auth session
+lookup only when the app needs it:
 
 ```sh
 lenso module install auth --profile redis-session-cache
@@ -53,3 +79,24 @@ The profile enables the auth dependency's Redis feature, writes `REDIS_URL` to
 `.env`, and records `auth.session_cache=redis` in
 `.lenso/runtime-config-defaults.json`. Provide Redis separately; the starter
 Docker Compose file starts Postgres only.
+
+## If something is blank
+
+- `/console` is missing: upgrade `lenso-cli`, then run `lenso host update-console`.
+- A module is not visible: restart the API and worker after installing it.
+- A remote module is not ready: run `lenso module doctor <module-name>`.
+
+## Next step
+
+After the host is running, use [Runtime Console](/docs/runtime-console) to check
+what the host loaded. If you need to wire profiles, CORS, telemetry, Console
+paths, or remote module credentials, continue with
+[Configuration](/docs/configuration). To add business capability, continue with
+[Module Authoring](/docs/module-authoring).
+
+For command options beyond this happy path, use
+[CLI Reference](/docs/cli-reference). If the host starts but a module or Console
+surface is missing, use [Troubleshooting](/docs/troubleshooting).
+
+To add real authentication, continue with
+[Built-in Modules](/docs/built-in-modules).

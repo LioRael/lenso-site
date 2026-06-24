@@ -265,7 +265,8 @@ samp {
 }
 
 #nd-sidebar a,
-#nd-sidebar button {
+#nd-sidebar button,
+#nd-sidebar [data-radix-scroll-area-viewport] > div > [data-state] > div.relative.flex {
   background: transparent !important;
   border-radius: 0;
   color: var(--ds-gray-800);
@@ -277,6 +278,15 @@ samp {
   padding-block: 6px !important;
   padding-inline-end: 0 !important;
   padding-inline-start: 0 !important;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+#nd-sidebar [data-radix-scroll-area-viewport] > div > p:empty {
+  display: block !important;
+  height: 26px;
+  margin: 0 !important;
+  min-height: 26px;
+  padding: 0 !important;
 }
 
 #nd-sidebar a {
@@ -289,7 +299,8 @@ samp {
 }
 
 #nd-sidebar [data-state].overflow-hidden a,
-#nd-sidebar [data-state].overflow-hidden button {
+#nd-sidebar [data-state].overflow-hidden button,
+#nd-sidebar [data-state].overflow-hidden [data-state] > div.relative.flex {
   padding-inline-start: 16px !important;
 }
 
@@ -314,7 +325,11 @@ samp {
 }
 
 #nd-sidebar button svg.ms-auto {
+  flex: 0 0 14px;
+  height: 14px !important;
   margin-inline-start: 0 !important;
+  transition: color 160ms ease, transform 160ms ease;
+  width: 14px !important;
 }
 
 #nd-page {

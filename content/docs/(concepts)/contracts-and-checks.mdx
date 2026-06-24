@@ -1,0 +1,134 @@
+---
+title: Contracts and Checks
+description: Source-controlled contracts and the local gates that keep Lenso safe for agents and teams.
+---
+
+Lenso is agent-ready because important surfaces are explicit and checkable. The
+agent does not have to infer the system from conventions alone.
+
+If you are consuming the API rather than changing it, start with
+[API Clients](/docs/api-clients).
+
+## Committed contracts
+
+The current committed contract surface is intentionally small:
+
+| Contract | Consumer |
+| --- | --- |
+| `contracts/openapi/app-api.v1.yaml` | API clients, SDK generation, Runtime Console API expectations |
+| `contracts/errors/error-response.v1.schema.json` | standard error envelope consumers |
+| `contracts/grpc/lenso/remote/v1/remote_module.proto` | native remote-module transport |
+
+Rust route annotations and platform schemas are the source. Generated artifacts
+are committed so downstream users can depend on stable files.
+
+## Route source of truth
+
+HTTP routes should keep implementation and OpenAPI metadata together:
+
+```rust
+use lenso::host::http::{Json, UserActor};
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+
+#[derive(Deserialize, ToSchema)]
+pub struct CreateTicketRequest {
+    pub title: String,
+    pub requester_email: String,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct TicketResponse {
+    pub id: String,
+    pub status: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/support/tickets",
+    operation_id = "support_create_ticket",
+    tag = "support",
+    request_body = CreateTicketRequest,
+    responses((status = 200, body = TicketResponse))
+)]
+pub async fn create_ticket(
+    _actor: UserActor,
+    Json(request): Json<CreateTicketRequest>,
+) -> Json<TicketResponse> {
+    Json(TicketResponse {
+        id: format!("ticket:{}", request.title),
+        status: "open".to_owned(),
+    })
+}
+```
+
+The route still has to be declared in the module manifest if operators should
+see route metadata, story titles, and capability expectations.
+
+## Local gates
+
+Use the smallest gate that proves the changed surface:
+
+| Change | Gate |
+| --- | --- |
+| Rust code | `just check` |
+| OpenAPI or generated schema | `just generated-check` |
+| module boundary or contract layout | `just arch-check` |
+| release candidate | `just release-check` |
+| Runtime Console package work | `pnpm check` in `lenso-runtime-console` |
+| docs site work | `pnpm types:check` and `pnpm build` in `lenso-site` |
+
+For a public release, local green is not enough. Verify the published crate,
+npm package, GitHub Release, or workflow artifact that users will actually
+install.
+
+## Architecture guardrails
+
+`just arch-check` keeps the module architecture honest. It checks for things
+that are easy to accidentally break:
+
+- missing committed OpenAPI artifact
+- stale generated contract artifacts
+- missing event payload contracts for current events
+- cross-module imports inside module source code
+- DDD folder drift such as `api`, `application`, `domain`, or `infrastructure`
+  inside module crates
+
+The goal is not ceremony. The goal is to catch architectural drift before it
+turns into a framework people have to memorize.
+
+## Agent proof checklist
+
+When an agent changes Lenso, ask for evidence in this shape:
+
+```text
+Changed:
+- module manifest
+- linked route
+- admin action
+
+Checks:
+- cargo check --bins
+- just generated-check
+
+Runtime Console:
+- module appears in Modules
+- action appears in Data
+- story contains the action invocation
+```
+
+If the work is supposed to appear in Runtime Console, a compile-only check is
+not enough.
+
+## Do not hand-edit generated files
+
+Generated contracts are source-controlled artifacts, but they are not authored
+by hand. Change Rust route annotations, platform schemas, or proto sources, then
+regenerate:
+
+```sh
+just generate-contracts
+just generated-check
+```
+
+Commit the source change and the generated diff together.

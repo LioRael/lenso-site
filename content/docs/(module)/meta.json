@@ -1,9 +1,12 @@
 {
   "title": "Module",
-  "defaultOpen": true,
+  "defaultOpen": false,
   "pages": [
     "module-authoring",
-    "remote-modules",
-    "examples"
+    "admin-surfaces",
+    "auth-capabilities",
+    "runtime-lifecycle",
+    "console-packages",
+    "remote-modules"
   ]
 }

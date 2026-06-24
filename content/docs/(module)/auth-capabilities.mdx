@@ -1,0 +1,138 @@
+---
+title: Auth and Capabilities
+description: Use platform auth extractors and module capabilities without importing auth internals.
+---
+
+Modules do not import the `auth` module to authenticate requests. Auth is a
+host concern delivered through middleware, request context, and Axum extractors.
+
+## Request flow
+
+```text
+HTTP request
+  -> platform-http middleware reads Authorization or Cookie
+  -> ActorResolver chain resolves ActorContext
+  -> RequestContext stores the actor
+  -> handler extracts UserActor, ServiceActor, AdminActor, or OptionalActor
+```
+
+The current actor variants are:
+
+```rust
+pub enum ActorContext {
+    Anonymous,
+    User { user_id: String, scopes: Vec<String> },
+    Service { service_id: String, scopes: Vec<String> },
+    System,
+}
+```
+
+## User route
+
+In generated host route code, use the public host HTTP helpers:
+
+```rust
+use lenso::host::http::{Json, UserActor};
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct MeResponse {
+    user_id: String,
+}
+
+async fn me(user: UserActor) -> Json<MeResponse> {
+    Json(MeResponse {
+        user_id: user.user_id,
+    })
+}
+```
+
+`UserActor` rejects anonymous, service, and system actors before your handler
+runs.
+
+## Capability declarations
+
+Declare module capabilities in the manifest:
+
+```rust
+use lenso::{AdminSchema, EntitySchema, ModuleManifest};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("support")
+        .capabilities(vec![
+            "support.tickets.read".to_owned(),
+            "support.tickets.assign".to_owned(),
+        ])
+        .admin(AdminSchema {
+            entities: vec![EntitySchema {
+                name: "tickets".to_owned(),
+                label: "Tickets".to_owned(),
+                read_capability: "support.tickets.read".to_owned(),
+                fields: vec![],
+            }],
+        })
+        .build()
+}
+```
+
+Runtime Console and admin data APIs use these declarations to lint manifests
+and enforce access to declared surfaces.
+
+## Checking scopes
+
+For module-specific checks, read scopes from the actor:
+
+```rust
+use lenso::host::http::{AppError, ErrorCode, Json, UserActor};
+
+fn require_scope(scopes: &[String], required: &str) -> Result<(), AppError> {
+    if scopes.iter().any(|scope| scope == required) {
+        return Ok(());
+    }
+
+    Err(AppError::new(
+        ErrorCode::Forbidden,
+        format!("missing capability {required}"),
+    ))
+}
+
+async fn assign_ticket(user: UserActor) -> Result<Json<serde_json::Value>, AppError> {
+    require_scope(&user.scopes, "support.tickets.assign")?;
+    Ok(Json(serde_json::json!({ "assigned_by": user.user_id })))
+}
+```
+
+Use the same capability names in route metadata, admin schemas, declarative
+actions, and Console surfaces. That keeps lints and operator views useful.
+
+## Auth module boundary
+
+`auth.users` is an authentication anchor, not a product profile table. It owns:
+
+- stable actor id
+- session resolution
+- disabled user state
+- provider-independent auth user records
+
+Product profile data belongs in your module:
+
+```sql
+create table app.profiles (
+    id text primary key,
+    auth_user_id text not null unique,
+    display_name text not null,
+    created_at timestamptz not null
+);
+```
+
+Read `UserActor.user_id`, then look up your own profile row. Do not add product
+fields such as name, avatar, plan, tenant, or organization membership to
+`auth.users`.
+
+## Provider modules
+
+`auth-password` depends on `auth` structurally: it stores password identities in
+its own schema, then calls `auth` public helpers to create users and sessions.
+
+That is different from request-level auth. Ordinary modules should depend on
+the platform extractors and capability strings, not on `auth` internals.

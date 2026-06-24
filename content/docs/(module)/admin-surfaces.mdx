@@ -1,0 +1,218 @@
+---
+title: Admin Surfaces
+description: Expose module data, actions, queries, and custom operator views through Runtime Console.
+---
+
+Admin surfaces are how a module becomes operable. They describe the data,
+actions, and read-only values that Runtime Console can show without importing
+module internals.
+
+## Three surface modes
+
+| Mode | Use when |
+| --- | --- |
+| `Schema` | the module exposes ordinary list/detail business records |
+| `DeclarativeCustom` | the module needs a richer host-rendered page using trusted Console components |
+| `EmbeddedCustom` | the module owns a separate UI runtime and must be sandboxed |
+
+Start with `Schema`. Move to declarative only when the operator workflow needs
+more than a table and detail view. Use embedded only when the module truly owns
+a UI that cannot be expressed as data.
+
+## Schema surface
+
+Schema surfaces are the boring, useful path. The module declares entities and
+fields; the host reads records through the module's admin data source.
+
+```rust
+use lenso::{AdminSchema, EntitySchema, FieldSchema, FieldType, ModuleManifest};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("support")
+        .capabilities(vec!["support.tickets.read".to_owned()])
+        .admin(AdminSchema {
+            entities: vec![EntitySchema {
+                name: "tickets".to_owned(),
+                label: "Tickets".to_owned(),
+                read_capability: "support.tickets.read".to_owned(),
+                fields: vec![
+                    FieldSchema {
+                        name: "title".to_owned(),
+                        label: "Title".to_owned(),
+                        field_type: FieldType::String,
+                        nullable: false,
+                    },
+                    FieldSchema {
+                        name: "status".to_owned(),
+                        label: "Status".to_owned(),
+                        field_type: FieldType::String,
+                        nullable: false,
+                    },
+                ],
+            }],
+        })
+        .build()
+}
+```
+
+Runtime Console reads the records through host-owned `/admin/data/*` endpoints.
+The module keeps strong types internally; generic admin data crosses the
+boundary as JSON records.
+
+## Declarative custom surface
+
+Declarative custom surfaces let a module build a richer operator page without
+shipping frontend code. The manifest contributes structured data; Runtime
+Console owns rendering, styling, accessibility, and behavior.
+
+```rust
+use lenso::{
+    AdminAction, AdminActionDangerLevel, AdminActionInputField,
+    AdminActionInputSchema, AdminDeclarativeComponent, AdminDeclarativePage,
+    AdminDeclarativeSection, AdminDeclarativeSurface, AdminSchema, EntitySchema,
+    FieldSchema, FieldType, ModuleManifest,
+};
+
+fn fallback_schema() -> AdminSchema {
+    AdminSchema {
+        entities: vec![EntitySchema {
+            name: "tickets".to_owned(),
+            label: "Tickets".to_owned(),
+            read_capability: "support.tickets.read".to_owned(),
+            fields: vec![FieldSchema {
+                name: "title".to_owned(),
+                label: "Title".to_owned(),
+                field_type: FieldType::String,
+                nullable: false,
+            }],
+        }],
+    }
+}
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("support")
+        .capabilities(vec![
+            "support.tickets.read".to_owned(),
+            "support.tickets.assign".to_owned(),
+            "support.metrics.read".to_owned(),
+        ])
+        .declarative_admin(AdminDeclarativeSurface {
+            pages: vec![AdminDeclarativePage {
+                name: "overview".to_owned(),
+                label: "Overview".to_owned(),
+                sections: vec![
+                    AdminDeclarativeSection {
+                        name: "ticket-count".to_owned(),
+                        label: "Ticket Count".to_owned(),
+                        component: AdminDeclarativeComponent::QueryValue {
+                            query: "ticket_metrics".to_owned(),
+                            capability: "support.metrics.read".to_owned(),
+                            value_path: "open_count".to_owned(),
+                        },
+                    },
+                    AdminDeclarativeSection {
+                        name: "tickets".to_owned(),
+                        label: "Tickets".to_owned(),
+                        component: AdminDeclarativeComponent::EntityTable {
+                            entity: "tickets".to_owned(),
+                        },
+                    },
+                ],
+            }],
+            actions: vec![AdminAction {
+                name: "assign_ticket".to_owned(),
+                label: "Assign Ticket".to_owned(),
+                capability: "support.tickets.assign".to_owned(),
+                input_schema: Some(AdminActionInputSchema {
+                    fields: vec![AdminActionInputField {
+                        name: "assignee".to_owned(),
+                        label: "Assignee".to_owned(),
+                        field_type: FieldType::String,
+                        required: true,
+                        description: Some("User id to assign".to_owned()),
+                    }],
+                }),
+                confirmation: None,
+                danger_level: AdminActionDangerLevel::Low,
+            }],
+            fallback_schema: Some(fallback_schema()),
+        })
+        .build()
+}
+```
+
+`fallback_schema` lets Console render trusted entity tables/details and read
+records through the same admin data path. It does not turn the module into a
+plain schema surface and does not list it in `/admin/data/schema`.
+
+## Actions and queries
+
+Declarative pages can show read-only query values and invoke declared actions.
+The host validates the manifest, checks capability declarations, validates
+action input, then calls the module behavior seam.
+
+| Declaration | Host endpoint shape |
+| --- | --- |
+| `AdminDeclarativeComponent::QueryValue` | `/admin/data/{module}/queries/{query}` |
+| `AdminAction` | `/admin/data/{module}/actions/{action}` |
+| `fallback_schema` entity | `/admin/data/{module}/{entity}` |
+
+Successful and failed admin action invocations are projected into Runtime
+Stories and Technical Operations, so operator work leaves evidence.
+
+## Embedded custom surface
+
+Embedded custom surfaces are the escape hatch for module-owned UI. They start
+as sandboxed iframes with explicit origins and no host bridge.
+
+```rust
+use lenso::{
+    AdminEmbeddedEntry, AdminEmbeddedRuntime, AdminEmbeddedSurface,
+    AdminPermission, AdminSandboxPolicy, ModuleManifest,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("crm")
+        .embedded_admin(AdminEmbeddedSurface {
+            runtime: AdminEmbeddedRuntime::Iframe,
+            entry: AdminEmbeddedEntry::Url {
+                url: "https://crm.example.test/admin".to_owned(),
+                allowed_origins: vec!["https://crm.example.test".to_owned()],
+            },
+            sandbox: AdminSandboxPolicy {
+                allow_scripts: true,
+                allow_forms: false,
+                allow_popups: false,
+                allow_same_origin: false,
+            },
+            permissions: vec![AdminPermission::ReadEntity {
+                entity: "contacts".to_owned(),
+            }],
+            fallback_schema: None,
+        })
+        .build()
+}
+```
+
+Do not use embedded surfaces to smuggle host tokens, arbitrary JavaScript
+bridges, or private Console imports into a module. Host/module communication
+needs a versioned protocol.
+
+## Module-local config
+
+Module-local config belongs in static host config, not editable runtime config
+DB rows:
+
+```sh
+LENSO_MODULE_AUTH_PASSWORD__JWT_ISSUER=acme
+LENSO_MODULE_SUPPORT__DEFAULT_ASSIGNEE=usr_1
+```
+
+Module load toggles are separate and restart-only:
+
+```sh
+LENSO_MODULE_SUPPORT_ENABLED=false
+```
+
+Use runtime config for operator-editable platform values. Use module-local env
+config for values the module code needs at boot.

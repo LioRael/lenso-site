@@ -1,8 +1,15 @@
 {
   "title": "Host",
-  "defaultOpen": true,
+  "defaultOpen": false,
   "pages": [
-    "quickstart",
+    "cli-reference",
+    "configuration",
+    "database-migrations",
+    "observability",
+    "built-in-modules",
+    "module-installation",
+    "deployment",
+    "troubleshooting",
     "runtime-console",
     "architecture"
   ]

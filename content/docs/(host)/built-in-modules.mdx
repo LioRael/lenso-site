@@ -1,0 +1,157 @@
+---
+title: Built-in Modules
+description: Install and use Lenso's first-party auth modules in a generated host.
+---
+
+Generated hosts start with `LENSO_COMPOSITION_PROFILE=core` and no real auth
+module. Use local development tokens while building the first app surface, then
+install auth modules when the app needs real sessions, password login, or device
+policy.
+
+If you are authoring a module that consumes the authenticated actor instead of
+installing auth itself, read
+[Auth and Capabilities](/docs/auth-capabilities).
+
+## Available modules
+
+| Module | Install | What it adds |
+| --- | --- | --- |
+| `auth` | `lenso module install auth` | auth users, sessions, session revoke, dev session route, auth Console pages |
+| `auth-password` | `lenso module install auth-password` | password registration and login routes, depends on `auth` |
+| `auth-device` | `lenso module install auth-device` | device records and session device policy, depends on `auth` |
+
+`auth` and `auth-password` are also exposed through `lenso::host::builtins`.
+`auth-device` is installed through the CLI descriptor.
+
+## Install auth
+
+From a generated host:
+
+```sh
+lenso module install auth
+lenso module install auth-password
+cargo run --bin migrate
+lenso serve
+```
+
+The CLI updates host composition, dependencies, local install receipts, and the
+Runtime Console extension registry. Restart the API and worker after installing
+or updating modules.
+
+## Use Redis session lookup
+
+Postgres is the default session lookup backend. Use Redis when session reads
+should avoid a database hit:
+
+```sh
+lenso module install auth --profile redis-session-cache
+```
+
+The profile enables the `redis` feature for `lenso-module-auth`, writes
+`REDIS_URL=redis://localhost:6379/0` to `.env`, and records
+`auth.session_cache=redis` in `.lenso/runtime-config-defaults.json`.
+
+Provide Redis yourself. The starter Docker Compose file starts Postgres only.
+
+## Development sessions
+
+In local development, `auth` exposes a dev-session route:
+
+```sh
+curl -sS -X POST http://127.0.0.1:3000/v1/auth/dev/sessions \
+  -H 'content-type: application/json' \
+  -d '{"user_id":"usr_demo"}' | jq .
+```
+
+Use the returned token as a bearer token:
+
+```sh
+curl -sS http://127.0.0.1:3000/v1/app/items \
+  -H "authorization: Bearer $LENSO_SESSION_TOKEN" | jq .
+```
+
+For quick local work, generated hosts also accept development bearer tokens such
+as `Bearer dev-user:usr_demo`. Do not use those in production.
+
+## Password login
+
+After installing `auth-password`, register and log in through the password
+routes:
+
+```sh
+curl -sS -X POST http://127.0.0.1:3000/v1/auth/password/register \
+  -H 'content-type: application/json' \
+  -d '{"identifier":"ada@example.com","password":"correct horse battery staple"}' | jq .
+
+curl -sS -X POST http://127.0.0.1:3000/v1/auth/password/login \
+  -H 'content-type: application/json' \
+  -d '{"identifier":"ada@example.com","password":"correct horse battery staple"}' | jq .
+```
+
+The response includes `user_id`, `token`, `expires_at`, and a `session_id` when
+the token strategy is database-backed sessions.
+
+## JWT mode
+
+`auth-password` defaults to session tokens. To issue JWTs, set runtime config
+`auth-password.token_strategy=jwt` and provide a secret. For local host config,
+prefer module-local env:
+
+```sh
+LENSO_MODULE_AUTH_PASSWORD__JWT_SECRET=dev-only-change-me
+```
+
+Runtime config keys for JWT mode include:
+
+- `auth-password.jwt_secret`
+- `auth-password.jwt_issuer`
+- `auth-password.jwt_audience`
+- `auth-password.jwt_ttl_hours`
+
+## Device policy
+
+Install `auth-device` when login should record and reuse device ids:
+
+```sh
+lenso module install auth-device
+```
+
+Password registration and login accept `device_id`. When present, the device
+policy records the device and attaches it to the created session:
+
+```sh
+curl -sS -X POST http://127.0.0.1:3000/v1/auth/password/login \
+  -H 'content-type: application/json' \
+  -d '{"identifier":"ada@example.com","password":"correct horse battery staple","device_id":"macbook-1"}' | jq .
+```
+
+## Manual Rust composition
+
+Most hosts should use `lenso module install`. For hand-written host composition,
+use the public builtins exposed by the `host` feature:
+
+```rust
+use lenso::host::prelude::*;
+
+pub fn host_composition() -> HostComposition {
+    HostBuilder::new()
+        .linked_module(builtins::auth())
+        .linked_module(builtins::auth_password())
+        .build()
+}
+```
+
+Run migrations after changing linked module composition:
+
+```sh
+cargo run --bin migrate
+```
+
+## Verify in Console
+
+Open `/console` after restart:
+
+- Modules should list `auth`, `auth-password`, and any installed dependents.
+- Data should show Auth users and sessions.
+- Actions should include session revoke and user enable or disable actions.
+- Runtime evidence should show auth HTTP routes after requests.

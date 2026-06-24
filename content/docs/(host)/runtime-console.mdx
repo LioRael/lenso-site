@@ -3,27 +3,58 @@ title: Runtime Console
 description: Verify module data, actions, runtime workflows, and operational visibility.
 ---
 
-Runtime Console is the operator UI for a Lenso host. Generated hosts created by
-published CLI builds serve the bundled console at `/console`.
+Runtime Console is the operator UI for a Lenso host. Use it after the host boots
+to confirm that modules, data surfaces, actions, and runtime workflows are
+actually wired.
 
-## What It Shows
+Generated hosts created by published CLI builds serve the bundled console at
+`/console`.
 
-- loaded modules and manifest health
-- schema-admin data surfaces
-- module actions
-- remote HTTP proxy evidence
-- runtime story and function-run visibility
+## First checks
 
-## Extension Boundary
+When a fresh host is running, open `/console` and check:
+
+- Modules: loaded modules, manifest status, and lint results.
+- Data: schema-admin tables exposed by loaded modules.
+- Actions: admin actions declared by modules.
+- Runtime: function runs, story events, and remote proxy evidence.
+
+This is the fastest way to catch a module that compiles but is not visible to
+the host.
+
+## Module evidence
+
+For a useful module, expect at least one visible proof point:
+
+| Module capability | Console evidence |
+| --- | --- |
+| Data surface | Rows are readable in Data |
+| Admin action | The action appears with its declared input |
+| Runtime function | Function runs appear after invocation |
+| Remote route | Proxy calls are recorded after traffic |
+| Console extension | The module-owned page appears in the registry |
+
+## If a module is missing
+
+Check the boring things first:
+
+- Restart the API and worker after `lenso module install`.
+- Run `lenso module doctor <module-name>` for remote modules.
+- Confirm the module manifest declares the data, action, route, function, or
+  console surface you expected to see.
+
+## Extension boundary
 
 Module-owned console pages are declared through `ModuleManifest.console` and
 loaded through the host console module registry. Frontend packages use the
 Runtime Console host facade instead of deep-importing host internals.
 
-## Refresh The Hosted Console
+## Refresh the hosted console
 
 After upgrading `lenso-cli`, refresh a generated host with:
 
 ```sh
 lenso host update-console
 ```
+
+Restart the host after refreshing the bundled console.

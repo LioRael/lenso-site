@@ -1,0 +1,130 @@
+---
+title: Database and Migrations
+description: Add and run Lenso platform, runtime, built-in, and host-linked module migrations.
+---
+
+Lenso migrations are append-only Rust declarations that point at SQL strings.
+The migration runner records applied names in `platform.schema_migrations`.
+
+## What runs
+
+The host migration app collects:
+
+1. platform migrations;
+2. runtime migrations;
+3. enabled first-party linked module migrations;
+4. host-linked module migrations from `HostComposition`.
+
+Remote modules are separate processes. Installing a remote module can write host
+configuration, receipts, services, and Console bundles, but it does not apply
+that module's private database migrations for you.
+
+## Local commands
+
+Generated hosts expose a migration binary:
+
+```sh
+cargo run --bin migrate
+```
+
+`lenso serve` runs migrations before starting API and worker unless you pass:
+
+```sh
+lenso serve --skip-migrate
+```
+
+Production deploys should run the migration job before API and worker:
+
+```sh
+DATABASE_URL=postgres://... cargo run --bin migrate
+DATABASE_URL=postgres://... cargo run --bin api
+DATABASE_URL=postgres://... cargo run --bin worker
+```
+
+## Add a linked module migration
+
+Keep module SQL beside the module:
+
+```text
+src/modules/billing/
+  mod.rs
+  migrations/
+    0001_create_billing_schema.sql
+```
+
+Declare it in the module:
+
+```rust
+use lenso::host::prelude::*;
+
+pub const MODULE_NAME: &str = "billing";
+
+const MIGRATIONS: &[Migration] = &[Migration {
+    name: "billing/0001_create_billing_schema",
+    sql: include_str!("migrations/0001_create_billing_schema.sql"),
+}];
+
+pub fn linked_module() -> HostLinkedModule {
+    HostLinkedModule::manifest_only(MODULE_NAME, manifest, MIGRATIONS)
+}
+
+fn manifest() -> ModuleManifest {
+    ModuleManifest::builder(MODULE_NAME).build()
+}
+```
+
+Wire the module into host composition:
+
+```rust
+use lenso::host::prelude::*;
+
+mod modules;
+
+pub fn host_composition() -> HostComposition {
+    HostBuilder::new()
+        .linked_module(modules::billing::linked_module())
+        .build()
+}
+```
+
+Run:
+
+```sh
+cargo run --bin migrate
+cargo run --bin api
+```
+
+## Rules
+
+- Never rename an applied migration.
+- Never edit an applied migration in a way that changes its meaning.
+- Add a new migration for schema changes.
+- Keep migration names stable and prefixed by owner, such as
+  `billing/0002_add_invoice_status`.
+- Make SQL idempotent only when it is naturally safe; the runner already tracks
+  applied names.
+- Keep remote module private database setup in the remote module package or
+  deployment process.
+
+## Verify
+
+Check applied migrations:
+
+```sql
+select name, applied_at
+from platform.schema_migrations
+order by applied_at;
+```
+
+Run the smallest useful local gate:
+
+```sh
+just check
+```
+
+If a migration affects OpenAPI-visible routes or DTOs, also run:
+
+```sh
+just generate
+just generated-check
+```

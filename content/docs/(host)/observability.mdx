@@ -1,0 +1,125 @@
+---
+title: Observability
+description: Use health probes, structured logs, OTLP traces, and Runtime Console runtime views.
+---
+
+Lenso has two observability layers:
+
+- process-level health, logs, and traces for operators;
+- Runtime Console views backed by platform/runtime tables for module activity.
+
+`platform-admin` owns runtime observability APIs under `/admin/runtime/*`. It is
+a platform concern, not a product module, and reads platform/runtime tables such
+as outbox events, story events, runtime function runs, remote proxy calls, and
+telemetry spans.
+
+## Health probes
+
+The base router exposes probes outside the OpenAPI contract:
+
+```sh
+curl -sS http://127.0.0.1:3000/livez | jq .
+curl -sS http://127.0.0.1:3000/readyz | jq .
+```
+
+`/livez` returns process liveness. `/readyz` runs registered health checks and
+returns `healthy` or `unhealthy`.
+
+## Logging
+
+Configure logs with environment variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `RUST_LOG` | tracing filter, defaults to `info` |
+| `LOG_FORMAT` | `compact` or `json` |
+| `APP_ENV` | deployment environment name |
+| `SERVICE_NAME` | service name, defaults to `lenso` |
+
+Local readable logs:
+
+```sh
+RUST_LOG=info LOG_FORMAT=compact lenso serve
+```
+
+Production-style JSON logs:
+
+```sh
+RUST_LOG=info,tower_http=warn LOG_FORMAT=json cargo run --bin api
+```
+
+## OTLP traces
+
+Set `OTEL_EXPORTER_OTLP_ENDPOINT` only when a collector is running:
+
+```sh
+OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317 cargo run --bin api
+```
+
+For the repository's local collector:
+
+```sh
+just observability-up
+```
+
+If local smoke is failing because the collector is not available, unset the
+endpoint:
+
+```sh
+unset OTEL_EXPORTER_OTLP_ENDPOINT
+```
+
+## Runtime Console views
+
+Open:
+
+```text
+http://127.0.0.1:3000/console
+```
+
+Use Runtime Console to inspect:
+
+- loaded modules and manifest lints;
+- runtime function declarations and runs;
+- outbox and story events;
+- remote HTTP proxy calls;
+- module health and install state;
+- technical operations linked to telemetry spans.
+
+When a module action fails, copy the `correlation_id` from the API error or log
+line and search Runtime Console story/technical-operation views with that id.
+
+## What to log from modules
+
+Use structured fields that connect logs to Runtime Console evidence:
+
+```rust
+use lenso::host::http::HttpRequestContext;
+
+fn log_invoice_finalized(request: &HttpRequestContext, invoice_id: &str) {
+    tracing::info!(
+        module = "billing",
+        invoice_id = %invoice_id,
+        correlation_id = %request.correlation_id.0,
+        "invoice finalized"
+    );
+}
+```
+
+Use `HttpRequestContext` as `request` in handlers that need request or
+correlation metadata.
+
+Prefer stable identifiers over full payload dumps. Do not log tokens, session
+secrets, passwords, or raw customer PII.
+
+## Quick diagnosis
+
+| Symptom | First check |
+| --- | --- |
+| API is unreachable | `/livez` |
+| API starts but dependencies fail | `/readyz` |
+| Logs are noisy | narrow `RUST_LOG` |
+| JSON logs are missing | set `LOG_FORMAT=json` |
+| OTLP errors appear locally | unset `OTEL_EXPORTER_OTLP_ENDPOINT` or start collector |
+| Console runtime page is empty | run API and worker, then trigger a module action |
+| Story exists but operation is missing | check correlation id and telemetry span attributes |

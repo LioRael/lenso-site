@@ -1,0 +1,110 @@
+---
+title: Agent Development
+description: Use Lenso skills, scaffolds, checks, and Runtime Console evidence to develop with coding agents.
+---
+
+Lenso is agent-ready because the workflow has rails: public skills, explicit
+manifests, generated contracts, focused checks, and `/console` verification.
+It does not require a custom agent runtime.
+
+Use this path when a human or coding agent is turning a product idea into a
+host, module, remote module, or API integration.
+
+## Install the skills
+
+Install the public Lenso skill pack before asking an agent to build a host or
+module:
+
+```sh
+npx skills add lenso-dev/skills
+```
+
+If you are working from a local checkout, the same skill files live under
+`skills/` in the Lenso repository. Copy or register those skill directories with
+your agent's configured skills folder, then start with `lenso-start`.
+
+## Public skill routes
+
+| Goal | Skill | First command or source |
+| --- | --- | --- |
+| Clarify a vague business idea | `lenso-business-planning` | choose the first useful slice |
+| Pick the right public path | `lenso-start` | route to host, module, remote module, or API client |
+| Start a host app | `lenso-starter-host` | `lenso host init <dir>` |
+| Build a Rust module | `lenso-module-authoring` | `lenso module create <name>` |
+| Build a remote JS/TS module | `lenso-remote-module-authoring` | `lenso module create <name> --remote` |
+| Consume Lenso APIs | `lenso-api-client` | `contracts/openapi/app-api.v1.yaml` |
+
+The public skill pack lives in the `skills/` directory of the Lenso repository.
+
+## Agent loop
+
+1. Start from the smallest business slice that can be verified.
+2. Pick host, linked module, remote module, or API-client work.
+3. Scaffold with the CLI instead of hand-building the shape.
+4. Implement one useful capability.
+5. Add one runnable check that fails if the capability is not wired.
+6. Open `/console` and confirm the module evidence is visible.
+7. Report the command, check result, and Runtime Console evidence.
+
+For the public proof point, start from this prompt:
+
+```text
+Build a support ticket module for a Lenso app.
+```
+
+The intended route is:
+
+```text
+lenso-business-planning -> lenso-start -> lenso-module-authoring -> lenso module create -> checks -> /console
+```
+
+## Prompt shape
+
+Give the agent a concrete module outcome instead of a generic framework task:
+
+```text
+Build a support ticket module for a Lenso app.
+
+First slice:
+- tickets have title, status, priority, requester email, and assignee
+- operators can list tickets and assign one
+- escalation is a runtime function
+- the module is visible in /console
+- leave one smoke check
+```
+
+This gives the agent enough boundaries to avoid inventing a platform.
+
+## Checks by path
+
+| Path | Minimum useful check |
+| --- | --- |
+| Host starter | `cargo check --bins` |
+| Rust module | a manifest or smoke check plus `/console` evidence |
+| Remote module | package smoke plus `lenso module install <manifest-url>` |
+| Contract/API work | `just generated-check` |
+| Architecture-sensitive backend work | `just arch-check` |
+
+The check should be small, local, and tied to the capability. A compile-only
+pass is not enough when the change is supposed to appear in Runtime Console.
+
+## Console evidence
+
+Use `/console` as the final proof that the host sees the work:
+
+- Modules shows the module and manifest status.
+- Data shows declared schema-admin surfaces.
+- Actions shows declared admin actions.
+- Runtime shows function runs and story evidence.
+- Remote routes show proxy evidence after traffic.
+
+## Keep out
+
+- Do not split a vague idea into microservices before ownership boundaries are
+  real.
+- Do not build a generic CRUD framework before a real module needs it.
+- Do not cross-import another module's internals.
+- Do not require cloning the framework monorepo when the public CLI, crate, npm
+  package, or skill fits.
+- Do not treat agent-ready as a promise of autonomous deployment. The agent
+  still has to leave checks and operator evidence.

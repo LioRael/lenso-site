@@ -1,0 +1,153 @@
+---
+title: API Clients
+description: Consume Lenso HTTP APIs from the committed OpenAPI and error contracts.
+---
+
+Use committed contracts as the source of truth. Do not infer request or response
+shapes from old examples.
+
+## Contract files
+
+| Contract | Use it for |
+| --- | --- |
+| `contracts/openapi/app-api.v1.yaml` | endpoint paths, methods, DTOs, auth requirements, and response schemas |
+| `contracts/errors/error-response.v1.schema.json` | standard error envelope |
+| `contracts/grpc/lenso/remote/v1/remote_module.proto` | remote module gRPC protocol |
+
+If an agent is writing an integration, route it through the `lenso-api-client`
+skill:
+
+```sh
+npx skills add lenso-dev/skills
+```
+
+Then ask for the exact contract path, endpoint, method, request shape, response
+shape, and one focused verification command.
+
+## Minimal fetch helper
+
+Use the generated client your app already prefers. For small checks or examples,
+plain `fetch` is enough:
+
+```ts
+type LensoErrorResponse = {
+  error: {
+    code: string;
+    message: string;
+    request_id: string | null;
+    correlation_id: string | null;
+    details: Array<{ field: string | null; reason: string }>;
+  };
+};
+
+export async function lensoFetch<T>(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<T> {
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      accept: "application/json",
+      ...init?.headers,
+    },
+  });
+
+  const body = await response.json();
+  if (response.ok) {
+    return body as T;
+  }
+
+  const error = body as LensoErrorResponse;
+  throw Object.assign(new Error(error.error.message), {
+    status: response.status,
+    code: error.error.code,
+    requestId: error.error.request_id,
+    correlationId: error.error.correlation_id,
+    details: error.error.details,
+  });
+}
+```
+
+Example:
+
+```ts
+type AdminModulesResponse = {
+  modules: Array<{
+    name: string;
+    status: string;
+  }>;
+};
+
+const modules = await lensoFetch<AdminModulesResponse>(
+  "http://127.0.0.1:3000/api/admin/modules",
+  {
+    headers: {
+      authorization: `Bearer ${process.env.LENSO_SESSION_TOKEN}`,
+    },
+  },
+);
+```
+
+## Error envelope
+
+Every API error uses the same envelope:
+
+```json
+{
+  "error": {
+    "code": "validation_failed",
+    "message": "Request body is invalid",
+    "request_id": "req_123",
+    "correlation_id": "corr_123",
+    "details": [
+      {
+        "field": "title",
+        "reason": "required"
+      }
+    ]
+  }
+}
+```
+
+The `x-lenso-error-code` response header carries the same stable error code.
+Use it for lightweight logging or gateway metrics when parsing the body is not
+needed.
+
+## Common codes
+
+| Code | HTTP status |
+| --- | --- |
+| `validation_failed` | 400 |
+| `unauthorized` | 401 |
+| `forbidden` | 403 |
+| `not_found` | 404 |
+| `conflict` | 409 |
+| `rate_limited` | 429 |
+| `external_dependency_failure` | 502 |
+| `internal_error` | 500 |
+
+## Client rules
+
+- Generate clients from `contracts/openapi/app-api.v1.yaml`.
+- Keep generated code out of hand edits.
+- Handle the standard error envelope once in a shared client wrapper.
+- Log `request_id` and `correlation_id` on failures.
+- Regenerate contracts after backend DTO or route changes.
+
+## Checks
+
+After backend API changes:
+
+```sh
+just generate
+just generated-check
+just check
+```
+
+For a consumer smoke:
+
+```sh
+curl -sS http://127.0.0.1:3000/readyz | jq .
+curl -sS http://127.0.0.1:3000/api/admin/modules \
+  -H "authorization: Bearer $LENSO_SESSION_TOKEN" | jq .
+```
