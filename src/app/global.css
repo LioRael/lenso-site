@@ -136,26 +136,12 @@ samp {
 
 .docs-eve-logo-link {
   height: 34px;
-  position: relative;
-  width: 29px;
+  justify-content: center;
+  margin-left: -8px;
+  width: 37px;
 }
 
 .docs-eve-mark {
-  filter: var(--docs-logo-filter);
-  height: 18px;
-  left: 1.5px;
-  position: absolute;
-  top: 8px;
-  width: 18px;
-}
-
-.docs-eve-nav-title {
-  align-items: center;
-  display: inline-flex;
-  gap: 8px;
-}
-
-.docs-eve-nav-title-mark {
   filter: var(--docs-logo-filter);
   height: 18px;
   width: 18px;
@@ -268,19 +254,11 @@ samp {
 }
 
 #nd-sidebar > div:first-child {
-  padding: 20px 24px 12px !important;
-}
-
-#nd-sidebar > div:first-child a {
-  color: var(--ds-gray-1000);
-  font-weight: 500;
-  min-height: 34px;
-  padding: 0 !important;
-  width: auto !important;
+  display: none !important;
 }
 
 #nd-sidebar [data-radix-scroll-area-viewport] {
-  padding: 18px 24px 16px !important;
+  padding: 18px 27px 16px !important;
 }
 
 #nd-sidebar [data-radix-scroll-area-viewport] > div {
