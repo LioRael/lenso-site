@@ -4,10 +4,12 @@
   "pages": [
     "cli-reference",
     "configuration",
+    "host-composition",
     "database-migrations",
     "observability",
     "built-in-modules",
     "module-installation",
+    "module-catalogs",
     "deployment",
     "troubleshooting",
     "runtime-console",

@@ -1,0 +1,110 @@
+---
+title: Module Catalogs
+description: Understand Lenso module discovery catalogs, official fallback entries, and install boundaries.
+---
+
+A module catalog is discovery data. It helps an operator find modules, but it
+does not install them.
+
+This split is important:
+
+- catalog add = remember this module exists;
+- module install = write host-local install state;
+- host startup = load configured linked and remote sources.
+
+## Local catalog
+
+Add a remote module manifest to the local catalog:
+
+```sh
+lenso module catalog add https://example.com/lenso/module/v1/manifest
+```
+
+This writes:
+
+```text
+.lenso/module-catalog.json
+```
+
+The entry contains the module name, version, manifest reference, base URL,
+summary, capabilities, routes, admin surfaces, runtime declarations, and Console
+package metadata derived from the manifest.
+
+## Install from catalog or manifest
+
+The install command is still the boundary that changes the host:
+
+```sh
+lenso module install https://example.com/lenso/module/v1/manifest
+```
+
+For a local manifest file, pass the runtime base URL:
+
+```sh
+lenso module install ./lenso.module.json --base-url https://example.com/lenso/module/v1
+```
+
+Install writes host-local state such as `.env`, install receipts, service
+descriptors, and Console extension registry files. See
+[Module Installation](/docs/module-installation) for that write set.
+
+## Available Modules order
+
+Runtime Console's Available Modules view merges discovery sources:
+
+1. local `.lenso/module-catalog.json`;
+2. already configured remote modules;
+3. built-in `builtin:lenso-official-module-catalog`.
+
+The built-in catalog is a small official fallback. It is not a hidden database
+of installed modules and it does not replace local or team catalogs.
+
+## Linked modules in catalogs
+
+First-party linked modules such as `auth`, `auth-password`, and `auth-device`
+can appear in the catalog because they are installable host features.
+
+Their install path is different from remote modules:
+
+```sh
+lenso module install auth
+lenso module install auth-password
+lenso module install auth-device
+```
+
+Linked installs update the generated host's local composition and module
+settings. Remote installs update remote source configuration and optional
+service or Console extension state.
+
+## Catalog entry shape
+
+A useful catalog entry answers the operator's first questions:
+
+```json
+{
+  "name": "account-profile",
+  "version": "0.1.0",
+  "manifest": "https://example.com/lenso/module/v1/manifest",
+  "baseUrl": "https://example.com/lenso/module/v1",
+  "summary": "Account and organization profile data for auth-backed hosts",
+  "capabilities": [
+    "account_profile.profiles.read",
+    "account_profile.profiles.write"
+  ]
+}
+```
+
+The host still verifies the manifest during installation and startup. Catalog
+metadata is for discovery, not trust.
+
+## When to use a catalog
+
+Use a catalog when:
+
+- your team has a known set of remote modules;
+- operators should see modules before installing them;
+- you want Runtime Console to show a curated install path;
+- the module manifest URL is stable enough to share.
+
+Skip a catalog when you are testing a local module. Install the manifest URL
+directly, then add catalog metadata after the module is worth discovering.
