@@ -1,0 +1,18 @@
+---
+title: platform-story
+description: Inspect Runtime Console stories from platform-owned observability routes.
+---
+
+`platform-story` powers Runtime Console stories. It is included by the platform
+composition and should not be installed like an application module.
+
+It owns:
+
+- `/admin/runtime/stories` and story detail routes.
+- Runtime story display metadata for HTTP routes, admin actions, remote proxy
+  calls, functions, and background work.
+- The Stories Console surface under `/console`.
+
+Use it to inspect what happened across a request or workflow. Do not put
+business data or feature-specific UI in `platform-story`; author a normal
+module or remote module for that.

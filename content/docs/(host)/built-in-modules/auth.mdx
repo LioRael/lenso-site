@@ -1,0 +1,80 @@
+---
+title: auth
+description: Install durable users, sessions, and the auth Console surface.
+---
+
+Install `auth` when the host needs durable users and sessions.
+
+From a generated host:
+
+```sh
+lenso module install auth
+cargo run --bin migrate
+lenso serve
+```
+
+The CLI updates host composition, dependencies, local install receipts, and the
+Runtime Console extension registry. Restart the API and worker after installing
+or updating modules.
+
+After restart, verify:
+
+- `/console` lists `auth` under Modules.
+- Data shows Auth users and sessions.
+- Actions include session revoke and user enable or disable actions.
+
+## Use Redis session lookup
+
+Postgres is the default session lookup backend. Use Redis when session reads
+should avoid a database hit:
+
+```sh
+lenso module install auth --profile redis-session-cache
+```
+
+The profile enables the `redis` feature for `lenso-module-auth`, writes
+`REDIS_URL=redis://localhost:6379/0` to `.env`, and records
+`auth.session_cache=redis` in `.lenso/runtime-config-defaults.json`.
+
+Provide Redis yourself. The starter Docker Compose file starts Postgres only.
+
+## Development sessions
+
+In local development, `auth` exposes a dev-session route:
+
+```sh
+curl -sS -X POST http://127.0.0.1:3000/v1/auth/dev/sessions \
+  -H 'content-type: application/json' \
+  -d '{"user_id":"usr_demo"}' | jq .
+```
+
+Use the returned token as a bearer token:
+
+```sh
+curl -sS http://127.0.0.1:3000/v1/app/items \
+  -H "authorization: Bearer $LENSO_SESSION_TOKEN" | jq .
+```
+
+For quick local work, generated hosts also accept development bearer tokens such
+as `Bearer dev-user:usr_demo`. Do not use those in production.
+
+## Manual Rust composition
+
+Most hosts should use `lenso module install`. For hand-written host composition,
+use the public builtins exposed by the `host` feature:
+
+```rust
+use lenso::host::prelude::*;
+
+pub fn host_composition() -> HostComposition {
+    HostBuilder::new()
+        .linked_module(builtins::auth())
+        .build()
+}
+```
+
+Run migrations after changing linked module composition:
+
+```sh
+cargo run --bin migrate
+```

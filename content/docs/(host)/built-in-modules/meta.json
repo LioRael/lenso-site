@@ -1,0 +1,11 @@
+{
+  "title": "Built-in Modules",
+  "defaultOpen": false,
+  "pages": [
+    "index",
+    "auth",
+    "auth-password",
+    "auth-device",
+    "platform-story"
+  ]
+}

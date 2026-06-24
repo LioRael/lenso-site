@@ -1,0 +1,31 @@
+---
+title: auth-device
+description: Record device ids and attach device policy to auth sessions.
+---
+
+Install `auth-device` when login should record and reuse device ids. It depends
+on `auth`.
+
+```sh
+lenso module install auth
+lenso module install auth-password
+lenso module install auth-device
+cargo run --bin migrate
+lenso serve
+```
+
+Password registration and login accept `device_id`. When present, the device
+policy records the device and attaches it to the created session:
+
+```sh
+curl -sS -X POST http://127.0.0.1:3000/v1/auth/password/login \
+  -H 'content-type: application/json' \
+  -d '{"identifier":"ada@example.com","password":"correct horse battery staple","device_id":"macbook-1"}' | jq .
+```
+
+After restart, verify:
+
+- The Modules page lists `auth-device`.
+- Data includes device records after device-aware login.
+- Auth sessions are associated with device policy data when `device_id` is
+  supplied.
