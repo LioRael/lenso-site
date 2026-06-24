@@ -1,8 +1,16 @@
 'use client';
 
-import { Search } from 'lucide-react';
+import Image from 'next/image';
+import { ChevronDown } from 'lucide-react';
 import { useSearchContext } from 'fumadocs-ui/contexts/search';
 import Link from 'next/link';
+
+const navItems = [
+  { label: 'Product', href: '/', menu: true, active: true },
+  { label: 'Docs', href: '/docs', menu: true },
+  { label: 'Examples', href: 'https://github.com/LioRael/lenso-examples' },
+  { label: 'Runtime', href: '/docs/runtime-console' },
+];
 
 export function DocsTopbar() {
   const { setOpenSearch } = useSearchContext();
@@ -11,20 +19,44 @@ export function DocsTopbar() {
     <header className="docs-eve-topbar">
       <nav>
         <div className="docs-eve-topbar-left">
-          <Link href="/" className="docs-eve-logo" aria-label="Lenso home">
-            <span aria-hidden="true" className="docs-eve-mark" />
-            <span className="docs-eve-slash">/</span>
-            <span>Lenso</span>
+          <Link href="/" className="docs-eve-logo-link" aria-label="Lenso home">
+            <Image
+              alt=""
+              className="docs-eve-mark"
+              height={18}
+              priority
+              src="/lenso-assets/lenso-header-mark.svg"
+              width={18}
+            />
           </Link>
-          <Link href="/docs">Docs</Link>
-          <Link href="https://github.com/LioRael/lenso-examples">Examples</Link>
-          <Link href="https://github.com/LioRael/lenso">GitHub ↗</Link>
+          <div className="docs-eve-main-nav">
+            {navItems.map((item) => (
+              <Link
+                className={item.active ? 'is-active' : undefined}
+                href={item.href}
+                key={item.label}
+              >
+                <span>{item.label}</span>
+                {item.menu ? <ChevronDown aria-hidden="true" /> : null}
+              </Link>
+            ))}
+          </div>
         </div>
-        <button type="button" className="docs-eve-search" onClick={() => setOpenSearch(true)}>
-          <Search aria-hidden="true" />
-          <span>Search...</span>
-          <kbd>⌘K</kbd>
-        </button>
+        <div className="docs-eve-topbar-actions">
+          <button type="button" className="docs-eve-search" onClick={() => setOpenSearch(true)}>
+            <span>Search...</span>
+            <kbd>⌘K</kbd>
+          </button>
+          <Link className="docs-eve-action" href="/docs/runtime-console">
+            Console
+          </Link>
+          <Link className="docs-eve-action" href="https://github.com/LioRael/lenso">
+            GitHub
+          </Link>
+          <Link className="docs-eve-action docs-eve-action-primary" href="/docs/quickstart">
+            Start
+          </Link>
+        </div>
       </nav>
     </header>
   );
