@@ -1,11 +1,11 @@
 ---
 title: Runtime and Lifecycle
-description: Declare runtime functions, event handlers, lifecycle checks, and startup activation work.
+description: Declare runtime functions, schedules, event handlers, lifecycle checks, and startup activation work.
 ---
 
-Runtime work is host-owned. A module declares functions, event handlers, and
-lifecycle needs; the worker claims queues, applies retry policy, records runs,
-and projects evidence into Runtime Console.
+Runtime work is host-owned. A module declares functions, schedules, event
+handlers, and lifecycle needs; the worker claims queues, applies retry policy,
+records runs, and projects evidence into Runtime Console.
 
 ## Function declaration
 
@@ -24,6 +24,7 @@ pub fn manifest() -> ModuleManifest {
                 input_schema: Some("support.ticket.escalate.v1".to_owned()),
                 retry_policy: None,
             }],
+            schedules: vec![],
         })
         .build()
 }
@@ -32,6 +33,54 @@ pub fn manifest() -> ModuleManifest {
 The declaration makes the function visible and lintable. Linked modules still
 register executable handlers through their binding. Remote modules implement
 the remote invocation protocol.
+
+## Scheduled runtime functions
+
+Declare schedules beside the functions they enqueue:
+
+```rust
+use lenso::{
+    ModuleManifest, RuntimeFunctionDeclaration, RuntimeSurface,
+    ScheduledFunctionDeclaration,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("support")
+        .runtime(RuntimeSurface {
+            functions: vec![RuntimeFunctionDeclaration {
+                name: "support.ticket.escalate_overdue.v1".to_owned(),
+                version: 1,
+                queue: "support".to_owned(),
+                input_schema: Some("support.ticket.escalate_overdue.v1".to_owned()),
+                retry_policy: None,
+            }],
+            schedules: vec![ScheduledFunctionDeclaration {
+                name: "escalate-overdue-tickets".to_owned(),
+                function_name: "support.ticket.escalate_overdue.v1".to_owned(),
+                cron: "*/15 * * * *".to_owned(),
+                input: serde_json::json!({ "source": "cron" }),
+            }],
+        })
+        .build()
+}
+```
+
+`cron` uses standard 5-field UTC cron:
+
+```text
+minute hour day-of-month month day-of-week
+```
+
+Supported field forms are `*`, comma lists, ranges, step values such as
+`*/15`, numbers, month names such as `JAN`, and weekday names such as `MON`.
+Seconds, time zones, and Quartz-style fields are intentionally not part of the
+module contract.
+
+The scheduler stores durable state in `runtime.scheduled_functions`. When a
+schedule is due, the worker enqueues the declared runtime function into
+`runtime.function_runs`; retries, dead letters, logs, and Runtime Story evidence
+then follow the same path as manually enqueued runtime work. A remote module can
+declare a schedule, but the host still owns scheduling and queue state.
 
 ## Runtime story evidence
 
@@ -71,6 +120,7 @@ pub fn manifest() -> ModuleManifest {
                 input_schema: Some("support.ticket.reindex.v1".to_owned()),
                 retry_policy: None,
             }],
+            schedules: vec![],
         })
         .lifecycle(LifecycleSurface {
             startup_checks: vec![LifecycleStartupCheckDeclaration {
@@ -128,6 +178,7 @@ host maps retryable failures through the declared retry policy.
 A runtime-capable module is done when:
 
 - function declarations lint cleanly
+- schedule declarations reference existing functions and valid cron expressions
 - linked or remote executors are registered
 - lifecycle checks reference existing functions or capabilities
 - a smoke path creates a function run

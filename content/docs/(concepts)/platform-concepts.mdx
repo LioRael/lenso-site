@@ -53,6 +53,7 @@ pub fn manifest() -> ModuleManifest {
                 input_schema: Some("support.ticket.escalate.v1".to_owned()),
                 retry_policy: None,
             }],
+            schedules: vec![],
         })
         .build()
 }
@@ -85,6 +86,7 @@ pub fn manifest() -> ModuleManifest {
                 input_schema: Some("support.ticket.reindex.v1".to_owned()),
                 retry_policy: None,
             }],
+            schedules: vec![],
         })
         .lifecycle(LifecycleSurface {
             startup_checks: vec![LifecycleStartupCheckDeclaration {
