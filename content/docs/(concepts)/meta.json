@@ -1,0 +1,11 @@
+{
+  "title": "Concepts",
+  "defaultOpen": false,
+  "pages": [
+    "platform-concepts",
+    "manifest-reference",
+    "api-clients",
+    "contracts-and-checks",
+    "checks-and-release"
+  ]
+}

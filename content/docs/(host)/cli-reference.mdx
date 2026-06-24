@@ -1,0 +1,161 @@
+---
+title: CLI Reference
+description: Common lenso CLI commands for hosts, modules, catalogs, doctor flows, and Console packages.
+---
+
+The `lenso` CLI is the fastest way to create a host, scaffold modules, install
+module descriptors, refresh hosted Console assets, and diagnose remote module
+services.
+
+## Install
+
+```sh
+npm install -g @lenso/cli
+# or
+cargo install lenso-cli
+```
+
+Check the installed command:
+
+```sh
+lenso --version
+lenso --help
+```
+
+## Host commands
+
+| Command | Use it for |
+| --- | --- |
+| `lenso host init <dir>` | Create a generated Rust host application. |
+| `lenso host init <dir> --name <crate>` | Override the generated Cargo crate name. |
+| `lenso host init <dir> --force` | Scaffold into a non-empty directory. |
+| `lenso host update-console` | Refresh the hosted Runtime Console bundle in `.lenso/console`. |
+| `lenso host update-console --repo-root <path>` | Update Console assets for a host outside the current directory. |
+| `lenso serve` | Start local Postgres, run migrations, then run API and worker. |
+| `lenso serve --separate-worker` | Run API and worker as separate local child processes. |
+| `lenso serve --skip-db` | Do not start the template Postgres service. |
+| `lenso serve --skip-migrate` | Do not run migrations before starting services. |
+
+Typical host loop:
+
+```sh
+lenso host init acme-platform
+cd acme-platform
+cp .env.example .env
+lenso serve
+```
+
+## Module scaffolding
+
+| Command | Use it for |
+| --- | --- |
+| `lenso module create billing` | Create a linked Rust module inside the host. |
+| `lenso module create billing --with-console` | Create a linked module and matching Runtime Console package. |
+| `lenso module create billing --remote --output-dir ../module-packages` | Create a standalone remote module package. |
+| `lenso module create billing --dry-run` | Preview generated files without writing them. |
+| `lenso console-package create billing` | Create only a Runtime Console package scaffold. |
+
+Useful `module create` options:
+
+```sh
+lenso module create support \
+  --with-console \
+  --area operations \
+  --label "Support Tickets" \
+  --route /support/tickets \
+  --capability support.ticket.read \
+  --icon Ticket
+```
+
+## Installing modules
+
+| Command | Use it for |
+| --- | --- |
+| `lenso module install auth` | Enable a linked built-in module from its descriptor. |
+| `lenso module install auth --profile redis-session-cache` | Enable Redis-backed auth session lookup. |
+| `lenso module install <manifest-url>` | Install a remote module by URL. |
+| `lenso module install ./lenso.module.json --base-url <url>` | Install a local descriptor while pointing the host at a deployed base URL. |
+| `lenso module install <ref> --dry-run` | Preview `.env`, receipts, service files, and Console registry changes. |
+| `lenso module install <ref> --run-install-commands` | Execute descriptor-declared install commands. |
+| `lenso module install <ref> --no-console-extension` | Skip Runtime Console extension registration. |
+
+`module install` writes host-local state. Depending on the source, it can update:
+
+- `.env`
+- `Cargo.toml`
+- `src/lib.rs`
+- `.lenso/module-installs.json`
+- `.lenso/module-services.json`
+- `.lenso/runtime-config-defaults.json`
+- `.lenso/console/extensions`
+- `.lenso/console/extensions/registry.json`
+
+Restart API and worker after installing or updating modules.
+
+## Update and uninstall
+
+```sh
+lenso module update billing
+lenso module update billing --base-url https://example.com/lenso/module/v1
+lenso module uninstall billing
+```
+
+`module update` reuses the recorded install receipt from
+`.lenso/module-installs.json`. Remote updates refresh `REMOTE_MODULES`, copied
+Console bundles, service state, and receipts. Linked updates reapply the
+descriptor or built-in module entry.
+
+Use `--source linked` only when a descriptor is missing a source field and you
+need to force the loading source:
+
+```sh
+lenso module uninstall auth --source linked
+```
+
+## Doctor
+
+```sh
+lenso module doctor
+lenso module doctor billing
+```
+
+Doctor reads `REMOTE_MODULES` and `.lenso/module-services.json`, checks declared
+service `readyUrl` endpoints, and points out stale `.lock` or `.pid` files when
+a host-started service did not become ready.
+
+## Catalogs
+
+Local catalogs are discovery aids. They do not replace explicit operator
+approval.
+
+```sh
+lenso module catalog add https://example.com/lenso/module/v1/manifest \
+  --summary "Billing module for invoice workflows"
+```
+
+The command writes `.lenso/module-catalog.json` by default. Add `--dry-run` when
+you want to inspect the generated catalog entry first.
+
+## Marketplace compatibility
+
+The CLI also exposes:
+
+```sh
+lenso module marketplace install <manifest-url>
+```
+
+This uses the same install path as `lenso module install <manifest-url>`. Keep
+new automation on the direct install command unless you are specifically testing
+marketplace routing.
+
+## Console package plans
+
+Runtime Console package install plans can be applied from the CLI:
+
+```sh
+lenso console-package apply-plan
+lenso console-package apply-plan --dry-run
+```
+
+Use this when a module package updates dependencies or Console extension
+registration outside the normal module install path.

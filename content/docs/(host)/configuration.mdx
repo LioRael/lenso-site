@@ -1,0 +1,128 @@
+---
+title: Configuration
+description: Configure a Lenso host, module sources, Runtime Console paths, telemetry, and module-local values.
+---
+
+Generated hosts read normal environment variables. Keep configuration boring:
+host process config in env, operator-editable runtime config in the runtime
+config system, and module-local boot config under `LENSO_MODULE_*`.
+
+## Required production choice
+
+Outside local development, set the linked composition profile explicitly:
+
+```sh
+APP_ENV=production
+LENSO_COMPOSITION_PROFILE=core
+```
+
+Use `core` for product hosts that opt into modules intentionally. Use `demo`
+only when you want the demo linked modules enabled.
+
+Local development defaults to `demo` when `APP_ENV` is `local`, `dev`,
+`development`, or `test`.
+
+## Common host variables
+
+| Variable | Purpose |
+| --- | --- |
+| `APP_ENV` | environment name; production-like values require explicit composition profile |
+| `SERVICE_NAME` | service label used by the host |
+| `DATABASE_URL` | Postgres connection string |
+| `DATABASE_MAX_CONNECTIONS` | database pool size |
+| `HTTP_HOST` | API bind host, default `127.0.0.1` |
+| `HTTP_PORT` | API port, default `3000` |
+| `CORS_ALLOWED_ORIGINS` | comma-separated Runtime Console dev origins |
+| `RUST_LOG` | log level/filter |
+| `LOG_FORMAT` | `compact` or `json` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | optional OpenTelemetry collector endpoint |
+
+For health probes, structured logs, and Runtime Console runtime views, read
+[Observability](/docs/observability).
+
+Local dev auth refuses public HTTP binds by default. If you really need a local
+host on `0.0.0.0`, make that risk explicit:
+
+```sh
+HTTP_HOST=0.0.0.0
+LENSO_ALLOW_DEV_AUTH_ON_PUBLIC_BIND=true
+```
+
+## Runtime Console paths
+
+Published CLI builds copy the hosted Runtime Console into generated hosts. The
+API serves it from the configured dist directory:
+
+```sh
+LENSO_CONSOLE_DIST_DIR=.lenso/console/dist
+LENSO_CONSOLE_EXTENSIONS_DIR=.lenso/console/extensions
+```
+
+After upgrading `lenso-cli`, refresh an existing host:
+
+```sh
+lenso host update-console
+```
+
+`LENSO_CONSOLE_BASE` is a build-time packaging setting for the console bundle.
+It is not something normal generated-host users need in `.env`.
+
+## Remote modules
+
+Remote module sources are configured through `REMOTE_MODULES`:
+
+```sh
+REMOTE_MODULES=billing=http://127.0.0.1:4110/lenso/module/v1,crm=grpc://127.0.0.1:50051
+```
+
+For each remote module name, the host also looks for:
+
+```sh
+REMOTE_MODULE_BILLING_TOKEN=secret-host-to-module-token
+REMOTE_MODULE_BILLING_TIMEOUT_MS=8000
+```
+
+The token is host-to-remote auth. The host does not forward caller bearer
+tokens or cookies to the remote module.
+
+## Module-local config
+
+Module-local config is boot-time config for module code:
+
+```sh
+LENSO_MODULE_AUTH_PASSWORD__JWT_ISSUER=acme
+LENSO_MODULE_AUTH_PASSWORD__JWT_TTL_HOURS=12
+LENSO_MODULE_SUPPORT__DEFAULT_ASSIGNEE=usr_1
+```
+
+Names are normalized:
+
+- `AUTH_PASSWORD` becomes module `auth-password`
+- `JWT_TTL_HOURS` becomes key `jwt_ttl_hours`
+- JSON-looking values are parsed as JSON
+- other values are strings
+
+Module load toggles are separate:
+
+```sh
+LENSO_MODULE_SUPPORT_ENABLED=false
+```
+
+Use module-local config for values module code needs at boot. Use runtime
+config descriptors for values operators should edit through Runtime Console.
+
+## Redis
+
+Lenso does not require Redis by default. The first-party auth module uses Redis
+only when the auth dependency is built with the Redis feature and runtime config
+sets `auth.session_cache=redis`.
+
+Generated hosts can apply the install profile:
+
+```sh
+lenso module install auth --profile redis-session-cache
+```
+
+That profile writes `REDIS_URL`, enables the auth Redis feature, and records the
+runtime default `auth.session_cache=redis`. You still need to provide the Redis
+service yourself.

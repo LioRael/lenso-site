@@ -3,15 +3,16 @@ title: Module Authoring
 description: Author modules with explicit manifests, contracts, and checks.
 ---
 
-Use this path when you want to add business capability to an existing Lenso
-host.
+Use this path when you want to add business capability to an existing Lenso host.
+A good first module is small: one data surface, one action or route, one runtime
+function or workflow, and one smoke check that proves it is wired.
 
-## Rust Facade
+## Rust facade
 
 For Rust module-authoring declarations, use the public facade crate:
 
 ```sh
-cargo add lenso@0.3.8
+cargo add lenso@0.3.10
 ```
 
 The facade focuses on serializable declarations and manifest linting:
@@ -22,7 +23,79 @@ The facade focuses on serializable declarations and manifest linting:
 - HTTP route declarations
 - Runtime Console surface declarations
 
-## Scaffold A Module
+## Manifest code
+
+This is the smallest useful shape: one capability, one data surface, one HTTP
+route, and one runtime function declaration.
+
+```rust
+use lenso::{
+    AdminSchema, EntitySchema, FieldSchema, FieldType, ModuleHttpMethod,
+    ModuleHttpRoute, ModuleManifest, ModuleSource, RuntimeFunctionDeclaration,
+    RuntimeSurface, ModuleManifestLintSeverity, lint_module_manifest,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("billing")
+        .capabilities(vec![
+            "billing.invoices.read".to_owned(),
+            "billing.invoices.write".to_owned(),
+        ])
+        .admin(AdminSchema {
+            entities: vec![EntitySchema {
+                name: "invoices".to_owned(),
+                label: "Invoices".to_owned(),
+                read_capability: "billing.invoices.read".to_owned(),
+                fields: vec![
+                    FieldSchema {
+                        name: "id".to_owned(),
+                        label: "ID".to_owned(),
+                        field_type: FieldType::String,
+                        nullable: false,
+                    },
+                    FieldSchema {
+                        name: "total_cents".to_owned(),
+                        label: "Total".to_owned(),
+                        field_type: FieldType::Integer,
+                        nullable: false,
+                    },
+                ],
+            }],
+        })
+        .http_routes(vec![ModuleHttpRoute {
+            method: ModuleHttpMethod::Post,
+            path: "/v1/billing/invoices".to_owned(),
+            capability: Some("billing.invoices.write".to_owned()),
+            display_name: Some("Create Invoice".to_owned()),
+            story_title: Some("Invoice Created".to_owned()),
+        }])
+        .runtime(RuntimeSurface {
+            functions: vec![RuntimeFunctionDeclaration {
+                name: "billing.invoice.send.v1".to_owned(),
+                version: 1,
+                queue: "billing".to_owned(),
+                input_schema: Some("billing.invoice.send.v1".to_owned()),
+                retry_policy: None,
+            }],
+        })
+        .build()
+}
+
+#[test]
+fn manifest_lints_cleanly() {
+    let lints = lint_module_manifest(ModuleSource::Linked, &manifest());
+    assert!(
+        lints
+            .iter()
+            .all(|lint| lint.severity != ModuleManifestLintSeverity::Error)
+    );
+}
+```
+
+The manifest tells the host what should appear in Runtime Console. It does not
+replace your route handlers, SQL, or runtime function implementation.
+
+## Scaffold the module
 
 ```sh
 lenso module create billing
@@ -34,13 +107,94 @@ Add a Runtime Console package when the module needs its own console surface:
 lenso module create billing --with-console
 ```
 
-## Agent-Ready Loop
+Use `--with-console` only when the module needs its own operator page. Data,
+actions, and runtime evidence already appear in the host Runtime Console.
+
+## Linked route code
+
+A generated host module wires HTTP through `LinkedBinding`:
+
+```rust
+use lenso::host::http::{
+    ApiOpenApiRouter, Json, LinkedBinding, LinkedHttpContribution, OpenApiRouter,
+    routes,
+};
+use serde::Serialize;
+use utoipa::ToSchema;
+
+#[derive(Serialize, ToSchema)]
+struct BillingStatus {
+    status: &'static str,
+}
+
+pub fn http_binding() -> LinkedBinding {
+    LinkedBinding::builder()
+        .http(LinkedHttpContribution {
+            public_prefixes: &["/v1/billing/"],
+            merge: merge_http,
+        })
+        .build()
+}
+
+fn merge_http(base: ApiOpenApiRouter) -> ApiOpenApiRouter {
+    base.merge(OpenApiRouter::new().routes(routes!(status)))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/billing/status",
+    operation_id = "billing_status",
+    tag = "billing"
+)]
+async fn status() -> Json<BillingStatus> {
+    Json(BillingStatus { status: "ok" })
+}
+```
+
+The starter app shows a fuller version with app-owned SQL and authenticated
+item routes under `src/modules/app`.
+
+## Minimal module shape
+
+Build the smallest module that proves a real user workflow:
+
+1. Declare the module manifest.
+2. Add one host-visible data surface or route.
+3. Add one action or runtime function.
+4. Add one smoke check that fails when the module is not installed.
+5. Open `/console` and confirm the capability is visible.
+
+Avoid adding a framework layer before the second module needs it. Shared code is
+cheap to extract after the shape is real.
+
+## Definition of done
+
+A first module is ready when:
+
+- the manifest lints cleanly
+- one useful capability is visible through the host
+- one smoke check fails if the module is not installed
+- `/console` shows the module evidence an operator would expect
+
+## Agent-ready loop
 
 The public proof loop is intentionally small:
 
 ```text
-lenso-start -> lenso-module-authoring -> lenso module create -> checks -> /console
+lenso-business-planning -> lenso-start -> lenso-module-authoring -> lenso module create -> checks -> /console
 ```
 
-A useful first module should have one data surface, one action, one runtime
-function or workflow, and one smoke check that fails if the module is not wired.
+Use [Examples](/docs/examples) when you want a runnable reference instead of a
+blank module.
+
+For exact manifest fields, builder methods, and lint categories, use
+[Manifest Reference](/docs/manifest-reference).
+
+When the module needs operator-facing UI, continue with
+[Admin Surfaces](/docs/admin-surfaces) and
+[Console Packages](/docs/console-packages). When it needs hooks, workers, or
+runtime endpoints, continue with
+[Runtime and Lifecycle](/docs/runtime-lifecycle).
+
+For agent-assisted work, use [Agent Development](/docs/agent-development) to
+route from product prompt to skill, scaffold, check, and `/console` evidence.

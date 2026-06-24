@@ -2,7 +2,13 @@
   "title": "Documentation",
   "pages": [
     "index",
+    "[Quickstart](/docs/quickstart)",
+    "[Agent Development](/docs/agent-development)",
+    "[Examples](/docs/examples)",
+    "---",
     "(host)",
-    "(module)"
+    "(module)",
+    "---",
+    "(concepts)"
   ]
 }

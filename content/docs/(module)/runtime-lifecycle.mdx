@@ -1,0 +1,131 @@
+---
+title: Runtime and Lifecycle
+description: Declare runtime functions, event handlers, lifecycle checks, and startup activation work.
+---
+
+Runtime work is host-owned. A module declares functions, event handlers, and
+lifecycle needs; the worker claims queues, applies retry policy, records runs,
+and projects evidence into Runtime Console.
+
+## Function declaration
+
+Declare runtime functions in the manifest:
+
+```rust
+use lenso::{ModuleManifest, RuntimeFunctionDeclaration, RuntimeSurface};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("support")
+        .runtime(RuntimeSurface {
+            functions: vec![RuntimeFunctionDeclaration {
+                name: "support.ticket.escalate.v1".to_owned(),
+                version: 1,
+                queue: "support".to_owned(),
+                input_schema: Some("support.ticket.escalate.v1".to_owned()),
+                retry_policy: None,
+            }],
+        })
+        .build()
+}
+```
+
+The declaration makes the function visible and lintable. Linked modules still
+register executable handlers through their binding. Remote modules implement
+the remote invocation protocol.
+
+## Runtime story evidence
+
+The worker writes durable evidence:
+
+| Table/source | Meaning |
+| --- | --- |
+| `platform.outbox` | module event dispatch state |
+| `runtime.function_runs` | queued, running, retried, completed, or failed function work |
+| `platform.story_events` | story projection records |
+| execution logs | technical operations and remote runtime metadata |
+
+Runtime Console uses those records to show Stories, function operations, dead
+letters, queues, retries, and technical operations.
+
+## Lifecycle declarations
+
+Lifecycle is data, not an arbitrary startup hook:
+
+```rust
+use lenso::{
+    LifecycleActivationJobDeclaration, LifecycleActivationRunPolicy,
+    LifecycleStartupCheckDeclaration, LifecycleStartupCheckKind, LifecycleSurface,
+    ModuleManifest, RuntimeFunctionDeclaration, RuntimeSurface,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("support")
+        .runtime(RuntimeSurface {
+            functions: vec![RuntimeFunctionDeclaration {
+                name: "support.ticket.reindex.v1".to_owned(),
+                version: 1,
+                queue: "support".to_owned(),
+                input_schema: Some("support.ticket.reindex.v1".to_owned()),
+                retry_policy: None,
+            }],
+        })
+        .lifecycle(LifecycleSurface {
+            startup_checks: vec![LifecycleStartupCheckDeclaration {
+                name: "reindex function is registered".to_owned(),
+                required: true,
+                check: LifecycleStartupCheckKind::FunctionRegistered {
+                    function_name: "support.ticket.reindex.v1".to_owned(),
+                },
+            }],
+            activation_jobs: vec![LifecycleActivationJobDeclaration {
+                name: "warm ticket index".to_owned(),
+                function_name: "support.ticket.reindex.v1".to_owned(),
+                run_policy: LifecycleActivationRunPolicy::EveryStartup,
+                input: serde_json::json!({ "reason": "startup" }),
+                required: false,
+            }],
+        })
+        .build()
+}
+```
+
+`required: true` lifecycle failures block startup. `required: false` failures
+warn and continue. Activation jobs currently use `every_startup`; non-idempotent
+install or upgrade lifecycle state is intentionally deferred.
+
+## Event handler boundary
+
+Remote event handlers use the host-owned outbox relay:
+
+1. module command writes business tables
+2. same transaction inserts `platform.outbox`
+3. worker claims pending outbox rows
+4. host invokes linked or remote handler
+5. handler may return a bounded `enqueue_function` action
+6. host inserts `runtime.function_runs`
+7. retries and dead letters stay in host tables
+
+Remote modules never claim outbox rows directly.
+
+## Remote runtime boundary
+
+For remote functions, the worker remains the only queue owner. The remote
+module is just an executor:
+
+```text
+POST /lenso/module/v1/runtime/functions/{function_name}/invoke
+```
+
+The host sends function run id, attempt, correlation id, actor context, trace
+context, and input. The remote returns output or a standard error envelope. The
+host maps retryable failures through the declared retry policy.
+
+## Definition of done
+
+A runtime-capable module is done when:
+
+- function declarations lint cleanly
+- linked or remote executors are registered
+- lifecycle checks reference existing functions or capabilities
+- a smoke path creates a function run
+- Runtime Console shows the run, retry, failure, or story evidence

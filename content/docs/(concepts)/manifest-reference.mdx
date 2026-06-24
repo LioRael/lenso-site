@@ -1,0 +1,168 @@
+---
+title: Manifest Reference
+description: Understand the serializable ModuleManifest contract that every Lenso module exposes.
+---
+
+`ModuleManifest` is the pure-data contract for a module. It describes what the
+host and Runtime Console can see: routes, admin surfaces, runtime functions,
+events, lifecycle work, Console packages, dependencies, and capabilities.
+
+Executable behavior does not live in the manifest. Linked modules attach
+behavior through `LinkedBinding`; remote modules expose behavior through HTTP or
+gRPC protocols. This keeps every loading source producing the same serializable
+shape.
+
+## Minimal manifest
+
+```rust
+use lenso::{
+    ConsoleArea, ConsolePackage, ConsoleSurface, ModuleHttpMethod,
+    ModuleHttpRoute, ModuleManifest,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("billing")
+        .capabilities(vec![
+            "billing.invoice.read".to_owned(),
+            "billing.invoice.write".to_owned(),
+        ])
+        .dependencies(vec!["auth".to_owned()])
+        .http_routes(vec![ModuleHttpRoute {
+            method: ModuleHttpMethod::Get,
+            path: "/v1/billing/invoices".to_owned(),
+            capability: Some("billing.invoice.read".to_owned()),
+            display_name: Some("List invoices".to_owned()),
+            story_title: Some("Billing invoices".to_owned()),
+        }])
+        .console(vec![ConsoleSurface {
+            name: "billing-invoices".to_owned(),
+            label: "Invoices".to_owned(),
+            area: ConsoleArea::Operations,
+            route: "/billing/invoices".to_owned(),
+            package: ConsolePackage {
+                name: "@acme/lenso-billing-console".to_owned(),
+                export: "billingConsoleModule".to_owned(),
+            },
+            icon: Some("Receipt".to_owned()),
+            required_capabilities: vec!["billing.invoice.read".to_owned()],
+            navigation: None,
+        }])
+        .build()
+}
+```
+
+## Fields
+
+| Field | Purpose |
+| --- | --- |
+| `name` | Stable module id, such as `auth`, `billing`, or `support-ticket`. |
+| `dependencies` | Other modules that must be installed first. Use this for hard runtime assumptions such as `auth`. |
+| `capabilities` | Dot-separated permission names that routes, admin surfaces, runtime work, or Console pages can reference. |
+| `http_routes` | Module-owned HTTP route metadata. Linked modules still mount real Axum routes through bindings. Remote route proxying uses this metadata for host-visible route intent. |
+| `admin` | Schema-driven, declarative custom, or embedded custom operator surfaces. |
+| `runtime` | Runtime function declarations. The declaration is manifest data; handlers live in the loading source. |
+| `events` | Event handler declarations. The host registers and invokes the backing handler through the source binding. |
+| `lifecycle` | Startup checks and activation jobs. The host validates and schedules these entries instead of giving modules arbitrary startup callbacks. |
+| `console` | Runtime Console frontend surfaces backed by trusted packages or hosted bundles. |
+| `story_display` | Console story-display metadata for timeline and inspection surfaces. |
+
+## Builder methods
+
+```rust
+ModuleManifest::builder("billing")
+    .dependencies(vec!["auth".to_owned()])
+    .capabilities(vec!["billing.invoice.read".to_owned()])
+    .http_routes(vec![/* ModuleHttpRoute */])
+    .admin(/* AdminSchema */)
+    .declarative_admin(/* AdminDeclarativeSurface */)
+    .embedded_admin(/* AdminEmbeddedSurface */)
+    .runtime(/* RuntimeSurface */)
+    .events(/* EventSurface */)
+    .lifecycle(/* LifecycleSurface */)
+    .console(vec![/* ConsoleSurface */])
+    .story_display(vec![/* StoryDisplayDescriptor */])
+    .build();
+```
+
+Use `admin`, `declarative_admin`, and `embedded_admin` as alternatives. A module
+has one admin surface in its manifest; it can still expose multiple Console
+surfaces through `console`.
+
+## Capability naming
+
+Use dot-separated lowercase names:
+
+```text
+<module>.<resource>.<action>
+```
+
+Good examples:
+
+```text
+billing.invoice.read
+billing.invoice.write
+support.ticket.assign
+auth.session.revoke
+```
+
+Avoid names such as `BillingRead`, `billing/read`, or `read_invoice`. Manifest
+lints warn when a capability name is not dot-separated lowercase, and they also
+warn when routes or admin permissions reference capabilities that the manifest
+does not declare.
+
+## Route metadata
+
+`ModuleHttpRoute` is metadata:
+
+```rust
+ModuleHttpRoute {
+    method: ModuleHttpMethod::Post,
+    path: "/v1/billing/invoices/{invoice_id}/void".to_owned(),
+    capability: Some("billing.invoice.write".to_owned()),
+    display_name: Some("Void invoice".to_owned()),
+    story_title: Some("Invoice voided".to_owned()),
+}
+```
+
+Keep these values operator-friendly:
+
+- `path` should be the host-visible path.
+- `capability` should match a value in `capabilities`.
+- `display_name` should be compact enough for timeline nodes.
+- `story_title` should read naturally when the route starts a business story.
+
+## Lint categories
+
+The host exposes `manifest_lints` through module metadata, and Runtime Console
+groups them into categories:
+
+| Category | Common issue |
+| --- | --- |
+| `module` | Missing module name. |
+| `capability` | Bad naming or referenced-but-undeclared capability. |
+| `routes` | Duplicate method/path, missing display metadata, or missing remote route capability. |
+| `admin.schema` | Empty schema or missing read capability. |
+| `admin.declarative` | Empty pages, missing query values, or invalid fallback schema references. |
+| `admin.embedded` | Non-HTTPS entry URL, missing origin allowlist, or invalid fallback permissions. |
+| `runtime` | Missing function names, duplicate functions, bad queue names, or invalid retry policy. |
+| `events` | Missing event names or duplicate handler names. |
+| `lifecycle` | Startup checks or activation jobs that reference unknown runtime functions. |
+| `console` | Duplicate routes, missing labels, invalid package shape, or reserved navigation workspace ids. |
+
+Treat `error` lints as blockers. Treat `warning` lints as operator-experience
+debt unless the page explicitly says the warning is acceptable for a local spike.
+
+## When to change the manifest
+
+Change the manifest whenever the host or Console needs new metadata:
+
+- a new public route or route capability;
+- a new data-admin entity;
+- a new module-owned Console page;
+- a new runtime function or event handler;
+- a lifecycle startup check or activation job;
+- a new dependency such as `auth`;
+- a new capability that will be referenced by another surface.
+
+After changing manifest shape, run the relevant local checks and open
+[Runtime Console](/docs/runtime-console) to verify the host-visible result.

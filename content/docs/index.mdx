@@ -1,20 +1,103 @@
 ---
-title: Overview
-description: Build and verify modular Rust business systems with Lenso.
+title: Start Here
+description: Choose the right Lenso path and get to a verified local system.
 ---
 
 Lenso is an agent-ready modular app framework for Rust business systems.
 
-The docs are split by who is doing the work:
+Start with one deployable backend, add business modules, then verify the system
+through the Runtime Console. These docs are organized around the two jobs users
+usually have on day one:
 
-- Host builders create and operate one deployable Lenso app.
+- Host builders create and operate the app that loads modules.
 - Module authors add business capability through manifests, routes, actions,
   runtime functions, and optional console surfaces.
+
+## Choose Your Path
+
+- New host app: read [Host Quickstart](/docs/quickstart) and finish with the
+  API, worker, Postgres, and `/console` running.
+- Host configuration: read [Configuration](/docs/configuration) when you need
+  real env variables for profiles, CORS, Redis, telemetry, Console paths, or
+  remote module tokens.
+- Platform model: read [Platform Concepts](/docs/platform-concepts) to
+  understand manifests, host-owned runtime work, and remote boundaries.
+- Manifest fields: read [Manifest Reference](/docs/manifest-reference) when you
+  need exact `ModuleManifest` fields, builder methods, capabilities, route
+  metadata, and lint categories.
+- API integrations: read [API Clients](/docs/api-clients) when consuming Lenso
+  HTTP APIs from OpenAPI or handling the standard error envelope.
+- Contract work: read [Contracts and Checks](/docs/contracts-and-checks) before
+  changing generated artifacts, OpenAPI, gRPC, or architecture-sensitive code.
+- Release safety: read [Checks and Release](/docs/checks-and-release) when you
+  need to know which `just` gate matches a code, contract, Console, or release
+  change.
+- CLI work: read [CLI Reference](/docs/cli-reference) for `lenso host`,
+  `lenso serve`, `lenso module`, `lenso module doctor`, catalogs, marketplace
+  compatibility, and Console package plans.
+- Install flow: read [Module Installation](/docs/module-installation) when you
+  need to know what the CLI writes locally and how a running host registers
+  modules through the admin API.
+- Deployment: read [Deployment](/docs/deployment) before packaging a generated
+  host, publishing a hosted Console bundle, or wiring migrations and workers.
+- Data changes: read [Database and Migrations](/docs/database-migrations) before
+  adding host-linked module SQL or running deploy migrations.
+- Operations: read [Observability](/docs/observability) for health probes,
+  structured logs, OTLP traces, and Runtime Console runtime views.
+- Host verification: read [Runtime Console](/docs/runtime-console) and confirm
+  module health, data, actions, and runtime evidence.
+- Broken local setup: read [Troubleshooting](/docs/troubleshooting) to diagnose
+  blank Console, missing modules, remote service readiness, CORS, Redis,
+  generated artifacts, busy ports, and release-gate failures.
+- Built-in auth: read [Built-in Modules](/docs/built-in-modules) and install
+  `auth`, `auth-password`, or `auth-device` into a host.
+- Rust module: read [Module Authoring](/docs/module-authoring) and scaffold one
+  useful capability with a smoke check.
+- Operator surfaces: read [Admin Surfaces](/docs/admin-surfaces) when the module
+  needs data pages, actions, query values, or custom Console UI.
+- Auth and permissions: read
+  [Auth and Capabilities](/docs/auth-capabilities) when a module needs actor
+  identity, session integration, or capability-scoped operations.
+- Runtime work: read [Runtime and Lifecycle](/docs/runtime-lifecycle) when you
+  need handlers, lifecycle declarations, background workers, or remote runtime
+  endpoints.
+- Console package: read [Console Packages](/docs/console-packages) when a module
+  ships a typed React package for the Runtime Console.
+- Out-of-process module: read [Remote Modules](/docs/remote-modules) and expose
+  a manifest URL the host can install.
+- Agent-assisted development: read [Agent Development](/docs/agent-development)
+  and use skills, scaffolds, checks, and `/console` evidence.
+- Working reference: read [Examples](/docs/examples) and run the support-ticket
+  or account-profile smokes.
+
+## Concepts
+
+<Cards>
+  <Card title="Platform Concepts" href="/docs/platform-concepts" description="Understand Lenso's manifest-first modules, host-owned lifecycle, runtime evidence, and split-later model." />
+  <Card title="Manifest Reference" href="/docs/manifest-reference" description="Read the ModuleManifest fields, builder methods, capability rules, route metadata, and lint categories." />
+  <Card title="API Clients" href="/docs/api-clients" description="Consume Lenso APIs from committed OpenAPI contracts and handle the standard error envelope." />
+  <Card title="Contracts and Checks" href="/docs/contracts-and-checks" description="Use committed OpenAPI, error, and gRPC contracts with the right local gates." />
+  <Card title="Checks and Release" href="/docs/checks-and-release" description="Choose the right local gate for Rust, OpenAPI, generated artifacts, Console metadata, and release packaging." />
+</Cards>
+
+## Agent
+
+<Cards>
+  <Card title="Agent Development" href="/docs/agent-development" description="Turn product prompts into Lenso hosts, modules, checks, and Runtime Console evidence." />
+</Cards>
 
 ## Host
 
 <Cards>
   <Card title="Quickstart" href="/docs/quickstart" description="Install the CLI, scaffold a host app, and run the API, worker, and bundled console." />
+  <Card title="CLI Reference" href="/docs/cli-reference" description="Use host, serve, module, doctor, catalog, marketplace, and Console package commands." />
+  <Card title="Configuration" href="/docs/configuration" description="Map profiles, ports, CORS, telemetry, Console paths, remote modules, and module-owned env variables." />
+  <Card title="Database and Migrations" href="/docs/database-migrations" description="Add host-linked module SQL, run migrations, and keep applied migration names stable." />
+  <Card title="Observability" href="/docs/observability" description="Use health probes, structured logs, OTLP traces, and Runtime Console runtime views." />
+  <Card title="Built-in Modules" href="/docs/built-in-modules" description="Install auth, password login, device policy, Redis sessions, and auth Console surfaces." />
+  <Card title="Module Installation" href="/docs/module-installation" description="Understand CLI installs, local descriptor writes, catalog discovery, admin install requests, and uninstall cleanup." />
+  <Card title="Deployment" href="/docs/deployment" description="Package a generated host, run database migrations, ship Console assets, and keep release checks in the path." />
+  <Card title="Troubleshooting" href="/docs/troubleshooting" description="Diagnose blank Console, missing modules, remote services, CORS, Redis, generated artifacts, busy ports, and release gates." />
   <Card title="Runtime Console" href="/docs/runtime-console" description="Use the host-served console to inspect modules, actions, data, and runtime evidence." />
   <Card title="Architecture" href="/docs/architecture" description="Understand the deployable host shape, package boundaries, and service-ready path." />
 </Cards>
@@ -23,19 +106,24 @@ The docs are split by who is doing the work:
 
 <Cards>
   <Card title="Module Authoring" href="/docs/module-authoring" description="Declare module data, routes, actions, runtime functions, and console surfaces." />
+  <Card title="Admin Surfaces" href="/docs/admin-surfaces" description="Expose schema data, declarative pages, actions, query values, and sandboxed custom UI." />
+  <Card title="Auth and Capabilities" href="/docs/auth-capabilities" description="Use actor context, auth providers, capability declarations, scopes, and module-owned profile tables." />
+  <Card title="Runtime and Lifecycle" href="/docs/runtime-lifecycle" description="Register runtime functions, lifecycle hooks, background workers, and remote runtime endpoints." />
+  <Card title="Console Packages" href="/docs/console-packages" description="Build and publish typed React packages for module-owned Runtime Console surfaces." />
   <Card title="Remote Modules" href="/docs/remote-modules" description="Run modules out of process while the host owns loading, proxying, and receipts." />
   <Card title="Examples" href="/docs/examples" description="Use support-ticket and account-profile as runnable module proof points." />
 </Cards>
 
-## Current Public Surface
+## What to install
 
-- `lenso@0.3.8` is the public Rust facade for module-authoring declarations and the `host` feature.
-- `lenso-cli` scaffolds host apps with `lenso host init <dir>`.
+- Public skills: `npx skills add lenso-dev/skills`.
+- `lenso@0.3.10` is the public Rust facade for module-authoring declarations and the `host` feature.
+- `lenso-cli@0.1.20` scaffolds host apps with `lenso host init <dir>`.
 - `@lenso/remote-module-kit@0.1.1` supports out-of-process JavaScript and TypeScript modules.
 - Runtime Console is bundled into generated hosts by published CLI builds.
 
-## What Lenso Is Not Yet
+## Mental Model
 
 Lenso is modular-first and service-ready, but it is not a Kubernetes-first
-microservice platform. Build one deployable system first, then split selected
-modules when their boundaries harden.
+microservice platform. Build one deployable system first. Split selected
+modules only when their ownership, data, and operational boundaries are real.

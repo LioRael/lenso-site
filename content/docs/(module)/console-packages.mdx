@@ -1,0 +1,151 @@
+---
+title: Console Packages
+description: Add module-owned Runtime Console pages through explicit package and route contracts.
+---
+
+Console packages are module-owned Runtime Console pages. They are different from
+admin surfaces:
+
+- `AdminSurface` describes generic or declarative data rendering under
+  `/admin/data/*`.
+- `ConsoleSurface` describes a Runtime Console route and frontend package export
+  that the host may mount.
+
+## Backend declaration
+
+Declare Console surfaces in `ModuleManifest.console`:
+
+```rust
+use lenso::{
+    ConsoleArea, ConsoleNavigation, ConsoleNavigationGroup, ConsolePackage,
+    ConsoleSurface, ConsoleWorkspaceRef, ModuleManifest,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("crm")
+        .capabilities(vec!["crm.contacts.read".to_owned()])
+        .console(vec![ConsoleSurface {
+            name: "contacts".to_owned(),
+            label: "Contacts".to_owned(),
+            area: ConsoleArea::Data,
+            route: "/crm/contacts".to_owned(),
+            package: ConsolePackage {
+                name: "@vendor/crm-console".to_owned(),
+                export: "crmConsoleModule".to_owned(),
+            },
+            icon: Some("briefcase".to_owned()),
+            required_capabilities: vec!["crm.contacts.read".to_owned()],
+            navigation: Some(ConsoleNavigation {
+                workspace: ConsoleWorkspaceRef {
+                    id: "crm".to_owned(),
+                    label: "CRM".to_owned(),
+                    icon: Some("briefcase".to_owned()),
+                },
+                group: Some(ConsoleNavigationGroup {
+                    id: "customers".to_owned(),
+                    label: "Customers".to_owned(),
+                    icon: None,
+                    order: Some(20),
+                }),
+                order: Some(10),
+            }),
+        }])
+        .build()
+}
+```
+
+Keep the backend declaration and frontend `console-surface.json` aligned. A
+Rust test can load the JSON and compare it with the manifest surface.
+
+## Frontend package rule
+
+Console packages import the host through the public host API only:
+
+```ts
+import { defineConsoleModule } from "@lenso/runtime-console-api";
+```
+
+Allowed:
+
+- package-local files
+- declared dependencies
+- `@lenso/runtime-console-api`
+
+Forbidden:
+
+- deep imports from Runtime Console pages, hooks, components, stores, or data
+- host bearer tokens
+- ad hoc globals
+- direct access to host query clients
+
+## Workspace package workflow
+
+In the `lenso-runtime-console` repository:
+
+```sh
+pnpm create:console-package crm
+pnpm check:console-packages
+pnpm check
+```
+
+The scaffold creates package registration files, a package manifest, and a Rust
+surface snippet. Use that generated snippet as the starting point for the
+backend `ModuleManifest.console` declaration.
+
+## Dynamic hosted bundles
+
+Installed third-party modules can ship already-built Console bundles. The host
+serves them from:
+
+```text
+/console/extensions/*
+```
+
+Runtime Console reads:
+
+```text
+/console/extensions/registry.json
+```
+
+Registry entries bind a package/export to a same-origin bundle:
+
+```json
+{
+  "version": 1,
+  "bundles": [
+    {
+      "packageName": "@vendor/crm-console",
+      "exportName": "crmConsoleModule",
+      "entry": "/console/extensions/crm/entry.js",
+      "hostApi": "1",
+      "styles": ["/console/extensions/crm/entry.css"]
+    }
+  ]
+}
+```
+
+Rules:
+
+- entries and styles must be same-origin URLs
+- `hostApi` must match the Runtime Console host API version
+- malformed exports are rejected before route registration
+- React and the host API are externalized through stable host entries
+- the browser does not install npm packages
+
+## Styling
+
+Console extension CSS should reference the token contract at build time:
+
+```css
+@reference "@lenso/runtime-console-api/theme.css";
+```
+
+Do not emit a second host theme. Extension styles should consume host tokens,
+not redefine them.
+
+## Missing package behavior
+
+If a backend manifest declares a Console surface but the host has not trusted or
+registered the package, Runtime Console should show the missing package state
+instead of silently hiding the module. That is install evidence for the
+operator, not a frontend bug.

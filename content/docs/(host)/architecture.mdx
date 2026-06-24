@@ -3,31 +3,55 @@ title: Architecture
 description: The current Lenso runtime shape and ownership boundaries.
 ---
 
-## Shape
+Lenso starts as one deployable backend. That keeps first-user setup boring while
+still forcing modules to declare the boundaries they would need if they later
+move out of process.
 
-Lenso starts as one deployable backend with a worker, migrations, Postgres, and a
-bundled Runtime Console. It is service-ready by design: build modular first, then
-move selected modules across process or service boundaries when those boundaries
-harden.
+For the higher-level model, read [Platform Concepts](/docs/platform-concepts).
+For generated artifacts and architecture gates, read
+[Contracts and Checks](/docs/contracts-and-checks).
 
-## Runtime Pieces
+## Runtime shape
 
-- API app
-- worker app
-- migration app
-- Postgres
+A generated host contains:
+
+- API app for HTTP routes and admin APIs
+- worker app for background processing and runtime functions
+- migration app for deterministic database setup
+- Postgres for host-owned persistence
 - optional Redis for auth session lookup
-- bundled Runtime Console
+- bundled Runtime Console served by the API
 
-## Boundaries
+This is a modular monolith first. Remote modules are the escape hatch for
+capabilities that need their own process, runtime, or deployment cadence.
 
-- `lenso` owns Rust services, platform crates, modules, migrations, and contracts.
-- `lenso-runtime-console` owns the React/Vite Runtime Console and JavaScript module packages.
-- `lenso-cli` owns the standalone `lenso` command and starter template.
-- `lenso-examples` owns runnable module examples and smoke checks.
+## Repository ownership
 
-## Package Rule
+| Repository | Owns |
+| --- | --- |
+| `lenso` | Rust services, platform crates, first-party modules, migrations, contracts |
+| `lenso-runtime-console` | React Runtime Console, console package APIs, JavaScript module packages |
+| `lenso-cli` | `lenso` command, host starter template, local service wrapper |
+| `lenso-examples` | Runnable module examples and smoke checks |
+
+## Package rule
 
 The public surface should stay small. Publish packages and commands only when
 they have a clear target author, a minimal install command, a stable import path
 or binary name, and README usage that starts from a blank project.
+
+## Linked or remote
+
+Start linked when the module belongs to the same app and release cycle. Move it
+remote when it needs a different runtime, owner, deployment cadence, or trust
+boundary.
+
+Remote modules still use host-owned loading, receipts, proxying, and Runtime
+Console visibility. The host remains the control plane.
+
+## Split later
+
+Keep a module linked in the host until there is a concrete reason to split it:
+different runtime, separate ownership, independent release cadence, or a trust
+boundary. When that reason exists, use the remote-module path while keeping
+loading, receipts, and operator visibility host-owned.

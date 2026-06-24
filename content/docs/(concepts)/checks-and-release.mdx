@@ -1,0 +1,136 @@
+---
+title: Checks and Release
+description: Know which local checks to run before changing manifests, contracts, generated hosts, or release artifacts.
+---
+
+Lenso treats generated artifacts, contracts, manifests, and hosted Console assets
+as part of the product surface. Run the smallest useful check while developing,
+then run the full gate before release work.
+
+## Command map
+
+| Command | What it proves |
+| --- | --- |
+| `just fmt` | Formats Rust sources. |
+| `just fmt-check` | Fails when Rust formatting changed. |
+| `just rust-check` | Compiles Rust workspace targets. |
+| `just test` | Runs Rust workspace tests with the locked dependency graph. |
+| `just generate` | Regenerates OpenAPI and JSON Schema artifacts. |
+| `just generated-check` | Regenerates artifacts and fails when git differs. |
+| `just arch-check` | Runs architecture guardrails. |
+| `just check` | Runs the default backend local quality gate without slow smoke checks. |
+| `just ci` | Mirrors the GitHub Actions backend quality path. |
+| `just release-check` | Runs the backend release gate. |
+| `just package-readiness` | Verifies the public `lenso` facade crate package surface. |
+
+Runtime Console checks live in the sibling `lenso-runtime-console` repository.
+Use its `pnpm check` path when a backend change affects Console metadata,
+OpenAPI-generated clients, module install state, or hosted bundle behavior.
+
+## What to run after a change
+
+| Change | Minimum useful check |
+| --- | --- |
+| Rust implementation only | `just check` |
+| Public route, OpenAPI annotation, DTO, or error contract | `just generate && just generated-check && just check` |
+| `ModuleManifest` field, lint, admin surface, runtime, lifecycle, or Console surface | `just generate && just generated-check && just check` |
+| Generated host template or CLI-facing starter behavior | CLI starter smoke plus backend `just check` |
+| Runtime Console module metadata or install-state UI | Backend generated checks plus Runtime Console `pnpm check` |
+| Release package, hosted Console bundle, or publish workflow | `just release-check` and `just package-readiness` |
+
+## Local smoke
+
+Use this when you need service proof instead of only compile proof:
+
+```sh
+cp .env.example .env
+just db-up
+just migrate
+just api
+```
+
+Run the worker in a second shell:
+
+```sh
+just worker
+```
+
+For the first-user backend flow, including remote module fixture and
+Console-facing admin APIs:
+
+```sh
+just first-user-smoke
+```
+
+## Contract discipline
+
+Generated files are committed artifacts, not hand-authored files. Change the
+Rust source of truth, then regenerate.
+
+```sh
+just generate
+just generated-check
+```
+
+The architecture checker also catches common boundary mistakes:
+
+- DDD-style folders inside modules such as `api`, `application`, `domain`, or
+  `infrastructure`;
+- cross-module imports inside module source code;
+- missing OpenAPI artifacts;
+- stale contract artifacts;
+- missing event payload contracts for current events.
+
+## Release candidate flow
+
+```sh
+git switch main
+git status --short
+just release-check
+git switch -c release/vX.Y.Z
+just console-build
+LENSO_RELEASE_VERSION=vX.Y.Z just release-package
+```
+
+Release packaging writes source and artifact files under `dist/release`. When a
+hosted Runtime Console bundle exists, the release package includes
+`.lenso/console/dist` so host users do not need Node.js or pnpm to serve
+`/console`.
+
+## GitHub release workflow
+
+Trigger the release workflow with:
+
+| Input | Value |
+| --- | --- |
+| `version` | `vX.Y.Z` |
+| `notes` | short release summary |
+| `publish_rust_crate` | `false` for dry run, `true` for publish |
+
+Use `publish_rust_crate=false` first. That path runs the release gates,
+validates version metadata, dry-runs package publishing, generates release
+notes, and uploads package artifacts without publishing registry versions.
+
+After a publish run, verify:
+
+```sh
+git rev-parse vX.Y.Z
+gh release view vX.Y.Z
+```
+
+## Release notes inputs
+
+Collect these before publishing:
+
+- commit SHA;
+- `just release-check` result;
+- Runtime Console `pnpm check` result when publishing coordinated backend and
+  frontend behavior;
+- generated artifact status from `just generated-check`;
+- known local infrastructure caveats;
+- minimum local stack: Rust toolchain, Docker, and Postgres.
+
+The release scope should stay focused on the installable module path. Do not
+block a release on centralized marketplace hardening such as publisher trust,
+registry review, provenance, or signatures unless that is the explicit release
+goal.

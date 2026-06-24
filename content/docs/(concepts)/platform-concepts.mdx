@@ -1,0 +1,160 @@
+---
+title: Platform Concepts
+description: The Lenso primitives that make modules explicit, observable, and safe to split later.
+---
+
+Lenso is not just a starter template. The useful part is the set of small,
+host-owned primitives that make a business system understandable to humans,
+agents, and operators.
+
+## The core idea
+
+A Lenso app starts as one deployable Rust backend:
+
+- the API serves product routes and Runtime Console
+- the worker owns runtime queues, outbox dispatch, and lifecycle work
+- the migration app owns database setup
+- modules declare what they contribute
+- the host controls loading, auth, config, observability, and release shape
+
+That gives a team the ergonomics of a modular monolith without hiding the seams
+needed to split a module into a service later.
+
+## Manifest data, behavior seams
+
+Every module exposes pure metadata through `ModuleManifest`. Executable behavior
+stays behind source-specific seams such as linked Rust bindings or remote module
+protocol handlers.
+
+```rust
+use lenso::{
+    ModuleManifest, ModuleHttpMethod, ModuleHttpRoute, RuntimeFunctionDeclaration,
+    RuntimeSurface,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("support")
+        .capabilities(vec![
+            "support.tickets.read".to_owned(),
+            "support.tickets.write".to_owned(),
+        ])
+        .http_routes(vec![ModuleHttpRoute {
+            method: ModuleHttpMethod::Post,
+            path: "/v1/support/tickets".to_owned(),
+            capability: Some("support.tickets.write".to_owned()),
+            display_name: Some("Create Ticket".to_owned()),
+            story_title: Some("Ticket Created".to_owned()),
+        }])
+        .runtime(RuntimeSurface {
+            functions: vec![RuntimeFunctionDeclaration {
+                name: "support.ticket.escalate.v1".to_owned(),
+                version: 1,
+                queue: "support".to_owned(),
+                input_schema: Some("support.ticket.escalate.v1".to_owned()),
+                retry_policy: None,
+            }],
+        })
+        .build()
+}
+```
+
+The manifest is what Runtime Console, install checks, remote loading, and
+agent-authored smoke checks can reason about. It is not where SQL handlers,
+runtime executors, or remote clients live.
+
+## Host-owned lifecycle
+
+Lifecycle is also declaration data. A module can say which startup checks and
+activation jobs it needs, but the worker decides when to run them and records
+the result through runtime-owned paths.
+
+```rust
+use lenso::{
+    LifecycleActivationJobDeclaration, LifecycleActivationRunPolicy,
+    LifecycleStartupCheckDeclaration, LifecycleStartupCheckKind, LifecycleSurface,
+    ModuleManifest, RuntimeFunctionDeclaration, RuntimeSurface,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("support")
+        .runtime(RuntimeSurface {
+            functions: vec![RuntimeFunctionDeclaration {
+                name: "support.ticket.reindex.v1".to_owned(),
+                version: 1,
+                queue: "support".to_owned(),
+                input_schema: Some("support.ticket.reindex.v1".to_owned()),
+                retry_policy: None,
+            }],
+        })
+        .lifecycle(LifecycleSurface {
+            startup_checks: vec![LifecycleStartupCheckDeclaration {
+                name: "reindex function is registered".to_owned(),
+                required: true,
+                check: LifecycleStartupCheckKind::FunctionRegistered {
+                    function_name: "support.ticket.reindex.v1".to_owned(),
+                },
+            }],
+            activation_jobs: vec![LifecycleActivationJobDeclaration {
+                name: "warm ticket index".to_owned(),
+                function_name: "support.ticket.reindex.v1".to_owned(),
+                run_policy: LifecycleActivationRunPolicy::EveryStartup,
+                input: serde_json::json!({ "reason": "startup" }),
+                required: false,
+            }],
+        })
+        .build()
+}
+```
+
+There is no generic module startup callback. That is deliberate: startup work is
+visible, retryable, and comparable across linked and remote modules.
+
+## Runtime evidence
+
+Runtime Console is not a decorative dashboard. It is the proof that the host saw
+the work.
+
+| Source | What it proves |
+| --- | --- |
+| `platform.outbox` | module events were committed and dispatched |
+| `runtime.function_runs` | runtime work was enqueued, retried, completed, or failed |
+| `platform.story_events` | business and operator events were projected into stories |
+| `platform.remote_http_proxy_calls` | remote module traffic crossed the host boundary |
+
+When a module is done, the answer should not be "it compiles." It should be
+"the host loaded it, the action appears, the runtime work is visible, and the
+story has evidence."
+
+## Remote does not mean unmanaged
+
+Remote modules are for real boundaries: a separate runtime, separate owner,
+separate deploy cadence, or a trust boundary. They do not get to become a second
+platform.
+
+The host still owns:
+
+- manifest loading and lint results
+- `/modules/{module}/http/{*path}` proxy namespace
+- caller auth and capability checks
+- request and response limits
+- header allowlists
+- runtime queues and retry policy
+- outbox dispatch
+- Runtime Console evidence
+
+The host may authenticate to the remote module, but it does not forward the
+caller's bearer token or cookies.
+
+## The split rule
+
+Start linked when the module belongs to the app. Move remote when one boundary
+is real enough to pay for:
+
+- different runtime
+- different deployment cadence
+- different team ownership
+- different trust model
+- independent operational scaling
+
+Until then, the lazy path is the good path: one host, explicit module seams,
+and visible evidence.

@@ -1,0 +1,154 @@
+---
+title: Troubleshooting
+description: Diagnose common host, module install, Console, remote module, and release-check problems.
+---
+
+Start by separating host state from module state:
+
+```sh
+git status --short
+lenso module doctor
+curl -sS http://127.0.0.1:3000/api/admin/modules | jq .
+```
+
+If the host is running but the Console does not show the expected module, restart
+both API and worker after install changes.
+
+## Common symptoms
+
+| Symptom | Check | Fix |
+| --- | --- | --- |
+| `/console` returns 404 | `.lenso/console/dist` exists | Upgrade CLI, then run `lenso host update-console`. |
+| Console opens but module is missing | `/api/admin/modules` and `.env` | Restart API and worker after installing or updating modules. |
+| Remote module is installed but unhealthy | `lenso module doctor <name>` | Start the remote service, fix `readyUrl`, or clear stale `.lock` and `.pid` files called out by doctor. |
+| `REMOTE_MODULES` changed but nothing happens | process environment | Restart the process that loads modules. Environment values are read at startup. |
+| Auth works locally but sessions are slow | `auth.session_cache` and `REDIS_URL` | Install `auth --profile redis-session-cache` and provide Redis separately. |
+| Redis auth profile fails at runtime | Redis service availability | Start Redis and confirm `REDIS_URL` points at the right database. |
+| CORS blocks browser requests | `CORS_ALLOWED_ORIGINS` | Add the frontend origin or use the generated local defaults. |
+| OTLP exporter errors in local smoke | `OTEL_EXPORTER_OTLP_ENDPOINT` | Unset it for normal local smoke or start observability services. |
+| `just generated-check` fails | git diff | Do not hand-edit generated files. Run `just generate` and commit the generated artifact changes with the source change. |
+| `just release-check` fails on infrastructure | Docker, ports, Postgres | Fix local services first, then rerun the gate. Treat code failures as release blockers. |
+
+## Console is blank or stale
+
+Refresh hosted Console assets:
+
+```sh
+lenso host update-console
+```
+
+If the host was generated before the CLI bundled Console assets, upgrade the CLI
+first:
+
+```sh
+npm install -g @lenso/cli@latest
+lenso host update-console
+```
+
+Then restart the host process and open:
+
+```text
+http://127.0.0.1:3000/console
+```
+
+## Module install did not appear
+
+Check the local receipt:
+
+```sh
+cat .lenso/module-installs.json | jq .
+```
+
+Check the environment written by install:
+
+```sh
+grep -E 'REMOTE_MODULES|LENSO_MODULE_' .env
+```
+
+Then restart API and worker. Linked module installs can update `Cargo.toml` and
+`src/lib.rs`, so rebuild the host when necessary.
+
+## Remote module service is not ready
+
+Run:
+
+```sh
+lenso module doctor
+```
+
+Doctor checks declared services in `.lenso/module-services.json` and reports:
+
+- service not configured;
+- service disabled;
+- service ready;
+- manual service not ready;
+- stale host-started state;
+- ready URL not responding.
+
+If the module is an external service, start it yourself and make sure the
+`readyUrl` responds before starting the host.
+
+## Remote manifest URL does not respond
+
+Open the manifest directly:
+
+```sh
+curl -sS http://127.0.0.1:4100/lenso/module/v1/manifest | jq .
+```
+
+For gRPC modules, check the endpoint in `REMOTE_MODULES`:
+
+```sh
+REMOTE_MODULES=crm=grpc://127.0.0.1:4100 lenso serve
+```
+
+Use `grpc://` or `grpcs://` only for gRPC remotes. Use the HTTP manifest URL for
+HTTP remotes.
+
+## Generated artifacts changed
+
+When `just generated-check` fails, inspect the diff:
+
+```sh
+git diff -- contracts generated
+```
+
+If the diff matches your Rust/OpenAPI change, keep it. If it does not, fix the
+source and regenerate:
+
+```sh
+just generate
+just generated-check
+```
+
+## Ports are busy
+
+Change the host port for one shell:
+
+```sh
+HTTP_PORT=3010 lenso serve
+```
+
+For first-user smoke defaults, use:
+
+```sh
+FIRST_USER_SMOKE_HTTP_PORT=3011 \
+FIRST_USER_SMOKE_REMOTE_MODULE_ADDR=127.0.0.1:4111 \
+just first-user-smoke
+```
+
+## Release gate fails
+
+Run the smaller checks to find the failing layer:
+
+```sh
+just fmt-check
+just rust-check
+just test
+just generated-check
+just arch-check
+```
+
+If only Docker or Postgres is failing, fix local infrastructure and rerun. If
+formatting, compile, tests, generated contracts, or architecture checks fail,
+treat the failure as release-blocking code work.
