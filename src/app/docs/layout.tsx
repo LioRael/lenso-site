@@ -12,15 +12,17 @@ const docsLayoutStyle = {
 } as CSSProperties & Record<string, string>;
 
 export default function Layout({ children }: LayoutProps<'/docs'>) {
+  const options = baseOptions();
+
   return (
     <>
       <DocsLayout
         tree={source.getPageTree()}
-        {...baseOptions()}
+        {...options}
         containerProps={{ className: 'docs-eve-layout', style: docsLayoutStyle }}
         githubUrl={undefined}
         links={[]}
-        nav={{ component: <DocsTopbar /> }}
+        nav={{ ...options.nav, component: <DocsTopbar /> }}
         searchToggle={{ enabled: false }}
         sidebar={{ collapsible: false }}
         tabMode="auto"
