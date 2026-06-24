@@ -1,0 +1,155 @@
+---
+title: Host Composition
+description: Understand how a Lenso host decides which linked and remote modules are loaded.
+---
+
+Host composition is the place where a Lenso app decides which modules exist in
+the running host.
+
+It is deliberately separate from module manifests:
+
+- a manifest says what one module contributes;
+- host composition says which linked modules the app owns;
+- environment config says which profile and remote module sources to load;
+- runtime config can enable or disable modules at startup.
+
+## The generated host shape
+
+Generated hosts expose one function used by the API, worker, and migration
+entrypoints:
+
+```rust
+mod modules;
+
+use lenso::host::prelude::*;
+
+pub fn host_composition() -> HostComposition {
+    HostBuilder::new()
+        .linked_module(modules::app::linked_module())
+        .build()
+}
+```
+
+The API, worker, and migration binaries all call that same composition so HTTP
+routes, runtime handlers, event handlers, and migrations stay aligned.
+
+## Built-in profiles
+
+`LENSO_COMPOSITION_PROFILE` selects the platform's linked baseline.
+
+| Profile | Built-in linked modules |
+| --- | --- |
+| `core` | `platform-story` |
+| `demo` | `auth`, `auth-password`, `platform-story` |
+
+Local development defaults to `demo`. Production-like environments must set the
+profile explicitly:
+
+```sh
+APP_ENV=production
+LENSO_COMPOSITION_PROFILE=core
+```
+
+Use `core` for product hosts that install modules intentionally. Use `demo` for
+local examples and starter proof paths.
+
+## Host-owned linked modules
+
+First-party modules that belong inside the app can be linked into the host:
+
+```rust
+use lenso::host::prelude::*;
+
+pub fn host_composition() -> HostComposition {
+    HostBuilder::new()
+        .linked_module(builtins::auth())
+        .linked_module(builtins::auth_password())
+        .linked_module(modules::app::linked_module())
+        .build()
+}
+```
+
+A linked module can provide:
+
+- manifest metadata;
+- migrations;
+- linked HTTP routes;
+- admin data, actions, and queries;
+- runtime function handlers;
+- event handlers;
+- host-only contributions.
+
+Remote modules do not use `HostBuilder`. They are loaded from configured remote
+sources.
+
+## Enable and disable modules
+
+Every linked, host-linked, and remote module gets a generated startup toggle:
+
+```text
+modules.<module>.enabled
+```
+
+Environment values use the matching `LENSO_MODULE_*_ENABLED` form:
+
+```sh
+LENSO_MODULE_AUTH_PASSWORD_ENABLED=false
+LENSO_MODULE_SUPPORT_ENABLED=false
+```
+
+These toggles are restart-only. Disabling a module stops loading its routes,
+runtime handlers, admin metadata, story display metadata, and migrations for the
+current startup path. It does not delete that module's existing data.
+
+## Dependencies
+
+Module dependencies are declared in the manifest:
+
+```rust
+ModuleManifest::builder("auth-password")
+    .dependencies(vec!["auth".to_owned()])
+    .build()
+```
+
+If a dependency is disabled, the dependent module is not loaded and Runtime
+Console shows that dependency state in module metadata.
+
+## Remote sources
+
+Remote sources are environment configuration, not Rust host composition:
+
+```sh
+REMOTE_MODULES=billing=http://127.0.0.1:4110/lenso/module/v1,crm=grpc://127.0.0.1:50051
+REMOTE_MODULE_BILLING_TOKEN=secret-host-to-module-token
+REMOTE_MODULE_BILLING_TIMEOUT_MS=8000
+```
+
+At startup, the host fetches each remote manifest, validates it, builds the
+remote behavior binding, and registers proxy, admin, runtime, event, and Console
+metadata.
+
+## What to change where
+
+| Need | Change |
+| --- | --- |
+| Add an app-owned Rust module | `src/lib.rs` host composition |
+| Add built-in auth to a product host | `HostBuilder::linked_module(builtins::auth())` |
+| Add a remote module | `lenso module install <manifest-url>` or `REMOTE_MODULES` |
+| Disable a module at startup | `LENSO_MODULE_<MODULE>_ENABLED=false` |
+| Configure module boot values | `LENSO_MODULE_<MODULE>__<KEY>=<value>` |
+| Make a module discoverable | `lenso module catalog add <manifest-url>` |
+
+## Smoke check
+
+After changing composition, run the real host path:
+
+```sh
+lenso serve
+```
+
+Then open `/console` and check:
+
+- Modules shows the expected linked and remote modules;
+- disabled modules have an explainable status;
+- expected routes or admin surfaces appear;
+- Runtime Stories still load.

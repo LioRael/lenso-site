@@ -1,0 +1,255 @@
+---
+title: Remote Module Protocol
+description: Implement the HTTP JSON or gRPC protocol used by out-of-process Lenso modules.
+---
+
+Remote modules expose a host-owned protocol. The remote process implements
+module behavior; the Lenso host owns auth checks, proxy namespace, runtime
+receipts, retries, install state, and Runtime Console evidence.
+
+Most TypeScript modules should use `@lenso/remote-module-kit`. This page is for
+authors who need to understand the wire contract or implement another runtime.
+
+## Transports
+
+The host selects the transport from the configured base URL.
+
+| Base URL | Transport |
+| --- | --- |
+| `http://.../lenso/module/v1` | HTTP JSON |
+| `https://.../lenso/module/v1` | HTTP JSON |
+| `grpc://host:port` | gRPC JSON-envelope |
+| `grpcs://host:port` | gRPC JSON-envelope over TLS |
+
+The host trims trailing slashes. HTTP JSON paths are relative to the base URL.
+gRPC uses service `lenso.remote.v1.RemoteModule` with `JsonEnvelope` payloads.
+
+## Auth between host and remote
+
+Configure a host-to-remote token:
+
+```sh
+REMOTE_MODULE_BILLING_TOKEN=secret-host-to-module-token
+```
+
+For HTTP JSON, the host sends it as a bearer token. For gRPC, the host sends
+metadata through the remote transport layer.
+
+The host does not forward the caller's bearer token or cookies to the remote
+module. Caller identity is represented in request payloads as bounded actor
+context.
+
+## Manifest
+
+HTTP JSON:
+
+```text
+GET /manifest
+```
+
+gRPC:
+
+```text
+RemoteModule.GetManifest(JsonEnvelope) -> JsonEnvelope
+```
+
+The response is a serialized `ModuleManifest`. The host validates the manifest
+name against the configured module name and rejects remote HTTP route paths that
+are not module-local.
+
+Valid remote HTTP route paths must:
+
+- start with `/`;
+- avoid `//`, `://`, query strings, and fragments;
+- avoid empty, `.`, or `..` path segments.
+
+## Admin data and queries
+
+HTTP JSON endpoints:
+
+```text
+GET /admin/{entity}?limit=50&cursor=...
+GET /admin/{entity}/{id}
+GET /admin/queries/{query}
+```
+
+Response shapes:
+
+```json
+{ "records": [{ "id": "contact_1" }], "next_cursor": null }
+```
+
+```json
+{ "record": { "id": "contact_1" } }
+```
+
+```json
+{ "data": { "total": 12 } }
+```
+
+gRPC methods:
+
+```text
+ListAdminRecords
+GetAdminRecord
+QueryAdminValue
+```
+
+## Admin actions
+
+HTTP JSON:
+
+```text
+POST /admin/actions/{action}
+```
+
+Request body is arbitrary JSON action input. Response:
+
+```json
+{ "result": { "status": "ok" } }
+```
+
+gRPC method:
+
+```text
+InvokeAdminAction
+```
+
+Action names must be stable path segments: ASCII letters, numbers, `.`, `_`,
+and `-`.
+
+## HTTP route proxying
+
+Remote route metadata in the manifest becomes a host-visible proxy route:
+
+```text
+/modules/{module}/http/{*path}
+```
+
+The host matches the incoming path against manifest-declared module-local routes
+and forwards a bounded request to the remote module.
+
+HTTP JSON remotes receive normal HTTP requests at their declared route paths.
+gRPC remotes receive:
+
+```text
+ProxyHttpRoute
+```
+
+The request envelope includes request id, correlation id, module name, method,
+declared path, remote path, path params, allowed headers, and JSON body.
+
+Proxy calls are recorded in `platform.remote_http_proxy_calls` and projected
+into [Runtime Stories](/docs/runtime-stories).
+
+## Runtime functions
+
+HTTP JSON:
+
+```text
+POST /runtime/functions/{function_name}/invoke
+```
+
+Request shape:
+
+```json
+{
+  "request_id": "req_1",
+  "function_run_id": "fnrun_1",
+  "function_name": "billing.invoice.sync.v1",
+  "attempt": 1,
+  "correlation_id": "corr_1",
+  "causation_id": "evt_1",
+  "actor": { "kind": "system" },
+  "trace": { "trace_id": "trace_1", "span_id": "span_1", "baggage": [] },
+  "input": { "invoice_id": "inv_1" }
+}
+```
+
+Response:
+
+```json
+{ "output": { "status": "synced" } }
+```
+
+gRPC method:
+
+```text
+InvokeFunction
+```
+
+The host owns function run rows, attempts, retry policy, and dead-letter state.
+The remote module is only the executor.
+
+## Event handlers
+
+HTTP JSON:
+
+```text
+POST /events/handlers/{handler_name}/invoke
+```
+
+The request includes outbox event id, handler name, event name, event version,
+source module, aggregate, correlation id, causation id, actor, trace, payload,
+and headers.
+
+The remote handler may return at most one bounded host action:
+
+```json
+{
+  "actions": [
+    {
+      "type": "enqueue_function",
+      "function_name": "billing.invoice.sync.v1",
+      "input": { "invoice_id": "inv_1" }
+    }
+  ]
+}
+```
+
+gRPC method:
+
+```text
+HandleEvent
+```
+
+Remote modules never claim outbox rows directly. The host claims the event,
+invokes the remote handler, validates the returned action, and enqueues runtime
+work if allowed.
+
+## Errors
+
+Remote modules should return the standard envelope:
+
+```json
+{
+  "error": {
+    "code": "validation",
+    "message": "missing invoice_id",
+    "retryable": false,
+    "details": [
+      { "field": "invoice_id", "reason": "required" }
+    ]
+  }
+}
+```
+
+Use `retryable: true` only for transient dependency failures. Validation errors
+should not be retried.
+
+## Local implementation advice
+
+Use the kit unless you need another runtime:
+
+```sh
+pnpm add @lenso/remote-module-kit@0.1.1
+```
+
+Then verify the host path:
+
+```sh
+lenso module install http://127.0.0.1:4110/lenso/module/v1/manifest
+lenso module doctor
+```
+
+Open `/console` and check Modules, Data, Actions, Runtime, and Stories.

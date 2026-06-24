@@ -20,6 +20,9 @@ usually have on day one:
 - Host configuration: read [Configuration](/docs/configuration) when you need
   real env variables for profiles, CORS, Redis, telemetry, Console paths, or
   remote module tokens.
+- Host composition: read [Host Composition](/docs/host-composition) when you
+  need to understand profiles, `HostBuilder`, linked modules, remote sources,
+  and module startup toggles.
 - Platform model: read [Platform Concepts](/docs/platform-concepts) to
   understand manifests, host-owned runtime work, and remote boundaries.
 - Runtime evidence model: read [Runtime Stories](/docs/runtime-stories) to
@@ -41,6 +44,8 @@ usually have on day one:
 - Install flow: read [Module Installation](/docs/module-installation) when you
   need to know what the CLI writes locally and how a running host registers
   modules through the admin API.
+- Catalogs: read [Module Catalogs](/docs/module-catalogs) when you need the
+  difference between discovery, install, and the official fallback catalog.
 - Deployment: read [Deployment](/docs/deployment) before packaging a generated
   host, publishing a hosted Console bundle, or wiring migrations and workers.
 - Data changes: read [Database and Migrations](/docs/database-migrations) before
@@ -68,6 +73,8 @@ usually have on day one:
   ships a typed React package for the Runtime Console.
 - Out-of-process module: read [Remote Modules](/docs/remote-modules) and expose
   a manifest URL the host can install.
+- Remote protocol: read [Remote Module Protocol](/docs/remote-protocol) when
+  implementing HTTP JSON or gRPC remote modules outside the TypeScript kit.
 - Agent-assisted development: read [Agent Development](/docs/agent-development)
   and use skills, scaffolds, checks, and `/console` evidence.
 - Working reference: read [Examples](/docs/examples) and run the support-ticket
@@ -96,10 +103,12 @@ usually have on day one:
   <Card title="Quickstart" href="/docs/quickstart" description="Install the CLI, scaffold a host app, and run the API, worker, and bundled console." />
   <Card title="CLI Reference" href="/docs/cli-reference" description="Use host, serve, module, doctor, catalog, marketplace, and Console package commands." />
   <Card title="Configuration" href="/docs/configuration" description="Map profiles, ports, CORS, telemetry, Console paths, remote modules, and module-owned env variables." />
+  <Card title="Host Composition" href="/docs/host-composition" description="Understand linked profiles, HostBuilder, host-owned modules, remote sources, dependencies, and startup toggles." />
   <Card title="Database and Migrations" href="/docs/database-migrations" description="Add host-linked module SQL, run migrations, and keep applied migration names stable." />
   <Card title="Observability" href="/docs/observability" description="Use health probes, structured logs, OTLP traces, and Runtime Console runtime views." />
   <Card title="Built-in Modules" href="/docs/built-in-modules" description="Install auth, password login, device policy, Redis sessions, and auth Console surfaces." />
   <Card title="Module Installation" href="/docs/module-installation" description="Understand CLI installs, local descriptor writes, catalog discovery, admin install requests, and uninstall cleanup." />
+  <Card title="Module Catalogs" href="/docs/module-catalogs" description="Separate discovery catalogs, local install state, available modules, and the official fallback catalog." />
   <Card title="Deployment" href="/docs/deployment" description="Package a generated host, run database migrations, ship Console assets, and keep release checks in the path." />
   <Card title="Troubleshooting" href="/docs/troubleshooting" description="Diagnose blank Console, missing modules, remote services, CORS, Redis, generated artifacts, busy ports, and release gates." />
   <Card title="Runtime Console" href="/docs/runtime-console" description="Use the host-served console to inspect modules, actions, data, and runtime evidence." />
@@ -115,6 +124,7 @@ usually have on day one:
   <Card title="Runtime and Lifecycle" href="/docs/runtime-lifecycle" description="Register runtime functions, lifecycle hooks, background workers, and remote runtime endpoints." />
   <Card title="Console Packages" href="/docs/console-packages" description="Build and publish typed React packages for module-owned Runtime Console surfaces." />
   <Card title="Remote Modules" href="/docs/remote-modules" description="Run modules out of process while the host owns loading, proxying, and receipts." />
+  <Card title="Remote Module Protocol" href="/docs/remote-protocol" description="Implement the HTTP JSON or gRPC protocol for manifests, admin data, actions, proxy routes, functions, and events." />
   <Card title="Examples" href="/docs/examples" description="Use support-ticket and account-profile as runnable module proof points." />
 </Cards>
 
