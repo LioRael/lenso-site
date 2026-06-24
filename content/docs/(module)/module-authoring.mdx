@@ -77,6 +77,7 @@ pub fn manifest() -> ModuleManifest {
                 input_schema: Some("billing.invoice.send.v1".to_owned()),
                 retry_policy: None,
             }],
+            schedules: vec![],
         })
         .build()
 }

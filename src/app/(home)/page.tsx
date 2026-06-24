@@ -113,6 +113,54 @@ const lifecycleSteps = [
   },
 ];
 
+const lifecyclePanels = [
+  {
+    folder: 'host/',
+    file: 'host.toml',
+    lines: ['[host]', 'name = "ops-host"', 'console = "bundled"', 'modules = ["auth"]'],
+  },
+  {
+    folder: 'modules/',
+    file: 'module.toml',
+    lines: ['[module]', 'name = "support-ticket"', 'routes = ["tickets"]', 'actions = ["assign"]'],
+  },
+  {
+    folder: 'auth/',
+    file: 'auth.toml',
+    lines: ['[auth]', 'owner = "host"', 'sessions = "redis"', 'providers = ["password"]'],
+  },
+  {
+    folder: 'ops-host/',
+    file: 'serve.log',
+    lines: ['$ lenso serve', 'api = "ready"', 'worker = "ready"', 'console = "/console"'],
+  },
+  {
+    folder: 'remote/',
+    file: 'manifest.json',
+    lines: ['{', '"name": "account-profile"', '"transport": "grpc"', '"hostOwned": true'],
+  },
+  {
+    folder: 'console/',
+    file: 'modules.json',
+    lines: ['auth: ready', 'support-ticket: review', 'admin-data: visible', 'stories: recording'],
+  },
+  {
+    folder: 'skills/',
+    file: 'SKILL.md',
+    lines: ['# Module authoring', 'read manifest first', 'generate smoke proof', 'verify in console'],
+  },
+  {
+    folder: 'checks/',
+    file: 'evidence.json',
+    lines: ['manifest_lints: pass', 'host_smoke: pass', 'console_bundle: served', 'contracts: current'],
+  },
+  {
+    folder: 'release/',
+    file: 'readiness.md',
+    lines: ['crate facade current', 'cli starter verified', 'console bundle attached', 'examples smoke green'],
+  },
+];
+
 const runtimeCards = [
   {
     title: 'Generated host',
@@ -455,11 +503,18 @@ function Hero() {
   );
 }
 
-function LifecyclePanel() {
+function LifecyclePanel({
+  active,
+  panel,
+}: {
+  active: boolean;
+  panel: (typeof lifecyclePanels)[number];
+}) {
   return (
     <article
       className="lifecycle-panel absolute inset-0 rounded-xl"
-      data-active="true"
+      data-active={active ? 'true' : 'false'}
+      data-lifecycle-panel
     >
       <div
         aria-hidden="true"
@@ -470,27 +525,27 @@ function LifecyclePanel() {
       <div className="absolute left-3 right-3 top-3 z-10 flex h-[76px] flex-col gap-1">
         <div className="flex h-9 items-center px-3 py-2.5">
           <span className="text-[13px] font-medium leading-4 text-[var(--site-ink)]">
-            host/
+            {panel.folder}
           </span>
         </div>
         <div className="flex h-9 items-center gap-2 rounded-md bg-[var(--site-surface-muted)] py-2.5 pl-6 pr-3">
-          <span className="text-[13px] leading-4 text-[var(--site-ink)]">host.toml</span>
+          <span className="text-[13px] leading-4 text-[var(--site-ink)]">{panel.file}</span>
         </div>
       </div>
       <div className="absolute left-3 right-3 top-[104px] z-10 h-[142px] overflow-hidden rounded-md border border-[var(--site-border-muted)]">
         <div className="absolute inset-px overflow-hidden">
           <div className="absolute left-0 top-5 h-[100px] w-full whitespace-nowrap font-mono text-[13px] leading-5 text-[var(--site-ink)]">
             <p className="absolute left-5 top-[-1px] h-5 font-bold leading-5">
-              [host]
+              {panel.lines[0]}
             </p>
             <p className="absolute left-5 top-[39px] h-5 leading-5">
-              name = &quot;ops-host&quot;
+              {panel.lines[1]}
             </p>
-            <p className="absolute left-5 top-[59px] h-5 leading-5 text-[var(--site-subtle)]">
-              console = &quot;bundled&quot;
+            <p className="absolute left-5 top-[59px] h-5 leading-5">
+              {panel.lines[2]}
             </p>
-            <p className="absolute left-5 top-[79px] h-5 leading-5 text-[var(--site-faint)]">
-              modules = [&quot;auth&quot;]
+            <p className="absolute left-5 top-[79px] h-5 leading-5">
+              {panel.lines[3]}
             </p>
           </div>
         </div>
@@ -565,7 +620,9 @@ function LifecycleSection() {
           </div>
 
           <div aria-hidden="true" className="lifecycle-visual relative h-[258px] rounded-xl max-[900px]:max-w-full">
-            <LifecyclePanel />
+            {lifecyclePanels.map((panel, index) => (
+              <LifecyclePanel active={index === 0} key={`${panel.folder}-${panel.file}`} panel={panel} />
+            ))}
           </div>
         </div>
       </div>
@@ -590,7 +647,7 @@ function RuntimePrimitiveSection() {
           width={37}
         />
         <div className="mt-3 grid grid-cols-[minmax(0,1fr)_340px] gap-4 max-[1000px]:grid-cols-1">
-          <div className="relative min-h-[268px] rounded-xl border border-transparent p-5">
+          <div className="relative flex min-h-[268px] flex-col rounded-xl border border-transparent p-5">
             <p className="font-mono text-sm font-medium uppercase leading-5 text-[var(--site-ink)]">
               Runtime
             </p>
@@ -622,7 +679,7 @@ function RuntimePrimitiveSection() {
             <p className="mt-1 text-sm leading-5 text-[var(--site-muted)]">
               Where the same facts become reviewable.
             </p>
-            <div className="relative mt-4 h-[168px] overflow-hidden rounded-lg bg-[var(--site-surface)] p-4 shadow-[var(--site-shadow-control)]">
+            <div className="relative mt-4 min-h-[190px] flex-1 overflow-hidden rounded-lg bg-[var(--site-surface)] p-4 shadow-[var(--site-shadow-control)]">
               <div
                 className="flex h-full gap-3"
                 style={{

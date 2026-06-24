@@ -5,7 +5,8 @@ description: Understand the serializable ModuleManifest contract that every Lens
 
 `ModuleManifest` is the pure-data contract for a module. It describes what the
 host and Runtime Console can see: routes, admin surfaces, runtime functions,
-events, lifecycle work, Console packages, dependencies, and capabilities.
+runtime schedules, events, lifecycle work, Console packages, dependencies, and
+capabilities.
 
 Executable behavior does not live in the manifest. Linked modules attach
 behavior through `LinkedBinding`; remote modules expose behavior through HTTP or
@@ -60,7 +61,7 @@ pub fn manifest() -> ModuleManifest {
 | `capabilities` | Dot-separated permission names that routes, admin surfaces, runtime work, or Console pages can reference. |
 | `http_routes` | Module-owned HTTP route metadata. Linked modules still mount real Axum routes through bindings. Remote route proxying uses this metadata for host-visible route intent. |
 | `admin` | Schema-driven, declarative custom, or embedded custom operator surfaces. |
-| `runtime` | Runtime function declarations. The declaration is manifest data; handlers live in the loading source. |
+| `runtime` | Runtime function and schedule declarations. The declaration is manifest data; handlers live in the loading source and scheduling stays host-owned. |
 | `events` | Event handler declarations. The host registers and invokes the backing handler through the source binding. |
 | `lifecycle` | Startup checks and activation jobs. The host validates and schedules these entries instead of giving modules arbitrary startup callbacks. |
 | `console` | Runtime Console frontend surfaces backed by trusted packages or hosted bundles. |
@@ -131,6 +132,25 @@ Keep these values operator-friendly:
 - `display_name` should be compact enough for timeline nodes.
 - `story_title` should read naturally when the route starts a business story.
 
+## Runtime schedules
+
+`RuntimeSurface.schedules` declares when the host should enqueue a runtime
+function:
+
+```rust
+ScheduledFunctionDeclaration {
+    name: "send-daily-digest".to_owned(),
+    function_name: "billing.invoice.send_digest.v1".to_owned(),
+    cron: "0 8 * * MON-FRI".to_owned(),
+    input: serde_json::json!({ "window": "previous_day" }),
+}
+```
+
+Schedules use 5-field UTC cron. The scheduled function must also appear in
+`RuntimeSurface.functions`; the host validates that relationship, persists
+schedule state, and enqueues normal `runtime.function_runs` when the schedule is
+due.
+
 ## Lint categories
 
 The host exposes `manifest_lints` through module metadata, and Runtime Console
@@ -145,6 +165,7 @@ groups them into categories:
 | `admin.declarative` | Empty pages, missing query values, or invalid fallback schema references. |
 | `admin.embedded` | Non-HTTPS entry URL, missing origin allowlist, or invalid fallback permissions. |
 | `runtime` | Missing function names, duplicate functions, bad queue names, or invalid retry policy. |
+| `runtime.schedule` | Missing schedule names, invalid cron expressions, or schedules that reference unknown functions. |
 | `events` | Missing event names or duplicate handler names. |
 | `lifecycle` | Startup checks or activation jobs that reference unknown runtime functions. |
 | `console` | Duplicate routes, missing labels, invalid package shape, or reserved navigation workspace ids. |
@@ -159,7 +180,7 @@ Change the manifest whenever the host or Console needs new metadata:
 - a new public route or route capability;
 - a new data-admin entity;
 - a new module-owned Console page;
-- a new runtime function or event handler;
+- a new runtime function, schedule, or event handler;
 - a lifecycle startup check or activation job;
 - a new dependency such as `auth`;
 - a new capability that will be referenced by another surface.

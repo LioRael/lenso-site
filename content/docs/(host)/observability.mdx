@@ -81,6 +81,7 @@ Use Runtime Console to inspect:
 
 - loaded modules and manifest lints;
 - runtime function declarations and runs;
+- scheduled runtime work after it is enqueued as a function run;
 - outbox and story events;
 - remote HTTP proxy calls;
 - module health and install state;
@@ -88,6 +89,9 @@ Use Runtime Console to inspect:
 
 When a module action fails, copy the `correlation_id` from the API error or log
 line and search Runtime Console story/technical-operation views with that id.
+Cron-triggered work uses the same evidence path: the worker records schedule
+state, enqueues a runtime function run when due, and the function run appears in
+the same Runtime Console views as other background work.
 
 ## What to log from modules
 
