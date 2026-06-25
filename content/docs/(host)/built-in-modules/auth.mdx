@@ -23,6 +23,20 @@ After restart, verify:
 - Data shows Auth users and sessions.
 - Actions include session revoke and user enable or disable actions.
 
+## Console admin users
+
+Runtime Console admin access is explicit. Add `console.admin` to the auth user
+through runtime config:
+
+```json
+{
+  "usr_admin": ["console.admin", "auth.users.read"]
+}
+```
+
+Use that value for `auth.console_admin_user_scopes`. This is required for
+production Console users; development bearer tokens are local-only.
+
 ## Use Redis session lookup
 
 Postgres is the default session lookup backend. Use Redis when session reads
