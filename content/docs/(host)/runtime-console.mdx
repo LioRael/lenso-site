@@ -10,6 +10,15 @@ actually wired.
 Generated hosts created by published CLI builds serve the bundled console at
 `/console`.
 
+## Access control
+
+Local development can use development bearer tokens. Production cannot. With
+`APP_ENV=production`, the Console must use a real password or OIDC login, and
+the resulting auth user must have `console.admin` in
+`auth.console_admin_user_scopes`.
+
+Do not put service bearer tokens in a browser Console build.
+
 ## First checks
 
 When a fresh host is running, open `/console` and check:
