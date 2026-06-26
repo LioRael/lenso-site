@@ -18,7 +18,7 @@ both API and worker after install changes.
 
 | Symptom | Check | Fix |
 | --- | --- | --- |
-| `/console` returns 404 | `.lenso/console/dist` exists | Upgrade CLI, then run `lenso host update-console`. |
+| `/console` returns 404 | `.lenso/console/dist` exists | Upgrade CLI, then run `lenso console update`. |
 | Console opens but module is missing | `/api/admin/modules` and `.env` | Restart API and worker after installing or updating modules. |
 | Remote module is installed but unhealthy | `lenso module doctor <name>` | Start the remote service, fix `readyUrl`, or clear stale `.lock` and `.pid` files called out by doctor. |
 | `REMOTE_MODULES` changed but nothing happens | process environment | Restart the process that loads modules. Environment values are read at startup. |
@@ -34,7 +34,7 @@ both API and worker after install changes.
 Refresh hosted Console assets:
 
 ```sh
-lenso host update-console
+lenso console update
 ```
 
 If the host was generated before the CLI bundled Console assets, upgrade the CLI
@@ -42,7 +42,7 @@ first:
 
 ```sh
 npm install -g @lenso/cli@latest
-lenso host update-console
+lenso console update
 ```
 
 Then restart the host process and open:

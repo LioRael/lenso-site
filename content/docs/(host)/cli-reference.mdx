@@ -29,8 +29,8 @@ lenso --help
 | `lenso host init <dir>` | Create a generated Rust host application. |
 | `lenso host init <dir> --name <crate>` | Override the generated Cargo crate name. |
 | `lenso host init <dir> --force` | Scaffold into a non-empty directory. |
-| `lenso host update-console` | Refresh the hosted Runtime Console bundle in `.lenso/console`. |
-| `lenso host update-console --repo-root <path>` | Update Console assets for a host outside the current directory. |
+| `lenso console update` | Refresh the hosted Runtime Console bundle in `.lenso/console`. |
+| `lenso console update --repo-root <path>` | Update Console assets for a host outside the current directory. |
 | `lenso serve` | Start local Postgres, run migrations, then run API and worker. |
 | `lenso serve --separate-worker` | Run API and worker as separate local child processes. |
 | `lenso serve --skip-db` | Do not start the template Postgres service. |
@@ -53,7 +53,7 @@ lenso serve
 | `lenso module create billing --with-console` | Create a linked module and matching Runtime Console package. |
 | `lenso module create billing --remote --output-dir ../module-packages` | Create a standalone remote module package. |
 | `lenso module create billing --dry-run` | Preview generated files without writing them. |
-| `lenso console-package create billing` | Create only a Runtime Console package scaffold. |
+| `lenso console package create billing` | Create only a Runtime Console package scaffold. |
 
 Useful `module create` options:
 
@@ -153,8 +153,8 @@ marketplace routing.
 Runtime Console package install plans can be applied from the CLI:
 
 ```sh
-lenso console-package apply-plan
-lenso console-package apply-plan --dry-run
+lenso console package apply-plan
+lenso console package apply-plan --dry-run
 ```
 
 Use this when a module package updates dependencies or Console extension
