@@ -3,7 +3,8 @@ title: auth
 description: Install durable users, sessions, and the auth Console surface.
 ---
 
-Install `auth` when the host needs durable users and sessions.
+Install `auth` when the host needs durable users and sessions for application
+login, Runtime Console access, or both.
 
 From a generated host:
 
@@ -17,6 +18,26 @@ The CLI updates host composition, dependencies, local install receipts, and the
 Runtime Console extension registry. Restart the API and worker after installing
 or updating modules.
 
+## User model
+
+`auth.users` is the shared authentication anchor. Business routes and Runtime
+Console both resolve to the same `ActorContext::User { user_id, scopes }`.
+
+Keep product profile data in your own tables and key it by the auth user id:
+
+```sql
+create table app.profiles (
+    id text primary key,
+    auth_user_id text not null unique,
+    display_name text not null,
+    created_at timestamptz not null
+);
+```
+
+Do not add name, avatar, plan, tenant, or organization fields to `auth.users`.
+Those belong to the product module. If your product needs different account ids,
+store a mapping from the account row to `auth_user_id`.
+
 After restart, verify:
 
 - `/console` lists `auth` under Modules.
@@ -25,8 +46,9 @@ After restart, verify:
 
 ## Console admin users
 
-Runtime Console admin access is explicit. Add `console.admin` to the auth user
-through runtime config:
+Runtime Console admin access is explicit. A normal business user does not become
+a Console admin unless you add `console.admin` to that auth user through runtime
+config:
 
 ```json
 {
