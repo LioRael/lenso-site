@@ -55,23 +55,16 @@ session. Grant Console scopes through `auth.console_admin_user_scopes`:
 also require `runtime.stories.read`; other module pages check their own
 capability strings.
 
-For the first production admin, seed the value before opening `/console`:
+For the first production admin, run this from the host root after the auth user
+exists:
 
-```sql
-insert into config.setting_values (service, key, value, updated_by)
-values (
-  '*',
-  'auth.console_admin_user_scopes',
-  '{"usr_admin":["console.admin","runtime.stories.read"]}'::jsonb,
-  'bootstrap'
-)
-on conflict (service, key) do update
-set value = excluded.value,
-    updated_at = now(),
-    updated_by = excluded.updated_by;
+```sh
+lenso console bootstrap-admin --user-id usr_admin --scope runtime.stories.read
 ```
 
-After one admin can enter Console, edit the same key from Config.
+For password auth, `--identifier admin@example.com` can resolve the auth user id.
+Restart the API and worker after bootstrapping. After one admin can enter
+Console, edit the same key from Config.
 
 ## Browser token boundary
 

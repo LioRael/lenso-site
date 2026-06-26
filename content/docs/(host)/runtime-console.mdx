@@ -15,7 +15,8 @@ Generated hosts created by published CLI builds serve the bundled console at
 Local development can use development bearer tokens. Production cannot. With
 `APP_ENV=production`, the Console must use a real password or OIDC login, and
 the resulting auth user must have `console.admin` in
-`auth.console_admin_user_scopes`.
+`auth.console_admin_user_scopes`. Bootstrap the first admin with
+`lenso console bootstrap-admin`.
 
 Do not put service bearer tokens in a browser Console build.
 

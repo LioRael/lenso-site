@@ -55,8 +55,8 @@ Restart the host after refreshing the bundled console.
 
 `APP_ENV=production` disables development bearer tokens. Production operators
 enter `/console` through the host's password or OIDC auth flow. Grant access by
-mapping the auth user id to scopes in `auth.console_admin_user_scopes`; include
-`console.admin`.
+running `lenso console bootstrap-admin` for the auth user; `console.admin` is
+included automatically.
 
 Do not ship a browser Console bundle with a service token baked into it.
 

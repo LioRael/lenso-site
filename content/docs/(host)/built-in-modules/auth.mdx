@@ -56,8 +56,9 @@ config:
 }
 ```
 
-Use that value for `auth.console_admin_user_scopes`. This is required for
-production Console users; development bearer tokens are local-only.
+Grant the first production admin with `lenso console bootstrap-admin`, then edit
+`auth.console_admin_user_scopes` from Console Config for later admins.
+Development bearer tokens are local-only.
 
 ## Use Redis session lookup
 

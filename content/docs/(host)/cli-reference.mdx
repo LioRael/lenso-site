@@ -31,6 +31,8 @@ lenso --help
 | `lenso host init <dir> --force` | Scaffold into a non-empty directory. |
 | `lenso console update` | Refresh the hosted Runtime Console bundle in `.lenso/console`. |
 | `lenso console update --repo-root <path>` | Update Console assets for a host outside the current directory. |
+| `lenso console bootstrap-admin --identifier <email>` | Grant first Console admin access to a password-auth user. |
+| `lenso console bootstrap-admin --user-id <id>` | Grant first Console admin access to a known auth user id. |
 | `lenso serve` | Start local Postgres, run migrations, then run API and worker. |
 | `lenso serve --separate-worker` | Run API and worker as separate local child processes. |
 | `lenso serve --skip-db` | Do not start the template Postgres service. |
