@@ -5,8 +5,11 @@ description: Let Runtime Console use the host's auth sessions through OIDC.
 
 Install `auth-oidc` when production Runtime Console users should sign in with
 the host's real auth flow instead of development bearer tokens. It depends on
-`auth`; password login is the current first-party way to create the user session
-that starts the OIDC flow.
+`auth` and reuses the same `auth.users` rows as application login.
+
+Password login is the current first-party way to create the user session that
+starts the OIDC flow. `auth-oidc` does not create a separate Console user store;
+it turns an existing auth session into Console tokens.
 
 ```sh
 lenso module install auth
@@ -39,8 +42,8 @@ set matching that signing key.
 
 ## Grant Console access
 
-The OIDC access token resolves to the same auth user id as the password session.
-Grant Console scopes through `auth.console_admin_user_scopes`:
+The OIDC access token resolves to the same auth user id as the application
+session. Grant Console scopes through `auth.console_admin_user_scopes`:
 
 ```json
 {
