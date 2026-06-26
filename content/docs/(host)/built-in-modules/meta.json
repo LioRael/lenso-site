@@ -5,6 +5,7 @@
     "index",
     "auth",
     "auth-password",
+    "auth-oidc",
     "auth-device",
     "platform-story"
   ]

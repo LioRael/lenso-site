@@ -18,10 +18,11 @@ installing auth itself, read
 | --- | --- | --- | --- |
 | [`auth`](/docs/built-in-modules/auth) | first-party linked module | `lenso module install auth` | auth users, sessions, session revoke, dev session route, auth Console pages |
 | [`auth-password`](/docs/built-in-modules/auth-password) | first-party provider module | `lenso module install auth-password` | password registration and login routes, password credential storage, token strategy config |
+| [`auth-oidc`](/docs/built-in-modules/auth-oidc) | first-party provider module | `lenso module install auth-oidc` | OIDC discovery, authorize/token endpoints, Runtime Console login handoff |
 | [`auth-device`](/docs/built-in-modules/auth-device) | first-party policy module | `lenso module install auth-device` | device records and session device policy |
 | [`platform-story`](/docs/built-in-modules/platform-story) | platform-owned system module | included by the platform composition | Runtime Console story routes, story display metadata, Stories Console surface |
 
 `auth` and `auth-password` are also exposed through `lenso::host::builtins`.
-`auth-device` is installed through the CLI descriptor.
+`auth-oidc` and `auth-device` are installed through CLI descriptors.
 `platform-story` is not a business module. It is Lenso-owned runtime
 observability infrastructure.
