@@ -1,6 +1,6 @@
 ---
 title: Module Installation
-description: Install linked modules, remote modules, catalog entries, console bundles, and service plans.
+description: Install linked modules, service-backed module releases, catalog entries, console bundles, and service plans.
 ---
 
 Installing a module is a host-local operator action. Discovery and installation
@@ -32,17 +32,24 @@ lenso module install auth --profile redis-session-cache
 The Redis session profile enables the auth Redis feature, writes `REDIS_URL`,
 and records `auth.session_cache=redis` as a runtime default.
 
-## Remote modules
+## Service-backed modules
 
-Install a remote module from its manifest URL:
+Install a packaged business module through its module release artifact:
+
+```sh
+lenso module release inspect dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json
+lenso module install dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json \
+  --base-url http://127.0.0.1:4110/lenso/service/v1
+```
+
+The module release points at the provider service package or service manifest.
+The host still owns install state, queues, retries, Runtime Stories, and Console
+evidence.
+
+Legacy remote module manifests remain installable for compatibility:
 
 ```sh
 lenso module install http://127.0.0.1:4110/lenso/module/v1/manifest
-```
-
-Install from a local descriptor by passing the runtime base URL:
-
-```sh
 lenso module install ./lenso.module.json --base-url https://example.com/lenso/module/v1
 ```
 
@@ -51,11 +58,11 @@ remote sources and console extension registry state.
 
 ## What install writes
 
-The remote install lane writes host-local files:
+The service/module install lane writes host-local files:
 
 | File | Purpose |
 | --- | --- |
-| `.env` | updates `REMOTE_MODULES=<name>=<base_url>` and declared env values |
+| `.env` | updates `REMOTE_MODULES=<provider>=<base_url>` and declared env values |
 | `.lenso/module-installs.json` | install receipt used by uninstall |
 | `.lenso/module-services.json` | service commands declared by the module |
 | `.lenso/console/extensions/<module>/` | copied same-origin console bundles |
@@ -73,7 +80,8 @@ lenso module install https://example.com/lenso/module/v1/manifest --run-install-
 Add a module to the local discovery catalog:
 
 ```sh
-lenso module catalog add https://example.com/lenso/module/v1/manifest
+lenso module catalog add dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json \
+  --base-url http://127.0.0.1:4110/lenso/service/v1
 ```
 
 This writes `.lenso/module-catalog.json`. It does not install the module.
@@ -81,7 +89,7 @@ This writes `.lenso/module-catalog.json`. It does not install the module.
 Runtime Console's Available Modules view reads, in order:
 
 1. local `.lenso/module-catalog.json`
-2. already configured remote modules
+2. already configured service or remote sources
 3. built-in `builtin:lenso-official-module-catalog`
 
 The built-in catalog is only a fallback discovery source. It is not a hidden
@@ -100,7 +108,7 @@ packages or compile third-party code into the official Console bundle.
 
 ## Doctor and uninstall
 
-Check installed remote module state:
+Check installed service-backed module state:
 
 ```sh
 lenso module doctor

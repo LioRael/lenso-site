@@ -75,8 +75,11 @@ lenso module create support \
 | --- | --- |
 | `lenso module install auth` | Enable a linked built-in module from its descriptor. |
 | `lenso module install auth --profile redis-session-cache` | Enable Redis-backed auth session lookup. |
-| `lenso module install <manifest-url>` | Install a remote module by URL. |
-| `lenso module install ./lenso.module.json --base-url <url>` | Install a local descriptor while pointing the host at a deployed base URL. |
+| `lenso module release inspect <module-release.json>` | Inspect a service-backed module release before installing it. |
+| `lenso module release check <module-release.json> --base-url <url>` | Fail fast when a local module release is missing install inputs. |
+| `lenso module install <module-release.json> --base-url <url>` | Install a business module from a service-backed release artifact. |
+| `lenso module install <manifest-url>` | Install a legacy remote module by URL. |
+| `lenso module install ./lenso.module.json --base-url <url>` | Install a legacy local descriptor while pointing the host at a deployed base URL. |
 | `lenso module install <ref> --dry-run` | Preview `.env`, receipts, service files, and Console registry changes. |
 | `lenso module install <ref> --run-install-commands` | Execute descriptor-declared install commands. |
 | `lenso module install <ref> --no-console-extension` | Skip Runtime Console extension registration. |
@@ -131,8 +134,8 @@ Local catalogs are discovery aids. They do not replace explicit operator
 approval.
 
 ```sh
-lenso module catalog add https://example.com/lenso/module/v1/manifest \
-  --summary "Billing module for invoice workflows"
+lenso module catalog add dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json \
+  --base-url http://127.0.0.1:4110/lenso/service/v1
 ```
 
 The command writes `.lenso/module-catalog.json` by default. Add `--dry-run` when

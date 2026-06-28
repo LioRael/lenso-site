@@ -10,14 +10,15 @@ This split is important:
 
 - catalog add = remember this module exists;
 - module install = write host-local install state;
-- host startup = load configured linked and remote sources.
+- host startup = load configured linked and service/remote sources.
 
 ## Local catalog
 
-Add a remote module manifest to the local catalog:
+Add a module release artifact to the local catalog:
 
 ```sh
-lenso module catalog add https://example.com/lenso/module/v1/manifest
+lenso module catalog add dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json \
+  --base-url http://127.0.0.1:4110/lenso/service/v1
 ```
 
 This writes:
@@ -26,22 +27,22 @@ This writes:
 .lenso/module-catalog.json
 ```
 
-The entry contains the module name, version, manifest reference, base URL,
-summary, capabilities, routes, admin surfaces, runtime declarations, and Console
-package metadata derived from the manifest.
+The entry contains the module name, version, release reference, provider
+service, base URL, summary, capabilities, and Console package hints.
 
 ## Install from catalog or manifest
 
 The install command is still the boundary that changes the host:
 
 ```sh
-lenso module install https://example.com/lenso/module/v1/manifest
+lenso module install support-ticket
 ```
 
-For a local manifest file, pass the runtime base URL:
+For a local release artifact, pass the runtime service base URL:
 
 ```sh
-lenso module install ./lenso.module.json --base-url https://example.com/lenso/module/v1
+lenso module install dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json \
+  --base-url http://127.0.0.1:4110/lenso/service/v1
 ```
 
 Install writes host-local state such as `.env`, install receipts, service
@@ -53,7 +54,7 @@ descriptors, and Console extension registry files. See
 Runtime Console's Available Modules view merges discovery sources:
 
 1. local `.lenso/module-catalog.json`;
-2. already configured remote modules;
+2. already configured service or remote sources;
 3. built-in `builtin:lenso-official-module-catalog`.
 
 The built-in catalog is a small official fallback. It is not a hidden database
@@ -64,7 +65,7 @@ of installed modules and it does not replace local or team catalogs.
 First-party linked modules such as `auth`, `auth-password`, and `auth-device`
 can appear in the catalog because they are installable host features.
 
-Their install path is different from remote modules:
+Their install path is different from service-backed modules:
 
 ```sh
 lenso module install auth
@@ -73,8 +74,8 @@ lenso module install auth-device
 ```
 
 Linked installs update the generated host's local composition and module
-settings. Remote installs update remote source configuration and optional
-service or Console extension state.
+settings. Service-backed installs update provider source configuration and
+optional service or Console extension state.
 
 ## Catalog entry shape
 
@@ -82,14 +83,17 @@ A useful catalog entry answers the operator's first questions:
 
 ```json
 {
-  "name": "account-profile",
+  "name": "support-ticket",
   "version": "0.1.0",
-  "manifest": "https://example.com/lenso/module/v1/manifest",
-  "baseUrl": "https://example.com/lenso/module/v1",
-  "summary": "Account and organization profile data for auth-backed hosts",
+  "protocol": "lenso.module-release.v1",
+  "manifestReference": "dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json",
+  "baseUrl": "http://127.0.0.1:4110/lenso/service/v1",
+  "source": "service",
+  "providedBy": "support-suite-provider",
+  "summary": "Ticket intake, triage, and operations",
   "capabilities": [
-    "account_profile.profiles.read",
-    "account_profile.profiles.write"
+    "support_ticket.tickets.read",
+    "support_ticket.tickets.write"
   ]
 }
 ```
@@ -101,10 +105,10 @@ metadata is for discovery, not trust.
 
 Use a catalog when:
 
-- your team has a known set of remote modules;
+- your team has a known set of service-backed modules;
 - operators should see modules before installing them;
 - you want Runtime Console to show a curated install path;
 - the module manifest URL is stable enough to share.
 
-Skip a catalog when you are testing a local module. Install the manifest URL
+Skip a catalog when you are testing a local module. Install the release artifact
 directly, then add catalog metadata after the module is worth discovering.
