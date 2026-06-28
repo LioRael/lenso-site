@@ -8,7 +8,7 @@ manifests, generated contracts, focused checks, and `/console` verification.
 It does not require a custom agent runtime.
 
 Use this path when a human or coding agent is turning a product idea into a
-host, module, remote module, or API integration.
+host, linked module, service-backed module, or API integration.
 
 ## Install the skills
 
@@ -28,10 +28,10 @@ your agent's configured skills folder, then start with `lenso-start`.
 | Goal | Skill | First command or source |
 | --- | --- | --- |
 | Clarify a vague business idea | `lenso-business-planning` | choose the first useful slice |
-| Pick the right public path | `lenso-start` | route to host, module, remote module, or API client |
+| Pick the right public path | `lenso-start` | route to host, linked module, service-backed module, or API client |
 | Start a host app | `lenso-starter-host` | `lenso host init <dir>` |
 | Build a Rust module | `lenso-module-authoring` | `lenso module create <name>` |
-| Build a remote JS/TS module | `lenso-remote-module-authoring` | `lenso module create <name> --remote` |
+| Build an out-of-process service module | `lenso-remote-module-authoring` | `lenso service create <name> --lang ts` |
 | Consume Lenso APIs | `lenso-api-client` | `contracts/openapi/app-api.v1.yaml` |
 
 The public skill pack lives in the `skills/` directory of the Lenso repository.
@@ -39,7 +39,7 @@ The public skill pack lives in the `skills/` directory of the Lenso repository.
 ## Agent loop
 
 1. Start from the smallest business slice that can be verified.
-2. Pick host, linked module, remote module, or API-client work.
+2. Pick host, linked module, service-backed module, or API-client work.
 3. Scaffold with the CLI instead of hand-building the shape.
 4. Implement one useful capability.
 5. Add one runnable check that fails if the capability is not wired.
@@ -81,7 +81,7 @@ This gives the agent enough boundaries to avoid inventing a platform.
 | --- | --- |
 | Host starter | `cargo check --bins` |
 | Rust module | a manifest or smoke check plus `/console` evidence |
-| Remote module | package smoke plus `lenso module install <manifest-url>` |
+| Service-backed module | package smoke plus `lenso module release check <module-release.json>` |
 | Contract/API work | `just generated-check` |
 | Architecture-sensitive backend work | `just arch-check` |
 
