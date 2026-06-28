@@ -6,6 +6,10 @@ description: Build out-of-process modules with manifests and host-owned loading.
 Remote modules use the same host-owned contract as linked modules, but run in
 their own process or service.
 
+For new out-of-process business modules, prefer the service-backed module
+release path in [Module Installation](/docs/module-installation). This page
+documents the legacy remote-module protocol and compatibility kit.
+
 Choose a remote module when the module needs a separate runtime, process,
 deployment cadence, or trust boundary. Keep ordinary first-party business logic
 linked until one of those reasons exists.

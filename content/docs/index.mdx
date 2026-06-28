@@ -19,9 +19,9 @@ usually have on day one:
   API, worker, Postgres, and `/console` running.
 - Host configuration: read [Configuration](/docs/configuration) when you need
   real env variables for profiles, CORS, Redis, telemetry, Console paths, or
-  remote module tokens.
+  service tokens.
 - Host composition: read [Host Composition](/docs/host-composition) when you
-  need to understand profiles, `HostBuilder`, linked modules, remote sources,
+  need to understand profiles, `HostBuilder`, linked modules, service sources,
   and module startup toggles.
 - Platform model: read [Platform Concepts](/docs/platform-concepts) to
   understand manifests, host-owned runtime work, and remote boundaries.
@@ -39,7 +39,7 @@ usually have on day one:
   need to know which `just` gate matches a code, contract, Console, or release
   change.
 - CLI work: read [CLI Reference](/docs/cli-reference) for `lenso host`,
-  `lenso serve`, `lenso module`, `lenso module doctor`, catalogs, marketplace
+  `lenso serve`, `lenso module`, module release checks, catalogs, marketplace
   compatibility, and Console package plans.
 - Install flow: read [Module Installation](/docs/module-installation) when you
   need to know what the CLI writes locally and how a running host registers
@@ -71,8 +71,8 @@ usually have on day one:
   endpoints.
 - Console package: read [Console Packages](/docs/console-packages) when a module
   ships a typed React package for the Runtime Console.
-- Out-of-process module: read [Remote Modules](/docs/remote-modules) and expose
-  a manifest URL the host can install.
+- Out-of-process module: publish a service-backed module release, then use
+  [Module Installation](/docs/module-installation) to install it into a host.
 - Remote protocol: read [Remote Module Protocol](/docs/remote-protocol) when
   implementing HTTP JSON or gRPC remote modules outside the TypeScript kit.
 - Agent-assisted development: read [Agent Development](/docs/agent-development)
@@ -101,13 +101,13 @@ usually have on day one:
 
 <Cards>
   <Card title="Quickstart" href="/docs/quickstart" description="Install the CLI, scaffold a host app, and run the API, worker, and bundled console." />
-  <Card title="CLI Reference" href="/docs/cli-reference" description="Use host, serve, module, doctor, catalog, marketplace, and Console package commands." />
-  <Card title="Configuration" href="/docs/configuration" description="Map profiles, ports, CORS, telemetry, Console paths, remote modules, and module-owned env variables." />
-  <Card title="Host Composition" href="/docs/host-composition" description="Understand linked profiles, HostBuilder, host-owned modules, remote sources, dependencies, and startup toggles." />
+  <Card title="CLI Reference" href="/docs/cli-reference" description="Use host, serve, module, doctor, module release, catalog, marketplace, and Console package commands." />
+  <Card title="Configuration" href="/docs/configuration" description="Map profiles, ports, CORS, telemetry, Console paths, service sources, and module-owned env variables." />
+  <Card title="Host Composition" href="/docs/host-composition" description="Understand linked profiles, HostBuilder, host-owned modules, service sources, dependencies, and startup toggles." />
   <Card title="Database and Migrations" href="/docs/database-migrations" description="Add host-linked module SQL, run migrations, and keep applied migration names stable." />
   <Card title="Observability" href="/docs/observability" description="Use health probes, structured logs, OTLP traces, and Runtime Console runtime views." />
   <Card title="Built-in Modules" href="/docs/built-in-modules" description="Install auth, password login, device policy, Redis sessions, and auth Console surfaces." />
-  <Card title="Module Installation" href="/docs/module-installation" description="Understand CLI installs, local descriptor writes, catalog discovery, admin install requests, and uninstall cleanup." />
+  <Card title="Module Installation" href="/docs/module-installation" description="Understand linked installs, service-backed module releases, catalog discovery, admin install requests, and uninstall cleanup." />
   <Card title="Module Catalogs" href="/docs/module-catalogs" description="Separate discovery catalogs, local install state, available modules, and the official fallback catalog." />
   <Card title="Deployment" href="/docs/deployment" description="Package a generated host, run database migrations, ship Console assets, and keep release checks in the path." />
   <Card title="Troubleshooting" href="/docs/troubleshooting" description="Diagnose blank Console, missing modules, remote services, CORS, Redis, generated artifacts, busy ports, and release gates." />

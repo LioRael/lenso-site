@@ -68,11 +68,15 @@ pnpm host-api-smoke:account-profile
 
 ## Local host install
 
-Run an example service, then install its manifest from a generated host:
+Run the support-ticket service, package it, then install the generated module
+release from a generated host:
 
 ```sh
 pnpm start:support-ticket
-lenso module install http://127.0.0.1:4110/lenso/module/v1/manifest
+pnpm service-package:support-ticket
+lenso module release inspect dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json
+lenso module install dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json \
+  --base-url http://127.0.0.1:4110/lenso/service/v1
 ```
 
 Restart the host and open `/console` to confirm the module appears.
