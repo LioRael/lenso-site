@@ -80,6 +80,8 @@ lenso module create support \
 | `lenso service workspace list`                                                                                        | Show workspace services.                                                      |
 | `lenso service workspace check [name] --json`                                                                         | Check service cwd, manifest, and ready URL state.                             |
 | `lenso service workspace export --output .lenso/module-services.json`                                                 | Export workspace services as host service-start state.                        |
+| `lenso service verify [manifest-or-provider] --json`                                                                  | Run release-readiness checks for a local manifest or installed provider.      |
+| `lenso service upgrade-plan <provider> <manifest-or-package> --json`                                                  | Preview service manifest changes before upgrade.                              |
 | `lenso service dev`                                                                                                   | Start workspace services, installed service processes, then the host.         |
 | `lenso service dev --no-workspace`                                                                                    | Start only installed `.lenso/module-services.json` providers before the host. |
 
