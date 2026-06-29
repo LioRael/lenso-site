@@ -94,6 +94,8 @@ lenso module create support \
 | `lenso service policy check <plan.json> --fail-on breaking`                                                           | Run the built-in service release policy gate only.                            |
 | `lenso service release apply <plan.json>`                                                                             | Apply the candidate and record `.lenso/service-releases.json`.                |
 | `lenso service release apply <plan.json> --env staging`                                                               | Apply only if the plan matches the requested environment.                     |
+| `lenso service release promote <provider> --from staging --to prod --output <plan.json>`                              | Create a prod release plan from the latest staging release.                   |
+| `lenso service release rollback <provider> --env prod [--to <release-id>] --output <plan.json>`                       | Create an environment-specific rollback release plan.                         |
 | `lenso service dev`                                                                                                   | Start workspace services, installed service processes, then the host.         |
 | `lenso service dev --no-workspace`                                                                                    | Start only installed `.lenso/module-services.json` providers before the host. |
 
