@@ -90,6 +90,48 @@ provider process resources only.
 history. Runtime Console reads that Host-local evidence; it does not need
 browser access to the cluster.
 
+## Promotion loop
+
+Service install and module install stay Host-local. Cluster delivery starts after
+an environment-aware service release has been planned, checked, and applied. A
+typical promotion keeps staging evidence as the source of truth, then creates a
+prod plan from that applied release:
+
+```sh
+lenso service env add prod \
+  --service support-suite-provider \
+  --target operator \
+  --namespace lenso-prod \
+  --image ghcr.io/lenso-dev/support-suite-provider:0.4.0 \
+  --public-base-url https://support.example.com \
+  --manifest-reference https://support.example.com/lenso/service/v1/manifest \
+  --port 4110 \
+  --replicas 3 \
+  --ingress-host support.example.com
+
+lenso service release promote support-suite-provider \
+  --from staging \
+  --to prod \
+  --output .lenso/support-suite-provider.prod.release-plan.json
+lenso service policy check .lenso/support-suite-provider.prod.release-plan.json --fail-on breaking
+lenso service release apply .lenso/support-suite-provider.prod.release-plan.json --env prod
+
+lenso service deploy export support-suite-provider \
+  --env prod \
+  --target operator \
+  --hpa \
+  --pdb \
+  --network-policy \
+  --output-dir dist/lenso-service/support-suite-provider/operator/prod
+
+kubectl apply -k dist/lenso-service/support-suite-provider/operator/prod
+lenso service deploy wait support-suite-provider --env prod --source operator --write-state
+```
+
+Use the same release commands with raw Kubernetes export, a CI job, or a future
+provider adapter. The Host tracks release, deployment, and Console evidence; the
+chosen delivery platform only runs and observes the service process.
+
 ## Process layout
 
 Run migrations before API and worker:
