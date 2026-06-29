@@ -83,6 +83,10 @@ lenso module create support \
 | `lenso service verify [manifest-or-provider] --json`                                                                  | Run release-readiness checks for a local manifest or installed provider.      |
 | `lenso service verify ./lenso.service.json --env-file .env --json`                                                    | Include required/missing service env in the verification report.              |
 | `lenso service upgrade-plan <provider> <manifest-or-package> --json`                                                  | Preview service manifest changes before upgrade.                              |
+| `lenso service release plan <provider> <manifest-or-package> --output <plan.json>`                                    | Create a reusable service release plan from installed and candidate manifests. |
+| `lenso service release check <plan.json> --fail-on breaking`                                                          | Recheck a release plan before handing it to an operator or CI job.            |
+| `lenso service policy check <plan.json> --fail-on breaking`                                                           | Run the built-in service release policy gate only.                            |
+| `lenso service release apply <plan.json>`                                                                             | Apply the candidate and record `.lenso/service-releases.json`.                |
 | `lenso service dev`                                                                                                   | Start workspace services, installed service processes, then the host.         |
 | `lenso service dev --no-workspace`                                                                                    | Start only installed `.lenso/module-services.json` providers before the host. |
 

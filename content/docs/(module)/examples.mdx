@@ -79,4 +79,18 @@ lenso module install dist/lenso-service/support-suite-provider/modules/support-t
   --base-url http://127.0.0.1:4110/lenso/service/v1
 ```
 
+After the provider is installed, use a service release plan for package
+upgrades:
+
+```sh
+lenso service release plan support-suite-provider \
+  dist/lenso-service/support-suite-provider/lenso.service-package.json \
+  --output .lenso/support-suite-provider.release-plan.json
+lenso service policy check .lenso/support-suite-provider.release-plan.json --fail-on breaking
+lenso service release apply .lenso/support-suite-provider.release-plan.json
+```
+
+Console Services shows the latest release risk and recent provider history from
+`.lenso/service-releases.json`.
+
 Restart the host and open `/console` to confirm the module appears.
