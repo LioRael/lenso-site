@@ -74,15 +74,21 @@ lenso module create support \
 | Command | Use it for |
 | --- | --- |
 | `lenso module install auth` | Enable a linked built-in module from its descriptor. |
+| `lenso module enable auth` | Alias for installing/enabling a module capability. |
+| `lenso module disable auth` | Alias for uninstalling/disabling a module capability. |
 | `lenso module install auth --profile redis-session-cache` | Enable Redis-backed auth session lookup. |
-| `lenso module release inspect <module-release.json>` | Inspect a service-backed module release before installing it. |
+| `lenso module release inspect <module-release.json>` | Inspect a module release before installing it. |
 | `lenso module release check <module-release.json> --base-url <url>` | Fail fast when a local module release is missing install inputs. |
-| `lenso module install <module-release.json> --base-url <url>` | Install a business module from a service-backed release artifact. |
+| `lenso module install <module-release.json> --base-url <url>` | Install a business module from a release artifact. |
 | `lenso module install <manifest-url>` | Install a legacy remote module by URL. |
 | `lenso module install ./lenso.module.json --base-url <url>` | Install a legacy local descriptor while pointing the host at a deployed base URL. |
 | `lenso module install <ref> --dry-run` | Preview `.env`, receipts, service files, and Console registry changes. |
 | `lenso module install <ref> --run-install-commands` | Execute descriptor-declared install commands. |
 | `lenso module install <ref> --no-console-extension` | Skip Runtime Console extension registration. |
+
+`module install` is the module-level entrypoint. Service releases resolve to a
+provider package or manifest; linked releases enable Rust code already available
+to the host. `service install` remains the provider/process entrypoint.
 
 `module install` writes host-local state. Depending on the source, it can update:
 
