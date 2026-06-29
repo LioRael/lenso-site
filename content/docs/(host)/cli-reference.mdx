@@ -87,6 +87,7 @@ lenso module create support \
 | `lenso service env list --service <provider>`                                                                         | List deployment environments from `.lenso/service-environments.json`.         |
 | `lenso service env verify staging --service <provider>`                                                               | Check service install state and required Kubernetes environment fields.        |
 | `lenso service deploy export <provider> --env staging --target kubernetes --output-dir <dir>`                         | Generate reviewable Kubernetes manifests.                                     |
+| `lenso service deploy export <provider> --env staging --hpa --pdb --network-policy --output-dir <dir>`                | Include HPA, PDB, and NetworkPolicy fragments in the export.                  |
 | `lenso service deploy status <provider> --env staging --write-state`                                                  | Read Kubernetes rollout state and update `.lenso/service-deployments.json`.   |
 | `lenso service release plan <provider> <manifest-or-package> --output <plan.json>`                                    | Create a reusable service release plan from installed and candidate manifests. |
 | `lenso service release plan <provider> <manifest-or-package> --env staging --output <plan.json>`                      | Create an environment-aware service release plan.                             |
