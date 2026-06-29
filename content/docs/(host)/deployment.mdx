@@ -18,9 +18,10 @@ A production deployment has:
 - hosted Runtime Console files served by the API at `/console`
 
 For most teams, the practical default is containers plus managed Postgres. A
-container PaaS is enough for early users, and Kubernetes is the first-class
-production target once service boundaries need independent rollout, replicas,
-probes, and cluster observation.
+container PaaS is enough for early users. Kubernetes is a first-class delivery
+adapter once service boundaries need independent rollout, replicas, probes, and
+cluster observation, but Lenso does not require Kubernetes to install or run
+services.
 
 Lenso owns service/module/release semantics; Kubernetes owns process scheduling
 and rollout state. Use raw Kubernetes export when you want reviewable YAML and
@@ -50,6 +51,10 @@ kubectl apply -k dist/lenso-service/support-suite-provider/kubernetes/staging
 lenso service deploy status support-suite-provider \
   --env staging \
   --write-state
+
+lenso service deploy wait support-suite-provider \
+  --env staging \
+  --write-state
 ```
 
 Operator managed:
@@ -69,11 +74,21 @@ lenso service deploy status support-suite-provider \
   --env staging \
   --source operator \
   --write-state
+
+lenso service deploy wait support-suite-provider \
+  --env staging \
+  --source operator \
+  --write-state
 ```
 
 The operator does not install modules into a Host, write Host runtime tables,
 consume the Host Outbox, or receive browser bearer tokens. It reconciles service
 provider process resources only.
+
+`status --write-state` stores the current deployment observation, and
+`wait --write-state` appends rollout observations to the local deployment
+history. Runtime Console reads that Host-local evidence; it does not need
+browser access to the cluster.
 
 ## Process layout
 
