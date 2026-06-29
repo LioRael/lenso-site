@@ -18,8 +18,14 @@ A production deployment has:
 - hosted Runtime Console files served by the API at `/console`
 
 For most teams, the practical default is containers plus managed Postgres. A
-container PaaS is enough for early users. Use Kubernetes only if the team
-already operates Kubernetes well.
+container PaaS is enough for early users, and Kubernetes is the first-class
+production target once service boundaries need independent rollout, replicas,
+probes, and cluster observation.
+
+Lenso owns service/module/release semantics; Kubernetes owns process scheduling
+and rollout state. Use `lenso service deploy export` to generate reviewable
+Kubernetes manifests, then use `kubectl apply -k` in the cluster you already
+operate.
 
 ## Process layout
 
