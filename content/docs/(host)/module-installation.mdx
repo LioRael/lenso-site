@@ -9,6 +9,12 @@ are separate on purpose.
 For the discovery side of this split, read
 [Module Catalogs](/docs/module-catalogs).
 
+`lenso module install` is the business-capability entrypoint. The release or
+catalog entry decides whether that capability comes from linked Rust code, a
+service provider, a bundled host module, or a future sandbox. `lenso service
+install` is lower level: it connects a provider process, but it is not the
+primary way a user asks for a module capability.
+
 ## Linked first-party modules
 
 First-party linked modules are installed by name:
@@ -32,7 +38,7 @@ lenso module install auth --profile redis-session-cache
 The Redis session profile enables the auth Redis feature, writes `REDIS_URL`,
 and records `auth.session_cache=redis` as a runtime default.
 
-## Service-backed modules
+## Module releases
 
 Install a packaged business module through its module release artifact:
 
@@ -42,7 +48,31 @@ lenso module install dist/lenso-service/support-suite-provider/modules/support-t
   --base-url http://127.0.0.1:4110/lenso/service/v1
 ```
 
-The module release points at the provider service package or service manifest.
+For `source: service`, the module release points at the provider service
+package or service manifest. For `source: linked`, the same release protocol can
+enable linked Rust code:
+
+```json
+{
+  "protocol": "lenso.module-release.v1",
+  "name": "auth-password",
+  "version": "0.1.0",
+  "source": "linked"
+}
+```
+
+`lenso.module.v1` is the standalone module contract. It names the module before
+release/provider concerns:
+
+```json
+{
+  "protocol": "lenso.module.v1",
+  "name": "support-ticket",
+  "version": "0.1.0",
+  "source": "service"
+}
+```
+
 The host still owns install state, queues, retries, Runtime Stories, and Console
 evidence.
 
