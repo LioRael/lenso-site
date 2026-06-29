@@ -79,6 +79,14 @@ lenso service dev
 
 `lenso service dev` starts services from `lenso.workspace.json`, then installed
 service processes from `.lenso/module-services.json`, then the host.
+Workspace commands also read the older `.lenso/services.json` path when a host
+has not yet moved to `lenso.workspace.json`.
+
+After the services are running, check them from another shell:
+
+```sh
+lenso service workspace check
+```
 
 ## Add auth with Redis sessions
 

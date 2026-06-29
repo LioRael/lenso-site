@@ -68,11 +68,12 @@ grep -E 'REMOTE_MODULES|LENSO_MODULE_' .env
 Then restart API and worker. Linked module installs can update `Cargo.toml` and
 `src/lib.rs`, so rebuild the host when necessary.
 
-## Remote module service is not ready
+## Service is not ready
 
 Run:
 
 ```sh
+lenso service workspace check
 lenso module doctor
 ```
 
@@ -85,7 +86,7 @@ Doctor checks declared services in `.lenso/module-services.json` and reports:
 - stale host-started state;
 - ready URL not responding.
 
-If the module is an external service, start it yourself and make sure the
+If the provider is an external service, start it yourself and make sure the
 `readyUrl` responds before starting the host.
 
 ## Remote manifest URL does not respond
