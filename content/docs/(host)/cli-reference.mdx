@@ -79,6 +79,7 @@ lenso module create support \
 | `lenso service workspace add <name> --cwd <dir> --lang ts --command "pnpm start" --ready-url <url> --module <module>` | Register an existing service.                                                 |
 | `lenso service workspace list`                                                                                        | Show workspace services.                                                      |
 | `lenso service workspace check [name] --json`                                                                         | Check service cwd, manifest, and ready URL state.                             |
+| `lenso service workspace export --output .lenso/module-services.json`                                                 | Export workspace services as host service-start state.                        |
 | `lenso service dev`                                                                                                   | Start workspace services, installed service processes, then the host.         |
 | `lenso service dev --no-workspace`                                                                                    | Start only installed `.lenso/module-services.json` providers before the host. |
 
