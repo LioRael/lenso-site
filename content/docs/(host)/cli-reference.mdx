@@ -107,9 +107,10 @@ and fall back to `.lenso/services.json` for older local hosts.
 `module install` is the module-level entrypoint. Service releases resolve to a
 provider package or manifest; linked releases enable Rust code already available
 to the host. `service install` remains the provider/process entrypoint.
-When `lenso service install ./lenso.service.json` points at a local source
-manifest registered in the service workspace, the CLI infers the runtime base
-URL from the workspace `readyUrl`; standalone local package artifacts still need
+When `lenso service install <service-name>` matches a service workspace entry,
+or when `lenso service install ./lenso.service.json` points at a local source
+manifest registered in that workspace, the CLI infers the runtime base URL from
+the workspace `readyUrl`; standalone local package artifacts still need
 `--base-url`.
 
 `module install` writes host-local state. Depending on the source, it can update:
