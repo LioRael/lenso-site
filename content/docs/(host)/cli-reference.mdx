@@ -24,19 +24,19 @@ lenso --help
 
 ## Host commands
 
-| Command | Use it for |
-| --- | --- |
-| `lenso host init <dir>` | Create a generated Rust host application. |
-| `lenso host init <dir> --name <crate>` | Override the generated Cargo crate name. |
-| `lenso host init <dir> --force` | Scaffold into a non-empty directory. |
-| `lenso console update` | Refresh the hosted Runtime Console bundle in `.lenso/console`. |
-| `lenso console update --repo-root <path>` | Update Console assets for a host outside the current directory. |
-| `lenso console bootstrap-admin --identifier <email>` | Grant first Console admin access to a password-auth user. |
-| `lenso console bootstrap-admin --user-id <id>` | Grant first Console admin access to a known auth user id. |
-| `lenso serve` | Start local Postgres, run migrations, then run API and worker. |
-| `lenso serve --separate-worker` | Run API and worker as separate local child processes. |
-| `lenso serve --skip-db` | Do not start the template Postgres service. |
-| `lenso serve --skip-migrate` | Do not run migrations before starting services. |
+| Command                                              | Use it for                                                      |
+| ---------------------------------------------------- | --------------------------------------------------------------- |
+| `lenso host init <dir>`                              | Create a generated Rust host application.                       |
+| `lenso host init <dir> --name <crate>`               | Override the generated Cargo crate name.                        |
+| `lenso host init <dir> --force`                      | Scaffold into a non-empty directory.                            |
+| `lenso console update`                               | Refresh the hosted Runtime Console bundle in `.lenso/console`.  |
+| `lenso console update --repo-root <path>`            | Update Console assets for a host outside the current directory. |
+| `lenso console bootstrap-admin --identifier <email>` | Grant first Console admin access to a password-auth user.       |
+| `lenso console bootstrap-admin --user-id <id>`       | Grant first Console admin access to a known auth user id.       |
+| `lenso serve`                                        | Start local Postgres, run migrations, then run API and worker.  |
+| `lenso serve --separate-worker`                      | Run API and worker as separate local child processes.           |
+| `lenso serve --skip-db`                              | Do not start the template Postgres service.                     |
+| `lenso serve --skip-migrate`                         | Do not run migrations before starting services.                 |
 
 Typical host loop:
 
@@ -49,13 +49,13 @@ lenso serve
 
 ## Module scaffolding
 
-| Command | Use it for |
-| --- | --- |
-| `lenso module create billing` | Create a linked Rust module inside the host. |
-| `lenso module create billing --with-console` | Create a linked module and matching Runtime Console package. |
-| `lenso module create billing --remote --output-dir ../module-packages` | Create a standalone remote module package. |
-| `lenso module create billing --dry-run` | Preview generated files without writing them. |
-| `lenso console package create billing` | Create only a Runtime Console package scaffold. |
+| Command                                                                | Use it for                                                   |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `lenso module create billing`                                          | Create a linked Rust module inside the host.                 |
+| `lenso module create billing --with-console`                           | Create a linked module and matching Runtime Console package. |
+| `lenso module create billing --remote --output-dir ../module-packages` | Create a standalone remote module package.                   |
+| `lenso module create billing --dry-run`                                | Preview generated files without writing them.                |
+| `lenso console package create billing`                                 | Create only a Runtime Console package scaffold.              |
 
 Useful `module create` options:
 
@@ -69,22 +69,38 @@ lenso module create support \
   --icon Ticket
 ```
 
+## Service workspace
+
+| Command                                                                                                               | Use it for                                                                    |
+| --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `lenso service create support-suite-provider --lang ts --output-dir services --port 4110`                             | Create a TypeScript service and register it in `lenso.workspace.json`.        |
+| `lenso service create audit-provider --lang rust --output-dir services --port 4130`                                   | Create a Rust service and register it in the same workspace.                  |
+| `lenso service workspace init`                                                                                        | Create an empty `lenso.workspace.json`.                                       |
+| `lenso service workspace add <name> --cwd <dir> --lang ts --command "pnpm start" --ready-url <url> --module <module>` | Register an existing service.                                                 |
+| `lenso service workspace list`                                                                                        | Show workspace services.                                                      |
+| `lenso service dev`                                                                                                   | Start workspace services, installed service processes, then the host.         |
+| `lenso service dev --no-workspace`                                                                                    | Start only installed `.lenso/module-services.json` providers before the host. |
+
+The workspace file is local development control plane state. It does not replace
+`lenso service install` or `lenso module install`; those still write host-local
+provider and module install state.
+
 ## Installing modules
 
-| Command | Use it for |
-| --- | --- |
-| `lenso module install auth` | Enable a linked built-in module from its descriptor. |
-| `lenso module enable auth` | Alias for installing/enabling a module capability. |
-| `lenso module disable auth` | Alias for uninstalling/disabling a module capability. |
-| `lenso module install auth --profile redis-session-cache` | Enable Redis-backed auth session lookup. |
-| `lenso module release inspect <module-release.json>` | Inspect a module release before installing it. |
-| `lenso module release check <module-release.json> --base-url <url>` | Fail fast when a local module release is missing install inputs. |
-| `lenso module install <module-release.json> --base-url <url>` | Install a business module from a release artifact. |
-| `lenso module install <manifest-url>` | Install a legacy remote module by URL. |
-| `lenso module install ./lenso.module.json --base-url <url>` | Install a legacy local descriptor while pointing the host at a deployed base URL. |
-| `lenso module install <ref> --dry-run` | Preview `.env`, receipts, service files, and Console registry changes. |
-| `lenso module install <ref> --run-install-commands` | Execute descriptor-declared install commands. |
-| `lenso module install <ref> --no-console-extension` | Skip Runtime Console extension registration. |
+| Command                                                             | Use it for                                                                        |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `lenso module install auth`                                         | Enable a linked built-in module from its descriptor.                              |
+| `lenso module enable auth`                                          | Alias for installing/enabling a module capability.                                |
+| `lenso module disable auth`                                         | Alias for uninstalling/disabling a module capability.                             |
+| `lenso module install auth --profile redis-session-cache`           | Enable Redis-backed auth session lookup.                                          |
+| `lenso module release inspect <module-release.json>`                | Inspect a module release before installing it.                                    |
+| `lenso module release check <module-release.json> --base-url <url>` | Fail fast when a local module release is missing install inputs.                  |
+| `lenso module install <module-release.json> --base-url <url>`       | Install a business module from a release artifact.                                |
+| `lenso module install <manifest-url>`                               | Install a legacy remote module by URL.                                            |
+| `lenso module install ./lenso.module.json --base-url <url>`         | Install a legacy local descriptor while pointing the host at a deployed base URL. |
+| `lenso module install <ref> --dry-run`                              | Preview `.env`, receipts, service files, and Console registry changes.            |
+| `lenso module install <ref> --run-install-commands`                 | Execute descriptor-declared install commands.                                     |
+| `lenso module install <ref> --no-console-extension`                 | Skip Runtime Console extension registration.                                      |
 
 `module install` is the module-level entrypoint. Service releases resolve to a
 provider package or manifest; linked releases enable Rust code already available

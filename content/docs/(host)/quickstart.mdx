@@ -66,6 +66,20 @@ Run the worker in a second shell:
 cargo run --bin worker
 ```
 
+## Service workspace loop
+
+For out-of-process providers, create a service and let the workspace file track
+it:
+
+```sh
+lenso service create support-suite-provider --lang ts --output-dir services --port 4110
+lenso service workspace list
+lenso service dev
+```
+
+`lenso service dev` starts services from `lenso.workspace.json`, then installed
+service processes from `.lenso/module-services.json`, then the host.
+
 ## Add auth with Redis sessions
 
 Generated hosts do not install auth by default. Add Redis-backed auth session
