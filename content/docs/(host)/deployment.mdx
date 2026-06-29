@@ -23,9 +23,57 @@ production target once service boundaries need independent rollout, replicas,
 probes, and cluster observation.
 
 Lenso owns service/module/release semantics; Kubernetes owns process scheduling
-and rollout state. Use `lenso service deploy export` to generate reviewable
-Kubernetes manifests, then use `kubectl apply -k` in the cluster you already
-operate.
+and rollout state. Use raw Kubernetes export when you want reviewable YAML and
+CI-controlled apply; use the Lenso Operator when the provider process should be
+reconciled continuously from a cluster-owned desired-state object.
+
+## Kubernetes delivery modes
+
+| Mode | Use when | Lenso owns | Kubernetes owns |
+| --- | --- | --- | --- |
+| Raw Kubernetes export | You want reviewable YAML and CI-controlled apply | service/module/release semantics, manifest export, local deployment observations | workload scheduling and rollout status |
+| Operator managed | You want a durable desired-state object in the cluster | service/module/release semantics, CR export, status import into Console | reconciliation, workload resources, replica availability |
+
+In both modes, the Host keeps owning auth, capability checks, runtime queues,
+retries, Outbox, Runtime Story, Remote Calls, and Technical Operations.
+
+Raw export:
+
+```sh
+lenso service deploy export support-suite-provider \
+  --env staging \
+  --target kubernetes \
+  --output-dir dist/lenso-service/support-suite-provider/kubernetes/staging
+
+kubectl apply -k dist/lenso-service/support-suite-provider/kubernetes/staging
+
+lenso service deploy status support-suite-provider \
+  --env staging \
+  --write-state
+```
+
+Operator managed:
+
+```sh
+lenso operator export-crd --output dist/lenso-operator/crds
+kubectl apply -k dist/lenso-operator/crds
+
+lenso service deploy export support-suite-provider \
+  --env staging \
+  --target operator \
+  --output-dir dist/lenso-service/support-suite-provider/operator/staging
+
+kubectl apply -k dist/lenso-service/support-suite-provider/operator/staging
+
+lenso service deploy status support-suite-provider \
+  --env staging \
+  --source operator \
+  --write-state
+```
+
+The operator does not install modules into a Host, write Host runtime tables,
+consume the Host Outbox, or receive browser bearer tokens. It reconciles service
+provider process resources only.
 
 ## Process layout
 

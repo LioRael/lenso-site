@@ -89,6 +89,9 @@ lenso module create support \
 | `lenso service deploy export <provider> --env staging --target kubernetes --output-dir <dir>`                         | Generate reviewable Kubernetes manifests.                                     |
 | `lenso service deploy export <provider> --env staging --hpa --pdb --network-policy --output-dir <dir>`                | Include HPA, PDB, and NetworkPolicy fragments in the export.                  |
 | `lenso service deploy status <provider> --env staging --write-state`                                                  | Read Kubernetes rollout state and update `.lenso/service-deployments.json`.   |
+| `lenso operator export-crd --output <dir>`                                                                            | Generate the Lenso Operator install bundle.                                   |
+| `lenso service deploy export <provider> --env staging --target operator --output-dir <dir>`                           | Generate a `LensoServiceProvider` custom resource for an operator-managed provider. |
+| `lenso service deploy status <provider> --env staging --source operator --write-state`                                | Read `LensoServiceProvider` status and update `.lenso/service-deployments.json`. |
 | `lenso service release plan <provider> <manifest-or-package> --output <plan.json>`                                    | Create a reusable service release plan from installed and candidate manifests. |
 | `lenso service release plan <provider> <manifest-or-package> --env staging --output <plan.json>`                      | Create an environment-aware service release plan.                             |
 | `lenso service release check <plan.json> --fail-on breaking`                                                          | Recheck a release plan before handing it to an operator or CI job.            |
