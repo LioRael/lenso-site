@@ -131,6 +131,11 @@ and fall back to `.lenso/services.json` for older local hosts.
 | `lenso system release promote --from staging --to prod --output system-release-prod.json`                               | Build a promotion plan from a prior system release.                |
 | `lenso system release rollback --env prod --output system-rollback.json`                                                | Build a rollback plan from system release history.                 |
 | `lenso system release history`                                                                                          | List applied system releases.                                     |
+| `lenso system runbook generate system-release.json --output system-runbook.json`                                        | Generate operator steps from a system release plan.                |
+| `lenso system runbook check system-runbook.json`                                                                         | Check a generated system runbook.                                  |
+| `lenso system runbook record system-runbook.json`                                                                        | Record a runbook in host-local history.                            |
+| `lenso system runbook history`                                                                                           | List recorded system runbooks.                                     |
+| `lenso system runbook doctor`                                                                                            | Diagnose system runbook state.                                     |
 | `lenso system plan --system-file lenso.system.json --json`                                                             | Emit the plan for automation.                                    |
 
 `lenso.system.json` sits above module and service install state. It explains
@@ -140,6 +145,8 @@ system. It does not replace `lenso module install` or `lenso service install`.
 module install, service release, and Kubernetes deployment stay explicit.
 `system release apply` only writes `.lenso/system-releases.json`; it does not
 run service release apply or deploy commands.
+`system runbook record` only writes `.lenso/system-runbooks.json`; runbooks are
+generated operator evidence, not module authoring files.
 
 ## Installing modules
 

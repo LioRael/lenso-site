@@ -88,6 +88,8 @@ lenso system release plan --env staging --output system-release-staging.json
 lenso system release check system-release-staging.json
 lenso system release apply system-release-staging.json
 lenso system release promote --from staging --to prod --output system-release-prod.json
+lenso system runbook generate system-release-staging.json --output system-runbook-staging.json
+lenso system runbook record system-runbook-staging.json
 ```
 
 `system plan` reports graph issues and suggests existing lower-level commands,
@@ -102,6 +104,12 @@ the target environment, affected services, affected modules, drift precheck,
 policy result, rollback availability, and next commands. Applying it writes only
 `.lenso/system-releases.json`; service release plans and deployments remain
 explicit lower-level commands.
+
+`system runbook` turns a system release plan into generated operator steps:
+release policy check, service release preparation, deployment evidence, and
+release recording. Recording it writes only `.lenso/system-runbooks.json`.
+Runbook JSON is generated control-plane evidence, not something module authors
+hand-maintain.
 
 ## Console visibility
 
@@ -119,6 +127,9 @@ records exist.
 The release train view reads applied system releases and shows the latest
 environment release, policy state, rollback availability, and the next CLI
 command.
+
+The runbook view reads recorded system runbooks and shows the active runbook,
+current step, and next command.
 
 ## Kubernetes stays optional
 
