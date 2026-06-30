@@ -18,8 +18,119 @@ A production deployment has:
 - hosted Runtime Console files served by the API at `/console`
 
 For most teams, the practical default is containers plus managed Postgres. A
-container PaaS is enough for early users. Use Kubernetes only if the team
-already operates Kubernetes well.
+container PaaS is enough for early users. Kubernetes is a first-class delivery
+adapter once service boundaries need independent rollout, replicas, probes, and
+cluster observation, but Lenso does not require Kubernetes to install or run
+services.
+
+Lenso owns service/module/release semantics; Kubernetes owns process scheduling
+and rollout state. Use raw Kubernetes export when you want reviewable YAML and
+CI-controlled apply; use the Lenso Operator when the provider process should be
+reconciled continuously from a cluster-owned desired-state object.
+
+## Kubernetes delivery modes
+
+| Mode | Use when | Lenso owns | Kubernetes owns |
+| --- | --- | --- | --- |
+| Raw Kubernetes export | You want reviewable YAML and CI-controlled apply | service/module/release semantics, manifest export, local deployment observations | workload scheduling and rollout status |
+| Operator managed | You want a durable desired-state object in the cluster | service/module/release semantics, CR export, status import into Console | reconciliation, workload resources, replica availability |
+
+In both modes, the Host keeps owning auth, capability checks, runtime queues,
+retries, Outbox, Runtime Story, Remote Calls, and Technical Operations.
+
+Raw export:
+
+```sh
+lenso service deploy export support-suite-provider \
+  --env staging \
+  --target kubernetes \
+  --output-dir dist/lenso-service/support-suite-provider/kubernetes/staging
+
+kubectl apply -k dist/lenso-service/support-suite-provider/kubernetes/staging
+
+lenso service deploy status support-suite-provider \
+  --env staging \
+  --write-state
+
+lenso service deploy wait support-suite-provider \
+  --env staging \
+  --write-state
+```
+
+Operator managed:
+
+```sh
+lenso operator export-crd --output dist/lenso-operator/crds
+kubectl apply -k dist/lenso-operator/crds
+
+lenso service deploy export support-suite-provider \
+  --env staging \
+  --target operator \
+  --output-dir dist/lenso-service/support-suite-provider/operator/staging
+
+kubectl apply -k dist/lenso-service/support-suite-provider/operator/staging
+
+lenso service deploy status support-suite-provider \
+  --env staging \
+  --source operator \
+  --write-state
+
+lenso service deploy wait support-suite-provider \
+  --env staging \
+  --source operator \
+  --write-state
+```
+
+The operator does not install modules into a Host, write Host runtime tables,
+consume the Host Outbox, or receive browser bearer tokens. It reconciles service
+provider process resources only.
+
+`status --write-state` stores the current deployment observation, and
+`wait --write-state` appends rollout observations to the local deployment
+history. Runtime Console reads that Host-local evidence; it does not need
+browser access to the cluster.
+
+## Promotion loop
+
+Service install and module install stay Host-local. Cluster delivery starts after
+an environment-aware service release has been planned, checked, and applied. A
+typical promotion keeps staging evidence as the source of truth, then creates a
+prod plan from that applied release:
+
+```sh
+lenso service env add prod \
+  --service support-suite-provider \
+  --target operator \
+  --namespace lenso-prod \
+  --image ghcr.io/lenso-dev/support-suite-provider:0.4.0 \
+  --public-base-url https://support.example.com \
+  --manifest-reference https://support.example.com/lenso/service/v1/manifest \
+  --port 4110 \
+  --replicas 3 \
+  --ingress-host support.example.com
+
+lenso service release promote support-suite-provider \
+  --from staging \
+  --to prod \
+  --output .lenso/support-suite-provider.prod.release-plan.json
+lenso service policy check .lenso/support-suite-provider.prod.release-plan.json --fail-on breaking
+lenso service release apply .lenso/support-suite-provider.prod.release-plan.json --env prod
+
+lenso service deploy export support-suite-provider \
+  --env prod \
+  --target operator \
+  --hpa \
+  --pdb \
+  --network-policy \
+  --output-dir dist/lenso-service/support-suite-provider/operator/prod
+
+kubectl apply -k dist/lenso-service/support-suite-provider/operator/prod
+lenso service deploy wait support-suite-provider --env prod --source operator --write-state
+```
+
+Use the same release commands with raw Kubernetes export, a CI job, or a future
+provider adapter. The Host tracks release, deployment, and Console evidence; the
+chosen delivery platform only runs and observes the service process.
 
 ## Process layout
 
