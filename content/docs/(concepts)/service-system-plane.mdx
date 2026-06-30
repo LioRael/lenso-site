@@ -84,6 +84,10 @@ lenso system plan --system-file lenso.system.json --check
 lenso system diff --system-file lenso.system.json --check
 lenso system apply --system-file lenso.system.json --dry-run
 lenso system doctor --system-file lenso.system.json
+lenso system release plan --env staging --output system-release-staging.json
+lenso system release check system-release-staging.json
+lenso system release apply system-release-staging.json
+lenso system release promote --from staging --to prod --output system-release-prod.json
 ```
 
 `system plan` reports graph issues and suggests existing lower-level commands,
@@ -92,6 +96,12 @@ such as service workspace registration or service environment setup.
 apply` writes only safe local files such as `.lenso/module-services.json` and
 `.lenso/service-environments.json`; it does not install modules, deploy
 Kubernetes resources, or apply service releases for you.
+
+`system release` adds a system-level release train. A system release plan records
+the target environment, affected services, affected modules, drift precheck,
+policy result, rollback availability, and next commands. Applying it writes only
+`.lenso/system-releases.json`; service release plans and deployments remain
+explicit lower-level commands.
 
 ## Console visibility
 
@@ -105,6 +115,10 @@ The Services page also reads the system drift endpoint. Drift tells operators
 whether declared modules are installed, declared services are configured,
 environment lanes exist, deployment observations are present, and release
 records exist.
+
+The release train view reads applied system releases and shows the latest
+environment release, policy state, rollback availability, and the next CLI
+command.
 
 ## Kubernetes stays optional
 

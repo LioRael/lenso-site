@@ -125,6 +125,12 @@ and fall back to `.lenso/services.json` for older local hosts.
 | `lenso system diff --system-file lenso.system.json --check`                                                            | Compare the system manifest with host-local `.lenso` state.       |
 | `lenso system apply --system-file lenso.system.json --dry-run`                                                         | Preview safe host-local state writes.                             |
 | `lenso system doctor --system-file lenso.system.json`                                                                  | Show drift and the next operator command.                         |
+| `lenso system release plan --env staging --output system-release.json`                                                  | Create a system-level release plan.                               |
+| `lenso system release check system-release.json`                                                                        | Run system release policy checks.                                 |
+| `lenso system release apply system-release.json`                                                                        | Record an applied system release in host-local history.            |
+| `lenso system release promote --from staging --to prod --output system-release-prod.json`                               | Build a promotion plan from a prior system release.                |
+| `lenso system release rollback --env prod --output system-rollback.json`                                                | Build a rollback plan from system release history.                 |
+| `lenso system release history`                                                                                          | List applied system releases.                                     |
 | `lenso system plan --system-file lenso.system.json --json`                                                             | Emit the plan for automation.                                    |
 
 `lenso.system.json` sits above module and service install state. It explains
@@ -132,6 +138,8 @@ how services, modules, environments, and capability dependencies form one
 system. It does not replace `lenso module install` or `lenso service install`.
 `system apply` only writes local service-start and service-environment state;
 module install, service release, and Kubernetes deployment stay explicit.
+`system release apply` only writes `.lenso/system-releases.json`; it does not
+run service release apply or deploy commands.
 
 ## Installing modules
 
