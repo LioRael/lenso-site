@@ -122,11 +122,16 @@ and fall back to `.lenso/services.json` for older local hosts.
 | `lenso system add-module auth --to host --capability auth`                                                             | Register a host-owned linked or built-in capability in the graph. |
 | `lenso system graph --system-file lenso.system.json`                                                                   | Print the service/module dependency graph.                       |
 | `lenso system plan --system-file lenso.system.json --check`                                                            | Fail when the graph has missing modules or unresolved edges.      |
+| `lenso system diff --system-file lenso.system.json --check`                                                            | Compare the system manifest with host-local `.lenso` state.       |
+| `lenso system apply --system-file lenso.system.json --dry-run`                                                         | Preview safe host-local state writes.                             |
+| `lenso system doctor --system-file lenso.system.json`                                                                  | Show drift and the next operator command.                         |
 | `lenso system plan --system-file lenso.system.json --json`                                                             | Emit the plan for automation.                                    |
 
 `lenso.system.json` sits above module and service install state. It explains
 how services, modules, environments, and capability dependencies form one
 system. It does not replace `lenso module install` or `lenso service install`.
+`system apply` only writes local service-start and service-environment state;
+module install, service release, and Kubernetes deployment stay explicit.
 
 ## Installing modules
 

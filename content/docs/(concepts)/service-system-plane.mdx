@@ -81,10 +81,17 @@ lenso system add-module support-ticket \
 lenso system add-module auth --to host --capability auth
 lenso system graph --system-file lenso.system.json
 lenso system plan --system-file lenso.system.json --check
+lenso system diff --system-file lenso.system.json --check
+lenso system apply --system-file lenso.system.json --dry-run
+lenso system doctor --system-file lenso.system.json
 ```
 
 `system plan` reports graph issues and suggests existing lower-level commands,
 such as service workspace registration or service environment setup.
+`system diff` compares the manifest to host-local `.lenso` state. `system
+apply` writes only safe local files such as `.lenso/module-services.json` and
+`.lenso/service-environments.json`; it does not install modules, deploy
+Kubernetes resources, or apply service releases for you.
 
 ## Console visibility
 
@@ -93,6 +100,11 @@ on the Services page. Operators can see whether the system manifest is missing,
 ready, or needs attention, then inspect service count, module count, dependency
 count, environment lanes, and graph issues beside lifecycle, rollout, release,
 Remote Calls, Runtime Story, and Technical Operations evidence.
+
+The Services page also reads the system drift endpoint. Drift tells operators
+whether declared modules are installed, declared services are configured,
+environment lanes exist, deployment observations are present, and release
+records exist.
 
 ## Kubernetes stays optional
 
