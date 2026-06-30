@@ -1,11 +1,11 @@
 ---
 title: CLI Reference
-description: Common lenso CLI commands for hosts, modules, catalogs, doctor flows, and Console packages.
+description: Common lenso CLI commands for hosts, modules, services, system graphs, doctor flows, and Console packages.
 ---
 
 The `lenso` CLI is the fastest way to create a host, scaffold modules, install
-module descriptors, refresh hosted Console assets, and diagnose remote module
-services.
+module descriptors, manage service providers, describe service systems, refresh
+hosted Console assets, and diagnose service issues.
 
 ## Install
 
@@ -111,6 +111,22 @@ The workspace file is local development control plane state. It does not replace
 `lenso service install` or `lenso module install`; those still write host-local
 provider and module install state. Workspace reads prefer `lenso.workspace.json`
 and fall back to `.lenso/services.json` for older local hosts.
+
+## Service system
+
+| Command                                                                                                                | Use it for                                                       |
+| ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `lenso system init support-platform --env local --env staging --env prod`                                              | Create `lenso.system.json` for a whole product system.           |
+| `lenso system add-service support-suite-provider --target operator --module support-ticket --cwd services/support`     | Register a service provider and the modules it owns.             |
+| `lenso system add-module support-ticket --to service:support-suite-provider --capability support_ticket.tickets.write` | Register a module capability and its install target.             |
+| `lenso system add-module auth --to host --capability auth`                                                             | Register a host-owned linked or built-in capability in the graph. |
+| `lenso system graph --system-file lenso.system.json`                                                                   | Print the service/module dependency graph.                       |
+| `lenso system plan --system-file lenso.system.json --check`                                                            | Fail when the graph has missing modules or unresolved edges.      |
+| `lenso system plan --system-file lenso.system.json --json`                                                             | Emit the plan for automation.                                    |
+
+`lenso.system.json` sits above module and service install state. It explains
+how services, modules, environments, and capability dependencies form one
+system. It does not replace `lenso module install` or `lenso service install`.
 
 ## Installing modules
 
