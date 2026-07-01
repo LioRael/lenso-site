@@ -151,6 +151,17 @@ The host still owns:
 The host may authenticate to the remote module, but it does not forward the
 caller's bearer token or cookies.
 
+## Systems connect services and modules
+
+When a product grows beyond one provider, `lenso.system.json` names the whole
+system graph. Services own remote processes and deployment targets. Modules own
+business capabilities. The system plane connects them with environments and
+capability dependencies so CLI checks and Runtime Console can show whether the
+system is coherent.
+
+See [Service System Plane](/docs/service-system-plane) for the `lenso.system.v1`
+contract and CLI flow.
+
 ## The split rule
 
 Start linked when the module belongs to the app. Move remote when one boundary

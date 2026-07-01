@@ -1,0 +1,142 @@
+---
+title: Service System Plane
+description: Use lenso.system.json to describe services, modules, dependencies, and deployment lanes without requiring Kubernetes.
+---
+
+The Service System Plane is the layer above module installs and service
+providers. It helps a team describe a whole Lenso product system when multiple
+services and modules begin to depend on each other.
+
+It is intentionally not a service mesh. It is also not a Kubernetes
+requirement. A system can be local, externally deployed, Kubernetes-backed, or
+operator-managed.
+
+## The three levels
+
+| Level | Contract | What it owns |
+| --- | --- | --- |
+| Module | `lenso.module.v1` | Business capability, permissions, surfaces, runtime names |
+| Service | `lenso.service.v1` | Remote process, SDK language, manifest endpoint, deployment package |
+| System | `lenso.system.v1` | Service ownership, module placement, dependency graph, environments |
+
+`lenso module install` stays the module-level entrypoint. `lenso service
+install` stays the provider/process entrypoint. `lenso.system.json` explains
+how those pieces form one system.
+
+## Minimal manifest
+
+```json
+{
+  "protocol": "lenso.system.v1",
+  "name": "support-platform",
+  "environments": ["local", "staging", "prod"],
+  "services": [
+    {
+      "name": "support-suite-provider",
+      "target": "operator",
+      "modules": ["support-ticket"],
+      "cwd": "services/support-suite-provider",
+      "manifest": "http://127.0.0.1:4110/lenso/service/v1/manifest",
+      "command": "pnpm start",
+      "lang": "ts",
+      "readyUrl": "http://127.0.0.1:4110/lenso/service/v1/status"
+    }
+  ],
+  "modules": [
+    {
+      "name": "support-ticket",
+      "installTo": "service:support-suite-provider",
+      "capabilities": ["support_ticket.tickets.write"],
+      "dependencies": ["auth"]
+    },
+    {
+      "name": "auth",
+      "installTo": "host",
+      "capabilities": ["auth"]
+    }
+  ]
+}
+```
+
+The graph says the `support-ticket` module is provided by the
+`support-suite-provider` service, and that it depends on the host-owned `auth`
+capability.
+
+## CLI flow
+
+```sh
+lenso system init support-platform --env local --env staging --env prod
+lenso system add-service support-suite-provider \
+  --target operator \
+  --module support-ticket \
+  --cwd services/support-suite-provider \
+  --lang ts \
+  --command "pnpm start" \
+  --ready-url http://127.0.0.1:4110/lenso/service/v1/status \
+  --manifest http://127.0.0.1:4110/lenso/service/v1/manifest
+lenso system add-module support-ticket \
+  --to service:support-suite-provider \
+  --capability support_ticket.tickets.write \
+  --dependency auth
+lenso system add-module auth --to host --capability auth
+lenso system graph --system-file lenso.system.json
+lenso system plan --system-file lenso.system.json --check
+lenso system diff --system-file lenso.system.json --check
+lenso system apply --system-file lenso.system.json --dry-run
+lenso system doctor --system-file lenso.system.json
+lenso system release plan --env staging --output system-release-staging.json
+lenso system release check system-release-staging.json
+lenso system release apply system-release-staging.json
+lenso system release promote --from staging --to prod --output system-release-prod.json
+lenso system runbook generate system-release-staging.json --output system-runbook-staging.json
+lenso system runbook record system-runbook-staging.json
+```
+
+`system plan` reports graph issues and suggests existing lower-level commands,
+such as service workspace registration or service environment setup.
+`system diff` compares the manifest to host-local `.lenso` state. `system
+apply` writes only safe local files such as `.lenso/module-services.json` and
+`.lenso/service-environments.json`; it does not install modules, deploy
+Kubernetes resources, or apply service releases for you.
+
+`system release` adds a system-level release train. A system release plan records
+the target environment, affected services, affected modules, drift precheck,
+policy result, rollback availability, and next commands. Applying it writes only
+`.lenso/system-releases.json`; service release plans and deployments remain
+explicit lower-level commands.
+
+`system runbook` turns a system release plan into generated operator steps:
+release policy check, service release preparation, deployment evidence, and
+release recording. Recording it writes only `.lenso/system-runbooks.json`.
+Runbook JSON is generated control-plane evidence, not something module authors
+hand-maintain.
+
+## Console visibility
+
+Runtime Console reads the host admin endpoint for the system plane and shows it
+on the Services page. Operators can see whether the system manifest is missing,
+ready, or needs attention, then inspect service count, module count, dependency
+count, environment lanes, and graph issues beside lifecycle, rollout, release,
+Remote Calls, Runtime Story, and Technical Operations evidence.
+
+The Services page also reads the system drift endpoint. Drift tells operators
+whether declared modules are installed, declared services are configured,
+environment lanes exist, deployment observations are present, and release
+records exist.
+
+The release train view reads applied system releases and shows the latest
+environment release, policy state, rollback availability, and the next CLI
+command.
+
+The runbook view reads recorded system runbooks and shows the active runbook,
+current step, and next command.
+
+## Kubernetes stays optional
+
+Use `target: "kubernetes"` or `target: "operator"` when a service should be
+delivered through generated Kubernetes manifests or the Lenso Operator. Use
+`target: "local"` or `target: "external"` when a service runs locally or is
+managed somewhere else.
+
+That is the intended shape: Lenso embraces Kubernetes when it helps, but linked
+modules and non-Kubernetes services remain first class.
