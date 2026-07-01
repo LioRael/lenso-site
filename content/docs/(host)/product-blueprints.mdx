@@ -29,19 +29,24 @@ lenso app inspect support-desk
 ## Create and extend an app
 
 ```sh
-lenso app create acme-support --blueprint support-desk
+lenso app compose ./acme-support \
+  --blueprint support-desk \
+  --addon support-sla \
+  --addon customer-profile \
+  --apply
 cd acme-support
-lenso app plan --addon support-sla --write-plan
-lenso app apply .lenso/app-change-plan.json --dry-run
-lenso app add support-sla
+lenso app next
+lenso app explain
 lenso dev doctor --write-state
 lenso app verify --write-proof
 lenso app diff
-lenso agent task "add overdue ticket escalation"
+lenso agent task --from-app-plan "add overdue ticket escalation"
 lenso dev up
 ```
 
-`lenso app add` is an app-level addon command. It can add another service,
+`lenso app compose` is the app-level composition command. It can create the app,
+apply several addons, and write composition context into `.lenso/app-change-plan.json`.
+`lenso app add` remains available for one addon at a time. Addons can add another service,
 module, capability dependency, workspace entry, Launchpad checklist item, and
 agent context in one step. It is not a replacement for `lenso module install`.
 Use `lenso app plan --addon <name> --write-plan` first when you want a
@@ -63,13 +68,16 @@ reviewable App Change Plan for Console, agents, or a dry-run apply step.
 Use App Change Plan before applying addons or generated-state repairs:
 
 ```sh
+lenso app compose --repo-root . --addon support-sla --addon customer-profile --write-plan
 lenso app plan --addon support-sla --write-plan
 lenso app apply .lenso/app-change-plan.json --dry-run
 ```
 
-`app plan` writes a reviewable local plan. `app apply` only applies safe
-generated control-plane changes and supported addon applications from that plan.
-It does not overwrite existing service source files or delete unknown services.
+`app compose` writes a reviewable local plan with requested, applied, and pending
+addons. `app plan` writes the same generated-state repair surface. `app apply`
+only applies safe generated control-plane changes and supported addon applications
+from that plan. It does not overwrite existing service source files or delete
+unknown services.
 
 Use App Proof after adding addons or before handing work to another agent:
 

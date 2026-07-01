@@ -21,6 +21,7 @@ both API and worker after install changes.
 | `/console` returns 404 | `.lenso/console/dist` exists | Upgrade CLI, then run `lenso console update`. |
 | Console opens but module is missing | `/api/admin/modules` and `.env` | Restart API and worker after installing or updating modules. |
 | Remote module is installed but unhealthy | `lenso module doctor <name>` | Start the remote service, fix `readyUrl`, or clear stale `.lock` and `.pid` files called out by doctor. |
+| App lifecycle next step is unclear | `lenso app next` | Run `lenso app explain` to see generated-state, module, and service actions separately. |
 | Launchpad App Change Plan is empty | `.lenso/app-change-plan.json` | Run `lenso app plan --write-plan` or `lenso app plan --addon <name> --write-plan`. |
 | Launchpad App Change Plan is blocked | Console Launchpad plan panel | Review blocked changes; unsupported addons usually mean choosing a supported blueprint or addon. |
 | Launchpad App Proof is empty | `.lenso/app-proof.json` | Run `lenso app verify --write-proof` in the generated app root. |
@@ -107,6 +108,14 @@ For addon changes, include the addon name:
 
 ```sh
 lenso app plan --addon support-sla --write-plan
+```
+
+For multiple addon requests, use App Composer:
+
+```sh
+lenso app compose --repo-root . --addon support-sla --addon customer-profile --write-plan
+lenso app next
+lenso app explain
 ```
 
 If the plan is blocked, do not apply it. Use the blocked item message and command

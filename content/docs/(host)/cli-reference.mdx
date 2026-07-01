@@ -29,6 +29,8 @@ lenso --help
 | `lenso app list`                                      | List built-in product blueprints and their supported addons.                  |
 | `lenso app inspect support-desk`                      | Show services, modules, dependencies, and addon choices for one blueprint.    |
 | `lenso app create support-desk --blueprint support-desk` | Create a generated support-desk app with host, TypeScript service, and Rust service. |
+| `lenso app compose ./acme-support --blueprint support-desk --addon support-sla --apply` | Compose a generated app from a blueprint and addons.                          |
+| `lenso app compose --repo-root . --addon support-sla --addon customer-profile --write-plan` | Write a composition-aware App Change Plan for an existing app.                |
 | `lenso app add support-sla`                           | Add a supported product addon to the current generated app.                   |
 | `lenso app plan --addon support-sla --write-plan`     | Write a reviewable App Change Plan before applying an addon.                  |
 | `lenso app upgrade --check`                           | Fail when generated app state has pending safe changes.                       |
@@ -41,27 +43,29 @@ lenso --help
 | `lenso app diff`                                      | Fail when Launchpad, workspace, system, or doctor state drift is present.     |
 | `lenso app repair --dry-run`                          | Preview safe generated-state repairs without touching existing service source files. |
 | `lenso app repair`                                    | Apply safe generated-state repairs for missing control-plane entries.         |
+| `lenso app next`                                      | Print the next useful app lifecycle command.                                  |
+| `lenso app explain`                                   | Explain generated-state, module, and service actions.                         |
 | `lenso dev up`                                        | Start workspace services, installed service processes, then the host.         |
 | `lenso dev stop`                                      | Show how to stop the foreground dev process.                                  |
 | `lenso agent context`                                 | Print Launchpad, system, workspace, and boundary context for coding agents.   |
 | `lenso agent context --output AGENT_CONTEXT.md`        | Write the same context to a file.                                             |
 | `lenso agent task "Add SLA fields"`                   | Print agent context with a concrete task appended.                            |
+| `lenso agent task --from-app-plan "Add SLA fields"`   | Include App Change Plan and composition context in agent handoff.             |
 
 Typical Launchpad loop:
 
 ```sh
 lenso app list
 lenso app inspect support-desk
-lenso app create support-desk --blueprint support-desk
-cd support-desk
-lenso app plan --addon support-sla --write-plan
-lenso app apply .lenso/app-change-plan.json --dry-run
-lenso app add support-sla
+lenso app compose ./acme-support --blueprint support-desk --addon support-sla --apply
+cd acme-support
+lenso app next
+lenso app explain
 lenso dev status
 lenso dev doctor --write-state
 lenso app verify --write-proof
 lenso app diff
-lenso agent context
+lenso agent task --from-app-plan "Add SLA fields"
 lenso dev up
 ```
 

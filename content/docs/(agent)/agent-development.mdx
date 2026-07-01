@@ -29,6 +29,7 @@ your agent's configured skills folder, then start with `lenso-start`.
 | --- | --- | --- |
 | Clarify a vague business idea | `lenso-business-planning` | choose the first useful slice |
 | Pick the right public path | `lenso-start` | route to host, linked module, service-backed module, or API client |
+| Compose a generated business app | `lenso-start` | `lenso app compose ./acme-support --blueprint support-desk --addon support-sla --apply` |
 | Start a host app | `lenso-starter-host` | `lenso host init <dir>` |
 | Build a Rust module | `lenso-module-authoring` | `lenso module create <name>` |
 | Build an out-of-process service module | `lenso-remote-module-authoring` | `lenso service create <name> --lang ts` |
@@ -55,7 +56,7 @@ Build a support ticket module for a Lenso app.
 The intended route is:
 
 ```text
-lenso-business-planning -> lenso-start -> lenso-module-authoring -> lenso module create -> checks -> /console
+lenso-business-planning -> lenso-start -> lenso app compose -> lenso agent task --from-app-plan -> checks -> /console
 ```
 
 ## Prompt shape

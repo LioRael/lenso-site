@@ -31,21 +31,27 @@ You can also install the packaged CLI with npm:
 npm install -g @lenso/cli
 ```
 
-## Create a Launchpad app
+## Create an App Composer app
 
-Launchpad is the recommended first path. It creates a support-desk app with a
-host, a TypeScript service, a Rust service, `lenso.system.json`,
-`lenso.workspace.json`, and `.lenso/launchpad.json`.
+App Composer is the recommended first path. It creates a support-desk app with
+a host, TypeScript and Rust services, `lenso.system.json`,
+`lenso.workspace.json`, `.lenso/launchpad.json`, and an App Change Plan that
+Runtime Console and agents can read.
 
 ```sh
 lenso app list
 lenso app inspect support-desk
-lenso app create support-desk --blueprint support-desk
-cd support-desk
-lenso app add support-sla
+lenso app compose ./acme-support \
+  --blueprint support-desk \
+  --addon support-sla \
+  --addon customer-profile \
+  --apply
+cd acme-support
+lenso app next
+lenso app explain
 lenso dev status
 lenso dev doctor --write-state
-lenso agent context
+lenso agent task --from-app-plan "add enterprise SLA escalation"
 lenso dev up
 ```
 
@@ -132,6 +138,7 @@ Docker Compose file starts Postgres only.
 - A service module is not ready: run `lenso module doctor <module-name>`.
 - Launchpad is empty: run `lenso dev status` in the generated app root.
 - Launchpad doctor is empty: run `lenso dev doctor --write-state`.
+- App lifecycle is unclear: run `lenso app next` or `lenso app explain`.
 
 ## Next step
 
