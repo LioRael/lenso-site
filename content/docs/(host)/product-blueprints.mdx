@@ -65,18 +65,20 @@ lenso capability init support-sla \
   --dir ./capabilities/support-sla \
   --lang ts \
   --for-blueprint support-desk
-lenso capability check ./capabilities/support-sla
+lenso capability library add ./capabilities/support-sla
+lenso capability fit support-sla --repo-root .
 lenso app compose ./acme-support \
   --blueprint support-desk \
-  --pack ./capabilities/support-sla \
+  --pack support-sla \
   --apply
 cd acme-support
 lenso agent task --for-capability support-sla "add enterprise SLA escalation"
 ```
 
-`lenso capability check` validates the pack metadata and referenced seed
-manifests. `lenso app compose --pack` records the pack in Launchpad and App
-Change Plan state without overwriting service source files.
+`lenso capability library add` records the pack in the local app library.
+`lenso capability fit` checks blueprint support, duplicate modules and services,
+and validation failures before Compose records the pack in Launchpad and App
+Change Plan state.
 
 ## What gets written
 
@@ -132,6 +134,8 @@ status, and the next operator command.
 - Addons extend a generated app.
 - Capability packs compose reusable slices across modules, services, docs, and
   agent handoff context.
+- Capability libraries are local discovery files; they do not install modules or
+  services.
 - `lenso module install` remains the module-level install entrypoint.
 - `lenso service install` remains the service provider install entrypoint.
 - Kubernetes delivery remains optional; generated apps run locally without a

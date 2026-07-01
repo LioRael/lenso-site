@@ -63,7 +63,7 @@ lenso-business-planning -> lenso-start -> lenso app compose -> lenso agent task 
 For a reusable slice, route through a capability pack:
 
 ```text
-lenso capability init -> lenso capability check -> lenso app compose --pack -> lenso agent task --for-capability -> checks -> /console
+lenso capability init -> lenso capability library add -> lenso capability fit -> lenso app compose --pack -> lenso agent task --for-capability -> checks -> /console
 ```
 
 ## Prompt shape
@@ -88,7 +88,7 @@ This gives the agent enough boundaries to avoid inventing a platform.
 | Path | Minimum useful check |
 | --- | --- |
 | Host starter | `cargo check --bins` |
-| Capability pack | `lenso capability check <pack-dir>` plus Launchpad App Change Plan evidence |
+| Capability pack | `lenso capability fit <pack> --repo-root .` plus Launchpad App Change Plan evidence |
 | Rust module | a manifest or smoke check plus `/console` evidence |
 | Service-backed module | package smoke plus `lenso module release check <module-release.json>` |
 | Contract/API work | `just generated-check` |

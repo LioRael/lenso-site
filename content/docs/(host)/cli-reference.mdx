@@ -90,14 +90,22 @@ For blueprint and addon semantics, read
 | --- | --- |
 | `lenso capability init support-sla --dir ./capabilities/support-sla --lang ts --for-blueprint support-desk` | Create a local capability pack with seed module and service manifests. |
 | `lenso capability check ./capabilities/support-sla` | Validate pack protocol, blueprint support, safe manifest paths, and duplicate declarations. |
-| `lenso capability inspect ./capabilities/support-sla --json` | Print pack metadata for tools and agents. |
+| `lenso capability inspect ./capabilities/support-sla` | Print pack metadata for tools and agents. |
+| `lenso capability library init` | Create `.lenso/lenso.capability-library.json`. |
+| `lenso capability library add ./capabilities/support-sla` | Add a local pack to the app's capability library. |
+| `lenso capability library list --json` | Print registered local packs. |
+| `lenso capability library check` | Validate every pack recorded in the local library. |
+| `lenso capability fit support-sla --repo-root .` | Check whether a pack fits the current Launchpad app. |
 | `lenso app compose ./acme-support --blueprint support-desk --pack ./capabilities/support-sla --apply` | Apply the pack to a generated app's Launchpad state. |
+| `lenso app compose ./acme-support --blueprint support-desk --pack support-sla --apply` | Resolve a pack by library name and apply it. |
 | `lenso agent task --for-capability support-sla "Add escalation"` | Create an agent handoff scoped to the pack. |
 
 Capability packs are local authoring metadata for reusable business slices. A
 pack can point at module and service manifests, but it does not install modules
 or run providers by itself. Use `lenso module install` for module capabilities
 and `lenso service install` or `lenso service dev` for provider lifecycle.
+The capability library is local discovery metadata; it is not a remote registry
+or trust boundary.
 
 ## Host commands
 
