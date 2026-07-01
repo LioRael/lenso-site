@@ -33,6 +33,8 @@ lenso app create acme-support --blueprint support-desk
 cd acme-support
 lenso app add support-sla
 lenso dev doctor --write-state
+lenso app verify --write-proof
+lenso app diff
 lenso agent task "add overdue ticket escalation"
 lenso dev up
 ```
@@ -47,12 +49,31 @@ agent context in one step. It is not a replacement for `lenso module install`.
 | --- | --- |
 | `.lenso/launchpad.json` | Generated first-run state for services, modules, addons, checklist, supported addons, and next command. |
 | `.lenso/dev-doctor.json` | Latest `lenso dev doctor --write-state` result for Console and agents. |
+| `.lenso/app-proof.json` | Latest `lenso app verify --write-proof` result for generated-state drift, Console, and agents. |
 | `lenso.system.json` | Product system graph: services, modules, capabilities, and dependencies. |
 | `lenso.workspace.json` | Local service process list used by `lenso dev up`. |
 
-Runtime Console reads the Launchpad and doctor endpoints through the host admin
-API. `/launchpad` shows the generated services, modules, applied addons,
-supported addons, doctor status, and the next operator command.
+## Verify generated state
+
+Use App Proof after adding addons or before handing work to another agent:
+
+```sh
+lenso app verify --write-proof
+lenso app diff
+lenso app repair --dry-run
+```
+
+`app verify` compares Launchpad state, workspace services, system services, and
+the latest dev doctor output. `app diff` fails when generated state drift is
+present. `app repair` writes only safe generated control-plane state and missing
+scaffold directories; existing service source files stay user-owned.
+
+App Proof is local generated-state evidence. It is not a security attestation,
+deployment gate, signature system, or distributed version negotiation layer.
+
+Runtime Console reads the Launchpad, doctor, and proof endpoints through the
+host admin API. `/launchpad` shows generated services, modules, applied addons,
+supported addons, doctor status, proof drift, and the next operator command.
 
 ## Boundaries
 
