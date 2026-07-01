@@ -1,14 +1,14 @@
 ---
 title: Host Quickstart
-description: Scaffold a Lenso host app and run it locally.
+description: Create a Launchpad app or scaffold a Lenso host and run it locally.
 ---
 
-Use this path when you want a local Lenso host that can load modules and serve
-the Runtime Console.
+Use this path when you want a local Lenso app that can load modules, run service
+processes, and serve the Runtime Console.
 
 You will finish with:
 
-- a generated host app
+- a generated service-ready app or host app
 - local Postgres
 - API and worker processes
 - Runtime Console at `/console`
@@ -31,7 +31,25 @@ You can also install the packaged CLI with npm:
 npm install -g @lenso/cli
 ```
 
-## Create a host
+## Create a Launchpad app
+
+Launchpad is the recommended first path. It creates a support-desk app with a
+host, a TypeScript service, a Rust service, `lenso.system.json`,
+`lenso.workspace.json`, and `.lenso/launchpad.json`.
+
+```sh
+lenso app create support-desk --blueprint support-desk
+cd support-desk
+lenso dev status
+lenso agent context
+lenso dev up
+```
+
+`lenso dev up` starts services from `lenso.workspace.json`, then starts the host.
+Open Runtime Console at `/console`; its first screen is `/launchpad` and shows
+the generated services, modules, checklist, and next operator command.
+
+## Create a blank host
 
 ```sh
 lenso host init my-lenso-app
@@ -106,7 +124,8 @@ Docker Compose file starts Postgres only.
 
 - `/console` is missing: upgrade `lenso-cli`, then run `lenso console update`.
 - A module is not visible: restart the API and worker after installing it.
-- A remote module is not ready: run `lenso module doctor <module-name>`.
+- A service module is not ready: run `lenso module doctor <module-name>`.
+- Launchpad is empty: run `lenso dev status` in the generated app root.
 
 ## Next step
 

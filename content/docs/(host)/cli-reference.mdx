@@ -1,11 +1,11 @@
 ---
 title: CLI Reference
-description: Common lenso CLI commands for hosts, modules, services, system graphs, doctor flows, and Console packages.
+description: Common lenso CLI commands for Launchpad apps, hosts, modules, services, system graphs, doctor flows, and Console packages.
 ---
 
-The `lenso` CLI is the fastest way to create a host, scaffold modules, install
-module descriptors, manage service providers, describe service systems, refresh
-hosted Console assets, and diagnose service issues.
+The `lenso` CLI is the fastest way to create a Launchpad app, create a host,
+scaffold modules, install module descriptors, manage service providers, describe
+service systems, refresh hosted Console assets, and diagnose service issues.
 
 ## Install
 
@@ -21,6 +21,32 @@ Check the installed command:
 lenso --version
 lenso --help
 ```
+
+## Launchpad workflow
+
+| Command                                                | Use it for                                                                    |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `lenso app create support-desk --blueprint support-desk` | Create a generated support-desk app with host, TypeScript service, and Rust service. |
+| `lenso dev status`                                    | Read `.lenso/launchpad.json` and show generated services, modules, and next command. |
+| `lenso dev up`                                        | Start workspace services, installed service processes, then the host.         |
+| `lenso dev stop`                                      | Show how to stop the foreground dev process.                                  |
+| `lenso agent context`                                 | Print Launchpad, system, workspace, and boundary context for coding agents.   |
+| `lenso agent context --output AGENT_CONTEXT.md`        | Write the same context to a file.                                             |
+| `lenso agent task "Add SLA fields"`                   | Print agent context with a concrete task appended.                            |
+
+Typical Launchpad loop:
+
+```sh
+lenso app create support-desk --blueprint support-desk
+cd support-desk
+lenso dev status
+lenso agent context
+lenso dev up
+```
+
+Launchpad writes generated control-plane state. Module contracts still live in
+linked modules or service manifests; service processes still own their language,
+storage, and deployment packaging.
 
 ## Host commands
 
