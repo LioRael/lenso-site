@@ -9,6 +9,7 @@ processes, and serve the Runtime Console.
 You will finish with:
 
 - a generated service-ready app or host app
+- optional capability packs for reusable business slices
 - local Postgres
 - API and worker processes
 - Runtime Console at `/console`
@@ -59,6 +60,25 @@ lenso dev up
 Open Runtime Console at `/console`; its first screen is `/launchpad` and shows
 the generated services, modules, addons, doctor status, checklist, and next
 operator command.
+
+To compose a reusable slice that carries seed module and service manifests plus
+agent handoff context, create a capability pack and pass it to App Composer:
+
+```sh
+lenso capability init support-sla \
+  --dir ./capabilities/support-sla \
+  --lang ts \
+  --for-blueprint support-desk
+lenso capability check ./capabilities/support-sla
+lenso app compose ./acme-support \
+  --blueprint support-desk \
+  --pack ./capabilities/support-sla \
+  --apply
+```
+
+Capability packs are local composition metadata. They do not replace
+`lenso module install` for module capabilities or `lenso service install` for
+out-of-process providers.
 
 ## Create a blank host
 

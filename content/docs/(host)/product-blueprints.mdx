@@ -7,6 +7,8 @@ Product Blueprints are the fastest path from product idea to a runnable Lenso
 system. A blueprint creates a host, service processes, module manifests,
 `lenso.system.json`, `lenso.workspace.json`, and Launchpad state. Addons extend
 that generated app without making you hand-edit service graph JSON first.
+Capability packs bundle a reusable product slice around modules, services,
+seed manifests, docs, and agent handoff context.
 
 Use this path when you want a product-shaped starting point instead of a blank
 host.
@@ -52,14 +54,38 @@ agent context in one step. It is not a replacement for `lenso module install`.
 Use `lenso app plan --addon <name> --write-plan` first when you want a
 reviewable App Change Plan for Console, agents, or a dry-run apply step.
 
+## Compose with a capability pack
+
+Use a capability pack when a slice should travel as one local unit across apps:
+for example, a support SLA pack with one service-provided module, a seed module
+manifest, and an agent task prompt.
+
+```sh
+lenso capability init support-sla \
+  --dir ./capabilities/support-sla \
+  --lang ts \
+  --for-blueprint support-desk
+lenso capability check ./capabilities/support-sla
+lenso app compose ./acme-support \
+  --blueprint support-desk \
+  --pack ./capabilities/support-sla \
+  --apply
+cd acme-support
+lenso agent task --for-capability support-sla "add enterprise SLA escalation"
+```
+
+`lenso capability check` validates the pack metadata and referenced seed
+manifests. `lenso app compose --pack` records the pack in Launchpad and App
+Change Plan state without overwriting service source files.
+
 ## What gets written
 
 | File | Purpose |
 | --- | --- |
-| `.lenso/launchpad.json` | Generated first-run state for services, modules, addons, checklist, supported addons, and next command. |
+| `.lenso/launchpad.json` | Generated first-run state for services, modules, addons, capability packs, checklist, supported addons, and next command. |
 | `.lenso/dev-doctor.json` | Latest `lenso dev doctor --write-state` result for Console and agents. |
 | `.lenso/app-proof.json` | Latest `lenso app verify --write-proof` result for generated-state drift, Console, and agents. |
-| `.lenso/app-change-plan.json` | Latest `lenso app plan --write-plan` result for safe generated-state changes, blocked changes, and next command. |
+| `.lenso/app-change-plan.json` | Latest `lenso app plan --write-plan` result for safe generated-state changes, blocked changes, requested packs, and next command. |
 | `lenso.system.json` | Product system graph: services, modules, capabilities, and dependencies. |
 | `lenso.workspace.json` | Local service process list used by `lenso dev up`. |
 
@@ -74,7 +100,7 @@ lenso app apply .lenso/app-change-plan.json --dry-run
 ```
 
 `app compose` writes a reviewable local plan with requested, applied, and pending
-addons. `app plan` writes the same generated-state repair surface. `app apply`
+addons or capability packs. `app plan` writes the same generated-state repair surface. `app apply`
 only applies safe generated control-plane changes and supported addon applications
 from that plan. It does not overwrite existing service source files or delete
 unknown services.
@@ -97,13 +123,15 @@ deployment gate, signature system, or distributed version negotiation layer.
 
 Runtime Console reads the Launchpad, doctor, and proof endpoints through the
 host admin API. `/launchpad` shows generated services, modules, applied addons,
-supported addons, doctor status, proof drift, App Change Plan status, and the
-next operator command.
+capability packs, supported addons, doctor status, proof drift, App Change Plan
+status, and the next operator command.
 
 ## Boundaries
 
 - Product Blueprints create an app and local service graph.
 - Addons extend a generated app.
+- Capability packs compose reusable slices across modules, services, docs, and
+  agent handoff context.
 - `lenso module install` remains the module-level install entrypoint.
 - `lenso service install` remains the service provider install entrypoint.
 - Kubernetes delivery remains optional; generated apps run locally without a

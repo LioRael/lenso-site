@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting
-description: Diagnose common host, module install, Console, remote module, and release-check problems.
+description: Diagnose common host, module install, Console, service, capability pack, and release-check problems.
 ---
 
 Start by separating host state from module state:
@@ -23,6 +23,7 @@ both API and worker after install changes.
 | Remote module is installed but unhealthy | `lenso module doctor <name>` | Start the remote service, fix `readyUrl`, or clear stale `.lock` and `.pid` files called out by doctor. |
 | App lifecycle next step is unclear | `lenso app next` | Run `lenso app explain` to see generated-state, module, and service actions separately. |
 | Launchpad App Change Plan is empty | `.lenso/app-change-plan.json` | Run `lenso app plan --write-plan` or `lenso app plan --addon <name> --write-plan`. |
+| Capability pack is not shown in Launchpad | `lenso capability check <pack-dir>` | Fix the pack manifest, then rerun `lenso app compose --repo-root . --pack <pack-dir> --write-plan` or `--apply`. |
 | Launchpad App Change Plan is blocked | Console Launchpad plan panel | Review blocked changes; unsupported addons usually mean choosing a supported blueprint or addon. |
 | Launchpad App Proof is empty | `.lenso/app-proof.json` | Run `lenso app verify --write-proof` in the generated app root. |
 | Launchpad App Proof is drifted | `lenso app diff` | Preview safe generated-state repairs with `lenso app repair --dry-run`, then run `lenso app repair` if the plan is right. |
@@ -118,8 +119,17 @@ lenso app next
 lenso app explain
 ```
 
+For capability pack requests, pass the pack directory:
+
+```sh
+lenso capability check ./capabilities/support-sla
+lenso app compose --repo-root . --pack ./capabilities/support-sla --write-plan
+lenso agent task --for-capability support-sla "continue the requested work"
+```
+
 If the plan is blocked, do not apply it. Use the blocked item message and command
-to pick a supported addon, fix the generated state first, or continue manually.
+to pick a supported addon or pack, fix the generated state first, or continue
+manually.
 
 ## Launchpad App Proof drift
 
