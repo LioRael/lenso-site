@@ -21,6 +21,8 @@ both API and worker after install changes.
 | `/console` returns 404 | `.lenso/console/dist` exists | Upgrade CLI, then run `lenso console update`. |
 | Console opens but module is missing | `/api/admin/modules` and `.env` | Restart API and worker after installing or updating modules. |
 | Remote module is installed but unhealthy | `lenso module doctor <name>` | Start the remote service, fix `readyUrl`, or clear stale `.lock` and `.pid` files called out by doctor. |
+| Launchpad App Proof is empty | `.lenso/app-proof.json` | Run `lenso app verify --write-proof` in the generated app root. |
+| Launchpad App Proof is drifted | `lenso app diff` | Preview safe generated-state repairs with `lenso app repair --dry-run`, then run `lenso app repair` if the plan is right. |
 | `REMOTE_MODULES` changed but nothing happens | process environment | Restart the process that loads modules. Environment values are read at startup. |
 | Auth works locally but sessions are slow | `auth.session_cache` and `REDIS_URL` | Install `auth --profile redis-session-cache` and provide Redis separately. |
 | Redis auth profile fails at runtime | Redis service availability | Start Redis and confirm `REDIS_URL` points at the right database. |
@@ -88,6 +90,21 @@ Doctor checks declared services in `.lenso/module-services.json` and reports:
 
 If the provider is an external service, start it yourself and make sure the
 `readyUrl` responds before starting the host.
+
+## Launchpad App Proof drift
+
+App Proof checks generated control-plane state for product blueprints:
+
+```sh
+lenso app verify --write-proof
+lenso app diff
+lenso app repair --dry-run
+```
+
+Use the dry run output to decide whether repair is appropriate. Repair can
+restore generated Launchpad, workspace, and system entries or missing scaffold
+directories. It does not overwrite existing service source files, and it should
+not delete unknown services.
 
 ## Remote manifest URL does not respond
 

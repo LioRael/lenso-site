@@ -1,11 +1,11 @@
 ---
 title: CLI Reference
-description: Common lenso CLI commands for hosts, modules, services, system graphs, doctor flows, and Console packages.
+description: Common lenso CLI commands for Launchpad apps, hosts, modules, services, system graphs, doctor flows, and Console packages.
 ---
 
-The `lenso` CLI is the fastest way to create a host, scaffold modules, install
-module descriptors, manage service providers, describe service systems, refresh
-hosted Console assets, and diagnose service issues.
+The `lenso` CLI is the fastest way to create a Launchpad app, create a host,
+scaffold modules, install module descriptors, manage service providers, describe
+service systems, refresh hosted Console assets, and diagnose service issues.
 
 ## Install
 
@@ -21,6 +21,52 @@ Check the installed command:
 lenso --version
 lenso --help
 ```
+
+## Launchpad workflow
+
+| Command                                                | Use it for                                                                    |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `lenso app list`                                      | List built-in product blueprints and their supported addons.                  |
+| `lenso app inspect support-desk`                      | Show services, modules, dependencies, and addon choices for one blueprint.    |
+| `lenso app create support-desk --blueprint support-desk` | Create a generated support-desk app with host, TypeScript service, and Rust service. |
+| `lenso app add support-sla`                           | Add a supported product addon to the current generated app.                   |
+| `lenso dev status`                                    | Read `.lenso/launchpad.json` and show generated services, modules, and next command. |
+| `lenso dev doctor --write-state`                      | Check local app files, workspace services, commands, optional live readiness, and write `.lenso/dev-doctor.json`. |
+| `lenso dev doctor --live --write-state`               | Also probe declared service ready URLs before writing the doctor state.       |
+| `lenso app verify --write-proof`                      | Check generated app state and write `.lenso/app-proof.json` for Console and agents. |
+| `lenso app diff`                                      | Fail when Launchpad, workspace, system, or doctor state drift is present.     |
+| `lenso app repair --dry-run`                          | Preview safe generated-state repairs without touching existing service source files. |
+| `lenso app repair`                                    | Apply safe generated-state repairs for missing control-plane entries.         |
+| `lenso dev up`                                        | Start workspace services, installed service processes, then the host.         |
+| `lenso dev stop`                                      | Show how to stop the foreground dev process.                                  |
+| `lenso agent context`                                 | Print Launchpad, system, workspace, and boundary context for coding agents.   |
+| `lenso agent context --output AGENT_CONTEXT.md`        | Write the same context to a file.                                             |
+| `lenso agent task "Add SLA fields"`                   | Print agent context with a concrete task appended.                            |
+
+Typical Launchpad loop:
+
+```sh
+lenso app list
+lenso app inspect support-desk
+lenso app create support-desk --blueprint support-desk
+cd support-desk
+lenso app add support-sla
+lenso dev status
+lenso dev doctor --write-state
+lenso app verify --write-proof
+lenso app diff
+lenso agent context
+lenso dev up
+```
+
+Launchpad writes generated control-plane state. Module contracts still live in
+linked modules or service manifests; service processes still own their language,
+storage, and deployment packaging.
+Use `lenso app repair --dry-run` when App Proof reports generated-state drift.
+Run `lenso app repair` only for safe generated control-plane repairs; it does
+not overwrite existing service source files.
+For blueprint and addon semantics, read
+[Product Blueprints](/docs/product-blueprints).
 
 ## Host commands
 

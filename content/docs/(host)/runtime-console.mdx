@@ -27,6 +27,8 @@ For the OIDC production setup, read
 
 When a fresh host is running, open `/console` and check:
 
+- Launchpad: generated services, modules, addons, dev doctor status, App Proof
+  drift, and the next operator command.
 - Modules: loaded modules, manifest status, and lint results.
 - Data: schema-admin tables exposed by loaded modules.
 - Actions: admin actions declared by modules.
@@ -38,6 +40,21 @@ the host.
 If the runtime page shows a story, read it as the host's business-level evidence
 graph. [Runtime Stories](/docs/runtime-stories) explains how the title, nodes,
 edges, timeline, and technical operations are produced.
+
+## Launchpad evidence
+
+Generated apps expose three local evidence files through read-only host admin
+endpoints:
+
+| Evidence | Written by | Console use |
+| --- | --- | --- |
+| `.lenso/launchpad.json` | `lenso app create` and `lenso app add` | Services, modules, addons, checklist, and next command. |
+| `.lenso/dev-doctor.json` | `lenso dev doctor --write-state` | Local file, command, and optional live readiness checks. |
+| `.lenso/app-proof.json` | `lenso app verify --write-proof` | Generated-state drift, proof checks, and repair command. |
+
+If App Proof is empty, run `lenso app verify --write-proof` in the generated app
+root. If it is drifted, run `lenso app diff` and preview safe repairs with
+`lenso app repair --dry-run`.
 
 ## Module evidence
 

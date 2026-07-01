@@ -3,6 +3,7 @@
   "defaultOpen": false,
   "pages": [
     "cli-reference",
+    "product-blueprints",
     "configuration",
     "host-composition",
     "database-migrations",

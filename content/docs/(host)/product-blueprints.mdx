@@ -1,0 +1,89 @@
+---
+title: Product Blueprints
+description: Create service-ready product apps, add product addons, and hand the result to Runtime Console or a coding agent.
+---
+
+Product Blueprints are the fastest path from product idea to a runnable Lenso
+system. A blueprint creates a host, service processes, module manifests,
+`lenso.system.json`, `lenso.workspace.json`, and Launchpad state. Addons extend
+that generated app without making you hand-edit service graph JSON first.
+
+Use this path when you want a product-shaped starting point instead of a blank
+host.
+
+## Built-in blueprints
+
+| Blueprint | Shape | Good first addon |
+| --- | --- | --- |
+| `support-desk` | TypeScript support API, Rust notification worker, ticket-oriented capabilities | `support-sla` |
+| `backoffice-crm` | TypeScript CRM service for internal customer operations | `customer-profile` |
+| `ops-console` | Rust audit service for operational views and internal actions | `notifications` |
+
+List and inspect what your installed CLI supports:
+
+```sh
+lenso app list
+lenso app inspect support-desk
+```
+
+## Create and extend an app
+
+```sh
+lenso app create acme-support --blueprint support-desk
+cd acme-support
+lenso app add support-sla
+lenso dev doctor --write-state
+lenso app verify --write-proof
+lenso app diff
+lenso agent task "add overdue ticket escalation"
+lenso dev up
+```
+
+`lenso app add` is an app-level addon command. It can add another service,
+module, capability dependency, workspace entry, Launchpad checklist item, and
+agent context in one step. It is not a replacement for `lenso module install`.
+
+## What gets written
+
+| File | Purpose |
+| --- | --- |
+| `.lenso/launchpad.json` | Generated first-run state for services, modules, addons, checklist, supported addons, and next command. |
+| `.lenso/dev-doctor.json` | Latest `lenso dev doctor --write-state` result for Console and agents. |
+| `.lenso/app-proof.json` | Latest `lenso app verify --write-proof` result for generated-state drift, Console, and agents. |
+| `lenso.system.json` | Product system graph: services, modules, capabilities, and dependencies. |
+| `lenso.workspace.json` | Local service process list used by `lenso dev up`. |
+
+## Verify generated state
+
+Use App Proof after adding addons or before handing work to another agent:
+
+```sh
+lenso app verify --write-proof
+lenso app diff
+lenso app repair --dry-run
+```
+
+`app verify` compares Launchpad state, workspace services, system services, and
+the latest dev doctor output. `app diff` fails when generated state drift is
+present. `app repair` writes only safe generated control-plane state and missing
+scaffold directories; existing service source files stay user-owned.
+
+App Proof is local generated-state evidence. It is not a security attestation,
+deployment gate, signature system, or distributed version negotiation layer.
+
+Runtime Console reads the Launchpad, doctor, and proof endpoints through the
+host admin API. `/launchpad` shows generated services, modules, applied addons,
+supported addons, doctor status, proof drift, and the next operator command.
+
+## Boundaries
+
+- Product Blueprints create an app and local service graph.
+- Addons extend a generated app.
+- `lenso module install` remains the module-level install entrypoint.
+- `lenso service install` remains the service provider install entrypoint.
+- Kubernetes delivery remains optional; generated apps run locally without a
+  cluster.
+
+The result is service-ready, not service-mesh-required. Start locally, keep the
+host-owned runtime and observability model, then move services to independent
+deployment when their boundaries are stable.
