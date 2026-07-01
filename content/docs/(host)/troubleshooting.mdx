@@ -21,6 +21,8 @@ both API and worker after install changes.
 | `/console` returns 404 | `.lenso/console/dist` exists | Upgrade CLI, then run `lenso console update`. |
 | Console opens but module is missing | `/api/admin/modules` and `.env` | Restart API and worker after installing or updating modules. |
 | Remote module is installed but unhealthy | `lenso module doctor <name>` | Start the remote service, fix `readyUrl`, or clear stale `.lock` and `.pid` files called out by doctor. |
+| Launchpad App Change Plan is empty | `.lenso/app-change-plan.json` | Run `lenso app plan --write-plan` or `lenso app plan --addon <name> --write-plan`. |
+| Launchpad App Change Plan is blocked | Console Launchpad plan panel | Review blocked changes; unsupported addons usually mean choosing a supported blueprint or addon. |
 | Launchpad App Proof is empty | `.lenso/app-proof.json` | Run `lenso app verify --write-proof` in the generated app root. |
 | Launchpad App Proof is drifted | `lenso app diff` | Preview safe generated-state repairs with `lenso app repair --dry-run`, then run `lenso app repair` if the plan is right. |
 | `REMOTE_MODULES` changed but nothing happens | process environment | Restart the process that loads modules. Environment values are read at startup. |
@@ -90,6 +92,25 @@ Doctor checks declared services in `.lenso/module-services.json` and reports:
 
 If the provider is an external service, start it yourself and make sure the
 `readyUrl` responds before starting the host.
+
+## Launchpad App Change Plan
+
+App Change Plan gives operators and agents a reviewable file before generated
+state changes are applied:
+
+```sh
+lenso app plan --write-plan
+lenso app apply .lenso/app-change-plan.json --dry-run
+```
+
+For addon changes, include the addon name:
+
+```sh
+lenso app plan --addon support-sla --write-plan
+```
+
+If the plan is blocked, do not apply it. Use the blocked item message and command
+to pick a supported addon, fix the generated state first, or continue manually.
 
 ## Launchpad App Proof drift
 

@@ -31,6 +31,8 @@ lenso app inspect support-desk
 ```sh
 lenso app create acme-support --blueprint support-desk
 cd acme-support
+lenso app plan --addon support-sla --write-plan
+lenso app apply .lenso/app-change-plan.json --dry-run
 lenso app add support-sla
 lenso dev doctor --write-state
 lenso app verify --write-proof
@@ -42,6 +44,8 @@ lenso dev up
 `lenso app add` is an app-level addon command. It can add another service,
 module, capability dependency, workspace entry, Launchpad checklist item, and
 agent context in one step. It is not a replacement for `lenso module install`.
+Use `lenso app plan --addon <name> --write-plan` first when you want a
+reviewable App Change Plan for Console, agents, or a dry-run apply step.
 
 ## What gets written
 
@@ -50,10 +54,22 @@ agent context in one step. It is not a replacement for `lenso module install`.
 | `.lenso/launchpad.json` | Generated first-run state for services, modules, addons, checklist, supported addons, and next command. |
 | `.lenso/dev-doctor.json` | Latest `lenso dev doctor --write-state` result for Console and agents. |
 | `.lenso/app-proof.json` | Latest `lenso app verify --write-proof` result for generated-state drift, Console, and agents. |
+| `.lenso/app-change-plan.json` | Latest `lenso app plan --write-plan` result for safe generated-state changes, blocked changes, and next command. |
 | `lenso.system.json` | Product system graph: services, modules, capabilities, and dependencies. |
 | `lenso.workspace.json` | Local service process list used by `lenso dev up`. |
 
 ## Verify generated state
+
+Use App Change Plan before applying addons or generated-state repairs:
+
+```sh
+lenso app plan --addon support-sla --write-plan
+lenso app apply .lenso/app-change-plan.json --dry-run
+```
+
+`app plan` writes a reviewable local plan. `app apply` only applies safe
+generated control-plane changes and supported addon applications from that plan.
+It does not overwrite existing service source files or delete unknown services.
 
 Use App Proof after adding addons or before handing work to another agent:
 
@@ -73,7 +89,8 @@ deployment gate, signature system, or distributed version negotiation layer.
 
 Runtime Console reads the Launchpad, doctor, and proof endpoints through the
 host admin API. `/launchpad` shows generated services, modules, applied addons,
-supported addons, doctor status, proof drift, and the next operator command.
+supported addons, doctor status, proof drift, App Change Plan status, and the
+next operator command.
 
 ## Boundaries
 

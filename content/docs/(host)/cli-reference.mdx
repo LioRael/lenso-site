@@ -30,6 +30,10 @@ lenso --help
 | `lenso app inspect support-desk`                      | Show services, modules, dependencies, and addon choices for one blueprint.    |
 | `lenso app create support-desk --blueprint support-desk` | Create a generated support-desk app with host, TypeScript service, and Rust service. |
 | `lenso app add support-sla`                           | Add a supported product addon to the current generated app.                   |
+| `lenso app plan --addon support-sla --write-plan`     | Write a reviewable App Change Plan before applying an addon.                  |
+| `lenso app upgrade --check`                           | Fail when generated app state has pending safe changes.                       |
+| `lenso app apply .lenso/app-change-plan.json --dry-run` | Preview the safe changes recorded in an App Change Plan.                      |
+| `lenso app apply .lenso/app-change-plan.json`         | Apply safe generated-state repairs or supported addon changes from a plan.    |
 | `lenso dev status`                                    | Read `.lenso/launchpad.json` and show generated services, modules, and next command. |
 | `lenso dev doctor --write-state`                      | Check local app files, workspace services, commands, optional live readiness, and write `.lenso/dev-doctor.json`. |
 | `lenso dev doctor --live --write-state`               | Also probe declared service ready URLs before writing the doctor state.       |
@@ -50,6 +54,8 @@ lenso app list
 lenso app inspect support-desk
 lenso app create support-desk --blueprint support-desk
 cd support-desk
+lenso app plan --addon support-sla --write-plan
+lenso app apply .lenso/app-change-plan.json --dry-run
 lenso app add support-sla
 lenso dev status
 lenso dev doctor --write-state
@@ -65,6 +71,8 @@ storage, and deployment packaging.
 Use `lenso app repair --dry-run` when App Proof reports generated-state drift.
 Run `lenso app repair` only for safe generated control-plane repairs; it does
 not overwrite existing service source files.
+Use `lenso app plan --write-plan` when you want the same generated-state repair
+surface as a Console-visible plan before applying changes.
 For blueprint and addon semantics, read
 [Product Blueprints](/docs/product-blueprints).
 
