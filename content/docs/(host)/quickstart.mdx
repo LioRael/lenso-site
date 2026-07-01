@@ -38,16 +38,21 @@ host, a TypeScript service, a Rust service, `lenso.system.json`,
 `lenso.workspace.json`, and `.lenso/launchpad.json`.
 
 ```sh
+lenso app list
+lenso app inspect support-desk
 lenso app create support-desk --blueprint support-desk
 cd support-desk
+lenso app add support-sla
 lenso dev status
+lenso dev doctor --write-state
 lenso agent context
 lenso dev up
 ```
 
 `lenso dev up` starts services from `lenso.workspace.json`, then starts the host.
 Open Runtime Console at `/console`; its first screen is `/launchpad` and shows
-the generated services, modules, checklist, and next operator command.
+the generated services, modules, addons, doctor status, checklist, and next
+operator command.
 
 ## Create a blank host
 
@@ -126,6 +131,7 @@ Docker Compose file starts Postgres only.
 - A module is not visible: restart the API and worker after installing it.
 - A service module is not ready: run `lenso module doctor <module-name>`.
 - Launchpad is empty: run `lenso dev status` in the generated app root.
+- Launchpad doctor is empty: run `lenso dev doctor --write-state`.
 
 ## Next step
 
@@ -138,6 +144,9 @@ paths, or remote module credentials, continue with
 For command options beyond this happy path, use
 [CLI Reference](/docs/cli-reference). If the host starts but a module or Console
 surface is missing, use [Troubleshooting](/docs/troubleshooting).
+
+For blueprint and addon details, read
+[Product Blueprints](/docs/product-blueprints).
 
 To add real authentication, continue with
 [Built-in Modules](/docs/built-in-modules).

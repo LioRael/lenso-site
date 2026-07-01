@@ -26,8 +26,13 @@ lenso --help
 
 | Command                                                | Use it for                                                                    |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `lenso app list`                                      | List built-in product blueprints and their supported addons.                  |
+| `lenso app inspect support-desk`                      | Show services, modules, dependencies, and addon choices for one blueprint.    |
 | `lenso app create support-desk --blueprint support-desk` | Create a generated support-desk app with host, TypeScript service, and Rust service. |
+| `lenso app add support-sla`                           | Add a supported product addon to the current generated app.                   |
 | `lenso dev status`                                    | Read `.lenso/launchpad.json` and show generated services, modules, and next command. |
+| `lenso dev doctor --write-state`                      | Check local app files, workspace services, commands, optional live readiness, and write `.lenso/dev-doctor.json`. |
+| `lenso dev doctor --live --write-state`               | Also probe declared service ready URLs before writing the doctor state.       |
 | `lenso dev up`                                        | Start workspace services, installed service processes, then the host.         |
 | `lenso dev stop`                                      | Show how to stop the foreground dev process.                                  |
 | `lenso agent context`                                 | Print Launchpad, system, workspace, and boundary context for coding agents.   |
@@ -37,9 +42,13 @@ lenso --help
 Typical Launchpad loop:
 
 ```sh
+lenso app list
+lenso app inspect support-desk
 lenso app create support-desk --blueprint support-desk
 cd support-desk
+lenso app add support-sla
 lenso dev status
+lenso dev doctor --write-state
 lenso agent context
 lenso dev up
 ```
@@ -47,6 +56,8 @@ lenso dev up
 Launchpad writes generated control-plane state. Module contracts still live in
 linked modules or service manifests; service processes still own their language,
 storage, and deployment packaging.
+For blueprint and addon semantics, read
+[Product Blueprints](/docs/product-blueprints).
 
 ## Host commands
 
