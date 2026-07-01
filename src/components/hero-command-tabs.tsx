@@ -7,15 +7,15 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 const heroCommands = [
   {
     id: 'humans',
-    label: 'For humans',
-    command: 'lenso host init my-lenso-app',
+    label: 'Start app',
+    command: 'lenso host init support-desk',
     href: '/docs/quickstart',
   },
   {
     id: 'agents',
-    label: 'For agents',
-    command: 'npx skills add lenso-dev/skills',
-    href: '/docs/module-authoring',
+    label: 'Add module',
+    command: 'lenso module create support-ticket --with-console',
+    href: '/docs/examples',
   },
 ] as const;
 

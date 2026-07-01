@@ -19,7 +19,7 @@ const actionItems = [
 
 const heroDemoFrames = [
   {
-    command: 'lenso host init',
+    command: 'lenso host init support-desk',
     items: [
       { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'host/', trail: true },
       { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'host.toml' },
@@ -28,7 +28,7 @@ const heroDemoFrames = [
     ],
   },
   {
-    command: 'lenso module create',
+    command: 'lenso module create support-ticket',
     items: [
       { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'modules/', trail: true },
       { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: 'support-ticket/' },
@@ -38,12 +38,12 @@ const heroDemoFrames = [
     ],
   },
   {
-    command: 'just release-check',
+    command: 'open /console',
     items: [
-      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'checks/', trail: true },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'manifest-lints.json' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'host-smoke.log' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'console-evidence.json' },
+      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'console/', trail: true },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'modules.json' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'runtime-stories.json' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'smoke-evidence.json' },
     ],
   },
 ];
@@ -51,9 +51,9 @@ const heroDemoFrames = [
 const lifecycleSteps = [
   {
     index: '1',
-    title: 'Scaffold one host',
+    title: 'Keep Axum for HTTP',
     tag: 'host.toml',
-    text: 'Start from one deployable Rust app with API, worker, migrations, Postgres wiring, and the bundled Runtime Console.',
+    text: 'Start from one deployable Rust app that still uses Axum for routes, extractors, and middleware.',
   },
   {
     index: '2',
@@ -415,16 +415,16 @@ function Hero() {
         </div>
 
         <h1 className="ml-6 mt-6 max-w-[620px] text-[72px] font-normal leading-[72px] text-[var(--site-ink)] max-[900px]:ml-0 max-[900px]:mt-10 max-[900px]:max-w-none max-[900px]:text-[64px] max-[900px]:leading-[64px] max-[560px]:mt-2 max-[560px]:text-[40px] max-[560px]:leading-[48px]">
-          Modular Rust
+          Beyond Axum
           <br />
-          business apps
+          routes
         </h1>
 
         <HeroCommandTabs />
 
         <p className="ml-6 mt-6 max-w-[601px] text-lg leading-7 text-[var(--site-muted)] max-[1199px]:max-w-[559px] max-[900px]:ml-0 max-[900px]:!max-w-none max-[560px]:text-base max-[560px]:leading-7">
-          Generated hosts, module manifests, Runtime Console state, and
-          smoke-check evidence give humans and agents the same rails.
+          Star Lenso when your Rust app needs modules, admin APIs, Runtime
+          Console evidence, contracts, and checks around Axum.
         </p>
 
         <div
@@ -564,8 +564,8 @@ function LifecycleSection() {
     <section className="mx-auto max-w-[1392px] py-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none">
       <div data-lifecycle>
         <SectionIntro
-          copy="Start with one deployable host. Add modules through manifests and scaffolds. Use Console state and smoke checks to verify what changed before it ships."
-          title="From product idea to verified module"
+          copy="Axum gives you HTTP. Lenso keeps that, then adds the parts every serious Rust business app ends up rebuilding: modules, admin surfaces, runtime evidence, generated contracts, and checks."
+          title="Why not Axum plus yourself?"
         />
 
         <div className="mt-11 grid grid-cols-[566px_684px] justify-between gap-12 max-[1100px]:grid-cols-[minmax(0,1fr)_minmax(0,520px)] max-[900px]:grid-cols-1">

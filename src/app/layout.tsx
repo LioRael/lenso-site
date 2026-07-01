@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: '%s | Lenso',
   },
   description:
-    'Agent-ready modular app framework for Rust business systems.',
+    'Rust business app framework with modules, Runtime Console, contracts, and agent-ready checks.',
 };
 
 const themeInitScript = `
