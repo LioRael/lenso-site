@@ -69,10 +69,11 @@ lenso capability init support-sla \
   --dir ./capabilities/support-sla \
   --lang ts \
   --for-blueprint support-desk
-lenso capability check ./capabilities/support-sla
+lenso capability library add ./capabilities/support-sla
+lenso capability fit support-sla --repo-root .
 lenso app compose ./acme-support \
   --blueprint support-desk \
-  --pack ./capabilities/support-sla \
+  --pack support-sla \
   --apply
 ```
 
