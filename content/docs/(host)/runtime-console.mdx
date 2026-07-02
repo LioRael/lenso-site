@@ -27,8 +27,9 @@ For the OIDC production setup, read
 
 When a fresh host is running, open `/console` and check:
 
-- Launchpad: generated services, modules, addons, dev doctor status, App Proof
-  drift, App Change Plan status, and the next operator command.
+- App Lifecycle: generated services, modules, addons, capability packs, dev
+  doctor status, App Proof drift, App Change Plan status, App Composer
+  requests, and the next operator command.
 - Modules: loaded modules, manifest status, and lint results.
 - Data: schema-admin tables exposed by loaded modules.
 - Actions: admin actions declared by modules.
@@ -48,17 +49,22 @@ endpoints:
 
 | Evidence | Written by | Console use |
 | --- | --- | --- |
-| `.lenso/launchpad.json` | `lenso app create` and `lenso app add` | Services, modules, addons, checklist, and next command. |
+| `.lenso/launchpad.json` | `lenso app create`, `lenso app add`, and `lenso app compose` | Services, modules, addons, capability packs, checklist, and next command. |
 | `.lenso/dev-doctor.json` | `lenso dev doctor --write-state` | Local file, command, and optional live readiness checks. |
 | `.lenso/app-proof.json` | `lenso app verify --write-proof` | Generated-state drift, proof checks, and repair command. |
-| `.lenso/app-change-plan.json` | `lenso app plan --write-plan` | Safe changes, blocked changes, proof status, and apply command. |
+| `.lenso/app-change-plan.json` | `lenso app plan --write-plan` or `lenso app compose --write-plan` | Safe changes, blocked changes, composer requests, requested packs, proof status, and apply command. |
 
 If App Proof is empty, run `lenso app verify --write-proof` in the generated app
 root. If it is drifted, run `lenso app diff` and preview safe repairs with
 `lenso app repair --dry-run`.
-If App Change Plan is empty, run `lenso app plan --write-plan` or
-`lenso app plan --addon <name> --write-plan` before applying generated app
-changes.
+If App Change Plan is empty, run `lenso app next`, `lenso app explain`,
+`lenso app plan --write-plan`, or `lenso app compose --repo-root . --addon <name>
+--write-plan` before applying generated app changes.
+For capability packs, use `lenso app compose --repo-root . --pack <pack-dir>
+--write-plan`.
+When the pack comes from the local library, use `lenso capability fit <pack>
+--repo-root .` first; Console shows the same pack fit status from the App Change
+Plan.
 
 ## Module evidence
 
@@ -78,6 +84,8 @@ Check the boring things first:
 
 - Restart the API and worker after `lenso module install`.
 - Run `lenso module doctor <module-name>` for remote modules.
+- Run `lenso capability check <pack-dir>` when a composed app is missing a
+  capability pack you expected to see in Launchpad.
 - Confirm the module manifest declares the data, action, route, function, or
   console surface you expected to see.
 
