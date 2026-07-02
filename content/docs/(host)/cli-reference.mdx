@@ -5,7 +5,8 @@ description: Common lenso CLI commands for Launchpad apps, hosts, modules, servi
 
 The `lenso` CLI is the fastest way to create a Launchpad app, create a host,
 scaffold modules, install module descriptors, manage service providers, describe
-service systems, refresh hosted Console assets, and diagnose service issues.
+service systems, compose capability packs, refresh hosted Console assets, and
+diagnose service issues.
 
 ## Install
 
@@ -30,7 +31,9 @@ lenso --help
 | `lenso app inspect support-desk`                      | Show services, modules, dependencies, and addon choices for one blueprint.    |
 | `lenso app create support-desk --blueprint support-desk` | Create a generated support-desk app with host, TypeScript service, and Rust service. |
 | `lenso app compose ./acme-support --blueprint support-desk --addon support-sla --apply` | Compose a generated app from a blueprint and addons.                          |
+| `lenso app compose ./acme-support --blueprint support-desk --pack ./capabilities/support-sla --apply` | Compose a generated app from a blueprint and a local capability pack.          |
 | `lenso app compose --repo-root . --addon support-sla --addon customer-profile --write-plan` | Write a composition-aware App Change Plan for an existing app.                |
+| `lenso app compose --repo-root . --pack ./capabilities/support-sla --write-plan` | Write a Console-visible App Change Plan for a capability pack request.         |
 | `lenso app add support-sla`                           | Add a supported product addon to the current generated app.                   |
 | `lenso app plan --addon support-sla --write-plan`     | Write a reviewable App Change Plan before applying an addon.                  |
 | `lenso app upgrade --check`                           | Fail when generated app state has pending safe changes.                       |
@@ -51,6 +54,7 @@ lenso --help
 | `lenso agent context --output AGENT_CONTEXT.md`        | Write the same context to a file.                                             |
 | `lenso agent task "Add SLA fields"`                   | Print agent context with a concrete task appended.                            |
 | `lenso agent task --from-app-plan "Add SLA fields"`   | Include App Change Plan and composition context in agent handoff.             |
+| `lenso agent task --for-capability support-sla "Add escalation"` | Include capability-pack scope in agent handoff.                               |
 
 Typical Launchpad loop:
 
@@ -79,6 +83,29 @@ Use `lenso app plan --write-plan` when you want the same generated-state repair
 surface as a Console-visible plan before applying changes.
 For blueprint and addon semantics, read
 [Product Blueprints](/docs/product-blueprints).
+
+## Capability packs
+
+| Command | Use it for |
+| --- | --- |
+| `lenso capability init support-sla --dir ./capabilities/support-sla --lang ts --for-blueprint support-desk` | Create a local capability pack with seed module and service manifests. |
+| `lenso capability check ./capabilities/support-sla` | Validate pack protocol, blueprint support, safe manifest paths, and duplicate declarations. |
+| `lenso capability inspect ./capabilities/support-sla` | Print pack metadata for tools and agents. |
+| `lenso capability library init` | Create `.lenso/lenso.capability-library.json`. |
+| `lenso capability library add ./capabilities/support-sla` | Add a local pack to the app's capability library. |
+| `lenso capability library list --json` | Print registered local packs. |
+| `lenso capability library check` | Validate every pack recorded in the local library. |
+| `lenso capability fit support-sla --repo-root .` | Check whether a pack fits the current Launchpad app. |
+| `lenso app compose ./acme-support --blueprint support-desk --pack ./capabilities/support-sla --apply` | Apply the pack to a generated app's Launchpad state. |
+| `lenso app compose ./acme-support --blueprint support-desk --pack support-sla --apply` | Resolve a pack by library name and apply it. |
+| `lenso agent task --for-capability support-sla "Add escalation"` | Create an agent handoff scoped to the pack. |
+
+Capability packs are local authoring metadata for reusable business slices. A
+pack can point at module and service manifests, but it does not install modules
+or run providers by itself. Use `lenso module install` for module capabilities
+and `lenso service install` or `lenso service dev` for provider lifecycle.
+The capability library is local discovery metadata; it is not a remote registry
+or trust boundary.
 
 ## Host commands
 

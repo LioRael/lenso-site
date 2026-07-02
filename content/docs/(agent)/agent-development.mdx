@@ -30,6 +30,7 @@ your agent's configured skills folder, then start with `lenso-start`.
 | Clarify a vague business idea | `lenso-business-planning` | choose the first useful slice |
 | Pick the right public path | `lenso-start` | route to host, linked module, service-backed module, or API client |
 | Compose a generated business app | `lenso-start` | `lenso app compose ./acme-support --blueprint support-desk --addon support-sla --apply` |
+| Create a reusable capability pack | `lenso-business-planning` | `lenso capability init support-sla --dir ./capabilities/support-sla --lang ts --for-blueprint support-desk` |
 | Start a host app | `lenso-starter-host` | `lenso host init <dir>` |
 | Build a Rust module | `lenso-module-authoring` | `lenso module create <name>` |
 | Build an out-of-process service module | `lenso-remote-module-authoring` | `lenso service create <name> --lang ts` |
@@ -59,6 +60,12 @@ The intended route is:
 lenso-business-planning -> lenso-start -> lenso app compose -> lenso agent task --from-app-plan -> checks -> /console
 ```
 
+For a reusable slice, route through a capability pack:
+
+```text
+lenso capability init -> lenso capability library add -> lenso capability fit -> lenso app compose --pack -> lenso agent task --for-capability -> checks -> /console
+```
+
 ## Prompt shape
 
 Give the agent a concrete module outcome instead of a generic framework task:
@@ -81,6 +88,7 @@ This gives the agent enough boundaries to avoid inventing a platform.
 | Path | Minimum useful check |
 | --- | --- |
 | Host starter | `cargo check --bins` |
+| Capability pack | `lenso capability fit <pack> --repo-root .` plus Launchpad App Change Plan evidence |
 | Rust module | a manifest or smoke check plus `/console` evidence |
 | Service-backed module | package smoke plus `lenso module release check <module-release.json>` |
 | Contract/API work | `just generated-check` |
