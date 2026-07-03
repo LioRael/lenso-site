@@ -1,0 +1,49 @@
+---
+title: auth-anonymous
+description: Add anonymous guest sessions that can later upgrade to normal credentials.
+---
+
+Install `auth-anonymous` when users should be able to start with a guest session
+before registering a password or OAuth identity. It depends on `auth`.
+
+```sh
+lenso module install auth
+lenso module install auth-anonymous
+cargo run --bin migrate
+lenso serve
+```
+
+Create an anonymous session:
+
+```sh
+curl -sS -X POST http://127.0.0.1:3000/v1/auth/anonymous/login \
+  -H 'content-type: application/json' \
+  -d '{}' | jq .
+```
+
+The response includes `user_id`, `session_id`, `token`, `expires_at`, and
+`is_anonymous: true`. The same session cookie can later call
+`/v1/auth/password/register`; the password identity is linked to the same
+`auth_user_id`.
+
+After restart, verify:
+
+- `/console` lists `auth-anonymous` in module metadata.
+- Runtime evidence shows the anonymous login HTTP route after a request.
+- The auth Users table shows the user as anonymous until a real credential is linked.
+
+## Manual Rust composition
+
+Most hosts should use `lenso module install`. For hand-written host composition,
+use the public builtins exposed by the `host` feature:
+
+```rust
+use lenso::host::prelude::*;
+
+pub fn host_composition() -> HostComposition {
+    HostBuilder::new()
+        .linked_module(builtins::auth())
+        .linked_module(builtins::auth_anonymous())
+        .build()
+}
+```
