@@ -4,6 +4,7 @@
   "pages": [
     "index",
     "auth",
+    "auth-anonymous",
     "auth-password",
     "auth-oidc",
     "auth-device",

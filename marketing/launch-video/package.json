@@ -1,0 +1,19 @@
+{
+  "name": "lenso-launch-video",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "render": "remotion render src/index.ts LensoLaunch ../../public/lenso-assets/launch/lenso-launch.mp4 --codec=h264 --overwrite",
+    "still": "remotion still src/index.ts LensoLaunch ../../public/lenso-assets/launch/lenso-launch-frame.png --frame=420 --overwrite"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.484",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "remotion": "4.0.484"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3"
+  }
+}
