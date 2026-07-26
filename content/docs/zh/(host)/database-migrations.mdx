@@ -1,0 +1,130 @@
+---
+title: 数据库和迁移
+description: 添加并运行 Lenso 平台、运行时、内置和主机链接模块迁移。
+---
+
+Lenso 迁移是指向 SQL 字符串的仅附加 Rust 声明。
+迁移运行程序将应用的名称记录在 `platform.schema_migrations` 中。
+
+## 运行什么
+
+主机迁移应用程序收集：
+
+1. 平台迁移；
+2. 运行时迁移；
+3. 启用第一方链接模块迁移；
+4. 从 `HostComposition` 迁移主机链接模块。
+
+远程模块是单独的进程。安装remote模块可以写host
+配置、回执、服务和控制台捆绑包，但不适用
+该模块的私有数据库为您迁移。
+
+## 本地命令
+
+生成的主机公开迁移二进制文件：
+
+```sh
+cargo run --bin migrate
+```
+
+`lenso serve` 在启动 API 和工作线程之前运行迁移，除非您通过：
+
+```sh
+lenso serve --skip-migrate
+```
+
+生产部署应在 API 和工作程序之前运行迁移作业：
+
+```sh
+DATABASE_URL=postgres://... cargo run --bin migrate
+DATABASE_URL=postgres://... cargo run --bin api
+DATABASE_URL=postgres://... cargo run --bin worker
+```
+
+## 添加链接模块迁移
+
+将模块 SQL 保留在模块旁边：
+
+```text
+src/modules/billing/
+  mod.rs
+  migrations/
+    0001_create_billing_schema.sql
+```
+
+在模块中声明它：
+
+```rust
+use lenso::host::prelude::*;
+
+pub const MODULE_NAME: &str = "billing";
+
+const MIGRATIONS: &[Migration] = &[Migration {
+    name: "billing/0001_create_billing_schema",
+    sql: include_str!("migrations/0001_create_billing_schema.sql"),
+}];
+
+pub fn linked_module() -> HostLinkedModule {
+    HostLinkedModule::manifest_only(MODULE_NAME, manifest, MIGRATIONS)
+}
+
+fn manifest() -> ModuleManifest {
+    ModuleManifest::builder(MODULE_NAME).build()
+}
+```
+
+将模块连接到主机组合中：
+
+```rust
+use lenso::host::prelude::*;
+
+mod modules;
+
+pub fn host_composition() -> HostComposition {
+    HostBuilder::new()
+        .linked_module(modules::billing::linked_module())
+        .build()
+}
+```
+
+跑步：
+
+```sh
+cargo run --bin migrate
+cargo run --bin api
+```
+
+## 规则
+
+- 切勿重命名已应用的迁移。
+- 切勿以改变其含义的方式编辑已应用的迁移。
+- 添加新的迁移以进行架构更改。
+- 保持迁移名称稳定并以所有者为前缀，例如
+  `billing/0002_add_invoice_status`。
+- 只有在自然安全的情况下才使SQL幂等；跑步者已经追踪
+  应用的名称。
+- 将远程模块私有数据库设置保留在远程模块包中或
+  部署过程。
+
+## 核实
+
+检查应用的迁移：
+
+```sql
+select name, applied_at
+from platform.schema_migrations
+order by applied_at;
+```
+
+运行最小的有用本地门：
+
+```sh
+just check
+```
+
+如果迁移影响 OpenAPI 可见路由或 DTO，还需运行：
+
+```sh
+just generate
+just generated-check
+```

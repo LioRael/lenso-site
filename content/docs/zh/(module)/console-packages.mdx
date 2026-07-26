@@ -1,0 +1,151 @@
+---
+title: Console 包
+description: 通过显式包和路由契约添加模块拥有的 Runtime Console 页面。
+---
+
+控制台包是模块拥有的 Runtime Console 页面。他们不同于
+管理界面：
+
+- `AdminSurface` 描述了通用或声明性数据渲染
+  `/admin/data/*`。
+- `ConsoleSurface` 描述Runtime Console路由和前端包导出
+  主机可以挂载。
+
+## 后端声明
+
+在 `ModuleManifest.console` 中声明控制台界面：
+
+```rust
+use lenso::{
+    ConsoleArea, ConsoleNavigation, ConsoleNavigationGroup, ConsolePackage,
+    ConsoleSurface, ConsoleWorkspaceRef, ModuleManifest,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("crm")
+        .capabilities(vec!["crm.contacts.read".to_owned()])
+        .console(vec![ConsoleSurface {
+            name: "contacts".to_owned(),
+            label: "Contacts".to_owned(),
+            area: ConsoleArea::Data,
+            route: "/crm/contacts".to_owned(),
+            package: ConsolePackage {
+                name: "@vendor/crm-console".to_owned(),
+                export: "crmConsoleModule".to_owned(),
+            },
+            icon: Some("briefcase".to_owned()),
+            required_capabilities: vec!["crm.contacts.read".to_owned()],
+            navigation: Some(ConsoleNavigation {
+                workspace: ConsoleWorkspaceRef {
+                    id: "crm".to_owned(),
+                    label: "CRM".to_owned(),
+                    icon: Some("briefcase".to_owned()),
+                },
+                group: Some(ConsoleNavigationGroup {
+                    id: "customers".to_owned(),
+                    label: "Customers".to_owned(),
+                    icon: None,
+                    order: Some(20),
+                }),
+                order: Some(10),
+            }),
+        }])
+        .build()
+}
+```
+
+保持后端声明和前端 `console-surface.json` 对齐。一个
+Rust 测试可以加载 JSON 并将其与Manifest界面进行比较。
+
+## 前端包规则
+
+控制台包仅通过公共主机 API 导入主机：
+
+```ts
+import { defineConsoleModule } from "@lenso/runtime-console-api";
+```
+
+允许：
+
+- 包本地文件
+- 声明的依赖关系
+- `@lenso/runtime-console-api`
+
+禁止：
+
+- 从Runtime Console 页面、挂钩、组件、存储或数据深度导入
+- 主机Bearer Token
+- 临时全局变量
+- 直接访问主机查询客户端
+
+## 工作区包工作流
+
+在 `lenso-runtime-console` 存储库中：
+
+```sh
+pnpm create:console-package crm
+pnpm check:console-packages
+pnpm check
+```
+
+脚手架创建包注册文件、包Manifest和 Rust
+界面片段。使用生成的片段作为起点
+后端 `ModuleManifest.console` 声明。
+
+## 动态托管捆绑包
+
+安装的第三方模块可以运送已构建的控制台捆绑包。主人
+为他们提供服务：
+
+```text
+/console/extensions/*
+```
+
+Runtime Console显示：
+
+```text
+/console/extensions/registry.json
+```
+
+注册表项将包/导出绑定到同源包：
+
+```json
+{
+  "version": 1,
+  "bundles": [
+    {
+      "packageName": "@vendor/crm-console",
+      "exportName": "crmConsoleModule",
+      "entry": "/console/extensions/crm/entry.js",
+      "hostApi": "1",
+      "styles": ["/console/extensions/crm/entry.css"]
+    }
+  ]
+}
+```
+
+规则：
+
+- 条目和样式必须是同源 URL
+- `hostApi` 必须与Runtime Console主机 API 版本匹配
+- 在路由注册之前拒绝格式错误的导出
+- React 和主机 API 通过稳定的主机条目外部化
+- 浏览器没有安装npm包
+
+## 样式
+
+控制台扩展 CSS 应在构建时引用代币合约：
+
+```css
+@reference "@lenso/runtime-console-api/theme.css";
+```
+
+不要发出第二个主机主题。扩展样式应该消耗主机令牌，
+不重新定义它们。
+
+## 缺少包行为
+
+如果后端Manifest声明了控制台界面，但主机尚未信任或
+注册了包，Runtime Console应该显示丢失的包状态
+而不是默默地隐藏模块。这是安装证据
+运算符，而不是前端错误。

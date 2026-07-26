@@ -1,0 +1,212 @@
+---
+title: 故障排除
+description: 诊断常见主机、模块安装、控制台、服务、能力包和版本检查问题。
+---
+
+首先将主机状态与模块状态分开：
+
+```sh
+git status --short
+lenso module doctor
+curl -sS http://127.0.0.1:3000/api/admin/modules | jq .
+```
+
+如果主机正在运行但控制台没有显示预期的模块，请重新启动
+API 和worker 安装后都会发生变化。
+
+## 常见症状
+
+|症状|检查 |修复 |
+| --- | --- | --- |
+| `/console` 返回 404 | `.lenso/console/dist` 存在 |升级CLI，然后运行`lenso console update`。 |
+|控制台打开但模块丢失 | `/api/admin/modules` 和 `.env` |安装或更新模块后重新启动API和worker。 |
+|远程模块已安装但不健康 | `lenso module doctor <name>` |启动远程服务，修复`readyUrl`，或清除Doctor调出的过时的`.lock`和`.pid`文件。 |
+|应用程序生命周期下一步尚不清楚 | `lenso app next` |运行 `lenso app explain` 来分别查看生成状态、模块和服务操作。 |
+| Launchpad 应用程序更改计划为空 | `.lenso/app-change-plan.json` |运行 `lenso app plan --write-plan` 或 `lenso app plan --addon <name> --write-plan`。 |
+|能力包未显示在 Launchpad 中 | `lenso capability check <pack-dir>` |修复包Manifest，然后重新运行 `lenso app compose --repo-root . --pack <pack-dir> --write-plan` 或 `--apply`。 |
+| Launchpad 应用更改计划被阻止 |控制台Launchpad计划面板 |审查被阻止的更改；不受支持的插件通常意味着选择受支持的蓝图或插件。 |
+| Launchpad 应用程序证明为空 | `.lenso/app-proof.json` |在生成的应用程序根目录中运行 `lenso app verify --write-proof`。 |
+| Launchpad App Proof 已漂移 | `lenso app diff` |使用 `lenso app repair --dry-run` 预览安全生成状态修复，如果计划正确，则运行 `lenso app repair`。 |
+| `REMOTE_MODULES` 发生了变化但没有任何反应 |工艺环境|重新启动加载模块的进程。环境值在启动时读取。 |
+|身份验证在本地工作，但会话速度很慢 | `auth.session_cache` 和 `REDIS_URL` |安装`auth --profile redis-session-cache`并单独提供Redis。 |
+| Redis 身份验证配置文件在运行时失败 | Redis 服务可用性 |启动 Redis 并确认 `REDIS_URL` 指向正确的数据库。 |
+| CORS 阻止浏览器请求 | `CORS_ALLOWED_ORIGINS` |添加前端源或使用生成的本地默认值。 |
+|本地冒烟中的 OTLP 导出器错误 | `OTEL_EXPORTER_OTLP_ENDPOINT` |将其取消设置为正常的本地冒烟或启动可观测服务。 |
+| `just generated-check` 失败 | git 差异 |不要手动编辑生成的文件。运行 `just generate` 并提交生成的工件更改和源更改。 |
+| `just release-check` 基础设施失败 | Docker、端口、Postgres |首先修复本地服务，然后重新运行gate。将代码失败视为发布阻碍。 |
+
+## 控制台为空或过时
+
+刷新托管控制台资产：
+
+```sh
+lenso console update
+```
+
+如果主机是在 CLI 捆绑控制台资产之前生成的，请升级 CLI
+第一的：
+
+```sh
+npm install -g @lenso/cli@latest
+lenso console update
+```
+
+然后重启host进程并打开：
+
+```text
+http://127.0.0.1:3000/console
+```
+
+## 没有出现模块安装
+
+检查本地回执：
+
+```sh
+cat .lenso/module-installs.json | jq .
+```
+
+检查install写的环境：
+
+```sh
+grep -E 'REMOTE_MODULES|LENSO_MODULE_' .env
+```
+
+然后重新启动API和worker。链接模块安装可以更新 `Cargo.toml` 和
+`src/lib.rs`，所以必要时重建主机。
+
+## 服务尚未准备好
+
+跑步：
+
+```sh
+lenso service workspace check
+lenso module doctor
+```
+
+Doctor检查 `.lenso/module-services.json` 中声明的服务并报告：
+
+- 服务未配置；
+- 服务被禁用；
+- 服务准备就绪；
+- 手动服务尚未准备好；
+- 陈旧的主机启动状态；
+- 准备好的 URL 没有响应。
+
+如果Provider是外部服务，请自行启动并确保
+`readyUrl` 在启动主机之前响应。
+
+## Launchpad 应用程序更改计划
+
+应用程序更改计划在生成之前为操作员和代理提供可审查的文件
+应用状态更改：
+
+```sh
+lenso app plan --write-plan
+lenso app apply .lenso/app-change-plan.json --dry-run
+```
+
+对于插件更改，请包含插件名称：
+
+```sh
+lenso app plan --addon support-sla --write-plan
+```
+
+对于多个插件请求，请使用 App Composer：
+
+```sh
+lenso app compose --repo-root . --addon support-sla --addon customer-profile --write-plan
+lenso app next
+lenso app explain
+```
+
+对于能力包请求，请传递包目录：
+
+```sh
+lenso capability check ./capabilities/support-sla
+lenso app compose --repo-root . --pack ./capabilities/support-sla --write-plan
+lenso agent task --for-capability support-sla "continue the requested work"
+```
+
+如果该计划被阻止，请勿应用它。使用被阻止的项目消息和命令
+要选择受支持的插件或包，请先修复生成的状态，或继续
+手动。
+
+## Launchpad 应用程序证明漂移
+
+App Proof 检查生成的产品蓝图的控制平面状态：
+
+```sh
+lenso app verify --write-proof
+lenso app diff
+lenso app repair --dry-run
+```
+
+使用试运行输出来决定修复是否合适。修复即可
+恢复生成的Launchpad、工作区和系统条目或丢失的脚手架
+目录。它不会覆盖现有的服务源文件，并且应该
+不删除未知服务。
+
+## 远程 Manifest URL 没有响应
+
+直接打开Manifest：
+
+```sh
+curl -sS http://127.0.0.1:4100/lenso/module/v1/manifest | jq .
+```
+
+对于 gRPC 模块，检查 `REMOTE_MODULES` 中的端点：
+
+```sh
+REMOTE_MODULES=crm=grpc://127.0.0.1:4100 lenso serve
+```
+
+仅将 `grpc://` 或 `grpcs://` 用于 gRPC 远程。使用 HTTP Manifest URL
+HTTP 遥控器。
+
+## 生成的工件已更改
+
+当 `just generated-check` 失败时，检查 diff：
+
+```sh
+git diff -- contracts generated
+```
+
+如果差异与您的 Rust/OpenAPI 更改匹配，请保留它。如果没有，请修复
+来源和再生：
+
+```sh
+just generate
+just generated-check
+```
+
+## 端口被占用
+
+更改一个 shell 的主机端口：
+
+```sh
+HTTP_PORT=3010 lenso serve
+```
+
+对于第一用户冒烟默认值，请使用：
+
+```sh
+FIRST_USER_SMOKE_HTTP_PORT=3011 \
+FIRST_USER_SMOKE_REMOTE_MODULE_ADDR=127.0.0.1:4111 \
+just first-user-smoke
+```
+
+## 发布门禁失败
+
+运行较小的检查来查找失败层：
+
+```sh
+just fmt-check
+just rust-check
+just test
+just generated-check
+just arch-check
+```
+
+如果只有 Docker 或 Postgres 出现故障，请修复本地基础设施并重新运行。如果
+格式化、编译、测试、生成的合约或架构检查失败，
+将失败视为释放阻塞代码工作。

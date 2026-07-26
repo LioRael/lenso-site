@@ -1,0 +1,138 @@
+---
+title: 身份验证与能力
+description: 使用平台身份验证提取器和模块功能，无需导入身份验证内部结构。
+---
+
+模块不导入 `auth` 模块来验证请求。验证是一个
+主机关注点通过中间件、请求上下文和 Axum 提取器传递。
+
+## 请求流程
+
+```text
+HTTP request
+  -> platform-http middleware reads Authorization or Cookie
+  -> ActorResolver chain resolves ActorContext
+  -> RequestContext stores the actor
+  -> handler extracts UserActor, ServiceActor, AdminActor, or OptionalActor
+```
+
+当前的演员变体是：
+
+```rust
+pub enum ActorContext {
+    Anonymous,
+    User { user_id: String, scopes: Vec<String> },
+    Service { service_id: String, scopes: Vec<String> },
+    System,
+}
+```
+
+## 用户路由
+
+在生成的主机路由代码中，使用公共主机 HTTP 帮助程序：
+
+```rust
+use lenso::host::http::{Json, UserActor};
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct MeResponse {
+    user_id: String,
+}
+
+async fn me(user: UserActor) -> Json<MeResponse> {
+    Json(MeResponse {
+        user_id: user.user_id,
+    })
+}
+```
+
+`UserActor` 在处理程序之前拒绝匿名、服务和系统参与者
+运行。
+
+## 能力声明
+
+在Manifest中声明模块功能：
+
+```rust
+use lenso::{AdminSchema, EntitySchema, ModuleManifest};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("support")
+        .capabilities(vec![
+            "support.tickets.read".to_owned(),
+            "support.tickets.assign".to_owned(),
+        ])
+        .admin(AdminSchema {
+            entities: vec![EntitySchema {
+                name: "tickets".to_owned(),
+                label: "Tickets".to_owned(),
+                read_capability: "support.tickets.read".to_owned(),
+                fields: vec![],
+            }],
+        })
+        .build()
+}
+```
+
+Runtime Console和管理数据 API 使用这些声明来检查Manifest
+并强制访问已声明的界面。
+
+## 检查范围
+
+对于特定于模块的检查，请从参与者读取范围：
+
+```rust
+use lenso::host::http::{AppError, ErrorCode, Json, UserActor};
+
+fn require_scope(scopes: &[String], required: &str) -> Result<(), AppError> {
+    if scopes.iter().any(|scope| scope == required) {
+        return Ok(());
+    }
+
+    Err(AppError::new(
+        ErrorCode::Forbidden,
+        format!("missing capability {required}"),
+    ))
+}
+
+async fn assign_ticket(user: UserActor) -> Result<Json<serde_json::Value>, AppError> {
+    require_scope(&user.scopes, "support.tickets.assign")?;
+    Ok(Json(serde_json::json!({ "assigned_by": user.user_id })))
+}
+```
+
+在路由元数据、管理模式、声明性中使用相同的功能名称
+操作和控制台界面。这使得 lint 和操作员视图保持有用。
+
+## Auth 模块边界
+
+`auth.users` 是身份验证锚点，而不是产品配置表。它拥有：
+
+- 稳定的演员ID
+- 会话分辨率
+- 禁用用户状态
+- 独立于Provider的验证用户记录
+
+产品配置文件数据属于您的模块：
+
+```sql
+create table app.profiles (
+    id text primary key,
+    auth_user_id text not null unique,
+    display_name text not null,
+    created_at timestamptz not null
+);
+```
+
+阅读 `UserActor.user_id`，然后查找您自己的个人资料行。请勿添加产品
+姓名、头像、计划、租户或组织成员身份等字段
+`auth.users`。
+
+## 提供者模块
+
+`auth-password` 在结构上依赖于 `auth`：它将密码身份存储在
+它自己的模式，然后调用 `auth` 公共帮助程序来创建用户和会话。
+
+这与请求级身份验证不同。普通模块应该依赖
+平台提取器和功能字符串，而不是 `auth` 内部。

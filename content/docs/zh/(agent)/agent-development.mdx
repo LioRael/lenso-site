@@ -1,0 +1,119 @@
+---
+title: Agent 开发
+description: 使用 Lenso 技能、脚手架、检查和 Runtime Console 证据，与编码 Agent 协作开发。
+---
+
+Lenso 已为代理做好准备，因为工作流有轨道：公共技能、明确
+Manifest、生成的合约、重点检查和 `/console` 验证。
+它不需要自定义代理运行时。
+
+当人类或编码 Agent将产品创意转变为产品时，请使用此路径
+主机、链接模块、服务支持的模块或 API 集成。
+
+## 安装技能
+
+在要求代理构建主机之前安装公共Lenso技能包或
+模块：
+
+```sh
+npx skills add lenso-dev/skills
+```
+
+如果您在本地结账处工作，相同的技能文件位于
+Lenso 存储库中的 `skills/`。复制或注册这些技能目录
+您的代理配置的技能文件夹，然后从 `lenso-start` 开始。
+
+## 公共技能路径
+
+|目标|技能|第一个命令或来源 |
+| --- | --- | --- |
+|澄清模糊的商业想法| `lenso-business-planning` |选择第一个有用的切片 |
+|选择正确的公共路径 | `lenso-start` |路由到主机、链接模块、服务支持模块或 API 客户端 |
+|编写生成的业务应用程序 | `lenso-start` | `lenso app compose ./acme-support --blueprint support-desk --addon support-sla --apply` |
+|创建可重用的能力包 | `lenso-business-planning` | `lenso capability init support-sla --dir ./capabilities/support-sla --lang ts --for-blueprint support-desk` |
+|启动主机应用程序 | `lenso-starter-host` | `lenso host init <dir>` |
+|构建 Rust 模块 | `lenso-module-authoring` | `lenso module create <name>` |
+|构建进程外服务模块 | `lenso-remote-module-authoring` | `lenso service create <name> --lang ts` |
+|使用 Lenso API | `lenso-api-client` | `contracts/openapi/app-api.v1.yaml` |
+
+公共技能包位于Lenso存储库的`skills/`目录中。
+
+## Agent 循环
+
+1. 从可验证的最小业务切片开始。
+2. 选择主机、链接模块、服务支持模块或 API 客户端工作。
+3. 使用 CLI 搭建脚手架，而不是手动构建形态。
+4. 实施一项有用的功能。
+5. 添加一项可运行检查，如果未连接该功能，该检查将失败。
+6. 打开 `/console` 并确认模块证据可见。
+7. 报告命令、检查结果和 Runtime Console 证据。
+
+对于公开的证明点，从这个提示开始：
+
+```text
+Build a support ticket module for a Lenso app.
+```
+
+预计路由是：
+
+```text
+lenso-business-planning -> lenso-start -> lenso app compose -> lenso agent task --from-app-plan -> checks -> /console
+```
+
+对于可重用切片，通过能力包进行路由：
+
+```text
+lenso capability init -> lenso capability library add -> lenso capability fit -> lenso app compose --pack -> lenso agent task --for-capability -> checks -> /console
+```
+
+## Prompt 结构
+
+为代理提供具体的模块结果，而不是通用的框架任务：
+
+```text
+Build a support ticket module for a Lenso app.
+
+First slice:
+- tickets have title, status, priority, requester email, and assignee
+- operators can list tickets and assign one
+- escalation is a runtime function
+- the module is visible in /console
+- leave one smoke check
+```
+
+这为代理提供了足够的边界，以避免发明平台。
+
+## 按路径检查
+
+|路径|最低有用检查 |
+| --- | --- |
+|主机首发| `cargo check --bins` |
+|能力包 | `lenso capability fit <pack> --repo-root .` 加上 Launchpad 应用程序变更计划证据 |
+| Rust 模块 |舱单或冒烟检查以及 `/console` 证据 |
+|服务支持模块|包烟加`lenso module release check <module-release.json>` |
+|合约/API 工作 | `just generated-check` |
+|架构敏感的后端工作 | `just arch-check` |
+
+检查应该是小型的、局部的，并且与能力相关。只编译
+当更改应该出现在Runtime Console中时，通过是不够的。
+
+## 控制台证据
+
+以`/console`作为楼主看到作品的最终证明：
+
+- 模块显示模块和Manifest状态。
+- 数据显示声明的模式管理界面。
+- 操作显示声明的管理操作。
+- 运行时显示函数运行和Story 证据。
+- 远程路由在流量之后显示代理证据。
+
+## 不要越过这些边界
+
+- 在所有权边界确定之前，不要将模糊的想法拆分为微服务
+  真实的。
+- 在真正的模块需要它之前，不要构建通用的 CRUD 框架。
+- 不要交叉导入另一个模块的内部结构。
+- 当公共 CLI、crate、npm 时，不需要克隆框架 monorepo
+  包装或技能适合。
+- 不要将代理就绪视为自主部署的承诺。代理
+  仍需留下检查和操作员证据。
