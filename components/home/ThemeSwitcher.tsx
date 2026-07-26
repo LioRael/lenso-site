@@ -3,7 +3,7 @@
 import { Image } from './NextCompat';
 import { useEffect } from 'react';
 
-const storageKey = 'lenso-theme';
+const storageKey = 'blume-theme';
 const themes = [
   ['system', '/lenso-assets/theme-system.svg', 'left-[2.5px] top-0.5 h-3 w-[11px]'],
   ['light', '/lenso-assets/theme-light.svg', 'left-[1.25px] top-[1.25px] h-[13.5px] w-[13.5px]'],

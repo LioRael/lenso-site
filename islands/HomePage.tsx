@@ -1,21 +1,8 @@
 import '../styles/home.css';
 import { Image, Link } from '../components/home/NextCompat';
-import { ChevronDown } from 'lucide-react';
 import { HeroCommandTabs } from '../components/home/HeroCommandTabs';
 import { SiteScrollEffects } from '../components/home/SiteScrollEffects';
 import { ThemeSwitcher } from '../components/home/ThemeSwitcher';
-
-const navItems = [
-  { label: 'Product', href: '/', menu: true },
-  { label: 'Docs', href: '/docs', menu: true },
-  { label: 'Examples', href: 'https://github.com/LioRael/lenso-examples' },
-  { label: 'Runtime', href: '/docs/runtime-console' },
-];
-
-const actionItems = [
-  { label: 'Console', href: '/docs/runtime-console' },
-  { label: 'GitHub', href: 'https://github.com/LioRael/lenso' },
-];
 
 const heroDemoFrames = [
   {
@@ -336,66 +323,6 @@ function SectionIntro({
       </h2>
       <p className="max-w-[566px] text-lg leading-7 text-[var(--site-muted)]">{copy}</p>
     </div>
-  );
-}
-
-function Header() {
-  return (
-    <header className="site-header sticky top-0 z-50 h-16 text-[var(--site-ink)]">
-      <nav
-        aria-label="Main navigation"
-        className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-6"
-      >
-        <div className="flex h-16 items-center">
-          <Link
-            aria-label="Lenso home"
-            className="-ml-2 flex h-[34px] w-[37px] items-center justify-center"
-            href="/"
-          >
-            <span className="relative h-[18px] w-[21px]">
-              <Image
-                alt=""
-                className="site-icon absolute left-[1.5px] top-0 h-[18px] w-[18px]"
-                height={18}
-                src="/lenso-assets/lenso-header-mark.svg"
-                width={18}
-              />
-            </span>
-          </Link>
-
-          <div className="ml-3 flex h-16 items-center max-[760px]:hidden">
-            {navItems.map((item) => (
-              <Link
-                className="inline-flex h-8 items-center px-3 text-sm leading-5 text-[var(--site-muted)] first:text-[var(--site-ink)] hover:text-[var(--site-ink)]"
-                href={item.href}
-                key={item.label}
-              >
-                {item.label}
-                {item.menu ? <ChevronDown className="ml-1 h-3.5 w-3.5" /> : null}
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex h-8 items-center gap-3 text-sm font-medium leading-[21px]">
-          {actionItems.map((item) => (
-            <Link
-              className="inline-flex h-8 items-center rounded-md bg-[var(--site-surface)] px-3 text-[var(--site-ink)] shadow-[var(--site-shadow-faint)] hover:text-[var(--site-muted)] max-[560px]:hidden"
-              href={item.href}
-              key={item.label}
-            >
-              {item.label}
-            </Link>
-          ))}
-          <Link
-            className="inline-flex h-8 items-center rounded-md bg-[var(--site-ink)] px-3 text-[var(--site-inverse)]"
-            href="/docs/quickstart"
-          >
-            Start
-          </Link>
-        </div>
-      </nav>
-    </header>
   );
 }
 
@@ -962,7 +889,6 @@ export default function HomePage() {
   return (
     <>
       <SiteScrollEffects />
-      <Header />
       <main className="site-home bg-[var(--site-bg)] text-[var(--site-ink)]">
         <Hero />
         <LifecycleSection />

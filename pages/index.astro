@@ -1,32 +1,26 @@
 ---
+import PageLayout from "blume/components/layout/PageLayout.astro";
+import data from "blume:data";
 import HomePage from "../islands/HomePage";
+
+const { config } = data;
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="Rust business app framework with modules, Runtime Console, contracts, and agent-ready checks."
-    />
-    <link rel="icon" href="/lenso-assets/lenso-header-mark.svg" />
-    <title>Lenso</title>
-    <script is:inline>
-      try {
-        const mode = localStorage.getItem('lenso-theme') || 'system';
-        const resolved = mode === 'system'
-          ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-          : mode;
-        document.documentElement.dataset.theme = resolved;
-        document.documentElement.dataset.themeMode = mode;
-        document.documentElement.classList.toggle('dark', resolved === 'dark');
-        document.documentElement.style.colorScheme = resolved;
-      } catch {}
-    </script>
-  </head>
-  <body>
-    <HomePage client:load />
-  </body>
-</html>
+<PageLayout
+  site={{ title: config.title, description: config.description }}
+  logo={config.logo}
+  navigation={data.navigation}
+  favicon={config.favicon}
+  fontCssVars={data.fontCssVars}
+  themeMode={config.theme.mode}
+  searchEnabled={config.search.enabled}
+  siteUrl={config.site}
+  ogEnabled={config.og.enabled}
+  page={{
+    title: "Lenso",
+    description: "Rust business app framework with modules, Runtime Console, contracts, and agent-ready checks.",
+    route: "/",
+  }}
+>
+  <HomePage client:load />
+</PageLayout>
