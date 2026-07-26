@@ -1,0 +1,106 @@
+---
+title: 单区域 GA
+description: 运维有明确边界的 M6 GA 组件集及其失效关闭证据门禁。
+sidebar:
+  badge: GA
+---
+
+M6 是Lenso 的有界单区域通用可用性界面。 GA 的意思是
+确切发布的组件集及其执行证据通过了完整的
+公众接受门。这并不意味着每个实验框架路径都是一个
+支持生产界面。
+
+## 支持的组件基线
+
+审核后的 GA 集由 `lenso.ga-support-manifest.v1` 固定。目前的
+发布的基线包括：
+
+|组件|正式版 |
+| --- | --- |
+| `lenso` Rust 外观和主机运行时 | `0.3.33` |
+| `@lenso/cli` / `lenso-cli` | `0.2.13` |
+| `lenso-service` | `0.1.15` |
+| `lenso-autonomous-service` | `0.1.11` |
+| `lenso-contracts` | `0.3.16` |
+| `@lenso/service-kit` | `0.1.0` |
+| `@lenso/remote-module-kit` | `0.1.3` |
+|Runtime Console发布存档 | `0.1.2` |
+
+将支持 Manifest视为事实来源。较新的单独包装
+不会自动成为支持集的一部分。
+
+## 检查确切的设置
+
+通过经过审查的Manifest、每个建议的组件以及持续的支持
+状态版本：
+
+```sh
+lenso ga support-check \
+  --manifest ./lenso.ga-support-manifest.v1.json \
+  --component cargo:lenso@0.3.33 \
+  --component npm:@lenso/cli@0.2.13 \
+  --state-version 1 \
+  --json
+```
+
+完整的生产检查必须包括整个审查的组件集。
+当Manifest不受信任、版本在外部时，命令无法关闭
+支持信封、证据已过时或缺少必需的组件。
+
+## 突变前的迁移
+
+服务和系统Manifest升级可保持稳定的身份。预览
+写入目标之前的转换：
+
+```sh
+lenso ga manifest-migrate \
+  --manifest ./lenso.ga-support-manifest.v1.json \
+  --source ./lenso.service.json \
+  --target-format lenso.service.v2 \
+  --dry-run --json
+```
+
+多工作负载升级从迁移优先计划开始：
+
+```sh
+lenso ga service-upgrade \
+  --manifest ./lenso.ga-support-manifest.v1.json \
+  --input ./service-upgrade-input.json \
+  --json
+```
+
+这两个命令都不授予生产权限。人工批准和部署
+适配器自身的权限保持独立的界限。
+
+## 合约退休
+
+合约退休是陈旧安全且计划优先的：
+
+```sh
+lenso ga contract-retire \
+  --input ./contract-retirement-input.json \
+  --output ./contract-retirement-plan.json \
+  --json
+```
+
+申请计划需要配套批准。改变了消费者、证据或
+环境状态使计划无效，而不是撤销合约
+新的事实。
+
+## 全门证明了什么
+
+已发布的 GA 验收练习：
+
+- 准确的公共包字节、回执和证明；
+- 默认完整的M5交付和Kubernetes兼容路径；
+- 提供者冒烟和发布包教程；
+- 声明的 API、Worker、网络、依赖项和控制平面故障案例；
+- 性能、恢复、灾难恢复、支持和安全证据；
+- 使用 `productionMutated: false` 进行确定性清理以进行验收运行。
+
+重点检查在开发时很有用，但它们不能取代默认设置
+完整的 GA 命令。
+
+继续 [可靠性和恢复](/docs/zh/reliability-and-recovery)
+故障证据或[支持和安全](/docs/zh/support-and-security)
+生产信任边界。

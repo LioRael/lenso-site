@@ -1,0 +1,189 @@
+---
+title: Manifest 参考
+description: 了解每个 Lenso 模块公开的可序列化的 ModuleManifest 合约。
+---
+
+`ModuleManifest` 是模块的纯数据合约。它描述了什么
+主机和 Runtime Console可以看到：路由、管理界面、运行时功能、
+运行时计划、事件、生命周期工作、控制台包、依赖项和
+能力。
+
+可执行的行为并不存在于Manifest中。链接模块附加
+通过 `LinkedBinding` 的行为；远程模块通过 HTTP 或
+gRPC 协议。这使得每个加载源都产生相同的可序列化
+形态。
+
+## 最小 Manifest
+
+```rust
+use lenso::{
+    ConsoleArea, ConsolePackage, ConsoleSurface, ModuleHttpMethod,
+    ModuleHttpRoute, ModuleManifest,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("billing")
+        .capabilities(vec![
+            "billing.invoice.read".to_owned(),
+            "billing.invoice.write".to_owned(),
+        ])
+        .dependencies(vec!["auth".to_owned()])
+        .http_routes(vec![ModuleHttpRoute {
+            method: ModuleHttpMethod::Get,
+            path: "/v1/billing/invoices".to_owned(),
+            capability: Some("billing.invoice.read".to_owned()),
+            display_name: Some("List invoices".to_owned()),
+            story_title: Some("Billing invoices".to_owned()),
+        }])
+        .console(vec![ConsoleSurface {
+            name: "billing-invoices".to_owned(),
+            label: "Invoices".to_owned(),
+            area: ConsoleArea::Operations,
+            route: "/billing/invoices".to_owned(),
+            package: ConsolePackage {
+                name: "@acme/lenso-billing-console".to_owned(),
+                export: "billingConsoleModule".to_owned(),
+            },
+            icon: Some("Receipt".to_owned()),
+            required_capabilities: vec!["billing.invoice.read".to_owned()],
+            navigation: None,
+        }])
+        .build()
+}
+```
+
+## 字段
+
+|领域|目的|
+| --- | --- |
+| `name` |稳定的模块 ID，例如 `auth`、`billing` 或 `support-ticket`。 |
+| `dependencies` |必须首先安装的其他模块。将此用于硬运行时假设，例如 `auth`。 |
+| `capabilities` |路由、管理界面、运行时工作或控制台页面可以引用的点分隔权限名称。 |
+| `http_routes` |模块拥有的 HTTP 路由元数据。链接模块仍然通过绑定挂载真实的 Axum 路由。远程路由代理使用此元数据来实现主机可见的路由意图。 |
+| `admin` |架构驱动、声明性自定义或嵌入式自定义操作员界面。 |
+| `runtime` |运行时函数和调度声明。申报是舱单数据；处理程序位于加载源中，并且调度仍由主机拥有。 |
+| `events` |事件处理程序声明。主机通过源绑定注册并调用后备处理程序。 |
+| `lifecycle` |启动检查和激活作业。主机验证并安排这些条目，而不是向模块提供任意启动回调。 |
+| `console` |Runtime Console前端界面由受信任的包或托管包支持。 |
+| `story_display` |时间线和检查界面的控制台Story显示元数据。 |
+
+## 构建器方法
+
+```rust
+ModuleManifest::builder("billing")
+    .dependencies(vec!["auth".to_owned()])
+    .capabilities(vec!["billing.invoice.read".to_owned()])
+    .http_routes(vec![/* ModuleHttpRoute */])
+    .admin(/* AdminSchema */)
+    .declarative_admin(/* AdminDeclarativeSurface */)
+    .embedded_admin(/* AdminEmbeddedSurface */)
+    .runtime(/* RuntimeSurface */)
+    .events(/* EventSurface */)
+    .lifecycle(/* LifecycleSurface */)
+    .console(vec![/* ConsoleSurface */])
+    .story_display(vec![/* StoryDisplayDescriptor */])
+    .build();
+```
+
+使用 `admin`、`declarative_admin` 和 `embedded_admin` 作为替代方案。一个模块
+其Manifest中有一个管理界面；它仍然可以暴露多个控制台
+通过 `console` 的曲面。
+
+## 能力命名
+
+使用点分隔的小写名称：
+
+```text
+<module>.<resource>.<action>
+```
+
+好的例子：
+
+```text
+billing.invoice.read
+billing.invoice.write
+support.ticket.assign
+auth.session.revoke
+```
+
+避免使用 `BillingRead`、`billing/read` 或 `read_invoice` 等名称。显现
+当功能名称不是点分隔的小写字母时，lint 会发出警告，并且它们还会
+当路由或管理权限引用Manifest中的功能时发出警告
+不声明。
+
+## 路由元数据
+
+`ModuleHttpRoute` 是元数据：
+
+```rust
+ModuleHttpRoute {
+    method: ModuleHttpMethod::Post,
+    path: "/v1/billing/invoices/{invoice_id}/void".to_owned(),
+    capability: Some("billing.invoice.write".to_owned()),
+    display_name: Some("Void invoice".to_owned()),
+    story_title: Some("Invoice voided".to_owned()),
+}
+```
+
+保持这些值对操作员友好：
+
+- `path` 应该是主机可见的路径。
+- `capability` 应与 `capabilities` 中的值匹配。
+- `display_name` 对于时间轴节点来说应该足够紧凑。
+- 当路由开始商业Story时，`story_title` 应该自然地阅读。
+
+## 运行时调度
+
+`RuntimeSurface.schedules` 声明主机何时应将运行时排入队列
+功能：
+
+```rust
+ScheduledFunctionDeclaration {
+    name: "send-daily-digest".to_owned(),
+    function_name: "billing.invoice.send_digest.v1".to_owned(),
+    cron: "0 8 * * MON-FRI".to_owned(),
+    input: serde_json::json!({ "window": "previous_day" }),
+}
+```
+
+时间表使用 5 字段 UTC cron。预定的功能也必须出现在
+`RuntimeSurface.functions`;主机验证该关系并持续存在
+调度状态，并在调度时将正常的 `runtime.function_runs` 入队
+到期的。
+
+## Lint类别
+
+主机通过模块元数据和 Runtime Console公开 `manifest_lints`
+将它们分为几类：
+
+|类别 |常见问题 |
+| --- | --- |
+| `module` |缺少模块名称。 |
+| `capability` |错误的命名或引用但未声明的功能。 |
+| `routes` |重复的方法/路径、缺少显示元数据或缺少远程路由功能。 |
+| `admin.schema` |架构为空或缺少读取功能。 |
+| `admin.declarative` |空页、缺少查询值或无效的后备架构引用。 |
+| `admin.embedded` |非 HTTPS 条目 URL、缺少源允许列表或无效的后备权限。 |
+| `runtime` |缺少函数名称、重复函数、错误的队列名称或无效的重试策略。 |
+| `runtime.schedule` |缺少计划名称、无效的 cron 表达式或引用未知函数的计划。 |
+| `events` |缺少事件名称或重复的处理程序名称。 |
+| `lifecycle` |引用未知运行时函数的启动检查或激活作业。 |
+| `console` |重复的路由、缺少标签、无效的包装形态或保留的导航工作区 ID。 |
+
+将 `error` lints 视为拦截器。将 `warning` lint 视为操作员体验
+除非页面明确表示该警告对于本地峰值是可以接受的。
+
+## 何时更改 Manifest
+
+每当主机或控制台需要新元数据时更改 Manifest：
+
+- 新的公共路由或路由能力；
+- 一个新的数据管理实体；
+- 一个新的模块拥有的控制台页面；
+- 新的运行时函数、调度或事件处理程序；
+- 生命周期启动检查或激活作业；
+- 新的依赖项，例如 `auth`；
+- 将被另一个界面引用的新功能。
+
+更改 Manifest形态后，运行相关的本地检查并打开
+[Runtime Console](/docs/zh/runtime-console) 验证主机可见结果。

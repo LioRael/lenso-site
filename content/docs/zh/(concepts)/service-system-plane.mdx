@@ -1,0 +1,142 @@
+---
+title: Service System Plane
+description: 使用lenso.system.json 描述服务、模块、依赖项和部署通道，无需 Kubernetes。
+---
+
+服务系统平面是模块安装和服务之上的层
+Provider。当有多个产品时，它可以帮助团队描述整个 Lenso 产品系统
+服务和模块开始相互依赖。
+
+它故意不是一个服务网格。它也不是 Kubernetes
+要求。系统可以是本地的、外部部署的、Kubernetes 支持的，或者
+运营商管理。
+
+## 三个层次
+
+|水平|合约|它拥有什么 |
+| --- | --- | --- |
+|模块| `lenso.module.v1` |业务能力、权限、界面、运行时名称 |
+|服务 | `lenso.service.v1` |远程进程、SDK 语言、Manifest端点、部署包 |
+|系统| `lenso.system.v1` |服务所有权、模块放置、依赖关系图、环境 |
+
+`lenso module install` 保留模块级入口点。 `Lenso服务
+install` stays the provider/process entrypoint. `lenso.system.json`解释
+这些部分如何形成一个系统。
+
+## 最小 Manifest
+
+```json
+{
+  "protocol": "lenso.system.v1",
+  "name": "support-platform",
+  "environments": ["local", "staging", "prod"],
+  "services": [
+    {
+      "name": "support-suite-provider",
+      "target": "operator",
+      "modules": ["support-ticket"],
+      "cwd": "services/support-suite-provider",
+      "manifest": "http://127.0.0.1:4110/lenso/service/v1/manifest",
+      "command": "pnpm start",
+      "lang": "ts",
+      "readyUrl": "http://127.0.0.1:4110/lenso/service/v1/status"
+    }
+  ],
+  "modules": [
+    {
+      "name": "support-ticket",
+      "installTo": "service:support-suite-provider",
+      "capabilities": ["support_ticket.tickets.write"],
+      "dependencies": ["auth"]
+    },
+    {
+      "name": "auth",
+      "installTo": "host",
+      "capabilities": ["auth"]
+    }
+  ]
+}
+```
+
+该图表示 `support-ticket` 模块由
+`support-suite-provider`服务，并且它依赖于主机拥有的`auth`
+能力。
+
+## CLI 流程
+
+```sh
+lenso system init support-platform --env local --env staging --env prod
+lenso system add-service support-suite-provider \
+  --target operator \
+  --module support-ticket \
+  --cwd services/support-suite-provider \
+  --lang ts \
+  --command "pnpm start" \
+  --ready-url http://127.0.0.1:4110/lenso/service/v1/status \
+  --manifest http://127.0.0.1:4110/lenso/service/v1/manifest
+lenso system add-module support-ticket \
+  --to service:support-suite-provider \
+  --capability support_ticket.tickets.write \
+  --dependency auth
+lenso system add-module auth --to host --capability auth
+lenso system graph --system-file lenso.system.json
+lenso system plan --system-file lenso.system.json --check
+lenso system diff --system-file lenso.system.json --check
+lenso system apply --system-file lenso.system.json --dry-run
+lenso system doctor --system-file lenso.system.json
+lenso system release plan --env staging --output system-release-staging.json
+lenso system release check system-release-staging.json
+lenso system release apply system-release-staging.json
+lenso system release promote --from staging --to prod --output system-release-prod.json
+lenso system runbook generate system-release-staging.json --output system-runbook-staging.json
+lenso system runbook record system-runbook-staging.json
+```
+
+`system plan` 报告图形问题并建议现有的较低级别命令，
+例如服务工作区注册或服务环境设置。
+`system diff` 将Manifest与主机本地 `.lenso` 状态进行比较。 `系统
+apply` writes only safe local files such as `.lenso/module-services.json` 和
+`.lenso/service-environments.json`;它不安装模块、部署
+Kubernetes 资源，或为您应用服务版本。
+
+`system release` 增加了系统级发布序列。系统发布计划记录
+目标环境、受影响的服务、受影响的模块、漂移预检查、
+策略结果、回滚可用性和下一个命令。应用它只写
+`.lenso/system-releases.json`;服务发布计划和部署保持不变
+显式的低级命令。
+
+`system runbook` 将系统发布计划转化为生成的操作步骤：
+发布策略检查、服务发布准备、部署证据以及
+释放录音。记录它只写`.lenso/system-runbooks.json`。
+Runbook JSON 是生成控制平面证据，而不是模块作者的东西
+手工维护。
+
+## 控制台可见性
+
+Runtime Console读取系统平面的主机管理端点并显示它
+在服务页面上。操作人员可以查看系统Manifest是否丢失，
+准备好，或者需要注意，然后检查服务计数、模块计数、依赖关系
+除了生命周期、推出、发布之外的计数、环境通道和图形问题，
+远程调用、Runtime Story 和技术操作证据。
+
+服务页面还读取系统漂移端点。漂移告诉运营商
+是否安装了声明的模块，是否配置了声明的服务，
+环境通道存在，部署观察存在，并且发布
+记录存在。
+
+版本序列视图读取应用的系统版本并显示最新的
+环境版本、策略状态、回滚可用性和下一个 CLI
+命令。
+
+Runbook 视图读取记录的系统 Runbook 并显示活动 Runbook，
+当前步骤和下一个命令。
+
+## Kubernetes 保持可选状态
+
+当服务应该是时使用 `target: "kubernetes"` 或 `target: "operator"`
+通过生成的 Kubernetes Manifest或 Lenso Operator 交付。使用
+当服务在本地运行或在本地运行时为 `target: "local"` 或 `target: "external"`
+在其他地方管理。
+
+这就是预期的形态：Lenso 在 Kubernetes 有帮助时拥抱 Kubernetes，但又相互关联
+模块和非 Kubernetes 服务仍然是一流的。

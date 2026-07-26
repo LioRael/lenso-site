@@ -1,0 +1,351 @@
+---
+title: CLI 参考
+description: 用于 Launchpad 应用程序、主机、模块、服务、系统图、Doctor流程和控制台包的常见lenso CLI 命令。
+---
+
+`lenso` CLI 是创建 Launchpad 应用程序、创建主机、
+脚手架模块，安装模块描述符，管理服务提供者，描述
+服务系统，编写能力包，刷新托管控制台资产，以及
+诊断服务问题。发布的`0.2.13`行还暴露了有界的M6
+GA 支撑面。
+
+## 安装
+
+```sh
+npm install -g @lenso/cli
+# or
+cargo install lenso-cli
+```
+
+检查已安装的命令：
+
+```sh
+lenso --version
+lenso --help
+```
+
+## Launchpad工作流
+
+|命令|用它来 |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `lenso app list` |列出内置产品蓝图及其支持的插件。                  |
+| `lenso app inspect support-desk` |显示一个蓝图的服务、模块、依赖项和插件选择。    |
+| `lenso app create support-desk --blueprint support-desk` |使用主机、TypeScript 服务和 Rust 服务创建生成的支持台应用程序。 |
+| `lenso app compose ./acme-support --blueprint support-desk --addon support-sla --apply` |从蓝图和插件编写生成的应用程序。                          |
+| `lenso app compose ./acme-support --blueprint support-desk --pack ./capabilities/support-sla --apply` |根据蓝图和本地能力包构建生成的应用程序。          |
+| `lenso app compose --repo-root . --addon support-sla --addon customer-profile --write-plan` |为现有应用程序编写一个组合感知的应用程序更改计划。                |
+| `lenso app compose --repo-root . --pack ./capabilities/support-sla --write-plan` |为能力包请求编写控制台可见的应用程序更改计划。         |
+| `lenso app add support-sla` |将支持的产品插件添加到当前生成的应用程序。                   |
+| `lenso app plan --addon support-sla --write-plan` |在应用插件之前编写可审查的应用程序更改计划。                  |
+| `lenso app upgrade --check` |当生成的应用程序状态有待处理的安全更改时失败。                       |
+| `lenso app apply .lenso/app-change-plan.json --dry-run` |预览应用程序更改计划中记录的安全更改。                      |
+| `lenso app apply .lenso/app-change-plan.json` |应用计划中的安全生成状态修复或支持的插件更改。    |
+| `lenso dev status` |读取 `.lenso/launchpad.json` 并显示生成的服务、模块和下一个命令。 |
+| `lenso dev doctor --write-state` |检查本地应用程序文件、工作区服务、命令、可选的实时准备情况，并写入 `.lenso/dev-doctor.json`。 |
+| `lenso dev doctor --live --write-state` |在写入Doctor状态之前还要探测声明的服务就绪 URL。       |
+| `lenso app verify --write-proof` |检查生成的应用程序状态并为控制台和代理写入 `.lenso/app-proof.json`。 |
+| `lenso app diff` |当Launchpad、工作区、系统或Doctor状态漂移存在时失败。     |
+| `lenso app repair --dry-run` |预览安全的生成状态修复，而无需触及现有服务源文件。 |
+| `lenso app repair` |对丢失的控制平面条目应用安全生成状态修复。         |
+| `lenso app next` |打印下一个有用的应用程序生命周期命令。                                  |
+| `lenso app explain` |解释生成状态、模块和服务操作。                         |
+| `lenso dev up` |启动工作区服务，安装服务进程，然后启动主机。         |
+| `lenso dev stop` |展示如何停止前台开发进程。                                  |
+| `lenso agent context` |打印编码 Agent的Launchpad、系统、工作区和边界上下文。   |
+| `lenso agent context --output AGENT_CONTEXT.md` |将相同的上下文写入文件。                                             |
+| `lenso agent task "Add SLA fields"` |打印附加了具体任务的代理上下文。                            |
+| `lenso agent task --from-app-plan "Add SLA fields"` |在代理移交中包括应用程序更改计划和组合上下文。             |
+| `lenso agent task --for-capability support-sla "Add escalation"` |在Agent 交接中包括能力包范围。                               |
+
+典型的 Launchpad 循环：
+
+```sh
+lenso app list
+lenso app inspect support-desk
+lenso app compose ./acme-support --blueprint support-desk --addon support-sla --apply
+cd acme-support
+lenso app next
+lenso app explain
+lenso dev status
+lenso dev doctor --write-state
+lenso app verify --write-proof
+lenso app diff
+lenso agent task --from-app-plan "Add SLA fields"
+lenso dev up
+```
+
+Launchpad 写入生成的控制平面状态。模块合约仍然存在
+链接的模块或服务Manifest；服务流程仍然拥有自己的语言，
+存储和部署包装。
+当 App Proof 报告生成状态漂移时，使用 `lenso app repair --dry-run`。
+运行 `lenso app repair` 仅用于安全生成的控制平面修复；确实如此
+不覆盖现有的服务源文件。
+当您想要相同的生成状态修复时，请使用 `lenso app plan --write-plan`
+在应用更改之前，将其显示为控制台可见的计划。
+对于蓝图和插件语义，请阅读
+[产品蓝图](/docs/zh/product-blueprints)。
+
+## 能力包
+
+|命令|用它来 |
+| --- | --- |
+| `lenso capability init support-sla --dir ./capabilities/support-sla --lang ts --for-blueprint support-desk` |使用种子模块和服务Manifest创建本地能力包。 |
+| `lenso capability check ./capabilities/support-sla` |验证包协议、蓝图支持、安全Manifest路径和重复声明。 |
+| `lenso capability inspect ./capabilities/support-sla` |打印工具和代理的包元数据。 |
+| `lenso capability library init` |创建 `.lenso/lenso.capability-library.json`。 |
+| `lenso capability library add ./capabilities/support-sla` |将本地包添加到应用的能力库中。 |
+| `lenso capability library list --json` |打印已注册的本地包。 |
+| `lenso capability library check` |验证本地库中记录的每个包。 |
+| `lenso capability fit support-sla --repo-root .` |检查包是否适合当前的 Launchpad 应用程序。 |
+| `lenso app compose ./acme-support --blueprint support-desk --pack ./capabilities/support-sla --apply` |将包应用到生成的应用程序的Launchpad状态。 |
+| `lenso app compose ./acme-support --blueprint support-desk --pack support-sla --apply` |按库名称解析包并应用它。 |
+| `lenso agent task --for-capability support-sla "Add escalation"` |创建范围为包的Agent 交接。 |
+
+能力包是可重用业务切片的本地创作元数据。一个
+pack 可以指向模块和服务Manifest，但它不安装模块
+或自行运行Provider。使用 `lenso module install` 获取模块功能
+以及提供者生命周期的 `lenso service install` 或 `lenso service dev`。
+能力库是本地发现元数据；它不是远程注册表
+或信任边界。
+
+## GA 命令
+
+|命令|用它来 |
+| --- | --- |
+| `lenso ga support-check --manifest <file> --component <id@version> --state-version <n>` |根据审查的支持 Manifest检查确切的建议组件集。 |
+| `lenso ga manifest-migrate --manifest <file> --source <file> --target-format <protocol> --dry-run` |预览身份保留服务或系统Manifest迁移。 |
+| `lenso ga service-upgrade --manifest <file> --input <file>` |制定迁移优先的多工作负载服务升级计划。 |
+| `lenso ga contract-retire --input <file> --output <file>` |在批准之前制定一份安全的合约退休计划。 |
+| `lenso ga failure-evaluate --input <file>` |评估一个版本化的故障场景证据输入。 |
+
+这些命令进行评估和计划。他们不推断部署或生产
+来自存储库访问的权限。请参阅[单区域 GA](/docs/zh/single-region-ga)
+用于支持的组件基线和完整的证据门。
+
+## 主机命令
+
+|命令 |用它来 |
+| ---------------------------------------------------- | --------------------------------------------------------------- |
+| `lenso host init <dir>` |创建生成的 Rust 主机应用程序。                       |
+| `lenso host init <dir> --name <crate>` |覆盖生成的 Cargo 箱名称。                        |
+| `lenso host init <dir> --force` |脚手架到非空目录中。                            |
+| `lenso console update` |刷新 `.lenso/console` 中托管的 Runtime Console捆绑包。  |
+| `lenso console update --repo-root <path>` |更新当前目录之外的主机的控制台资产。 |
+| `lenso console bootstrap-admin --identifier <email>` |向密码验证用户授予第一个控制台管理员访问权限。       |
+| `lenso console bootstrap-admin --user-id <id>` |将第一个控制台管理员访问权限授予已知的身份验证用户 ID。       |
+| `lenso serve` |启动本地 Postgres，运行迁移，然后运行 ​​API 和工作线程。  |
+| `lenso serve --separate-worker` |将 API 和工作线程作为单独的本地子进程运行。           |
+| `lenso serve --skip-db` |不要启动模板 Postgres 服务。                     |
+| `lenso serve --skip-migrate` |在启动服务之前不要运行迁移。                 |
+
+典型的主机循环：
+
+```sh
+lenso host init acme-platform
+cd acme-platform
+cp .env.example .env
+lenso serve
+```
+
+## 模块脚手架
+
+|命令|用它来 |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `lenso module create billing` |在主机内创建一个链接的 Rust 模块。                 |
+| `lenso module create billing --with-console` |创建链接模块和匹配的 Runtime Console包。 |
+| `lenso module create billing --remote --output-dir ../module-packages` |创建一个独立的远程模块包。                   |
+| `lenso module create billing --dry-run` |预览生成的文件而不写入它们。                |
+| `lenso console package create billing` |仅创建Runtime Console包脚手架。              |
+
+有用的 `module create` 选项：
+
+```sh
+lenso module create support \
+  --with-console \
+  --area operations \
+  --label "Support Tickets" \
+  --route /support/tickets \
+  --capability support.ticket.read \
+  --icon Ticket
+```
+
+## 服务工作区
+
+|命令 |用它来 |
+| --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `lenso service create support-suite-provider --lang ts --output-dir services --port 4110` |创建一个 TypeScript 服务并将其注册到 `lenso.workspace.json` 中。        |
+| `lenso service create audit-provider --lang rust --output-dir services --port 4130` |创建一个 Rust 服务并在同一工作区中注册它。                  |
+| `lenso service workspace init` |创建一个空的 `lenso.workspace.json`。                                       |
+| `lenso service workspace add <name> --cwd <dir> --lang ts --command "pnpm start" --ready-url <url> --module <module>` |注册现有服务。                                                 |
+| `lenso service workspace list` |显示工作区服务。                                                      |
+| `lenso service workspace check [name] --json` |检查服务 cwd、Manifest和就绪 URL 状态。                             |
+| `lenso service workspace export --output .lenso/module-services.json` |将工作区服务导出为主机服务启动状态。                        |
+| `lenso service verify [manifest-or-provider] --json` |对本地Manifest或已安装的Provider运行发布准备情况检查。      |
+| `lenso service verify ./lenso.service.json --env-file .env --json` |在验证报告中包含所需/缺失的服务环境。              |
+| `lenso service upgrade-plan <provider> <manifest-or-package> --json` |升级前预览服务Manifest更改。                              |
+| `lenso service env add staging --service <provider> --target kubernetes --namespace <ns> --image <image>` |记录服务Provider的部署环境。                       |
+| `lenso service env add prod --service <provider> --target operator --namespace <ns> --image <image>` |记录操作员管理的生产部署环境。                 |
+| `lenso service env list --service <provider>` |列出来自 `.lenso/service-environments.json` 的部署环境。         |
+| `lenso service env verify staging --service <provider>` |检查服务安装状态和Provider目标环境字段。            |
+| `lenso service deploy export <provider> --env staging --target kubernetes --output-dir <dir>` |生成可审查的 Kubernetes Manifest。                                     |
+| `lenso service deploy export <provider> --env staging --hpa --pdb --network-policy --output-dir <dir>` |在导出中包括 HPA、PDB 和 NetworkPolicy 片段。                  |
+| `lenso service deploy status <provider> --env staging --write-state` |读取 Kubernetes 部署状态并更新 `.lenso/service-deployments.json`。   |
+| `lenso service deploy wait <provider> --env staging --write-state` |轮询部署状态并附加推出历史记录，直到服务准备就绪。  |
+| `lenso operator export-crd --output <dir>` |生成 Lenso Operator 安装包。                                   |
+| `lenso service deploy export <provider> --env staging --target operator --output-dir <dir>` |为运营商管理的Provider生成 `LensoServiceProvider` 自定义资源。 |
+| `lenso service deploy status <provider> --env staging --source operator --write-state` |读取`LensoServiceProvider`状态并更新`.lenso/service-deployments.json`。 |
+| `lenso service deploy wait <provider> --env staging --source operator --write-state` |轮询操作员管理的状态并附加推出历史记录，直到服务准备就绪。 |
+| `lenso service release plan <provider> <manifest-or-package> --output <plan.json>` |根据已安装 Manifest和候选Manifest创建可重用的服务发布计划。 |
+| `lenso service release plan <provider> <manifest-or-package> --env staging --output <plan.json>` |创建环境感知的服务发布计划。                             |
+| `lenso service release check <plan.json> --fail-on breaking` |在将发布计划交给操作员或 CI 作业之前重新检查。            |
+| `lenso service policy check <plan.json> --fail-on breaking` |仅运行内置服务发布策略门。                            |
+| `lenso service release apply <plan.json>` |应用候选人并记录 `.lenso/service-releases.json`。                |
+| `lenso service release apply <plan.json> --env staging` |仅当计划与所请求的环境匹配时才应用。                     |
+| `lenso service release promote <provider> --from staging --to prod --output <plan.json>` |根据最新的暂存版本创建产品发布计划。                   |
+| `lenso service release rollback <provider> --env prod [--to <release-id>] --output <plan.json>` |创建特定于环境的回滚发布计划。                         |
+| `lenso service deploy export <provider> --env prod --target operator --hpa --pdb --network-policy --output-dir <dir>` |晋升后生成生产操作员管理的交货文件。          |
+| `lenso service dev` |启动工作区服务，安装服务进程，然后启动主机。         |
+| `lenso service dev --no-workspace` |仅启动主机之前已安装的 `.lenso/module-services.json` Provider。 |
+
+工作空间文件是本地开发控制平面状态。它不会取代
+`lenso service install`或`lenso module install`；那些仍然写主机本地
+Provider和模块安装状态。工作区读取更喜欢 `lenso.workspace.json`
+对于旧的本地主机，回退到 `.lenso/services.json`。
+
+## 服务体系
+
+|命令 |用它来 |
+| ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `lenso system init support-platform --env local --env staging --env prod` |打造`lenso.system.json`整个产品体系。           |
+| `lenso system add-service support-suite-provider --target operator --module support-ticket --cwd services/support` |注册服务Provider及其拥有的模块。             |
+| `lenso system add-module support-ticket --to service:support-suite-provider --capability support_ticket.tickets.write` |注册模块功能及其安装目标。             |
+| `lenso system add-module auth --to host --capability auth` |在图中注册主机拥有的链接或内置功能。 |
+| `lenso system graph --system-file lenso.system.json` |打印服务/模块依赖关系图。                       |
+| `lenso system plan --system-file lenso.system.json --check` |当图形缺少模块或未解析的边时失败。      |
+| `lenso system diff --system-file lenso.system.json --check` |将系统Manifest与主机本地 `.lenso` 状态进行比较。       |
+| `lenso system apply --system-file lenso.system.json --dry-run` |预览安全主机本地状态写入。                             |
+| `lenso system doctor --system-file lenso.system.json` |显示漂移和下一个操作员命令。                         |
+| `lenso system release plan --env staging --output system-release.json` |创建系统级发布计划。                               |
+| `lenso system release check system-release.json` |运行系统发布策略检查。                                 |
+| `lenso system release apply system-release.json` |在主机本地历史记录中记录应用的系统版本。            |
+| `lenso system release promote --from staging --to prod --output system-release-prod.json` |根据先前的系统版本制定促销计划。                |
+| `lenso system release rollback --env prod --output system-rollback.json` |根据系统发布历史记录制定回滚计划。                 |
+| `lenso system release history` |列出已应用的系统版本。                                     |
+| `lenso system runbook generate system-release.json --output system-runbook.json` |从系统发布计划生成操作员步骤。                |
+| `lenso system runbook check system-runbook.json` |检查生成的系统运行手册。                                  |
+| `lenso system runbook record system-runbook.json` |在主机本地历史记录中记录 Runbook。                            |
+| `lenso system runbook history` |列出记录的系统操作手册。                                     |
+| `lenso system runbook doctor` |诊断系统 Runbook 状态。                                     |
+| `lenso system plan --system-file lenso.system.json --json` |发布自动化计划。                                    |
+
+`lenso.system.json` 位于模块和服务安装状态之上。它解释了
+服务、模块、环境和能力依赖如何形成一体
+系统。它不会取代 `lenso module install` 或 `lenso service install`。
+`system apply` 只写入本地服务启动和服务环境状态；
+模块安装、服务发布和 Kubernetes 部署保持明确。
+`system release apply` 只写`.lenso/system-releases.json`；它没有
+运行服务发布应用或部署命令。
+`system runbook record` 只写`.lenso/system-runbooks.json`；操作手册是
+生成的操作员证据，而不是模块创作文件。
+
+## 安装模块
+
+|命令 |用它来 |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `lenso module install auth` |从其描述符启用链接的内置模块。                              |
+| `lenso module enable auth` |用于安装/启用模块功能的别名。                                |
+| `lenso module disable auth` |用于卸载/禁用模块功能的别名。                             |
+| `lenso module install auth --profile redis-session-cache` |启用 Redis 支持的身份验证会话查找。                                          |
+| `lenso module release inspect <module-release.json>` |安装之前检查模块版本。                                    |
+| `lenso module release check <module-release.json> --base-url <url>` |当本地模块版本缺少安装输入时快速失败。                  |
+| `lenso module install <module-release.json> --base-url <url>` |从发布工件安装业务模块。                                |
+| `lenso module install <manifest-url>` |通过 URL 安装旧版远程模块。                                            |
+| `lenso module install ./lenso.module.json --base-url <url>` |安装旧版本地描述符，同时将主机指向已部署的基本 URL。 |
+| `lenso module install <ref> --dry-run` |预览 `.env`、回执、服务文件和控制台注册表更改。            |
+| `lenso module install <ref> --run-install-commands` |执行描述符声明的安装命令。                                     |
+| `lenso module install <ref> --no-console-extension` |跳过Runtime Console扩展注册。                                      |
+
+`module install` 是模块级入口点。服务版本解决了
+Provider包或Manifest；链接版本使 Rust 代码已经可用
+给主机。 `service install` 仍然是提供者/进程入口点。
+当 `lenso service install <service-name>` 匹配服务工作区条目时，
+或者当 `lenso service install ./lenso.service.json` 指向本地源时
+在该工作区中注册Manifest后，CLI 会从中推断出运行时基 URL
+工作区 `readyUrl`；独立的本地包工件仍然需要
+`--base-url`。
+
+`module install` 写入主机本地状态。根据来源，它可以更新：
+
+- `.env`
+- `Cargo.toml`
+- `src/lib.rs`
+- `.lenso/module-installs.json`
+- `.lenso/module-services.json`
+- `.lenso/runtime-config-defaults.json`
+- `.lenso/console/extensions`
+- `.lenso/console/extensions/registry.json`
+
+安装或更新模块后重新启动API和worker。
+
+## 更新和卸载
+
+```sh
+lenso module update billing
+lenso module update billing --base-url https://example.com/lenso/module/v1
+lenso module uninstall billing
+```
+
+`module update` 重复使用记录的安装回执
+`.lenso/module-installs.json`。远程更新刷新`REMOTE_MODULES`，已复制
+控制台捆绑包、服务状态和回执。链接更新重新应用
+描述符或内置模块条目。
+
+仅当描述符缺少源字段且您需要使用 `--source linked` 时，才使用 `--source linked`
+需要强制加载源：
+
+```sh
+lenso module uninstall auth --source linked
+```
+
+## Doctor
+
+```sh
+lenso module doctor
+lenso module doctor billing
+```
+
+Doctor读取`REMOTE_MODULES`和`.lenso/module-services.json`，检查申报
+服务 `readyUrl` 端点，并在以下情况下指出过时的 `.lock` 或 `.pid` 文件
+主机启动的服务未准备就绪。
+
+## 目录
+
+可用模块默认读取内置的官方目录。对于本地
+发现实验，设置 `.env` `LENSO_MODULE_CATALOG_FILE=<path>` 指向
+目录 JSON 文件。目录条目仍然是发现数据； `Lenso模块
+install <manifest-or-release>`依然是写host-local的边界
+状态。
+
+## 市场兼容性
+
+CLI 还公开了：
+
+```sh
+lenso module marketplace install <manifest-url>
+```
+
+这使用与 `lenso module install <manifest-url>` 相同的安装路径。保持
+直接安装命令的新自动化，除非您专门测试
+市场路由。
+
+## Console 包计划
+
+可以从 CLI 应用Runtime Console包安装计划：
+
+```sh
+lenso console package apply-plan
+lenso console package apply-plan --dry-run
+```
+
+当模块包更新依赖项或控制台扩展时使用此选项
+在正常模块安装路径之外注册。

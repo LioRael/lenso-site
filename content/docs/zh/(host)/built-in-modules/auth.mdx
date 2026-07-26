@@ -1,0 +1,117 @@
+---
+title: auth
+description: 安装持久用户、会话和身份验证控制台界面。
+---
+
+当主机需要持久用户和会话来进行应用程序时安装 `auth`
+登录、Runtime Console 访问或两者。
+
+从生成的主机：
+
+```sh
+lenso module install auth
+cargo run --bin migrate
+lenso serve
+```
+
+CLI 更新Host 组合、依赖项、本地安装回执和
+Runtime Console扩展注册表。安装后重启API和worker
+或更新模块。
+
+## 用户模型
+
+`auth.users` 是共享认证锚。业务路由和运行时间
+控制台都解析为相同的 `ActorContext::User { user_id, scopes }`。
+
+将产品配置文件数据保存在您自己的表中，并通过身份验证用户 ID 对其进行键入：
+
+```sql
+create table app.profiles (
+    id text primary key,
+    auth_user_id text not null unique,
+    display_name text not null,
+    created_at timestamptz not null
+);
+```
+
+请勿将姓名、头像、计划、租户或组织字段添加到 `auth.users`。
+这些属于产品模块。如果您的产品需要不同的账户 ID，
+存储从账户行到 `auth_user_id` 的映射。
+
+重启后，验证：
+
+- `/console` 在模块下列出了 `auth`。
+- 数据显示身份验证用户和会话。
+- 操作包括会话撤销和用户启用或禁用操作。
+
+## 控制台管理员用户
+
+Runtime Console管理员访问是明确的。普通企业用户不会成为
+控制台管理员，除非您通过运行时将 `console.admin` 添加到该身份验证用户
+配置：
+
+```json
+{
+  "usr_admin": ["console.admin", "auth.users.read"]
+}
+```
+
+授予第一个生产管理员 `lenso console bootstrap-admin`，然后编辑
+来自控制台配置的 `auth.console_admin_user_scopes` 供以后的管理员使用。
+开发Bearer Token仅限本地使用。
+
+## 使用 Redis 会话查找
+
+Postgres 是默认的会话查找后端。会话读取时使用Redis
+应避免数据库命中：
+
+```sh
+lenso module install auth --profile redis-session-cache
+```
+
+该配置文件启用了 `lenso-module-auth` 的 `redis` 功能，写道
+`REDIS_URL=redis://localhost:6379/0` 至 `.env`，并记录
+`.lenso/runtime-config-defaults.json` 中的 `auth.session_cache=redis`。
+
+自己提供Redis。启动器 Docker Compose 文件仅启动 Postgres。
+
+## 开发会话
+
+在本地开发中，`auth` 公开了一条开发会话路由：
+
+```sh
+curl -sS -X POST http://127.0.0.1:3000/v1/auth/dev/sessions \
+  -H 'content-type: application/json' \
+  -d '{"user_id":"usr_demo"}' | jq .
+```
+
+使用返回的令牌作为Bearer Token：
+
+```sh
+curl -sS http://127.0.0.1:3000/v1/app/items \
+  -H "authorization: Bearer $LENSO_SESSION_TOKEN" | jq .
+```
+
+为了快速本地工作，生成的主机还接受开发Bearer Token，例如
+如`Bearer dev-user:usr_demo`。不要在生产中使用它们。
+
+## 手动 Rust 组合
+
+大多数主机应该使用 `lenso module install`。对于手写的手写 Host 组合，
+使用 `host` 功能公开的公共内置函数：
+
+```rust
+use lenso::host::prelude::*;
+
+pub fn host_composition() -> HostComposition {
+    HostBuilder::new()
+        .linked_module(builtins::auth())
+        .build()
+}
+```
+
+更改链接模块组成后运行迁移：
+
+```sh
+cargo run --bin migrate
+```

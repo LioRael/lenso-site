@@ -1,0 +1,49 @@
+---
+title: auth-anonymous
+description: 添加匿名访客会话，稍后可以升级到普通凭据。
+---
+
+当用户应该能够启动访客会话时安装 `auth-anonymous`
+before registering a password or OAuth identity.这取决于`auth`。
+
+```sh
+lenso module install auth
+lenso module install auth-anonymous
+cargo run --bin migrate
+lenso serve
+```
+
+创建匿名会话：
+
+```sh
+curl -sS -X POST http://127.0.0.1:3000/v1/auth/anonymous/login \
+  -H 'content-type: application/json' \
+  -d '{}' | jq .
+```
+
+响应包括 `user_id`、`session_id`、`token`、`expires_at` 和
+`is_anonymous: true`。同一个会话cookie可以稍后调用
+`/v1/auth/password/register`;密码身份链接到相同的
+`auth_user_id`。
+
+重启后，验证：
+
+- `/console` 在模块元数据中列出 `auth-anonymous`。
+- 运行时证据显示请求后的匿名登录 HTTP 路由。
+- 身份验证用户表将用户显示为匿名，直到链接真实凭证为止。
+
+## 手动 Rust 组合
+
+大多数主机应该使用 `lenso module install`。对于手写的手写 Host 组合，
+使用 `host` 功能公开的公共内置函数：
+
+```rust
+use lenso::host::prelude::*;
+
+pub fn host_composition() -> HostComposition {
+    HostBuilder::new()
+        .linked_module(builtins::auth())
+        .linked_module(builtins::auth_anonymous())
+        .build()
+}
+```

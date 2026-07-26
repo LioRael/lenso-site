@@ -1,0 +1,226 @@
+---
+title: 部署
+description: 部署 API、工作线程、迁移、Postgres 和托管 Runtime Console，而不会过度适应微服务。
+---
+
+首先将 Lenso 部署为一个后端系统。当操作需要时拆分流程
+它;仅当所有权边界真实时才将模块拆分为服务。
+
+## 默认形态
+
+生产部署具有：
+
+- 一个API服务
+- 一名Worker服务
+- 一份迁移工作
+- 托管 Postgres
+- 用于身份验证会话的可选 Redis
+- 由位于 `/console` 的 API 提供服务的托管 Runtime Console文件
+
+对于大多数团队来说，实际的默认设置是容器加上托管的 Postgres。一个
+容器PaaS对于早期用户来说已经足够了。 Kubernetes 是一流的交付
+一旦服务边界需要独立的部署、副本、探针和
+集群观察，但Lenso不需要Kubernetes安装或运行
+服务。
+
+Lenso 拥有服务/模块/发布语义； Kubernetes拥有进程调度
+和推出状态。当您需要可审查的 YAML 和
+CI 控制应用；当Provider流程应该是时使用 Lenso Operator
+从集群拥有的期望状态对象持续进行协调。
+
+## Kubernetes 交付模式
+
+|模式|使用时 |伦索拥有 | Kubernetes 拥有 |
+| --- | --- | --- | --- |
+|原始 Kubernetes 导出 |您想要可审查的 YAML 和 CI 控制的应用 |服务/模块/发布语义、Manifest导出、本地部署观察 |工作负载调度和部署状态|
+|运营商管理|您希望集群中有一个持久的期望状态对象 |服务/模块/发布语义、CR 导出、状态导入到控制台 |协调、工作负载资源、副本可用性 |
+
+在这两种模式下，主机始终拥有身份验证、功能检查、运行时队列、
+重试、Outbox、Runtime Story、远程调用和技术操作。
+
+原料出口：
+
+```sh
+lenso service deploy export support-suite-provider \
+  --env staging \
+  --target kubernetes \
+  --output-dir dist/lenso-service/support-suite-provider/kubernetes/staging
+
+kubectl apply -k dist/lenso-service/support-suite-provider/kubernetes/staging
+
+lenso service deploy status support-suite-provider \
+  --env staging \
+  --write-state
+
+lenso service deploy wait support-suite-provider \
+  --env staging \
+  --write-state
+```
+
+运营商管理：
+
+```sh
+lenso operator export-crd --output dist/lenso-operator/crds
+kubectl apply -k dist/lenso-operator/crds
+
+lenso service deploy export support-suite-provider \
+  --env staging \
+  --target operator \
+  --output-dir dist/lenso-service/support-suite-provider/operator/staging
+
+kubectl apply -k dist/lenso-service/support-suite-provider/operator/staging
+
+lenso service deploy status support-suite-provider \
+  --env staging \
+  --source operator \
+  --write-state
+
+lenso service deploy wait support-suite-provider \
+  --env staging \
+  --source operator \
+  --write-state
+```
+
+操作员不会将模块安装到主机中，编写主机运行时表，
+使用主机Outbox，或接收浏览器Bearer Token。它协调服务
+仅提供者进程资源。
+
+`status --write-state` 存储当前的部署观察，并且
+`wait --write-state` 将推出观察结果附加到本地部署
+历史。Runtime Console读取主机本地证据；它不需要
+浏览器访问集群。
+
+## 晋级流程
+
+服务安装和模块安装保持在主机本地。集群交付开始于
+环境感知服务版本已经规划、检查和应用。一个
+典型的促销活动将证据作为事实的来源，然后创建一个
+该应用版本的产品计划：
+
+```sh
+lenso service env add prod \
+  --service support-suite-provider \
+  --target operator \
+  --namespace lenso-prod \
+  --image ghcr.io/lenso-dev/support-suite-provider:0.4.0 \
+  --public-base-url https://support.example.com \
+  --manifest-reference https://support.example.com/lenso/service/v1/manifest \
+  --port 4110 \
+  --replicas 3 \
+  --ingress-host support.example.com
+
+lenso service release promote support-suite-provider \
+  --from staging \
+  --to prod \
+  --output .lenso/support-suite-provider.prod.release-plan.json
+lenso service policy check .lenso/support-suite-provider.prod.release-plan.json --fail-on breaking
+lenso service release apply .lenso/support-suite-provider.prod.release-plan.json --env prod
+
+lenso service deploy export support-suite-provider \
+  --env prod \
+  --target operator \
+  --hpa \
+  --pdb \
+  --network-policy \
+  --output-dir dist/lenso-service/support-suite-provider/operator/prod
+
+kubectl apply -k dist/lenso-service/support-suite-provider/operator/prod
+lenso service deploy wait support-suite-provider --env prod --source operator --write-state
+```
+
+对原始 Kubernetes 导出、CI 作业或未来使用相同的发布命令
+Provider适配器。主机跟踪发布、部署和控制台证据；这
+所选择的交付平台仅运行并观察服务流程。
+
+## 进程布局
+
+在 API 和工作线程之前运行迁移：
+
+```sh
+cargo run --bin migrate
+cargo run --bin api
+cargo run --bin worker
+```
+
+对于模块拥有的 SQL 和迁移命名规则，请阅读
+[数据库和迁移](/docs/zh/database-migrations)。
+
+对于小型本地或单节点主机，公共主机门面还具有
+嵌入式API+worker启动助手。使用单独的 API 和辅助服务
+需要独立扩展、部署或重新启动。
+
+## Runtime Console 工件
+
+生成的主机应该提供预构建的控制台资产。用户不应该需要
+生产中的 Node.js 或 pnpm 只是为了打开 `/console`。
+
+CLI 升级后：
+
+```sh
+lenso console update
+```
+
+刷新捆绑控制台后重新启动主机。
+
+## Runtime Console 访问
+
+`APP_ENV=production` 禁用开发Bearer Token。生产操作员
+通过主机密码或OIDC认证流程输入`/console`。授予访问权限
+为 auth 用户运行 `lenso console bootstrap-admin`； `console.admin` 是
+自动包含在内。
+
+不要发送带有服务令牌的浏览器控制台捆绑包。
+
+## 最小生产环境
+
+```sh
+APP_ENV=production
+LENSO_COMPOSITION_PROFILE=core
+DATABASE_URL=postgres://...
+HTTP_HOST=0.0.0.0
+HTTP_PORT=3000
+LOG_FORMAT=json
+RUST_LOG=info
+```
+
+仅在需要时添加远程模块：
+
+```sh
+REMOTE_MODULES=billing=https://billing.example.com/lenso/module/v1
+REMOTE_MODULE_BILLING_TOKEN=...
+REMOTE_MODULE_BILLING_TIMEOUT_MS=8000
+```
+
+## 发布门禁
+
+在削减后端候选版本之前：
+
+```sh
+just release-check
+```
+
+在发布 crate 之前：
+
+```sh
+just package-readiness
+```
+
+对于发布工件：
+
+```sh
+just console-build
+LENSO_RELEASE_VERSION=vX.Y.Z just release-package
+```
+
+当控制台已被托管时，托管存档包括 `.lenso/console/dist`
+已构建，因此部署的 API 可以在没有前端源的情况下为 `/console` 提供服务。
+
+## 部署 Manifest
+
+- `APP_ENV` 和 `LENSO_COMPOSITION_PROFILE` 是显式的。
+- Postgres 迁移在 API 和工作线程之前运行。
+- `/console`通过API服务解析。
+- 远程模块使用主机到远程令牌，而不是调用者令牌。
+- `REMOTE_MODULES` 更改之后是 API 和工作线程重新启动。
+- `LOG_FORMAT=json` 已启用结构化生产日志。
+- 仅当收集器存在时才配置 OpenTelemetry 端点。

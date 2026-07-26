@@ -1,0 +1,185 @@
+---
+title: 运行时与生命周期
+description: 声明运行时函数、调度、事件处理程序、生命周期检查和启动激活工作。
+---
+
+运行时工作由主机拥有。模块声明函数、时间表、事件
+处理程序和生命周期需求；工作人员声明队列，应用重试策略，
+记录运行情况，并将证据投射到Runtime Console中。
+
+## 函数声明
+
+在Manifest中声明运行时函数：
+
+```rust
+use lenso::{ModuleManifest, RuntimeFunctionDeclaration, RuntimeSurface};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("support")
+        .runtime(RuntimeSurface {
+            functions: vec![RuntimeFunctionDeclaration {
+                name: "support.ticket.escalate.v1".to_owned(),
+                version: 1,
+                queue: "support".to_owned(),
+                input_schema: Some("support.ticket.escalate.v1".to_owned()),
+                retry_policy: None,
+            }],
+            schedules: vec![],
+        })
+        .build()
+}
+```
+
+该声明使函数可见且可检查。链接模块仍然
+通过绑定注册可执行处理程序。远程模块实现
+远程调用协议。
+
+## 调度运行时函数
+
+在它们排队的函数旁边声明调度：
+
+```rust
+use lenso::{
+    ModuleManifest, RuntimeFunctionDeclaration, RuntimeSurface,
+    ScheduledFunctionDeclaration,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("support")
+        .runtime(RuntimeSurface {
+            functions: vec![RuntimeFunctionDeclaration {
+                name: "support.ticket.escalate_overdue.v1".to_owned(),
+                version: 1,
+                queue: "support".to_owned(),
+                input_schema: Some("support.ticket.escalate_overdue.v1".to_owned()),
+                retry_policy: None,
+            }],
+            schedules: vec![ScheduledFunctionDeclaration {
+                name: "escalate-overdue-tickets".to_owned(),
+                function_name: "support.ticket.escalate_overdue.v1".to_owned(),
+                cron: "*/15 * * * *".to_owned(),
+                input: serde_json::json!({ "source": "cron" }),
+            }],
+        })
+        .build()
+}
+```
+
+`cron` 使用标准 5 字段 UTC cron：
+
+```text
+minute hour day-of-month month day-of-week
+```
+
+支持的字段形式为 `*`、逗号列表、范围、步长值，例如
+`*/15`、数字、月份名称（例如 `JAN`）和工作日名称（例如 `MON`）。
+秒、时区和 Quartz 风格的字段故意不属于
+模块合约。
+
+调度程序将持久状态存储在 `runtime.scheduled_functions` 中。当一个
+时间表到期，工作人员将声明的运行时函数排入队列
+`runtime.function_runs`;重试、死信、日志和Runtime Story 证据
+然后遵循与手动排队运行时工作相同的路径。远程模块可以
+声明一个调度，但主机仍然拥有调度和队列状态。
+
+## Runtime Story 证据
+
+Worker写下了持久的证据：
+
+|表/来源|意义|
+| --- | --- |
+| `platform.outbox` |模块事件调度状态|
+| `runtime.function_runs` |排队、正在运行、重试、已完成或失败的功能工作 |
+| `platform.story_events` |Story投影记录|
+|执行日志|技术操作和远程运行时元数据|
+
+Runtime Console使用这些记录来显示Story、功能操作、死亡
+信件、队列、重试和技术操作。
+
+相关模型、Story请参见[Runtime Story](/docs/zh/runtime-stories)]
+图形形态和控制Story标题的模块元数据。
+
+## 生命周期声明
+
+生命周期是数据，而不是任意的启动钩子：
+
+```rust
+use lenso::{
+    LifecycleActivationJobDeclaration, LifecycleActivationRunPolicy,
+    LifecycleStartupCheckDeclaration, LifecycleStartupCheckKind, LifecycleSurface,
+    ModuleManifest, RuntimeFunctionDeclaration, RuntimeSurface,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("support")
+        .runtime(RuntimeSurface {
+            functions: vec![RuntimeFunctionDeclaration {
+                name: "support.ticket.reindex.v1".to_owned(),
+                version: 1,
+                queue: "support".to_owned(),
+                input_schema: Some("support.ticket.reindex.v1".to_owned()),
+                retry_policy: None,
+            }],
+            schedules: vec![],
+        })
+        .lifecycle(LifecycleSurface {
+            startup_checks: vec![LifecycleStartupCheckDeclaration {
+                name: "reindex function is registered".to_owned(),
+                required: true,
+                check: LifecycleStartupCheckKind::FunctionRegistered {
+                    function_name: "support.ticket.reindex.v1".to_owned(),
+                },
+            }],
+            activation_jobs: vec![LifecycleActivationJobDeclaration {
+                name: "warm ticket index".to_owned(),
+                function_name: "support.ticket.reindex.v1".to_owned(),
+                run_policy: LifecycleActivationRunPolicy::EveryStartup,
+                input: serde_json::json!({ "reason": "startup" }),
+                required: false,
+            }],
+        })
+        .build()
+}
+```
+
+`required: true` 生命周期故障会阻止启动。 `required: false`故障
+警告并继续。激活作业当前使用 `every_startup`；非幂等
+安装或升级生命周期状态被有意推迟。
+
+## 事件处理程序边界
+
+远程事件处理程序使用主机拥有的Outbox中继：
+
+1. 模块命令写入业务表
+2. 同一事务插入 `platform.outbox`
+3. Worker索赔待处理的Outbox行
+4. 主机调用链接或远程处理程序
+5. 处理程序可能返回有界 `enqueue_function` 操作
+6. 主机插入`runtime.function_runs`
+7. 重试和死信保留在主机表中
+
+远程模块从不直接声明Outbox行。
+
+## 远程运行时边界
+
+对于远程功能，工作人员仍然是唯一的队列所有者。遥控器
+模块只是一个执行器：
+
+```text
+POST /lenso/module/v1/runtime/functions/{function_name}/invoke
+```
+
+主机发送函数运行 ID、尝试、相关 ID、参与者上下文、跟踪
+上下文和输入。远程返回输出或标准错误包络。这
+主机通过声明的重试策略映射可重试的失败。
+
+## 完成的定义
+
+具有运行时能力的模块在以下情况下完成：
+
+- 函数声明干净利落
+- 时间表声明引用现有函数和有效的 cron 表达式
+- 链接或远程执行器已注册
+- 生命周期检查引用现有功能或能力
+- 冒烟路径创建函数运行
+- Runtime Console显示运行、重试、失败或Story 证据

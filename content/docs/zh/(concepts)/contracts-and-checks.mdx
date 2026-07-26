@@ -1,0 +1,134 @@
+---
+title: 合约与检查
+description: 了解由源码管理的合约，以及保障 Lenso 团队与 Agent 安全协作的本地检查。
+---
+
+Lenso 已为代理做好了准备，因为重要的界面是明确且可检查的。这
+代理不必仅根据约定来推断系统。
+
+如果您正在使用 API 而不是更改它，请从
+[API 客户端](/docs/zh/api-clients)。
+
+## 已提交的合约
+
+当前承诺的合约面故意较小：
+
+|合约|消费者 |
+| --- | --- |
+| `contracts/openapi/app-api.v1.yaml` | API 客户端、SDK 生成、Runtime Console API 期望 |
+| `contracts/errors/error-response.v1.schema.json` |标准错误信封消费者|
+| `contracts/grpc/lenso/remote/v1/remote_module.proto` |本机远程模块传输 |
+
+Rust 路由注释和平台模式是来源。生成的工件
+已提交，以便下游用户可以依赖稳定的文件。
+
+## 路由事实来源
+
+HTTP 路由应该将实现和 OpenAPI 元数据放在一起：
+
+```rust
+use lenso::host::http::{Json, UserActor};
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+
+#[derive(Deserialize, ToSchema)]
+pub struct CreateTicketRequest {
+    pub title: String,
+    pub requester_email: String,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct TicketResponse {
+    pub id: String,
+    pub status: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/support/tickets",
+    operation_id = "support_create_ticket",
+    tag = "support",
+    request_body = CreateTicketRequest,
+    responses((status = 200, body = TicketResponse))
+)]
+pub async fn create_ticket(
+    _actor: UserActor,
+    Json(request): Json<CreateTicketRequest>,
+) -> Json<TicketResponse> {
+    Json(TicketResponse {
+        id: format!("ticket:{}", request.title),
+        status: "open".to_owned(),
+    })
+}
+```
+
+如果操作员应该，路由仍然必须在模块 Manifest中声明
+查看路由元数据、Story标题和功能期望。
+
+## 本地门禁
+
+使用证明变化界面的最小门：
+
+|改变 |门 |
+| --- | --- |
+| Rust 代码 | `just check` |
+| OpenAPI 或生成的架构 | `just generated-check` |
+|模块边界或契约布局| `just arch-check` |
+|候选版本 | `just release-check` |
+|Runtime Console包工作| `lenso-runtime-console` 中的 `pnpm check` |
+|文档网站工作| `lenso-site` 中的 `pnpm types:check` 和 `pnpm build` |
+
+对于公开发布，仅本地绿色是不够的。验证已发布的箱子，
+npm 包、GitHub Release 或用户实际会使用的工作流工件
+安装。
+
+## 架构护栏
+
+`just arch-check` 保持模块架构的诚实性。它检查一些东西
+容易意外损坏的：
+
+- 缺少提交的 OpenAPI 工件
+- 陈旧的生成合约工件
+- 缺少当前事件的事件有效负载合约
+- 模块源代码内的跨模块导入
+- DDD 文件夹漂移，例如 `api`、`application`、`domain` 或 `infrastructure`
+  模块板条箱内部
+
+目标不是仪式。目标是赶在它之前赶上架构漂移
+变成了人们必须记住的框架。
+
+## Agent 证明 Manifest
+
+当特工更换 Lenso 时，请按以下形式索取证据：
+
+```text
+Changed:
+- module manifest
+- linked route
+- admin action
+
+Checks:
+- cargo check --bins
+- just generated-check
+
+Runtime Console:
+- module appears in Modules
+- action appears in Data
+- story contains the action invocation
+```
+
+如果工作应该出现在Runtime Console中，则仅进行编译检查
+不够。
+
+## 不要手动编辑生成的文件
+
+生成的合约是源代码控制的工件，但它们不是创作的
+手工。更改 Rust 路由注释、平台架构或原型源，然后
+再生：
+
+```sh
+just generate-contracts
+just generated-check
+```
+
+将源更改和生成的差异一起提交。

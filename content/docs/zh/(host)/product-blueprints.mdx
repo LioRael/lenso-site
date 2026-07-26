@@ -1,0 +1,145 @@
+---
+title: 产品蓝图
+description: 创建 Service-ready 产品应用、添加产品 Addon，并将结果交给 Runtime Console 或编码 Agent。
+---
+
+产品蓝图是从产品创意到可运行 Lenso 的最快路径
+系统。蓝图创建主机、服务进程、模块 Manifest、
+`lenso.system.json`、`lenso.workspace.json` 和 Launchpad 状态。插件扩展
+无需您先手动编辑服务图 JSON，即可生成应用程序。
+能力包将可重用的产品片段捆绑在模块、服务、
+种子 Manifest、文档和Agent 交接上下文。
+
+当你需要一个具备产品形态的起点，而不是空白 Host 时，请使用此路径。
+
+## 内置蓝图
+
+|蓝图|形态|好的第一个插件 |
+| --- | --- | --- |
+| `support-desk` | TypeScript 支持 API、Rust 通知工作者、面向票据的功能 | `support-sla` |
+| `backoffice-crm` |用于内部客户运营的 TypeScript CRM 服务 | `customer-profile` |
+| `ops-console` |针对操作视图和内部操作的 Rust 审计服务 | `notifications` |
+
+列出并检查您安装的 CLI 支持的内容：
+
+```sh
+lenso app list
+lenso app inspect support-desk
+```
+
+## 创建和扩展应用程序
+
+```sh
+lenso app compose ./acme-support \
+  --blueprint support-desk \
+  --addon support-sla \
+  --addon customer-profile \
+  --apply
+cd acme-support
+lenso app next
+lenso app explain
+lenso dev doctor --write-state
+lenso app verify --write-proof
+lenso app diff
+lenso agent task --from-app-plan "add overdue ticket escalation"
+lenso dev up
+```
+
+`lenso app compose` 是应用级合成命令。它可以创建应用程序，
+应用几个插件，并将组合上下文写入 `.lenso/app-change-plan.json`。
+`lenso app add` 一次仍可用于一个插件。插件可以添加另一个服务，
+模块、功能依赖性、工作区条目、Launchpad Manifest项以及
+一步即可完成代理上下文。它不是 `lenso module install` 的替代品。
+当你想要一个时，先使用`lenso app plan --addon <name> --write-plan`
+适用于控制台、代理或试运行应用步骤的可审查应用程序更改计划。
+
+## 使用能力包进行编写
+
+当切片应作为一个本地单元跨应用程序传输时，请使用能力包：
+例如，具有一个服务提供模块、一个种子模块的支持 SLA 包
+Manifest和代理任务提示。
+
+```sh
+lenso capability init support-sla \
+  --dir ./capabilities/support-sla \
+  --lang ts \
+  --for-blueprint support-desk
+lenso capability library add ./capabilities/support-sla
+lenso capability fit support-sla --repo-root .
+lenso app compose ./acme-support \
+  --blueprint support-desk \
+  --pack support-sla \
+  --apply
+cd acme-support
+lenso agent task --for-capability support-sla "add enterprise SLA escalation"
+```
+
+`lenso capability library add` 将包记录在本地应用程序库中。
+`lenso capability fit` 检查蓝图支持、重复模块和服务，
+在 Compose 将包记录到 Launchpad 和 App 之前，验证失败
+更改计划状态。
+
+## 写了什么
+
+|文件|目的|
+| --- | --- |
+| `.lenso/launchpad.json` |生成服务、模块、插件、能力包、Manifest、支持的插件和下一个命令的首次运行状态。 |
+| `.lenso/dev-doctor.json` |控制台和代理的最新 `lenso dev doctor --write-state` 结果。 |
+| `.lenso/app-proof.json` |生成状态漂移、控制台和代理的最新 `lenso app verify --write-proof` 结果。 |
+| `.lenso/app-change-plan.json` |安全生成状态更改、阻止的更改、请求的包和下一个命令的最新 `lenso app plan --write-plan` 结果。 |
+| `lenso.system.json` |产品系统图：服务、模块、功能和依赖项。 |
+| `lenso.workspace.json` | `lenso dev up`使用的本地服务进程列表。 |
+
+## 验证生成状态
+
+在应用插件或生成状态修复之前使用应用程序更改计划：
+
+```sh
+lenso app compose --repo-root . --addon support-sla --addon customer-profile --write-plan
+lenso app plan --addon support-sla --write-plan
+lenso app apply .lenso/app-change-plan.json --dry-run
+```
+
+`app compose` 编写一份可审查的本地计划，其中包含请求的、已应用的和待定的计划
+插件或能力包。 `app plan` 写入相同的生成状态修复界面。 `app apply`
+仅应用安全生成的控制平面更改和支持的插件应用程序
+从那个计划。它不会覆盖现有的服务源文件或删除
+未知的服务。
+
+添加插件后或将工作交给其他代理之前使用 App Proof：
+
+```sh
+lenso app verify --write-proof
+lenso app diff
+lenso app repair --dry-run
+```
+
+`app verify` 比较 Launchpad 状态、工作区服务、系统服务和
+最新的开发Doctor输出。当生成的状态漂移为 `app diff` 时，`app diff` 会失败
+展示。 `app repair` 仅写入安全生成的控制平面状态并丢失
+脚手架目录；现有服务源文件仍归用户所有。
+
+应用程序证明是本地生成状态证据。这不是安全证明，
+部署门、签名系统或分布式版本协商层。
+
+Runtime Console通过以下方式读取Launchpad、Doctor 与证明端点
+主机管理 API。 `/launchpad` 显示生成的服务、模块、应用的插件、
+能力包、支持的插件、Doctor状态、漂移证明、应用程序更改计划
+状态，以及下一个操作员命令。
+
+## 边界
+
+- 产品蓝图创建应用程序和本地服务图。
+- 插件扩展了生成的应用程序。
+- 能力包组成跨模块、服务、文档和组件的可重用切片
+  Agent 交接上下文。
+- 能力库是本地发现文件；他们不安装模块或
+  服务。
+- `lenso module install` 仍然是模块级安装入口点。
+- `lenso service install` 仍然是服务Provider安装入口点。
+- Kubernetes 交付仍然是可选的；生成的应用程序在本地运行，无需
+  簇。
+
+结果是服务就绪，不需要服务网格。本地启动，保留
+主机拥有的运行时和可观测性模型，然后将服务转移到独立的
+当边界稳定时进行部署。

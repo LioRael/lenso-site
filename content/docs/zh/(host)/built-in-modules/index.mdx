@@ -1,0 +1,30 @@
+---
+title: 内置模块
+description: 了解Lenso的第一方和平台拥有的模块。
+---
+
+生成的主机以 `LENSO_COMPOSITION_PROFILE=core` 开头，没有真正的身份验证
+模块。在构建第一个应用程序界面时使用本地开发令牌，然后
+当应用程序需要真实会话、密码登录或设备时安装身份验证模块
+政策。
+
+如果您正在编写一个使用经过身份验证的参与者而不是
+安装 auth 本身，阅读
+[授权和功能](/docs/zh/auth-capabilities)。
+
+## 模块图
+
+|模块|类型 |安装 |它拥有什么 |
+| --- | --- | --- | --- |
+| [`auth`](/docs/zh/built-in-modules/auth) |第一方链接模块 | `lenso module install auth` |身份验证用户、会话、会话撤销、开发会话路由、身份验证控制台页面 |
+| [`auth-anonymous`](/docs/zh/built-in-modules/auth-anonymous) | 第一方 Provider 模块 | `lenso module install auth-anonymous` | 匿名会话路由、匿名身份标记、账户升级关联接口 |
+| [`auth-password`](/docs/zh/built-in-modules/auth-password) |第一方Provider模块 | `lenso module install auth-password` |密码注册和登录路由、密码凭证存储、令牌策略配置 |
+| [`auth-oidc`](/docs/zh/built-in-modules/auth-oidc) |第一方Provider模块 | `lenso module install auth-oidc` | OIDC 发现、授权/令牌端点、Runtime Console登录切换 |
+| [`auth-device`](/docs/zh/built-in-modules/auth-device) |第一方政策模块| `lenso module install auth-device` |设备记录和会话设备策略|
+| [`platform-story`](/docs/zh/built-in-modules/platform-story) |平台自有系统模块|包含的平台构成|Runtime Console Story路由、Story显示元数据、Story Console界面 |
+
+`auth`、`auth-anonymous` 和 `auth-password` 也通过
+`lenso::host::builtins`。
+`auth-oidc` 和 `auth-device` 通过 CLI 描述符安装。
+`platform-story`不是业务模块。这是Lenso拥有的运行时
+可观测性基础设施。

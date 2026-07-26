@@ -1,0 +1,155 @@
+---
+title: Host 组合
+description: 了解Lenso主机如何决定加载哪些链接模块和远程模块。
+---
+
+主机组合是Lenso应用程序决定哪些模块存在于其中的地方
+正在运行的主机。
+
+它故意与模块 Manifest分开：
+
+- Manifest说明了一个模块的贡献；
+- 主机组合说明应用程序拥有哪些链接模块；
+- 环境配置说明要加载哪些配置文件和远程模块源；
+- 运行时配置可以在启动时启用或禁用模块。
+
+## 生成的 Host 形态
+
+生成的主机公开 API、工作人员和迁移使用的一项功能
+入口点：
+
+```rust
+mod modules;
+
+use lenso::host::prelude::*;
+
+pub fn host_composition() -> HostComposition {
+    HostBuilder::new()
+        .linked_module(modules::app::linked_module())
+        .build()
+}
+```
+
+API、worker 和迁移二进制文件都调用相同的组合，因此 HTTP
+路由、运行时处理程序、事件处理程序和迁移保持一致。
+
+## 内置配置文件
+
+`LENSO_COMPOSITION_PROFILE` 选择平台的链接基线。
+
+|简介 |内置链接模块|
+| --- | --- |
+| `core` | `platform-story` |
+| `demo` | `auth`、`auth-anonymous`、`auth-oauth`、`auth-password`、`auth-github`、`auth-google`、`auth-oidc`、`platform-story` |
+
+本地开发默认为`demo`。类似生产的环境必须设置
+明确配置文件：
+
+```sh
+APP_ENV=production
+LENSO_COMPOSITION_PROFILE=core
+```
+
+对于有意安装模块的产品主机，请使用 `core`。使用 `demo` 用于
+本地示例和入门证明路径。
+
+## 主机拥有的链接模块
+
+属于应用程序内部的第一方模块可以链接到主机：
+
+```rust
+use lenso::host::prelude::*;
+
+pub fn host_composition() -> HostComposition {
+    HostBuilder::new()
+        .linked_module(builtins::auth())
+        .linked_module(builtins::auth_password())
+        .linked_module(modules::app::linked_module())
+        .build()
+}
+```
+
+链接的模块可以提供：
+
+- 明显的元数据；
+- 迁徙；
+- 链接的 HTTP 路由；
+- 管理数据、操作和查询；
+- 运行时函数处理程序；
+- 事件处理程序；
+- 仅主机贡献。
+
+远程模块不使用`HostBuilder`。它们是从配置的远程加载的
+来源。
+
+## 启用和禁用模块
+
+每个链接的、主机链接的和远程模块都会生成一个启动切换：
+
+```text
+modules.<module>.enabled
+```
+
+环境值使用匹配的 `LENSO_MODULE_*_ENABLED` 形式：
+
+```sh
+LENSO_MODULE_AUTH_PASSWORD_ENABLED=false
+LENSO_MODULE_SUPPORT_ENABLED=false
+```
+
+这些开关只能重新启动。禁用模块会停止加载其路由，
+运行时处理程序、管理元数据、Story显示元数据以及迁移
+当前启动路径。它不会删除该模块的现有数据。
+
+## 依赖关系
+
+模块依赖项在Manifest中声明：
+
+```rust
+ModuleManifest::builder("auth-password")
+    .dependencies(vec!["auth".to_owned()])
+    .build()
+```
+
+如果禁用依赖项，则不会加载依赖模块，并且运行时
+控制台显示模块元数据中的依赖关系状态。
+
+## 远程来源
+
+远程源是环境配置，而不是 Rust Host 组合：
+
+```sh
+REMOTE_MODULES=billing=http://127.0.0.1:4110/lenso/module/v1,crm=grpc://127.0.0.1:50051
+REMOTE_MODULE_BILLING_TOKEN=secret-host-to-module-token
+REMOTE_MODULE_BILLING_TIMEOUT_MS=8000
+```
+
+启动时，主机获取每个远程 Manifest，验证它，构建
+远程行为绑定，并注册代理、管理、运行时、事件和控制台
+元数据。
+
+## 应在哪里修改
+
+|需要|改变 |
+| --- | --- |
+|添加应用程序拥有的 Rust 模块 | `src/lib.rs`Host 组合|
+|向产品主机添加内置身份验证 | `HostBuilder::linked_module(builtins::auth())` |
+|添加远程模块 | `lenso module install <manifest-url>` 或 `REMOTE_MODULES` |
+|在启动时禁用模块 | `LENSO_MODULE_<MODULE>_ENABLED=false` |
+|配置模块启动值| `LENSO_MODULE_<MODULE>__<KEY>=<value>` |
+|使本地目录数据可被发现 | `.env` `LENSO_MODULE_CATALOG_FILE=<path>` |
+
+## 冒烟检查
+
+更改组成后，运行真实主机路径：
+
+```sh
+lenso serve
+```
+
+然后打开`/console`并检查：
+
+- 模块显示预期的链接和远程模块；
+- 禁用的模块具有可解释的状态；
+- 出现预期的路由或管理界面；
+- Runtime Story仍在加载。

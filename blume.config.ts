@@ -54,7 +54,18 @@ export default defineConfig({
   openapi: {
     enabled: true,
     route: "/api",
-    spec: "./openapi/app-api.v1.yaml",
+    sources: [
+      {
+        label: "API Reference",
+        route: "/api",
+        spec: "./openapi/app-api.v1.yaml",
+      },
+      {
+        label: "API 参考",
+        route: "/zh/api",
+        spec: "./openapi/app-api.zh.v1.yaml",
+      },
+    ],
     codeSamples: ["curl", "js", "python"],
     expandSchemas: false,
   },
