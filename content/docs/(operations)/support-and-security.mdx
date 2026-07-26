@@ -1,0 +1,88 @@
+---
+title: Support and Security
+description: Apply the GA support manifest, workload identity, secret, Console, and approval boundaries without widening authority.
+---
+
+Lenso's production boundary is fail-closed: support eligibility, identity,
+capability, evidence, and mutation authority are checked independently.
+
+## Support manifest
+
+`lenso.ga-support-manifest.v1` pins the reviewed component set, compatibility
+range, evidence protocols, and verifier identity. Keep the manifest digest with
+the release decision. Do not silently swap it for a newer file during an
+incident or upgrade.
+
+Support checks answer “is this exact set inside the reviewed envelope?” They do
+not install packages, grant deployment authority, or mutate production.
+
+## Workload identity
+
+Production Autonomous Services use SPIFFE X.509-SVID mTLS plus an
+audience-limited JWT-SVID from the Workload API. Verify:
+
+- the exact trust domain and Service identity;
+- the intended audience for each API or Story feed;
+- tenant authorization after authentication;
+- short-lived credentials and rotation behavior;
+- rejection of local System Sandbox identities outside development.
+
+Never forward an end user's browser bearer token or cookies to a remote module.
+The host resolves the caller and enforces the route's declared capability, then
+uses its own Service identity for the remote hop.
+
+## Secrets and configuration
+
+Manifests carry secret references, not secret values. A deployment adapter
+resolves those references for its environment and records redacted evidence.
+
+Keep configuration revision separate from secret rotation. A changed secret can
+require Workload restart without changing the logical Service or Contract
+identity.
+
+## Runtime Console
+
+Runtime Console is an operator and evidence surface, not a deployment authority.
+In production:
+
+- sign in through the host's real password or OIDC path;
+- grant `console.admin` through the reviewed bootstrap flow;
+- require declared capabilities for module data and actions;
+- keep embedded custom module UI sandboxed;
+- never embed service tokens in the browser bundle.
+
+The Console may present plans and evidence. The backend and deployment adapter
+still verify authority, freshness, expected revision, and approval before any
+protected action.
+
+## Approval boundaries
+
+Repository write access is not production authority. The following remain
+explicit human or deployment-owned boundaries:
+
+- final extraction authority cutover;
+- protected workflow intervention or termination;
+- production promotion and rollback;
+- stale-safe Contract Retirement;
+- destructive cleanup after retention requirements are met.
+
+Plans must bind the inputs and expected revision that were reviewed. When those
+facts change, regenerate the plan and renew approval.
+
+## Incident handoff
+
+A support envelope should contain enough evidence to reproduce the decision
+without handing over secrets:
+
+- support manifest id and digest;
+- exact package versions, receipts, and attestations;
+- Service, System, Contract, and environment revision identities;
+- failure scenario, reliability, restore, and disaster-recovery evidence;
+- relevant Story and technical-operation references;
+- redacted logs and traces;
+- cleanup result and whether production was mutated;
+- the next safe operator action.
+
+Start from [Single-Region GA](/docs/single-region-ga) when validating a release
+set, or [Reliability and Recovery](/docs/reliability-and-recovery) when handling
+a concrete failure.

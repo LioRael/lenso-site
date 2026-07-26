@@ -1,0 +1,106 @@
+---
+title: Single-Region GA
+description: Operate the bounded M6 General Availability component set and its fail-closed evidence gates.
+sidebar:
+  badge: GA
+---
+
+M6 is Lenso's bounded single-region General Availability surface. GA means an
+exact published component set and its execution evidence passed the complete
+public acceptance gate. It does not mean every experimental framework path is a
+supported production surface.
+
+## Supported component baseline
+
+The reviewed GA set is pinned by `lenso.ga-support-manifest.v1`. The current
+published baseline includes:
+
+| Component | GA version |
+| --- | --- |
+| `lenso` Rust facade and host runtime | `0.3.33` |
+| `@lenso/cli` / `lenso-cli` | `0.2.13` |
+| `lenso-service` | `0.1.15` |
+| `lenso-autonomous-service` | `0.1.11` |
+| `lenso-contracts` | `0.3.16` |
+| `@lenso/service-kit` | `0.1.0` |
+| `@lenso/remote-module-kit` | `0.1.3` |
+| Runtime Console release archive | `0.1.2` |
+
+Treat the support manifest as the source of truth. A newer individual package
+is not automatically part of the supported set.
+
+## Check the exact set
+
+Pass the reviewed manifest, every proposed component, and the persisted support
+state version:
+
+```sh
+lenso ga support-check \
+  --manifest ./lenso.ga-support-manifest.v1.json \
+  --component cargo:lenso@0.3.33 \
+  --component npm:@lenso/cli@0.2.13 \
+  --state-version 1 \
+  --json
+```
+
+The complete production check must include the whole reviewed component set.
+The command fails closed when the manifest is untrusted, a version is outside
+the support envelope, evidence is stale, or a required component is missing.
+
+## Migration before mutation
+
+Service and System manifest upgrades preserve stable identity. Preview the
+conversion before writing a target:
+
+```sh
+lenso ga manifest-migrate \
+  --manifest ./lenso.ga-support-manifest.v1.json \
+  --source ./lenso.service.json \
+  --target-format lenso.service.v2 \
+  --dry-run --json
+```
+
+Multi-Workload upgrades start from a migration-first plan:
+
+```sh
+lenso ga service-upgrade \
+  --manifest ./lenso.ga-support-manifest.v1.json \
+  --input ./service-upgrade-input.json \
+  --json
+```
+
+Neither command grants production authority. Human approval and the deployment
+adapter's own authority remain separate boundaries.
+
+## Contract retirement
+
+Contract retirement is stale-safe and plan-first:
+
+```sh
+lenso ga contract-retire \
+  --input ./contract-retirement-input.json \
+  --output ./contract-retirement-plan.json \
+  --json
+```
+
+Applying a plan requires the matching approval. Changed consumers, evidence, or
+environment state invalidate the plan instead of retiring a contract against
+new facts.
+
+## What the full gate proves
+
+The published GA acceptance exercises:
+
+- exact public package bytes, receipts, and attestations;
+- the default complete M5 delivery and Kubernetes compatibility path;
+- provider smoke and released-package tutorials;
+- declared API, Worker, network, dependency, and control-plane failure cases;
+- performance, restore, disaster recovery, support, and security evidence;
+- deterministic cleanup with `productionMutated: false` for the acceptance run.
+
+Focused checks are useful while developing, but they do not replace the default
+full GA command.
+
+Continue with [Reliability and Recovery](/docs/reliability-and-recovery) for
+failure evidence or [Support and Security](/docs/support-and-security) for the
+production trust boundary.

@@ -3,41 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "next build",
-    "worker:build": "opennextjs-cloudflare build",
-    "deploy": "pnpm worker:build && opennextjs-cloudflare deploy",
-    "deploy:dry-run": "pnpm worker:build && wrangler deploy --dry-run",
-    "dev": "next dev",
-    "start": "opennextjs-cloudflare preview",
-    "types:check": "next typegen && fumadocs-mdx && tsc --noEmit",
-    "postinstall": "fumadocs-mdx",
-    "lint": "eslint"
+    "build": "blume build",
+    "check": "blume build",
+    "deploy": "pnpm build && wrangler deploy",
+    "deploy:dry-run": "pnpm build && wrangler deploy --dry-run",
+    "dev": "blume dev",
+    "preview": "blume preview",
+    "start": "blume preview"
   },
   "dependencies": {
-    "@opennextjs/cloudflare": "^1.19.11",
-    "@orama/orama": "^3.1.18",
-    "cnfast": "^0.0.8",
-    "fumadocs-core": "16.10.4",
-    "fumadocs-mdx": "15.0.12",
-    "fumadocs-ui": "16.10.4",
-    "gsap": "^3.15.0",
-    "lucide-react": "^1.20.0",
-    "next": "16.2.9",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "blume": "1.1.4"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.1",
-    "@types/mdx": "^2.0.14",
-    "@types/node": "^25.9.3",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "eslint": "^9.39.4",
-    "eslint-config-next": "16.2.9",
-    "postcss": "^8.5.15",
-    "serve": "^14.2.6",
-    "tailwindcss": "^4.3.1",
-    "typescript": "^6.0.3",
     "wrangler": "^4.103.0"
-  }
+  },
+  "packageManager": "pnpm@11.7.0"
 }
