@@ -5,6 +5,7 @@
   "scripts": {
     "build": "blume build",
     "check": "blume build",
+    "worker:build": "blume build",
     "deploy": "pnpm build && wrangler deploy",
     "deploy:dry-run": "pnpm build && wrangler deploy --dry-run",
     "dev": "blume dev",
