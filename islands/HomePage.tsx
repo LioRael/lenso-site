@@ -656,15 +656,57 @@ function ConsoleShowcaseSection() {
         <Image
           alt="Lenso Runtime Console App Lifecycle view showing services, modules, Doctor checks, App Proof, and next actions"
           className="block h-auto w-full"
-          height={900}
+          height={1200}
           loading="lazy"
-          src="/lenso-assets/launch/lenso-console-launchpad.png"
-          width={1440}
+          src="/lenso-assets/console/app-lifecycle.png"
+          width={1920}
         />
       </Link>
       <p className="mt-3 text-sm leading-5 text-[var(--site-muted)]">
         App Lifecycle in Runtime Console — the generated app, its readiness, proof, and next action in one view.
       </p>
+
+      <div className="mt-10 grid grid-cols-2 gap-8 max-[760px]:grid-cols-1" data-scroll-reveal>
+        <div>
+          <Link
+            aria-label="Explore Runtime Stories documentation"
+            className="block overflow-hidden rounded-xl border border-[var(--site-border)] bg-[var(--site-surface)] shadow-[var(--site-shadow-control)] transition-transform duration-300 hover:-translate-y-1"
+            href="/docs/runtime-stories"
+          >
+            <Image
+              alt="Runtime Stories execution graph showing a request fan-out across functions, events, and services"
+              className="block h-auto w-full"
+              height={1200}
+              loading="lazy"
+              src="/lenso-assets/console/runtime-story-graph.png"
+              width={1920}
+            />
+          </Link>
+          <p className="mt-3 text-sm leading-5 text-[var(--site-muted)]">
+            Runtime Stories — follow one business flow across requests, functions, events, and services.
+          </p>
+        </div>
+
+        <div>
+          <Link
+            aria-label="Explore observability documentation"
+            className="block overflow-hidden rounded-xl border border-[var(--site-border)] bg-[var(--site-surface)] shadow-[var(--site-shadow-control)] transition-transform duration-300 hover:-translate-y-1"
+            href="/docs/observability"
+          >
+            <Image
+              alt="Runtime Overview showing queue pressure, recent activity, failures, and dead letters"
+              className="block h-auto w-full"
+              height={1200}
+              loading="lazy"
+              src="/lenso-assets/console/runtime-overview.png"
+              width={1920}
+            />
+          </Link>
+          <p className="mt-3 text-sm leading-5 text-[var(--site-muted)]">
+            Runtime Overview — inspect queue pressure, failures, activity, and operator attention.
+          </p>
+        </div>
+      </div>
     </section>
   );
 }

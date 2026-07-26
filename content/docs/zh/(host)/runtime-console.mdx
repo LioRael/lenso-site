@@ -7,10 +7,22 @@ Runtime Console 是 Lenso Host 的运维界面。Host 启动后，用它确认�
 界面、Action 和运行时工作流已经真正接入。由已发布 CLI 创建的 Host 会在
 `/console` 直接提供打包后的 Console。
 
-![Runtime Console App Lifecycle 页面，展示服务、模块、Doctor 检查、App Proof 和下一步操作](/lenso-assets/launch/lenso-console-launchpad.png)
+![Runtime Console App Lifecycle 页面，展示服务、模块、Doctor 检查、App Proof 和下一步操作](/lenso-assets/console/app-lifecycle.png)
 
 App Lifecycle 把生成后的系统、就绪缺口、证明状态和下一步运维操作放在同一处。
 警告是需要采取行动的证据，不是应当隐藏的 Dashboard 状态。
+
+## 核心界面
+
+![Runtime Stories 执行图，展示一次请求如何分发到多个 Function、Event 和 Service](/lenso-assets/console/runtime-story-graph.png)
+
+Runtime Stories 将业务流程和技术证据关联起来。你可以在 Graph、Timeline、
+Heatmap、Waterfall 和 Flame 视图之间切换，同时保留贯穿整条链路的 Correlation。
+
+![Runtime Overview，展示队列压力、最近活动、失败和死信](/lenso-assets/console/runtime-overview.png)
+
+Runtime Overview 将需要运维人员关注的信息集中到一个工作区，包括队列压力、
+运行中的 Function、失败、死信、最近活动和 Failure Stream。
 
 ## 访问控制
 
