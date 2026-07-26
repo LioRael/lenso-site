@@ -107,23 +107,17 @@ lenso module install https://example.com/lenso/module/v1/manifest --run-install-
 
 ## Catalog is discovery
 
-Add a module to the local discovery catalog:
-
-```sh
-lenso module catalog add dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json \
-  --base-url http://127.0.0.1:4110/lenso/service/v1
-```
-
-This writes `.lenso/module-catalog.json`. It does not install the module.
+Available Modules uses discovery data only. It does not install a module until
+the operator runs an install action.
 
 Runtime Console's Available Modules view reads, in order:
 
-1. local `.lenso/module-catalog.json`
+1. explicit `.env` `LENSO_MODULE_CATALOG_FILE=<path>`
 2. already configured service or remote sources
 3. built-in `builtin:lenso-official-module-catalog`
 
-The built-in catalog is only a fallback discovery source. It is not a hidden
-install database.
+The built-in catalog is the default discovery source for fresh hosts. It is not
+a hidden install database.
 
 ## Runtime Console install flow
 

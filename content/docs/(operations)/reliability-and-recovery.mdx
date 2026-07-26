@@ -1,0 +1,98 @@
+---
+title: Reliability and Recovery
+description: Plan degraded modes, failure scenarios, restore, disaster recovery, and cleanup as versioned evidence.
+---
+
+Reliability in Lenso is declared, evaluated, and recorded. It is not inferred
+from a green dashboard.
+
+## Reliability contracts
+
+An Autonomous Service selects a reusable development, standard, or critical
+profile and may add validated overrides. The effective contract defines limits
+for queues, workflows, dependencies, readiness, liveness, and degraded modes.
+
+The Service evaluates its own local state. Runtime Console displays the report,
+but Console availability does not determine readiness or business completion.
+
+| State | Meaning |
+| --- | --- |
+| `healthy` | Required local limits and dependencies are within contract. |
+| `degraded` | A declared degraded mode is active and its reduced guarantee is explicit. |
+| `unavailable` | The Service cannot provide the contract's minimum safe behavior. |
+
+## Failure scenarios
+
+Failure scenarios are versioned inputs with an expected outcome, observations,
+proofs, effects, and cleanup result. Evaluate one captured input with:
+
+```sh
+lenso ga failure-evaluate \
+  --input ./evidence/api-crash.json \
+  --json
+```
+
+A useful scenario names the business guarantee being tested. “Pod restarted” is
+infrastructure activity; “accepted ticket work is preserved and resumes once”
+is a recovery guarantee.
+
+The GA baseline covers API and Worker crashes, network partitions, dependency
+loss, control-plane outage, and deterministic resume. Each scenario must leave
+`cleanupComplete: true` and must say whether production state changed.
+
+## Backup and restore
+
+Backups belong to the Service Store owner. Evidence should bind:
+
+- Service and Store identity;
+- backup artifact and checksum;
+- source schema and contract revision;
+- observed recovery point and recovery time;
+- restore command or controlled procedure;
+- post-restore business verification;
+- cleanup of disposable restore resources.
+
+A backup is not proven by successful upload. Restore it into an isolated target
+and verify business invariants through the Service's public behavior.
+
+## Disaster recovery
+
+Single-region GA requires a bounded recovery story, not an implied multi-region
+active-active topology. A disaster-recovery proof should show that the Service
+can be reconstructed from reviewed artifacts, configuration references,
+contracts, and Store recovery material.
+
+Keep these concerns separate:
+
+- Service identity remains stable;
+- Workload instances and addresses may change;
+- secrets remain references, not embedded values;
+- the recovered Service revalidates contracts before accepting traffic;
+- the operator records the decision and resulting evidence.
+
+## Durable workflow recovery
+
+Workflow definitions are pinned per instance. After a restart, workers reclaim
+expired leases and continue the same transition identities. Attempts, timers,
+children, compensation state, and completed effects remain durable.
+
+If the deployed worker no longer matches the pinned definition, execution fails
+closed with an explicit next action. Reusing a version string cannot reinterpret
+existing state.
+
+## Control-plane outage
+
+The data plane keeps Service-local health, workflows, Inbox, Outbox, and Story
+segments independent of the System Plane and Runtime Console. During an outage:
+
+1. stop accepting new operator mutations;
+2. preserve Service-local business execution according to its reliability
+   contract;
+3. capture local evidence and explicit gaps;
+4. restore control surfaces;
+5. replay collection idempotently without rewriting Service history.
+
+This separation is why the System Plane stays out of business traffic.
+
+For the trust and support boundary around these procedures, continue with
+[Support and Security](/docs/support-and-security).

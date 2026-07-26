@@ -1,0 +1,125 @@
+---
+title: Autonomous Services
+description: Understand the lenso.service.v2 boundary, Service-owned runtime, durable workflows, identity, and clusterless development.
+---
+
+An Autonomous Service is the point where a business boundary owns its runtime,
+data, release, and operational evidence. It is not the default starting point
+for every module.
+
+Lenso keeps three shapes distinct:
+
+| Shape | Choose it when | Runtime owner |
+| --- | --- | --- |
+| Linked module | The capability belongs to the app and shares its release cadence. | Host |
+| Service-backed module | A separate process provides modules while the host keeps queues, retries, policy, and evidence. | Host |
+| Autonomous Service | The boundary must own Workloads, Store, workflows, outbox, health, identity, and release evidence. | Service |
+
+## The Service contract
+
+`lenso.service.v2` describes one logical Service independently of how many
+processes it runs. A Service can declare:
+
+- API, Worker, Migration, and extension Workloads;
+- the Modules it owns;
+- one or more logical Service Stores;
+- tenancy mode and operating regions;
+- configuration, reliability, API, event, and dependency contracts.
+
+The Service identity stays stable when its Workload count or deployment topology
+changes. A Kubernetes Deployment is an adapter detail, not the business
+identity.
+
+## Service-owned runtime
+
+The `lenso-autonomous-service` runtime validates the complete definition before
+startup, applies Service and Module migrations to the injected Store, runs
+Service-owned queues, and relays its transactional outbox. It does not boot
+through the Host or reinterpret a Provider v1 manifest.
+
+The boundary is intentionally strict:
+
+- business routes and migrations still come from owned Modules;
+- workflow state, timers, attempts, Inbox, and Outbox stay in the Service Store;
+- health and local evidence remain available when the System Plane or Runtime
+  Console is unavailable;
+- deployment orchestration never participates in business request traffic.
+
+## Durable workflows
+
+Modules can declare versioned workflow definitions. Each instance pins the exact
+definition artifact and digest, so an upgrade cannot silently reinterpret work
+that is already running.
+
+Transitions preserve Story, causation, tenant, actor, deadline, and idempotency
+context. Retry timers are durable. Child workflows keep explicit parent links.
+Completed effects can declare compensation requests and completion events; the
+workflow remains `compensating` until the remote reversal is confirmed.
+
+This is not a distributed transaction. Each Service commits its own business
+effect and durable message state locally.
+
+## Identity and evidence
+
+Production callers authenticate as stable `service:<service-id>` principals.
+The first supported production profile uses SPIFFE X.509-SVID mTLS with an
+audience-limited JWT-SVID. The local System Sandbox uses a deterministic
+development-only identity provider.
+
+Each Service exposes an authenticated append-only Story Segment Feed. The feed
+uses an exact audience, tenant authorization, signed opaque cursors, and stable
+segment revisions. Collection is read-only: it cannot acknowledge, advance, or
+unblock workflow execution.
+
+Runtime Console shows the federated story after the Story aggregator collects
+those segments. A delayed or unavailable Console does not change Service-local
+execution.
+
+## Develop without a cluster
+
+Use the System Sandbox for the shortest multi-Service proof:
+
+```sh
+lenso system dev \
+  --system-file lenso.system.json \
+  --sandbox-file lenso.sandbox.json
+```
+
+Validate the exact launch plan without allocating resources:
+
+```sh
+lenso system dev \
+  --system-file lenso.system.json \
+  --sandbox-file lenso.sandbox.json \
+  --dry-run --json
+```
+
+Run one declared failure scenario and let the sandbox clean up only the
+resources it owns:
+
+```sh
+lenso system dev \
+  --system-file lenso.system.json \
+  --sandbox-file lenso.sandbox.json \
+  --scenario api-crash --json
+```
+
+Kubernetes is an optional delivery adapter. It is not required for local
+service development or for the Service contract itself.
+
+## When to move a boundary
+
+Choose autonomy after the boundary has at least one concrete reason to exist:
+
+- independent ownership or release cadence;
+- isolated data authority;
+- a distinct trust boundary;
+- independently operated reliability or scaling;
+- a runtime that cannot reasonably live in the Rust host.
+
+If none applies, keep the capability linked. Explicit seams make a later move
+mechanical without paying the operational cost early.
+
+Continue with [Service System Plane](/docs/service-system-plane) for system
+composition or [Single-Region GA](/docs/single-region-ga) for the supported
+production envelope.

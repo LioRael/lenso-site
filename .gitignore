@@ -4,12 +4,14 @@
 # generated content
 .source
 .open-next
+.blume
 .firecrawl
 .playwright-cli
 
 # test & build
 /coverage
 /.next/
+/dist/
 /out/
 /build
 /output/

@@ -6,7 +6,8 @@ description: Common lenso CLI commands for Launchpad apps, hosts, modules, servi
 The `lenso` CLI is the fastest way to create a Launchpad app, create a host,
 scaffold modules, install module descriptors, manage service providers, describe
 service systems, compose capability packs, refresh hosted Console assets, and
-diagnose service issues.
+diagnose service issues. The published `0.2.13` line also exposes the bounded M6
+GA support surface.
 
 ## Install
 
@@ -106,6 +107,20 @@ or run providers by itself. Use `lenso module install` for module capabilities
 and `lenso service install` or `lenso service dev` for provider lifecycle.
 The capability library is local discovery metadata; it is not a remote registry
 or trust boundary.
+
+## GA commands
+
+| Command | Use it for |
+| --- | --- |
+| `lenso ga support-check --manifest <file> --component <id@version> --state-version <n>` | Check an exact proposed component set against the reviewed support manifest. |
+| `lenso ga manifest-migrate --manifest <file> --source <file> --target-format <protocol> --dry-run` | Preview an identity-preserving Service or System manifest migration. |
+| `lenso ga service-upgrade --manifest <file> --input <file>` | Produce a migration-first multi-Workload Service upgrade plan. |
+| `lenso ga contract-retire --input <file> --output <file>` | Build a stale-safe Contract Retirement plan before approval. |
+| `lenso ga failure-evaluate --input <file>` | Evaluate one versioned Failure Scenario evidence input. |
+
+These commands evaluate and plan. They do not infer deployment or production
+authority from repository access. See [Single-Region GA](/docs/single-region-ga)
+for the supported component baseline and complete evidence gate.
 
 ## Host commands
 
@@ -305,16 +320,11 @@ a host-started service did not become ready.
 
 ## Catalogs
 
-Local catalogs are discovery aids. They do not replace explicit operator
-approval.
-
-```sh
-lenso module catalog add dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json \
-  --base-url http://127.0.0.1:4110/lenso/service/v1
-```
-
-The command writes `.lenso/module-catalog.json` by default. Add `--dry-run` when
-you want to inspect the generated catalog entry first.
+Available Modules reads the built-in official catalog by default. For local
+discovery experiments, set `.env` `LENSO_MODULE_CATALOG_FILE=<path>` to point at
+a catalog JSON file. Catalog entries remain discovery data; `lenso module
+install <manifest-or-release>` is still the boundary that writes host-local
+state.
 
 ## Marketplace compatibility
 
