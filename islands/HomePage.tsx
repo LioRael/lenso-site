@@ -6,31 +6,32 @@ import { ThemeSwitcher } from '../components/home/ThemeSwitcher';
 
 const heroDemoFrames = [
   {
-    command: 'lenso host init support-desk',
+    command: 'lenso app compose ./acme-support --blueprint support-desk --apply',
     items: [
-      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'host/', trail: true },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'host.toml' },
-      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: 'modules/' },
-      { depth: 2, icon: '/lenso-assets/tree-file.svg', label: 'auth.toml' },
+      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'acme-support/', trail: true },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'lenso.system.json' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'lenso.workspace.json' },
+      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: '.lenso/' },
+      { depth: 2, icon: '/lenso-assets/tree-file.svg', label: 'launchpad.json' },
     ],
   },
   {
-    command: 'lenso module create support-ticket',
+    command: 'lenso app compose --pack support-sla --apply',
     items: [
-      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'modules/', trail: true },
-      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: 'support-ticket/' },
-      { depth: 2, icon: '/lenso-assets/tree-file.svg', label: 'manifest.toml' },
-      { depth: 2, icon: '/lenso-assets/tree-ts.svg', label: 'console.tsx' },
-      { depth: 2, icon: '/lenso-assets/tree-file.svg', label: 'routes.rs' },
+      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'capabilities/', trail: true },
+      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: 'support-sla/' },
+      { depth: 2, icon: '/lenso-assets/tree-file.svg', label: 'lenso.capability.json' },
+      { depth: 2, icon: '/lenso-assets/tree-folder.svg', label: 'modules/' },
+      { depth: 2, icon: '/lenso-assets/tree-folder.svg', label: 'services/' },
     ],
   },
   {
-    command: 'open /console',
+    command: 'lenso app verify --write-proof',
     items: [
-      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'console/', trail: true },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'modules.json' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'runtime-stories.json' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'smoke-evidence.json' },
+      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: '.lenso/', trail: true },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'app-proof.json' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'dev-doctor.json' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'app-change-plan.json' },
     ],
   },
 ];
@@ -38,255 +39,191 @@ const heroDemoFrames = [
 const lifecycleSteps = [
   {
     index: '1',
-    title: 'Keep Axum for HTTP',
-    tag: 'host.toml',
-    text: 'Start from one deployable Rust app that still uses Axum for routes, extractors, and middleware.',
+    title: 'Compose from a product blueprint',
+    tag: 'blueprint',
+    text: 'Start from a real product shape with a host, services, modules, local processes, and Launchpad state already connected.',
+    links: [{ label: 'Product Blueprints', icon: '/lenso-assets/lifecycle-starter-host-a.svg' }],
   },
   {
     index: '2',
-    title: 'Add business modules',
-    tag: 'module.toml',
-    text: 'Each module declares routes, data, actions, runtime functions, dependencies, and optional console surfaces before the host loads it.',
-    links: [{ label: 'Starter Host', icon: '/lenso-assets/lifecycle-starter-host-a.svg' }],
+    title: 'Extend with explicit capabilities',
+    tag: 'compose',
+    text: 'Add modules, services, addons, or team-owned capability packs through a reviewable App Change Plan.',
+    links: [{ label: 'Capability Packs', icon: '/lenso-assets/lifecycle-chat-sdk.svg' }],
   },
   {
     index: '3',
-    title: 'Keep auth host-owned',
-    tag: 'auth/',
-    text: 'First-party auth anchors identity in the host while password, device, or future providers stay modular.',
+    title: 'Verify the generated system',
+    tag: 'app proof',
+    text: 'Doctor, App Proof, contracts, checks, and Runtime Console turn generated state into evidence humans and agents can review.',
+    links: [{ label: 'Runtime Console', icon: '/lenso-assets/lifecycle-runtime-console-a.svg' }],
   },
   {
     index: '4',
-    title: 'Run the real system',
-    tag: 'serve',
-    text: 'Local development uses the same generated host shape that release checks and examples exercise.',
-  },
-  {
-    index: '5',
-    title: 'Move boundaries later',
-    tag: 'remote/',
-    text: 'When a boundary hardens, move the module out of process while the host still owns loading, proxying, and receipts.',
-    links: [{ label: 'Starter Host', icon: '/lenso-assets/lifecycle-starter-host-b.svg' }],
-  },
-  {
-    index: '6',
-    title: 'Inspect Runtime Console',
-    tag: 'console/',
-    text: 'Operators see module health, admin data, runtime stories, manifest lints, and install state from the running host.',
-    links: [
-      { label: 'Runtime Console', icon: '/lenso-assets/lifecycle-runtime-console-a.svg' },
-      { label: 'Admin APIs', icon: '/lenso-assets/lifecycle-chat-sdk.svg' },
-    ],
-  },
-  {
-    index: '7',
-    title: 'Give agents rails',
-    tag: 'skills/',
-    text: 'Public skills, scaffolds, and contracts let coding agents build modules without guessing the project shape.',
-    links: [{ label: 'Runtime Console', icon: '/lenso-assets/lifecycle-runtime-console-b.svg' }],
-  },
-  {
-    index: '8',
-    title: 'Capture proof',
-    tag: 'checks/',
-    text: 'Smoke checks, generated contracts, and console evidence stay reviewable beside the code they validate.',
-  },
-  {
-    index: '9',
-    title: 'Ship when facts agree',
-    tag: 'release/',
-    text: 'Release readiness ties the crate, CLI starter, Runtime Console bundle, and runnable examples back to the same contract surface.',
-    links: [{ label: 'Release Checks', icon: '/lenso-assets/lifecycle-release-checks.svg' }],
+    title: 'Evolve stable boundaries into services',
+    tag: 'service system',
+    text: 'Keep one deployable app while boundaries are changing, then move selected capabilities into independently delivered services.',
+    links: [{ label: 'Service System', icon: '/lenso-assets/lifecycle-starter-host-b.svg' }],
   },
 ];
 
 const lifecyclePanels = [
   {
-    folder: 'host/',
-    file: 'host.toml',
-    lines: ['[host]', 'name = "ops-host"', 'console = "bundled"', 'modules = ["auth"]'],
+    folder: '.lenso/',
+    file: 'launchpad.json',
+    lines: ['{', '"blueprint": "support-desk"', '"services": ["api", "notifications"]', '"nextCommand": "lenso dev up"'],
   },
   {
-    folder: 'modules/',
-    file: 'module.toml',
-    lines: ['[module]', 'name = "support-ticket"', 'routes = ["tickets"]', 'actions = ["assign"]'],
+    folder: 'capabilities/support-sla/',
+    file: 'lenso.capability.json',
+    lines: ['{', '"name": "support-sla"', '"modules": ["sla-policy"]', '"services": ["notifications"]'],
   },
   {
-    folder: 'auth/',
-    file: 'auth.toml',
-    lines: ['[auth]', 'owner = "host"', 'sessions = "redis"', 'providers = ["password"]'],
+    folder: '.lenso/',
+    file: 'app-proof.json',
+    lines: ['{', '"status": "verified"', '"generatedState": "current"', '"doctor": "passing"'],
   },
   {
-    folder: 'ops-host/',
-    file: 'serve.log',
-    lines: ['$ lenso serve', 'api = "ready"', 'worker = "ready"', 'console = "/console"'],
-  },
-  {
-    folder: 'remote/',
-    file: 'manifest.json',
-    lines: ['{', '"name": "account-profile"', '"transport": "grpc"', '"hostOwned": true'],
-  },
-  {
-    folder: 'console/',
-    file: 'modules.json',
-    lines: ['auth: ready', 'support-ticket: review', 'admin-data: visible', 'stories: recording'],
-  },
-  {
-    folder: 'skills/',
-    file: 'SKILL.md',
-    lines: ['# Module authoring', 'read manifest first', 'generate smoke proof', 'verify in console'],
-  },
-  {
-    folder: 'checks/',
-    file: 'evidence.json',
-    lines: ['manifest_lints: pass', 'host_smoke: pass', 'console_bundle: served', 'contracts: current'],
-  },
-  {
-    folder: 'release/',
-    file: 'readiness.md',
-    lines: ['crate facade current', 'cli starter verified', 'console bundle attached', 'examples smoke green'],
+    folder: './',
+    file: 'lenso.system.json',
+    lines: ['{', '"services": ["host", "notifications"]', '"modules": ["tickets", "sla-policy"]', '"contracts": "explicit"'],
   },
 ];
 
 const runtimeCards = [
   {
-    title: 'Generated host',
-    text: 'API, worker, migrations, Postgres, and hosted Console in one Rust app.',
+    title: 'Generated app',
+    text: 'A runnable host, service workspace, system graph, and Launchpad state from one product blueprint.',
     icon: '/lenso-assets/runtime-release-checks.png',
   },
   {
     title: 'Module manifest',
-    text: 'Routes, data, actions, lifecycle, and console surfaces.',
+    text: 'Explicit routes, data, actions, lifecycle, dependencies, and console surfaces.',
     icon: '/lenso-assets/runtime-starter-models.svg',
   },
   {
-    title: 'Remote module kit',
-    text: 'Move a module out of process without losing host receipts.',
+    title: 'Capability packs',
+    text: 'Reusable product slices that can carry modules, services, docs, and agent context.',
     icon: '/lenso-assets/runtime-starter-manifest.svg',
   },
   {
     title: 'Runtime Console',
-    text: 'Inspect modules, runtime stories, admin data, and install state.',
+    text: 'Inspect App Lifecycle, modules, service state, runtime stories, and operational evidence.',
     icon: '/lenso-assets/runtime-console-card.svg',
   },
   {
-    title: 'Skills and checks',
-    text: 'Agent rails for scaffolding, smoke proof, and release review.',
+    title: 'Agent rails',
+    text: 'Bounded planning, generation, checks, proof, and concrete next actions.',
     icon: '/lenso-assets/runtime-proof-skills.svg',
   },
 ];
 
 const runtimeChannels = [
-  'Host API',
-  'Worker',
-  'Migrations',
-  'Postgres',
+  'App Lifecycle',
+  'System Graph',
+  'Service Workspace',
+  'App Proof',
   'Runtime Console',
-  'Module Catalog',
-  'Admin Data',
+  'Capability Packs',
+  'Module Manifests',
   'Runtime Stories',
-  'Remote Kit',
-  'Lenso Skills',
+  'Service Contracts',
+  'Agent Tasks',
 ];
 
 const channelRows = [
   [
-    { label: 'Host API', icon: '/lenso-assets/brand-api.svg', iconWidth: 23 },
+    { label: 'Product Blueprints', icon: '/lenso-assets/brand-api.svg', iconWidth: 23 },
     { label: 'Runtime Console', icon: '/lenso-assets/runtime-console-card.svg' },
-    { label: 'Module Catalog', icon: '/lenso-assets/feature-contract.svg' },
-    { label: 'Admin Data', icon: '/lenso-assets/feature-evidence.svg' },
+    { label: 'App Proof', icon: '/lenso-assets/feature-contract.svg' },
+    { label: 'Launchpad', icon: '/lenso-assets/feature-evidence.svg' },
   ],
   [
-    { label: 'Remote Kit', icon: '/lenso-assets/runtime-starter-manifest.svg' },
-    { label: 'Worker', icon: '/lenso-assets/lifecycle-release-checks.svg' },
-    { label: 'Postgres', icon: '/lenso-assets/feature-proof.svg' },
+    { label: 'Capability Packs', icon: '/lenso-assets/runtime-starter-manifest.svg' },
+    { label: 'Service System', icon: '/lenso-assets/lifecycle-release-checks.svg' },
+    { label: 'Module Contracts', icon: '/lenso-assets/feature-proof.svg' },
   ],
   [
-    { label: 'Smoke Checks', icon: '/lenso-assets/lifecycle-release-checks.svg' },
-    { label: 'Manifest Lints', icon: '/lenso-assets/feature-contract.svg' },
-    { label: 'Examples', icon: '/lenso-assets/lifecycle-starter-host-a.svg' },
-    { label: 'Skills', icon: '/lenso-assets/runtime-proof-skills.svg' },
-    { label: 'Release', icon: '/lenso-assets/runtime-release-checks.png' },
+    { label: 'Doctor', icon: '/lenso-assets/lifecycle-release-checks.svg' },
+    { label: 'Change Plans', icon: '/lenso-assets/feature-contract.svg' },
+    { label: 'Runtime Stories', icon: '/lenso-assets/lifecycle-starter-host-a.svg' },
+    { label: 'Agent Skills', icon: '/lenso-assets/runtime-proof-skills.svg' },
+    { label: 'Delivery', icon: '/lenso-assets/runtime-release-checks.png' },
   ],
 ];
 
 const proofRows = [
-  ['manifest_lints', -0.1875, 9],
-  ['host_smoke', 5.75, 8],
-  ['remote_proxy', 68.765625, 35],
-  ['console_bundle', 224.328125, 8],
-  ['release_check', 218.7109375, 63],
+  ['app_plan', -0.1875, 9],
+  ['doctor', 5.75, 8],
+  ['contract_check', 68.765625, 35],
+  ['app_proof', 224.328125, 8],
+  ['delivery_gate', 218.7109375, 63],
 ] as const;
 
 const proofAxisWidth = 287.609375;
 
 const agentRows = [
-  ['host: ops-host', 'Ready', 'host'],
-  ['module: auth', 'Ready', 'linked'],
-  ['module: support-ticket', 'Review', 'local'],
-  ['remote: account-profile', 'Ready', 'grpc'],
-  ['manifest lints', 'Verified', 'check'],
-  ['console bundle', 'Verified', 'asset'],
-  ['host smoke', 'Running', 'smoke'],
-  ['release check', 'Queued', 'gate'],
-  ['contract drift', 'Clear', 'arch'],
-  ['module catalog', 'Ready', 'json'],
+  ['blueprint: support-desk', 'Ready', 'app'],
+  ['capability: support-sla', 'Ready', 'pack'],
+  ['change plan', 'Review', 'plan'],
+  ['module contracts', 'Verified', 'check'],
+  ['doctor state', 'Verified', 'proof'],
+  ['app proof', 'Verified', 'json'],
+  ['runtime stories', 'Running', 'live'],
+  ['service delivery', 'Queued', 'gate'],
+  ['generated drift', 'Clear', 'diff'],
+  ['next action', 'Ready', 'agent'],
 ];
 
 const featureCards = [
   {
-    title: 'Module contracts',
-    text: 'Every route, action, data source, lifecycle hook, and console contribution has a named manifest home.',
+    title: 'Product blueprints',
+    text: 'Begin with a working business-system shape instead of an empty host and a list of infrastructure choices.',
     icon: '/lenso-assets/feature-contract.svg',
   },
   {
-    title: 'Evidence table',
-    text: 'Proof rows capture manifest lint results, generated-host smokes, release checks, and console delivery state.',
+    title: 'Explicit contracts',
+    text: 'Routes, actions, data, events, service dependencies, and operator surfaces stay named and inspectable.',
     icon: '/lenso-assets/feature-evidence.svg',
   },
   {
-    title: 'Service-ready modules',
-    text: 'Start in one deployable host, then move selected modules across process boundaries when the contract is stable.',
+    title: 'Verification loop',
+    text: 'Plans, Doctor, App Proof, contract checks, and Runtime Console make generated changes reviewable.',
     icon: '/lenso-assets/feature-channel.svg',
   },
   {
-    title: 'Human review',
-    text: 'Generated edits stay inspectable through manifests, code diffs, Runtime Console state, and smoke-check evidence.',
+    title: 'Capability packs',
+    text: 'Carry reusable business slices across modules, services, documentation, and bounded agent handoffs.',
     icon: '/lenso-assets/feature-human.svg',
   },
   {
     title: 'Runtime Console',
-    text: 'The host-served operator UI shows module health, data surfaces, runtime stories, and install status.',
+    text: 'See App Lifecycle, installed modules, service state, runtime stories, data surfaces, and delivery evidence.',
     icon: '/lenso-assets/feature-console.svg',
   },
   {
-    title: 'Agent rails',
-    text: 'Public skills, scaffolds, generated contracts, and checks give coding agents a repeatable module path.',
+    title: 'Service-ready evolution',
+    text: 'Build modular first, then move stable boundaries into independently delivered services without rewriting the product model.',
     icon: '/lenso-assets/feature-proof.svg',
   },
 ];
 
-const footerColumns: Array<[string, string[]]> = [
-  ['Lenso Stack', ['Framework', 'Starter Host', 'Modules', 'Remote Modules', 'Runtime Console', 'CLI']],
-  ['Build', ['Host Quickstart', 'Module Authoring', 'Remote Kit', 'Support Ticket Demo']],
-  ['Operate', ['Runtime Stories', 'Admin Data', 'Manifest Lints', 'Release Checks']],
-  ['Architecture', ['Modular Monolith', 'Service-Ready Path', 'Contracts', 'Outbox']],
-  ['Packages', ['lenso crate', 'lenso-cli', 'remote-module-kit', 'auth modules']],
-  ['Examples', ['Support Ticket', 'Account Profile', 'Hello Action', 'gRPC Notes']],
-  ['Skills', ['lenso-start', 'starter-host', 'module-authoring', 'remote-module-authoring']],
-  ['Repositories', ['lenso', 'lenso-cli', 'runtime-console', 'lenso-examples']],
-  ['Docs', ['Overview', 'Quickstart', 'Architecture', 'Runtime Console', 'Examples']],
-  ['Community', ['GitHub', 'Issues', 'Discussions', 'Examples']],
-  ['Trust', ['Host Ownership', 'Contract Checks', 'Manifest Lints', 'Console Boundaries']],
-  ['Social', ['GitHub']],
+const footerColumns: Array<[string, Array<[string, string]>]> = [
+  ['Start', [['Overview', '/docs'], ['Quickstart', '/docs/quickstart'], ['Product Blueprints', '/docs/product-blueprints'], ['CLI Reference', '/docs/cli-reference']]],
+  ['Build', [['Host Composition', '/docs/host-composition'], ['Module Authoring', '/docs/module-authoring'], ['Module Installation', '/docs/module-installation'], ['Console Packages', '/docs/console-packages']]],
+  ['Extend', [['Capability Surfaces', '/docs/admin-surfaces'], ['Remote Modules', '/docs/remote-modules'], ['Remote Protocol', '/docs/remote-protocol'], ['Auth Capabilities', '/docs/auth-capabilities']]],
+  ['Operate', [['Runtime Console', '/docs/runtime-console'], ['Reliability', '/docs/reliability-and-recovery'], ['Observability', '/docs/observability'], ['Deployment', '/docs/deployment']]],
+  ['Concepts', [['Platform Concepts', '/docs/platform-concepts'], ['Runtime Stories', '/docs/runtime-stories'], ['Service System', '/docs/service-system-plane'], ['Autonomous Services', '/docs/autonomous-services']]],
+  ['Agents', [['Agent Development', '/docs/agent-development'], ['Contracts and Checks', '/docs/contracts-and-checks'], ['Checks and Release', '/docs/checks-and-release'], ['API Clients', '/docs/api-clients']]],
+  ['Reference', [['Manifest Reference', '/docs/manifest-reference'], ['Architecture', '/docs/architecture'], ['API Reference', '/docs/api'], ['Troubleshooting', '/docs/troubleshooting']]],
+  ['Modules', [['Built-in Modules', '/docs/built-in-modules'], ['Module Catalogs', '/docs/module-catalogs'], ['Admin Surfaces', '/docs/admin-surfaces'], ['Runtime Lifecycle', '/docs/runtime-lifecycle']]],
+  ['Community', [['GitHub', 'https://github.com/LioRael/lenso'], ['Issues', 'https://github.com/LioRael/lenso/issues'], ['Discussions', 'https://github.com/LioRael/lenso/discussions'], ['Examples', 'https://github.com/LioRael/lenso-examples']]],
 ];
 
 const newLabels = new Set([
-  'Support Ticket Demo',
-  'remote-module-kit',
-  'Module Catalog',
-  'lenso-start',
-  'Runtime Console',
+  'Product Blueprints',
+  'Autonomous Services',
+  'Agent Development',
 ]);
 
 const borderMaskClass =
@@ -342,16 +279,16 @@ function Hero() {
         </div>
 
         <h1 className="ml-6 mt-6 max-w-[620px] text-[72px] font-normal leading-[72px] text-[var(--site-ink)] max-[900px]:ml-0 max-[900px]:mt-10 max-[900px]:max-w-none max-[900px]:text-[64px] max-[900px]:leading-[64px] max-[560px]:mt-2 max-[560px]:text-[40px] max-[560px]:leading-[48px]">
-          Beyond Axum
+          Agent-ready Rust
           <br />
-          routes
+          business systems
         </h1>
 
         <HeroCommandTabs />
 
         <p className="ml-6 mt-6 max-w-[601px] text-lg leading-7 text-[var(--site-muted)] max-[1199px]:max-w-[559px] max-[900px]:ml-0 max-[900px]:!max-w-none max-[560px]:text-base max-[560px]:leading-7">
-          Star Lenso when your Rust app needs modules, admin APIs, Runtime
-          Console evidence, contracts, and checks around Axum.
+          Lenso is the modular app framework for composing real product shapes,
+          verifying every change, and evolving stable boundaries into services.
         </p>
 
         <div
@@ -491,8 +428,8 @@ function LifecycleSection() {
     <section className="mx-auto max-w-[1392px] py-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none">
       <div data-lifecycle>
         <SectionIntro
-          copy="Axum gives you HTTP. Lenso keeps that, then adds the parts every serious Rust business app ends up rebuilding: modules, admin surfaces, runtime evidence, generated contracts, and checks."
-          title="Why not Axum plus yourself?"
+          copy="Start with a product blueprint, add reusable business capabilities, verify the generated system, and split services only when their boundaries are ready."
+          title="From product blueprint to running system"
         />
 
         <div className="mt-11 grid grid-cols-[566px_684px] justify-between gap-12 max-[1100px]:grid-cols-[minmax(0,1fr)_minmax(0,520px)] max-[900px]:grid-cols-1">
@@ -561,8 +498,8 @@ function RuntimePrimitiveSection() {
   return (
     <section className="mx-auto min-h-[588px] max-w-[1392px] pt-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:min-h-[664px] max-[900px]:min-h-[1132px] max-[560px]:!min-h-0 max-[560px]:pt-16">
       <SectionIntro
-        copy="Generated hosts, module manifests, admin APIs, Runtime Console, and public skills all read from the same declarations."
-        title="One contract surface across host, module, and agent"
+        copy="App Composer, module manifests, service contracts, Runtime Console, and agent workflows all read from the same explicit system model."
+        title="One system model across app, module, service, and agent"
       />
 
       <div className="mt-[72px] max-[560px]:mt-10" data-scroll-reveal>
@@ -579,7 +516,7 @@ function RuntimePrimitiveSection() {
               Runtime
             </p>
             <p className="mt-1 text-sm leading-5 text-[var(--site-muted)]">
-              The generated app shape users actually run.
+              The generated product shape teams actually run.
             </p>
             <div className="mt-4 grid gap-4">
               <RuntimeCard large card={runtimeCards[0]} />
@@ -601,10 +538,10 @@ function RuntimePrimitiveSection() {
 
           <div className="relative min-h-[268px] rounded-xl border border-transparent p-5">
             <p className="font-mono text-sm font-medium uppercase leading-5 text-[var(--site-ink)]">
-              Surface
+              Evidence
             </p>
             <p className="mt-1 text-sm leading-5 text-[var(--site-muted)]">
-              Where the same facts become reviewable.
+              Where the same facts become reviewable and actionable.
             </p>
             <div className="relative mt-4 min-h-[190px] flex-1 overflow-hidden rounded-lg bg-[var(--site-surface)] p-4 shadow-[var(--site-shadow-control)]">
               <div
@@ -624,7 +561,7 @@ function RuntimePrimitiveSection() {
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium leading-5 text-[var(--site-ink)]">
-                    Chat SDK
+                    App Lifecycle
                   </p>
                   <div className="mt-2 grid grid-cols-2 gap-y-0 text-sm leading-[22px] text-[var(--site-ink)]">
                     {runtimeChannels.map((channel) => (
@@ -680,8 +617,8 @@ function SystemsSection() {
   return (
     <section className="mx-auto min-h-[965px] max-w-[1392px] pb-[120px] pt-[168px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:min-h-[1103px] max-[900px]:min-h-[2359px] max-[560px]:!min-h-0 max-[560px]:pb-16 max-[560px]:pt-24">
       <SectionIntro
-        copy="Lenso keeps module ownership, generated contracts, and operator visibility close enough for agents to help without hiding the system."
-        title="Built for business systems that need proof"
+        copy="Lenso gives humans and coding agents bounded plans, explicit contracts, recoverable changes, and evidence instead of hidden framework magic."
+        title="Built to make change reviewable"
         titleWidth="w-[560px]"
       />
 
@@ -828,13 +765,13 @@ function CtaSection() {
         data-scroll-reveal
       >
         <h2 className="max-w-[540px] text-[40px] font-normal leading-[48px] text-[var(--site-ink)] max-[560px]:text-[32px] max-[560px]:leading-[38px]">
-          Build a verified module, then let the app grow.
+          Compose a real product app, then grow it safely.
         </h2>
         <Link
           className="mt-1 inline-flex h-12 w-[121px] items-center justify-center rounded-full bg-[var(--site-ink)] px-3 text-base font-medium leading-6 text-[var(--site-inverse)]"
           href="/docs/quickstart"
         >
-          Get started
+          Start building
         </Link>
       </div>
     </section>
@@ -854,11 +791,11 @@ function Footer() {
               {heading}
             </h2>
             <ul className="mt-3.5 text-sm leading-5 text-[var(--site-subtle)]">
-              {items.map((item, index) => (
-                <li className="h-7" key={`${heading}-${item}-${index}`}>
-                  <Link className="-ml-0.5 inline-flex h-6 items-center gap-1.5 px-0.5 hover:text-[var(--site-ink)]" href="/docs">
-                    {item}
-                    {newLabels.has(item) ? (
+              {items.map(([label, href], index) => (
+                <li className="h-7" key={`${heading}-${label}-${index}`}>
+                  <Link className="-ml-0.5 inline-flex h-6 items-center gap-1.5 px-0.5 hover:text-[var(--site-ink)]" href={href}>
+                    {label}
+                    {newLabels.has(label) ? (
                       <span className="rounded-full bg-[var(--site-surface-muted)] px-1 py-0.5 font-mono text-[8px] leading-4 text-[var(--site-subtle)]">
                         New
                       </span>
@@ -875,9 +812,9 @@ function Footer() {
       </nav>
 
       <div className="flex h-[66px] items-end justify-between pb-1 text-sm leading-5 text-[var(--site-muted)]">
-        <Link className="-ml-5 inline-flex h-[34px] items-center gap-2 px-5 font-mono text-[11px] font-semibold uppercase tracking-normal text-[var(--site-subtle)]" href="/">
+        <Link className="-ml-5 inline-flex h-[34px] items-center gap-2 px-5 font-mono text-[11px] font-semibold uppercase tracking-normal text-[var(--site-subtle)]" href="https://github.com/LioRael/lenso">
           <span className="h-2 w-2 rounded-full bg-[var(--site-subtle)]" />
-          Loading status…
+          Open source · Built in public
         </Link>
         <ThemeSwitcher />
       </div>
