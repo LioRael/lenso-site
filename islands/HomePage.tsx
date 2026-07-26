@@ -613,6 +613,62 @@ function RuntimeCard({
   );
 }
 
+function ConsoleShowcaseSection() {
+  return (
+    <section className="mx-auto max-w-[1392px] pb-[120px] pt-[152px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[560px]:pb-16 max-[560px]:pt-24">
+      <div
+        className="grid min-h-24 grid-cols-[minmax(0,560px)_minmax(0,566px)] justify-between gap-12 max-[900px]:grid-cols-1"
+        data-scroll-reveal
+      >
+        <h2 className="w-[560px] max-w-full text-[40px] font-normal leading-[48px] text-[var(--site-ink)] max-[560px]:text-[32px] max-[560px]:leading-[38px]">
+          Runtime Console turns system state into evidence
+        </h2>
+        <p className="max-w-[566px] text-lg leading-7 text-[var(--site-muted)]">
+          Inspect what the host actually loaded, catch readiness gaps, review App Proof, and copy
+          the next concrete command from one operator workspace.
+        </p>
+      </div>
+
+      <div
+        className="mt-10 grid grid-cols-3 gap-8 text-sm leading-5 text-[var(--site-muted)] max-[640px]:grid-cols-1 max-[640px]:gap-5"
+        data-scroll-reveal
+      >
+        <p>
+          <span className="block font-medium text-[var(--site-ink)]">See the whole app</span>
+          Services, modules, addons, and capability packs.
+        </p>
+        <p>
+          <span className="block font-medium text-[var(--site-ink)]">Find the gap</span>
+          Doctor, drift, blocked plans, and missing proof.
+        </p>
+        <p>
+          <span className="block font-medium text-[var(--site-ink)]">Take the next step</span>
+          Commands and evidence that humans and agents can review.
+        </p>
+      </div>
+
+      <Link
+        aria-label="Explore the Runtime Console documentation"
+        className="mt-12 block overflow-hidden rounded-xl border border-[var(--site-border)] bg-[var(--site-surface)] shadow-[var(--site-shadow-control)] transition-transform duration-300 hover:-translate-y-1 max-[560px]:mt-8"
+        data-scroll-reveal
+        href="/docs/runtime-console"
+      >
+        <Image
+          alt="Lenso Runtime Console App Lifecycle view showing services, modules, Doctor checks, App Proof, and next actions"
+          className="block h-auto w-full"
+          height={900}
+          loading="lazy"
+          src="/lenso-assets/launch/lenso-console-launchpad.png"
+          width={1440}
+        />
+      </Link>
+      <p className="mt-3 text-sm leading-5 text-[var(--site-muted)]">
+        App Lifecycle in Runtime Console — the generated app, its readiness, proof, and next action in one view.
+      </p>
+    </section>
+  );
+}
+
 function SystemsSection() {
   return (
     <section className="mx-auto min-h-[965px] max-w-[1392px] pb-[120px] pt-[168px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:min-h-[1103px] max-[900px]:min-h-[2359px] max-[560px]:!min-h-0 max-[560px]:pb-16 max-[560px]:pt-24">
@@ -830,6 +886,7 @@ export default function HomePage() {
         <Hero />
         <LifecycleSection />
         <RuntimePrimitiveSection />
+        <ConsoleShowcaseSection />
         <SystemsSection />
         <CtaSection />
         <Footer />
