@@ -18,6 +18,16 @@ export default defineConfig({
     branch: "main",
   },
   lastModified: true,
+  i18n: {
+    defaultLocale: "en",
+    fallbackLocale: "en",
+    hideDefaultLocalePrefix: true,
+    parser: "dir",
+    locales: [
+      { code: "en", label: "English" },
+      { code: "zh", label: "简体中文" },
+    ],
+  },
   theme: {
     accent: "blue",
     radius: "sm",

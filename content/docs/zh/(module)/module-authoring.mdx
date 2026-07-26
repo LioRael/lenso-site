@@ -1,0 +1,178 @@
+---
+title: 模块开发
+description: 使用明确的 Manifest、合约和检查开发 Lenso 模块。
+---
+
+当你要向现有 Lenso Host 添加业务能力时，使用这条路径。第一个模块应该保持
+足够小：一个数据界面、一个 Action 或 Route、一个运行时函数，以及一个能够
+证明模块已经正确接入的 Smoke Check。
+
+## Rust facade
+
+Rust 模块声明使用公开的 facade crate：
+
+```sh
+cargo add lenso@0.3.33
+```
+
+该 crate 主要提供可序列化的声明与 Manifest lint：
+
+- Schema Admin 声明
+- Runtime Function 声明
+- Event Handler 声明
+- HTTP Route 声明
+- Runtime Console 界面声明
+
+## 最小 Manifest
+
+下面的示例声明一个能力集合、一个数据界面、一条 HTTP Route 和一个运行时函数：
+
+```rust
+use lenso::{
+    AdminSchema, EntitySchema, FieldSchema, FieldType, ModuleHttpMethod,
+    ModuleHttpRoute, ModuleManifest, ModuleSource, RuntimeFunctionDeclaration,
+    RuntimeSurface, ModuleManifestLintSeverity, lint_module_manifest,
+};
+
+pub fn manifest() -> ModuleManifest {
+    ModuleManifest::builder("billing")
+        .capabilities(vec![
+            "billing.invoices.read".to_owned(),
+            "billing.invoices.write".to_owned(),
+        ])
+        .admin(AdminSchema {
+            entities: vec![EntitySchema {
+                name: "invoices".to_owned(),
+                label: "Invoices".to_owned(),
+                read_capability: "billing.invoices.read".to_owned(),
+                fields: vec![
+                    FieldSchema {
+                        name: "id".to_owned(),
+                        label: "ID".to_owned(),
+                        field_type: FieldType::String,
+                        nullable: false,
+                    },
+                    FieldSchema {
+                        name: "total_cents".to_owned(),
+                        label: "Total".to_owned(),
+                        field_type: FieldType::Integer,
+                        nullable: false,
+                    },
+                ],
+            }],
+        })
+        .http_routes(vec![ModuleHttpRoute {
+            method: ModuleHttpMethod::Post,
+            path: "/v1/billing/invoices".to_owned(),
+            capability: Some("billing.invoices.write".to_owned()),
+            display_name: Some("Create Invoice".to_owned()),
+            story_title: Some("Invoice Created".to_owned()),
+        }])
+        .runtime(RuntimeSurface {
+            functions: vec![RuntimeFunctionDeclaration {
+                name: "billing.invoice.send.v1".to_owned(),
+                version: 1,
+                queue: "billing".to_owned(),
+                input_schema: Some("billing.invoice.send.v1".to_owned()),
+                retry_policy: None,
+            }],
+            schedules: vec![],
+        })
+        .build()
+}
+
+#[test]
+fn manifest_lints_cleanly() {
+    let lints = lint_module_manifest(ModuleSource::Linked, &manifest());
+    assert!(
+        lints
+            .iter()
+            .all(|lint| lint.severity != ModuleManifestLintSeverity::Error)
+    );
+}
+```
+
+Manifest 告诉 Host 哪些能力应当出现在 Runtime Console 中，但它不会替代
+实际的 Route Handler、SQL 或 Runtime Function 实现。
+
+## 创建模块
+
+```sh
+lenso module create billing
+```
+
+只有模块确实需要自己的运维页面时才加入 Console Package：
+
+```sh
+lenso module create billing --with-console
+```
+
+一般的数据、Action 和运行时证据已经会出现在 Host 自带的 Runtime Console 中。
+
+## 接入 Linked Route
+
+生成的 Host 通过 `LinkedBinding` 接入模块 HTTP Route：
+
+```rust
+use lenso::host::http::{
+    ApiOpenApiRouter, Json, LinkedBinding, LinkedHttpContribution, OpenApiRouter,
+    routes,
+};
+use serde::Serialize;
+use utoipa::ToSchema;
+
+#[derive(Serialize, ToSchema)]
+struct BillingStatus {
+    status: &'static str,
+}
+
+pub fn http_binding() -> LinkedBinding {
+    LinkedBinding::builder()
+        .http(LinkedHttpContribution {
+            public_prefixes: &["/v1/billing/"],
+            merge: merge_http,
+        })
+        .build()
+}
+
+fn merge_http(base: ApiOpenApiRouter) -> ApiOpenApiRouter {
+    base.merge(OpenApiRouter::new().routes(routes!(status)))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/billing/status",
+    operation_id = "billing_status",
+    tag = "billing"
+)]
+async fn status() -> Json<BillingStatus> {
+    Json(BillingStatus { status: "ok" })
+}
+```
+
+## 推荐的最小模块形态
+
+1. 声明 Module Manifest。
+2. 提供一个 Host 可见的数据界面或 Route。
+3. 提供一个 Action 或 Runtime Function。
+4. 添加一个在模块未安装时必定失败的 Smoke Check。
+5. 打开 `/console`，确认能力和证据可见。
+
+不要在第一个模块中提前建立复杂的框架层。等第二个模块出现真实复用需求后再
+提取共享代码，通常成本更低。
+
+## 完成标准
+
+- Manifest lint 没有错误
+- 至少一个有用能力通过 Host 可见
+- 模块未安装时 Smoke Check 会失败
+- `/console` 能显示运维人员需要的模块证据
+
+## 下一步
+
+- 可运行示例：[Examples](/docs/zh/examples)
+- 精确字段与 lint 分类：[Manifest Reference](/docs/zh/manifest-reference)
+- 数据和 Action 界面：[Admin Surfaces](/docs/zh/admin-surfaces)
+- Console 扩展包：[Console Packages](/docs/zh/console-packages)
+- Hook、Worker 和 Runtime Endpoint：[Runtime and Lifecycle](/docs/zh/runtime-lifecycle)
+- Agent 辅助开发：[Agent Development](/docs/zh/agent-development)
