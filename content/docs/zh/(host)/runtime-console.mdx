@@ -1,0 +1,98 @@
+---
+title: Runtime Console
+description: 验证模块数据、Action、运行时工作流和运维可见性。
+---
+
+Runtime Console 是 Lenso Host 的运维界面。Host 启动后，用它确认模块、数据
+界面、Action 和运行时工作流已经真正接入。由已发布 CLI 创建的 Host 会在
+`/console` 直接提供打包后的 Console。
+
+## 访问控制
+
+本地开发可以使用开发 Bearer Token，生产环境不可以。当
+`APP_ENV=production` 时，Console 必须通过真实密码或 OIDC 登录，并且认证
+用户必须在 `auth.console_admin_user_scopes` 中拥有 `console.admin`。
+
+使用下面的命令创建第一个管理员：
+
+```sh
+lenso console bootstrap-admin
+```
+
+不要把 Service Bearer Token 放进浏览器端 Console 构建。OIDC 生产配置请参阅
+[auth-oidc](/docs/zh/built-in-modules/auth-oidc)。
+
+## 首次检查
+
+新 Host 运行后打开 `/console`，依次检查：
+
+- **App Lifecycle**：生成的服务、模块、Addon、能力包、Dev Doctor、App Proof、Change Plan 和下一条运维命令。
+- **Modules**：已加载模块、Manifest 状态和 lint 结果。
+- **Data**：模块暴露的 Schema Admin 表。
+- **Actions**：模块声明的 Admin Action。
+- **Runtime**：Function Run、Story Event 和 Remote Proxy 证据。
+
+这能最快发现“代码可以编译，但模块实际上没有被 Host 加载”的问题。
+
+## Launchpad 证据
+
+生成的应用通过只读 Host Admin Endpoint 暴露本地证据文件：
+
+| 证据 | 写入命令 | Console 用途 |
+| --- | --- | --- |
+| `.lenso/launchpad.json` | `lenso app create`、`add`、`compose` | 服务、模块、Addon、能力包、检查清单和下一条命令 |
+| `.lenso/dev-doctor.json` | `lenso dev doctor --write-state` | 文件、命令和可选实时就绪检查 |
+| `.lenso/app-proof.json` | `lenso app verify --write-proof` | 生成状态漂移、证明检查和修复命令 |
+| `.lenso/app-change-plan.json` | `lenso app plan --write-plan` | 安全变更、阻塞变更、请求、证明状态和 Apply 命令 |
+
+App Proof 为空时，在生成应用根目录运行：
+
+```sh
+lenso app verify --write-proof
+```
+
+如果存在漂移，先执行 `lenso app diff`，再使用
+`lenso app repair --dry-run` 预览安全修复。
+
+App Change Plan 为空时，可运行：
+
+```sh
+lenso app next
+lenso app explain
+lenso app plan --write-plan
+```
+
+## 模块证据
+
+一个有用的模块至少应当提供一个可见证明点：
+
+| 模块能力 | Console 中的证据 |
+| --- | --- |
+| Data Surface | Data 页面可以读取记录 |
+| Admin Action | Action 及其输入声明可见 |
+| Runtime Function | 调用后出现 Function Run |
+| Remote Route | 流量经过后记录 Proxy Call |
+| Console Extension | 模块页面出现在 Registry 中 |
+
+## 模块缺失时
+
+- 执行 `lenso module install` 后重启 API 与 Worker。
+- Remote Module 运行 `lenso module doctor <module-name>`。
+- Launchpad 缺少能力包时运行 `lenso capability check <pack-dir>`。
+- 确认 Manifest 声明了预期的数据、Action、Route、Function 或 Console Surface。
+
+## 扩展边界
+
+模块自有页面通过 `ModuleManifest.console` 声明，并由 Host Console Module
+Registry 加载。前端 Package 使用 Runtime Console Host Facade，不应深度导入
+Host 内部实现。
+
+## 更新打包后的 Console
+
+升级 `lenso-cli` 后运行：
+
+```sh
+lenso console update
+```
+
+更新完成后重启 Host。

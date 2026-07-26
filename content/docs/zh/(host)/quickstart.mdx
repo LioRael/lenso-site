@@ -1,0 +1,173 @@
+---
+title: Host 快速开始
+description: 创建 Launchpad 应用或 Lenso Host，并在本地运行完整系统。
+---
+
+当你需要一个能够加载模块、运行服务进程并提供 Runtime Console 的本地
+Lenso 应用时，从这里开始。
+
+完成本页后，你将拥有：
+
+- 一个生成的 service-ready 应用或空白 Host
+- 可选的业务能力包
+- 本地 Postgres
+- API 与 Worker 进程
+- 位于 `/console` 的 Runtime Console
+
+## 前置条件
+
+- Rust 与 Cargo
+- 用于运行本地 Postgres 的 Docker
+- 可以持续运行服务进程的终端
+
+## 安装 CLI
+
+```sh
+cargo install lenso-cli
+```
+
+也可以使用 npm 安装打包后的 CLI：
+
+```sh
+npm install -g @lenso/cli
+```
+
+当前 GA CLI 版本线为 `0.2.13`。执行发布或支持命令前先确认版本：
+
+```sh
+lenso --version
+```
+
+## 使用 App Composer 创建应用
+
+App Composer 是推荐的第一条路径。下面的命令会创建一个 support-desk
+应用，其中包含 Host、TypeScript 与 Rust 服务、系统描述文件、Launchpad
+状态以及可供 Runtime Console 和 Agent 读取的 App Change Plan。
+
+```sh
+lenso app list
+lenso app inspect support-desk
+lenso app compose ./acme-support \
+  --blueprint support-desk \
+  --addon support-sla \
+  --addon customer-profile \
+  --apply
+cd acme-support
+lenso app next
+lenso app explain
+lenso dev status
+lenso dev doctor --write-state
+lenso agent task --from-app-plan "add enterprise SLA escalation"
+lenso dev up
+```
+
+`lenso dev up` 会先启动 `lenso.workspace.json` 中声明的服务，再启动 Host。
+打开 `/console` 后，首屏 `/launchpad` 会展示生成的服务、模块、Addon、
+Doctor 状态、检查清单和下一条运维命令。
+
+## 使用能力包
+
+能力包可以携带种子模块、服务清单和 Agent 交接上下文，用于复用产品切片：
+
+```sh
+lenso capability init support-sla \
+  --dir ./capabilities/support-sla \
+  --lang ts \
+  --for-blueprint support-desk
+lenso capability library add ./capabilities/support-sla
+lenso capability fit support-sla --repo-root .
+lenso app compose ./acme-support \
+  --blueprint support-desk \
+  --pack support-sla \
+  --apply
+```
+
+能力包属于本地组合元数据。它不会替代模块能力使用的
+`lenso module install`，也不会替代进程外服务使用的
+`lenso service install`。
+
+## 创建空白 Host
+
+如果不需要产品 Blueprint，可以从最小 Host 开始：
+
+```sh
+lenso host init my-lenso-app
+cd my-lenso-app
+cp .env.example .env
+lenso serve
+```
+
+`lenso serve` 会启动 starter Postgres、执行迁移，然后持续运行 API 与
+Worker。已发布的 `lenso-cli` 还会把 Runtime Console 复制到 Host 中，因此
+Host 可以直接在 `/console` 提供界面，无需额外安装 Node.js 或 pnpm。
+
+服务就绪后打开：
+
+- `/v1/app/status`：Host API 健康状态
+- `/console`：Runtime Console
+
+## 手动运行各进程
+
+如果希望分别控制进程：
+
+```sh
+docker compose up -d postgres
+cargo run --bin migrate
+cargo run --bin api
+```
+
+在另一个终端运行 Worker：
+
+```sh
+cargo run --bin worker
+```
+
+## 运行进程外服务
+
+创建一个 Service，并让工作区文件管理它：
+
+```sh
+lenso service create support-suite-provider --lang ts --output-dir services --port 4110
+lenso service workspace list
+lenso service dev
+```
+
+`lenso service dev` 会启动 `lenso.workspace.json` 中的服务、
+`.lenso/module-services.json` 中已安装的服务进程，最后启动 Host。服务运行后，
+在另一个终端检查工作区：
+
+```sh
+lenso service workspace check
+```
+
+## 添加 Redis Session 的认证模块
+
+生成的 Host 默认不安装认证模块。需要 Redis-backed Session 查询时执行：
+
+```sh
+lenso module install auth --profile redis-session-cache
+```
+
+该 Profile 会启用认证依赖的 Redis feature，把 `REDIS_URL` 写入 `.env`，
+并在 `.lenso/runtime-config-defaults.json` 中记录
+`auth.session_cache=redis`。Redis 需要单独提供；starter Docker Compose
+默认只启动 Postgres。
+
+## 常见空白状态
+
+- 找不到 `/console`：升级 `lenso-cli`，然后运行 `lenso console update`。
+- 看不到模块：安装模块后重启 API 与 Worker。
+- Service 模块未就绪：运行 `lenso module doctor <module-name>`。
+- Launchpad 为空：在生成应用的根目录运行 `lenso dev status`。
+- Launchpad 没有 Doctor 结果：运行 `lenso dev doctor --write-state`。
+- 不清楚下一步：运行 `lenso app next` 或 `lenso app explain`。
+
+## 下一步
+
+Host 启动后，前往 [Runtime Console](/docs/zh/runtime-console) 检查实际加载的
+模块和运行时证据。要加入业务能力，继续阅读
+[模块开发](/docs/zh/module-authoring)。
+
+环境变量、CORS、遥测、Console 路径或远程模块凭据请参阅
+[Configuration](/docs/zh/configuration)。完整命令选项请参阅
+[CLI Reference](/docs/zh/cli-reference)。
