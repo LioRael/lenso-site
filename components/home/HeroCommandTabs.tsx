@@ -7,15 +7,21 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 const heroCommands = [
   {
     id: 'humans',
-    label: 'Start app',
-    command: 'lenso host init support-desk',
-    href: '/docs/quickstart',
+    label: 'Compose app',
+    command: 'lenso app compose ./acme-support --blueprint support-desk --apply',
+    href: '/docs/product-blueprints',
+  },
+  {
+    id: 'capabilities',
+    label: 'Add capability',
+    command: 'lenso app compose --pack support-sla --apply',
+    href: '/docs/product-blueprints',
   },
   {
     id: 'agents',
-    label: 'Add module',
-    command: 'lenso module create support-ticket --with-console',
-    href: '/docs/examples',
+    label: 'Hand to agent',
+    command: 'lenso agent task --for-capability support-sla "add enterprise escalation"',
+    href: '/docs/agent-development',
   },
 ] as const;
 
