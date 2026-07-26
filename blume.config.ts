@@ -28,11 +28,6 @@ export default defineConfig({
       { code: "zh", label: "简体中文" },
     ],
   },
-  theme: {
-    accent: "blue",
-    radius: "sm",
-    mode: "system",
-  },
   navigation: {
     sidebar: {
       display: "group",
