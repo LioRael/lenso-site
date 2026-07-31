@@ -44,21 +44,14 @@ After restart, verify:
 - Data shows Auth users and sessions.
 - Actions include session revoke and user enable or disable actions.
 
-## Console admin users
+## Console identities are separate
 
-Runtime Console admin access is explicit. A normal business user does not become
-a Console admin unless you add `console.admin` to that auth user through runtime
-config:
-
-```json
-{
-  "usr_admin": ["console.admin", "auth.users.read"]
-}
-```
-
-Grant the first production admin with `lenso console bootstrap-admin`, then edit
-`auth.console_admin_user_scopes` from Console Config for later admins.
-Development bearer tokens are local-only.
+The independent Lenso Console owns its own Auth domain and Service Store. A
+business Service user does not automatically become a Console Operator, and
+the Console must not read or write this host's Auth tables. Initialize the first
+Console Operator with `lenso console operator bootstrap`; manage later
+Operators through the Console's identity Module. Development bearer tokens are
+local-only.
 
 ## Use Redis session lookup
 

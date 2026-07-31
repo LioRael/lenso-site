@@ -3,12 +3,9 @@ title: Runtime Console
 description: Verify module data, actions, runtime workflows, and operational visibility.
 ---
 
-Runtime Console is the operator UI for a Lenso host. Use it after the host boots
-to confirm that modules, data surfaces, actions, and runtime workflows are
-actually wired.
-
-Generated hosts created by published CLI builds serve the bundled console at
-`/console`.
+Lenso Console is the independently installed operator-facing System Plane for
+one Lenso System. Its Console Shell, API, Worker, Auth domain, System Registry,
+and Service Store run separately from the business Services it manages.
 
 ![Runtime Console App Lifecycle view showing services, modules, Doctor checks, App Proof, and next actions](/lenso-assets/console/app-lifecycle.png)
 
@@ -32,11 +29,26 @@ one workspace.
 
 ## Access control
 
-Local development can use development bearer tokens. Production cannot. With
-`APP_ENV=production`, the Console must use a real password or OIDC login, and
-the resulting auth user must have `console.admin` in
-`auth.console_admin_user_scopes`. Bootstrap the first admin with
-`lenso console bootstrap-admin`.
+`lenso console dev` may use a local-only development identity. An installed
+Console Service has no default credentials. Bootstrap its first password user
+and audited Operator grant from the external installation authority:
+
+```sh
+lenso console operator bootstrap \
+  --console-root ../lenso-console \
+  --console-url http://127.0.0.1:3030 \
+  --identifier admin@example.com
+```
+
+In an interactive terminal, the CLI prompts for and confirms the password
+without echoing it. Automation must provide a secret through
+`--password-stdin` or a private regular file through `--password-file`.
+
+The command grants only the Console Minimum scopes, verifies the mandatory
+System Registry state, writes append-only audit evidence, and refuses to run
+after an Operator already exists. Restart the Console API and Worker after the
+initial bootstrap. Additional Operators are managed through the Console's
+identity Module.
 
 Do not put service bearer tokens in a browser Console build.
 
@@ -45,7 +57,8 @@ For the OIDC production setup, read
 
 ## First checks
 
-When a fresh host is running, open `/console` and check:
+When the Console Service is running, open its root URL (locally,
+`http://127.0.0.1:3030/`) and check:
 
 - App Lifecycle: generated services, modules, addons, capability packs, dev
   doctor status, App Proof drift, App Change Plan status, App Composer
@@ -111,16 +124,18 @@ Check the boring things first:
 
 ## Extension boundary
 
-Module-owned console pages are declared through `ModuleManifest.console` and
-loaded through the host console module registry. Frontend packages use the
-Runtime Console host facade instead of deep-importing host internals.
+Module-owned Console UI is declared through `ModuleManifest.console`, bound to
+the same reviewed Module Release, and isolated behind the versioned Console
+Bridge. UI artifacts do not receive host bearer tokens or deep-import Console
+internals.
 
-## Refresh the hosted console
+## Upgrade the Console Service
 
-After upgrading `lenso-cli`, refresh a generated host with:
+Plan and apply an immutable Console Service Release through the external CLI:
 
 ```sh
-lenso console update
+lenso console upgrade --help
 ```
 
-Restart the host after refreshing the bundled console.
+Run `lenso console doctor` after installation or upgrade to verify the exact
+release, Store, workload health, and installation evidence.

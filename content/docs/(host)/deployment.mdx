@@ -1,6 +1,6 @@
 ---
 title: Deployment
-description: Deploy the API, worker, migrations, Postgres, and hosted Runtime Console without overfitting to microservices.
+description: Deploy the API, worker, migrations, Postgres, and an independent Lenso Console without overfitting to microservices.
 ---
 
 Deploy Lenso as one backend system first. Split processes when operations need
@@ -15,7 +15,7 @@ A production deployment has:
 - one migration job
 - managed Postgres
 - optional Redis for auth sessions
-- hosted Runtime Console files served by the API at `/console`
+- an independently installed Lenso Console Service when operator management is needed
 
 For most teams, the practical default is containers plus managed Postgres. A
 container PaaS is enough for early users. Kubernetes is a first-class delivery
@@ -149,25 +149,19 @@ For small local or single-node hosts, the public host facade also has an
 embedded API+worker boot helper. Use separate API and worker services when they
 need independent scaling, deploys, or restarts.
 
-## Runtime Console artifact
+## Lenso Console Service
 
-Generated hosts should serve prebuilt Console assets. Users should not need
-Node.js or pnpm in production just to open `/console`.
-
-After a CLI upgrade:
-
-```sh
-lenso console update
-```
-
-Restart the host after refreshing the bundled console.
+Install Lenso Console independently from the business Host. Use
+`lenso console install` for a reviewed release manifest, `lenso console doctor`
+for installation evidence, and `lenso console upgrade` for immutable Service
+Release upgrades.
 
 ## Runtime Console access
 
-`APP_ENV=production` disables development bearer tokens. Production operators
-enter `/console` through the host's password or OIDC auth flow. Grant access by
-running `lenso console bootstrap-admin` for the auth user; `console.admin` is
-included automatically.
+`APP_ENV=production` disables development bearer tokens. Production Operators
+sign in through the Console Service's own password or OIDC flow. Initialize the
+first Operator with `lenso console operator bootstrap`; there are no default
+credentials.
 
 Do not ship a browser Console bundle with a service token baked into it.
 
@@ -205,21 +199,20 @@ Before publishing crates:
 just package-readiness
 ```
 
-For a release artifact:
+For a host release artifact:
 
 ```sh
-just console-build
 LENSO_RELEASE_VERSION=vX.Y.Z just release-package
 ```
 
-The hosted archive includes `.lenso/console/dist` when the console has been
-built, so the deployed API can serve `/console` without frontend source.
+The host archive does not embed Console web assets. Console uses its own reviewed
+Service Release, Store, Migration Workload, API, Worker, and Shell.
 
 ## Deployment checklist
 
 - `APP_ENV` and `LENSO_COMPOSITION_PROFILE` are explicit.
 - Postgres migrations run before API and worker.
-- `/console` resolves through the API service.
+- `lenso console doctor` verifies the independent Console installation.
 - Remote modules use host-to-remote tokens, not caller tokens.
 - `REMOTE_MODULES` changes are followed by API and worker restarts.
 - `LOG_FORMAT=json` is enabled for structured production logs.

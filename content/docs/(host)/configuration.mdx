@@ -51,24 +51,13 @@ HTTP_HOST=0.0.0.0
 LENSO_ALLOW_DEV_AUTH_ON_PUBLIC_BIND=true
 ```
 
-## Runtime Console paths
+## Lenso Console configuration
 
-Published CLI builds copy the hosted Runtime Console into generated hosts. The
-API serves it from the configured dist directory:
-
-```sh
-LENSO_CONSOLE_DIST_DIR=.lenso/console/dist
-LENSO_CONSOLE_EXTENSIONS_DIR=.lenso/console/extensions
-```
-
-After upgrading `lenso-cli`, refresh an existing host:
-
-```sh
-lenso console update
-```
-
-`LENSO_CONSOLE_BASE` is a build-time packaging setting for the console bundle.
-It is not something normal generated-host users need in `.env`.
+Lenso Console is configured in its own installation and Service environment;
+business Hosts no longer serve copied Console assets or set
+`LENSO_CONSOLE_DIST_DIR`, `LENSO_CONSOLE_EXTENSIONS_DIR`, or
+`LENSO_CONSOLE_BASE`. Use `lenso console doctor` to inspect an installation and
+`lenso console upgrade` to apply a reviewed Console Service Release.
 
 ## Remote modules
 

@@ -3,9 +3,9 @@ title: Runtime Console
 description: 验证模块数据、Action、运行时工作流和运维可见性。
 ---
 
-Runtime Console 是 Lenso Host 的运维界面。Host 启动后，用它确认模块、数据
-界面、Action 和运行时工作流已经真正接入。由已发布 CLI 创建的 Host 会在
-`/console` 直接提供打包后的 Console。
+Lenso Console 是独立安装的运维 System Plane，负责管理一个 Lenso System。
+Console Shell、API、Worker、Auth 域、System Registry 与 Service Store 均独立于
+受管业务 Service 运行。
 
 ![Runtime Console App Lifecycle 页面，展示服务、模块、Doctor 检查、App Proof 和下一步操作](/lenso-assets/console/app-lifecycle.png)
 
@@ -26,22 +26,31 @@ Runtime Overview 将需要运维人员关注的信息集中到一个工作区，
 
 ## 访问控制
 
-本地开发可以使用开发 Bearer Token，生产环境不可以。当
-`APP_ENV=production` 时，Console 必须通过真实密码或 OIDC 登录，并且认证
-用户必须在 `auth.console_admin_user_scopes` 中拥有 `console.admin`。
-
-使用下面的命令创建第一个管理员：
+`lenso console dev` 可以使用仅限本地的开发身份。正式安装的 Console Service
+没有默认账号或密码。通过外部安装权限创建第一个密码用户和经过审计的
+Operator 授权：
 
 ```sh
-lenso console bootstrap-admin
+lenso console operator bootstrap \
+  --console-root ../lenso-console \
+  --console-url http://127.0.0.1:3030 \
+  --identifier admin@example.com
 ```
+
+在交互式终端中，CLI 会隐藏密码输入并要求二次确认。自动化环境必须通过
+`--password-stdin` 或权限受限的 `--password-file` 提供密码。
+
+该命令只授予 Console Minimum scopes，校验必要的 System Registry 状态，写入
+追加式审计记录，并在已有 Operator 时拒绝重复执行。首次初始化后需要重启
+Console API 和 Worker；后续 Operator 通过 Console 的 identity Module 管理。
 
 不要把 Service Bearer Token 放进浏览器端 Console 构建。OIDC 生产配置请参阅
 [auth-oidc](/docs/zh/built-in-modules/auth-oidc)。
 
 ## 首次检查
 
-新 Host 运行后打开 `/console`，依次检查：
+Console Service 运行后，打开它的根地址（本地默认为
+`http://127.0.0.1:3030/`），依次检查：
 
 - **App Lifecycle**：生成的服务、模块、Addon、能力包、Dev Doctor、App Proof、Change Plan 和下一条运维命令。
 - **Modules**：已加载模块、Manifest 状态和 lint 结果。
@@ -100,16 +109,17 @@ lenso app plan --write-plan
 
 ## 扩展边界
 
-模块自有页面通过 `ModuleManifest.console` 声明，并由 Host Console Module
-Registry 加载。前端 Package 使用 Runtime Console Host Facade，不应深度导入
-Host 内部实现。
+模块自有 Console UI 通过 `ModuleManifest.console` 声明，并绑定到同一个经过
+审查的 Module Release。UI 通过版本化 Console Bridge 隔离，不接收 Host Bearer
+Token，也不得深度导入 Console 内部实现。
 
-## 更新打包后的 Console
+## 升级 Console Service
 
-升级 `lenso-cli` 后运行：
+通过外部 CLI 规划并应用不可变的 Console Service Release：
 
 ```sh
-lenso console update
+lenso console upgrade --help
 ```
 
-更新完成后重启 Host。
+安装或升级后运行 `lenso console doctor`，校验确切 Release、Store、Workload
+健康状态和安装证据。

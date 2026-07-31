@@ -18,8 +18,9 @@ API 和worker 安装后都会发生变化。
 
 |症状|检查 |修复 |
 | --- | --- | --- |
-| `/console` 返回 404 | `.lenso/console/dist` 存在 |升级CLI，然后运行`lenso console update`。 |
-|控制台打开但模块丢失 | `/api/admin/modules` 和 `.env` |安装或更新模块后重新启动API和worker。 |
+| Console 地址不可用 | `lenso console doctor` 与 Console Workload 健康状态 |恢复 Console Service，或应用经过审查的升级。|
+| Console 显示 `Operator required` | `GET /bootstrap/v1/status` |运行 `lenso console operator bootstrap`，然后重启 Console API 和 Worker。|
+| Console 打开但缺少受管 Module | System Registry 与 enrollment 证据 |校验 Module Release、Console UI artifact 和受管 Service enrollment。|
 |远程模块已安装但不健康 | `lenso module doctor <name>` |启动远程服务，修复`readyUrl`，或清除Doctor调出的过时的`.lock`和`.pid`文件。 |
 |应用程序生命周期下一步尚不清楚 | `lenso app next` |运行 `lenso app explain` 来分别查看生成状态、模块和服务操作。 |
 | Launchpad 应用程序更改计划为空 | `.lenso/app-change-plan.json` |运行 `lenso app plan --write-plan` 或 `lenso app plan --addon <name> --write-plan`。 |
@@ -35,26 +36,24 @@ API 和worker 安装后都会发生变化。
 | `just generated-check` 失败 | git 差异 |不要手动编辑生成的文件。运行 `just generate` 并提交生成的工件更改和源更改。 |
 | `just release-check` 基础设施失败 | Docker、端口、Postgres |首先修复本地服务，然后重新运行gate。将代码失败视为发布阻碍。 |
 
-## 控制台为空或过时
+## Console 不可用或版本过旧
 
-刷新托管控制台资产：
-
-```sh
-lenso console update
-```
-
-如果主机是在 CLI 捆绑控制台资产之前生成的，请升级 CLI
-第一的：
+先检查独立安装状态：
 
 ```sh
-npm install -g @lenso/cli@latest
-lenso console update
+lenso console doctor --help
 ```
 
-然后重启host进程并打开：
+若已安装版本过旧，规划不可变的 Release 升级：
+
+```sh
+lenso console upgrade --help
+```
+
+然后打开配置的 Console Service 地址。本地源码 checkout 默认为：
 
 ```text
-http://127.0.0.1:3000/console
+http://127.0.0.1:3030/
 ```
 
 ## 没有出现模块安装

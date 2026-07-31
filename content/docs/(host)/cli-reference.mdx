@@ -129,10 +129,11 @@ for the supported component baseline and complete evidence gate.
 | `lenso host init <dir>`                              | Create a generated Rust host application.                       |
 | `lenso host init <dir> --name <crate>`               | Override the generated Cargo crate name.                        |
 | `lenso host init <dir> --force`                      | Scaffold into a non-empty directory.                            |
-| `lenso console update`                               | Refresh the hosted Runtime Console bundle in `.lenso/console`.  |
-| `lenso console update --repo-root <path>`            | Update Console assets for a host outside the current directory. |
-| `lenso console bootstrap-admin --identifier <email>` | Grant first Console admin access to a password-auth user.       |
-| `lenso console bootstrap-admin --user-id <id>`       | Grant first Console admin access to a known auth user id.       |
+| `lenso console install`                              | Plan or apply an independent Lenso Console installation.        |
+| `lenso console upgrade`                              | Plan or apply an immutable Console Service Release upgrade.     |
+| `lenso console doctor`                               | Validate installation evidence and optional readiness.          |
+| `lenso console operator bootstrap --console-url <url> --identifier <email>` | Create the first password user and audited Console Operator grant. |
+| `lenso console operator bootstrap --user-id <id>`    | Grant the first Operator role to an existing Console Auth user. |
 | `lenso serve`                                        | Start local Postgres, run migrations, then run API and worker.  |
 | `lenso serve --separate-worker`                      | Run API and worker as separate local child processes.           |
 | `lenso serve --skip-db`                              | Do not start the template Postgres service.                     |

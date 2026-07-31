@@ -92,10 +92,8 @@ just console-build
 LENSO_RELEASE_VERSION=vX.Y.Z just release-package
 ```
 
-发布打包在 `dist/release` 下写入源文件和工件文件。当一个
-托管的 Runtime Console捆绑包存在，发布包包括
-`.lenso/console/dist` 因此主机用户不需要 Node.js 或 pnpm 来提供服务
-`/console`。
+发布打包在 `dist/release` 下写入源文件和工件文件。Lenso Console 作为独立、
+不可变的 Console Service Release 发布；Host 发布包不嵌入 Console Web 资源。
 
 ## GitHub 发布工作流
 

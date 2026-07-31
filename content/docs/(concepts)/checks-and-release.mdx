@@ -92,10 +92,9 @@ just console-build
 LENSO_RELEASE_VERSION=vX.Y.Z just release-package
 ```
 
-Release packaging writes source and artifact files under `dist/release`. When a
-hosted Runtime Console bundle exists, the release package includes
-`.lenso/console/dist` so host users do not need Node.js or pnpm to serve
-`/console`.
+Release packaging writes source and artifact files under `dist/release`. Lenso
+Console is released independently as an immutable Console Service Release; host
+release packages do not embed Console web assets.
 
 ## GitHub release workflow
 

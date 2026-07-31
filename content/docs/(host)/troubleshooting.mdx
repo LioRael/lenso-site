@@ -18,8 +18,9 @@ both API and worker after install changes.
 
 | Symptom | Check | Fix |
 | --- | --- | --- |
-| `/console` returns 404 | `.lenso/console/dist` exists | Upgrade CLI, then run `lenso console update`. |
-| Console opens but module is missing | `/api/admin/modules` and `.env` | Restart API and worker after installing or updating modules. |
+| Console URL is unavailable | `lenso console doctor` and Console workload health | Restore the Console Service or apply a reviewed upgrade. |
+| Console reports `Operator required` | `GET /bootstrap/v1/status` | Run `lenso console operator bootstrap`, then restart Console API and Worker. |
+| Console opens but a managed Module is missing | System Registry and enrollment evidence | Verify the Module Release, Console UI artifact, and managed-Service enrollment. |
 | Remote module is installed but unhealthy | `lenso module doctor <name>` | Start the remote service, fix `readyUrl`, or clear stale `.lock` and `.pid` files called out by doctor. |
 | App lifecycle next step is unclear | `lenso app next` | Run `lenso app explain` to see generated-state, module, and service actions separately. |
 | Launchpad App Change Plan is empty | `.lenso/app-change-plan.json` | Run `lenso app plan --write-plan` or `lenso app plan --addon <name> --write-plan`. |
@@ -35,26 +36,25 @@ both API and worker after install changes.
 | `just generated-check` fails | git diff | Do not hand-edit generated files. Run `just generate` and commit the generated artifact changes with the source change. |
 | `just release-check` fails on infrastructure | Docker, ports, Postgres | Fix local services first, then rerun the gate. Treat code failures as release blockers. |
 
-## Console is blank or stale
+## Console is unavailable or stale
 
-Refresh hosted Console assets:
-
-```sh
-lenso console update
-```
-
-If the host was generated before the CLI bundled Console assets, upgrade the CLI
-first:
+Inspect the independent installation first:
 
 ```sh
-npm install -g @lenso/cli@latest
-lenso console update
+lenso console doctor --help
 ```
 
-Then restart the host process and open:
+Plan an immutable Release upgrade when the installed version is stale:
+
+```sh
+lenso console upgrade --help
+```
+
+Then open the configured Console Service URL. The local source checkout defaults
+to:
 
 ```text
-http://127.0.0.1:3000/console
+http://127.0.0.1:3030/
 ```
 
 ## Module install did not appear
