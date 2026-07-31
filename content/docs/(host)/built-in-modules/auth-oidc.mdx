@@ -55,16 +55,18 @@ session. Grant Console scopes through `auth.console_admin_user_scopes`:
 also require `runtime.stories.read`; other module pages check their own
 capability strings.
 
-For the first production admin, run this from the host root after the auth user
-exists:
+For an independently installed Console, initialize its first Operator through
+the external installation authority:
 
 ```sh
-lenso console bootstrap-admin --user-id usr_admin --scope runtime.stories.read
+lenso console operator bootstrap \
+  --console-url https://console.example.com \
+  --identifier admin@example.com
 ```
 
-For password auth, `--identifier admin@example.com` can resolve the auth user id.
-Restart the API and worker after bootstrapping. After one admin can enter
-Console, edit the same key from Config.
+Restart the Console API and Worker after bootstrapping. Existing identities may
+instead be selected with `--user-id`; later Operators are managed through the
+Console's identity Module.
 
 ## Browser token boundary
 

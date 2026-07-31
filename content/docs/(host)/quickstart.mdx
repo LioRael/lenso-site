@@ -161,7 +161,7 @@ Docker Compose file starts Postgres only.
 
 ## If something is blank
 
-- `/console` is missing: upgrade `lenso-cli`, then run `lenso console update`.
+- Console is unavailable: run `lenso console doctor` against its independent installation.
 - A module is not visible: restart the API and worker after installing it.
 - A service module is not ready: run `lenso module doctor <module-name>`.
 - Launchpad is empty: run `lenso dev status` in the generated app root.
@@ -170,9 +170,10 @@ Docker Compose file starts Postgres only.
 
 ## Next step
 
-After the host is running, use [Runtime Console](/docs/runtime-console) to check
-what the host loaded. If you need to wire profiles, CORS, telemetry, Console
-paths, or remote module credentials, continue with
+After the system is running, use the independently installed
+[Lenso Console](/docs/runtime-console) to inspect managed Services and runtime
+evidence. If you need to wire profiles, CORS, telemetry, or remote module
+credentials, continue with
 [Configuration](/docs/configuration). To add business capability, continue with
 [Module Authoring](/docs/module-authoring).
 

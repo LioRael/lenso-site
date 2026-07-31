@@ -1,6 +1,6 @@
 ---
 title: 部署
-description: 部署 API、工作线程、迁移、Postgres 和托管 Runtime Console，而不会过度适应微服务。
+description: 部署 API、Worker、Migration、Postgres 与独立 Lenso Console，同时避免过度微服务化。
 ---
 
 首先将 Lenso 部署为一个后端系统。当操作需要时拆分流程
@@ -15,7 +15,7 @@ description: 部署 API、工作线程、迁移、Postgres 和托管 Runtime Con
 - 一份迁移工作
 - 托管 Postgres
 - 用于身份验证会话的可选 Redis
-- 由位于 `/console` 的 API 提供服务的托管 Runtime Console文件
+- 需要运维管理时，独立安装一个 Lenso Console Service
 
 对于大多数团队来说，实际的默认设置是容器加上托管的 Postgres。一个
 容器PaaS对于早期用户来说已经足够了。 Kubernetes 是一流的交付
@@ -149,25 +149,17 @@ cargo run --bin worker
 嵌入式API+worker启动助手。使用单独的 API 和辅助服务
 需要独立扩展、部署或重新启动。
 
-## Runtime Console 工件
+## Lenso Console Service
 
-生成的主机应该提供预构建的控制台资产。用户不应该需要
-生产中的 Node.js 或 pnpm 只是为了打开 `/console`。
-
-CLI 升级后：
-
-```sh
-lenso console update
-```
-
-刷新捆绑控制台后重新启动主机。
+Lenso Console 应独立于业务 Host 安装。使用 `lenso console install` 应用经过
+审查的 Release Manifest，使用 `lenso console doctor` 校验安装证据，并使用
+`lenso console upgrade` 执行不可变的 Service Release 升级。
 
 ## Runtime Console 访问
 
-`APP_ENV=production` 禁用开发Bearer Token。生产操作员
-通过主机密码或OIDC认证流程输入`/console`。授予访问权限
-为 auth 用户运行 `lenso console bootstrap-admin`； `console.admin` 是
-自动包含在内。
+`APP_ENV=production` 会禁用开发 Bearer Token。生产 Operator 通过 Console
+Service 自己的密码或 OIDC 流程登录。使用
+`lenso console operator bootstrap` 初始化首个 Operator；系统不提供默认凭据。
 
 不要发送带有服务令牌的浏览器控制台捆绑包。
 
@@ -205,21 +197,20 @@ just release-check
 just package-readiness
 ```
 
-对于发布工件：
+对于 Host 发布工件：
 
 ```sh
-just console-build
 LENSO_RELEASE_VERSION=vX.Y.Z just release-package
 ```
 
-当控制台已被托管时，托管存档包括 `.lenso/console/dist`
-已构建，因此部署的 API 可以在没有前端源的情况下为 `/console` 提供服务。
+Host 归档不再嵌入 Console Web 资源。Console 使用自己的经过审查的 Service
+Release、Store、Migration Workload、API、Worker 与 Shell。
 
 ## 部署 Manifest
 
 - `APP_ENV` 和 `LENSO_COMPOSITION_PROFILE` 是显式的。
 - Postgres 迁移在 API 和工作线程之前运行。
-- `/console`通过API服务解析。
+- `lenso console doctor` 能够校验独立 Console 安装。
 - 远程模块使用主机到远程令牌，而不是调用者令牌。
 - `REMOTE_MODULES` 更改之后是 API 和工作线程重新启动。
 - `LOG_FORMAT=json` 已启用结构化生产日志。

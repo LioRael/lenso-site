@@ -53,22 +53,11 @@ LENSO_ALLOW_DEV_AUTH_ON_PUBLIC_BIND=true
 
 ## Runtime Console 路径
 
-已发布的 CLI 版本将托管的 Runtime Console复制到生成的主机中。这
-API 从配置的 dist 目录提供服务：
-
-```sh
-LENSO_CONSOLE_DIST_DIR=.lenso/console/dist
-LENSO_CONSOLE_EXTENSIONS_DIR=.lenso/console/extensions
-```
-
-升级`lenso-cli`后，刷新现有主机：
-
-```sh
-lenso console update
-```
-
-`LENSO_CONSOLE_BASE` 是控制台捆绑包的构建时打包设置。
-这不是普通生成主机用户在 `.env` 中需要的东西。
+Lenso Console 在自己的安装目录和 Service 环境中配置。业务 Host 不再提供复制
+的 Console 资源，也不再设置 `LENSO_CONSOLE_DIST_DIR`、
+`LENSO_CONSOLE_EXTENSIONS_DIR` 或 `LENSO_CONSOLE_BASE`。使用
+`lenso console doctor` 检查安装，使用 `lenso console upgrade` 应用经过审查的
+Console Service Release。
 
 ## 远程模块
 

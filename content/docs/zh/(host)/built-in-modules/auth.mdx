@@ -44,21 +44,12 @@ create table app.profiles (
 - 数据显示身份验证用户和会话。
 - 操作包括会话撤销和用户启用或禁用操作。
 
-## 控制台管理员用户
+## Console 身份相互独立
 
-Runtime Console管理员访问是明确的。普通企业用户不会成为
-控制台管理员，除非您通过运行时将 `console.admin` 添加到该身份验证用户
-配置：
-
-```json
-{
-  "usr_admin": ["console.admin", "auth.users.read"]
-}
-```
-
-授予第一个生产管理员 `lenso console bootstrap-admin`，然后编辑
-来自控制台配置的 `auth.console_admin_user_scopes` 供以后的管理员使用。
-开发Bearer Token仅限本地使用。
+独立的 Lenso Console 拥有自己的 Auth 域与 Service Store。业务 Service 用户
+不会自动成为 Console Operator，Console 也不得读取或写入该 Host 的 Auth 表。
+使用 `lenso console operator bootstrap` 初始化首个 Console Operator，后续
+Operator 通过 Console 的 identity Module 管理。开发 Bearer Token 仅限本地使用。
 
 ## 使用 Redis 会话查找
 

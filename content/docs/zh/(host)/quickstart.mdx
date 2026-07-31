@@ -155,7 +155,7 @@ lenso module install auth --profile redis-session-cache
 
 ## 常见空白状态
 
-- 找不到 `/console`：升级 `lenso-cli`，然后运行 `lenso console update`。
+- Console 不可用：对其独立安装运行 `lenso console doctor`。
 - 看不到模块：安装模块后重启 API 与 Worker。
 - Service 模块未就绪：运行 `lenso module doctor <module-name>`。
 - Launchpad 为空：在生成应用的根目录运行 `lenso dev status`。
@@ -164,10 +164,10 @@ lenso module install auth --profile redis-session-cache
 
 ## 下一步
 
-Host 启动后，前往 [Runtime Console](/docs/zh/runtime-console) 检查实际加载的
-模块和运行时证据。要加入业务能力，继续阅读
+System 启动后，前往独立安装的 [Lenso Console](/docs/zh/runtime-console)
+检查受管 Service 和运行时证据。要加入业务能力，继续阅读
 [模块开发](/docs/zh/module-authoring)。
 
-环境变量、CORS、遥测、Console 路径或远程模块凭据请参阅
+环境变量、CORS、遥测或远程模块凭据请参阅
 [Configuration](/docs/zh/configuration)。完整命令选项请参阅
 [CLI Reference](/docs/zh/cli-reference)。

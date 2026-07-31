@@ -129,10 +129,11 @@ pack 可以指向模块和服务Manifest，但它不安装模块
 | `lenso host init <dir>` |创建生成的 Rust 主机应用程序。                       |
 | `lenso host init <dir> --name <crate>` |覆盖生成的 Cargo 箱名称。                        |
 | `lenso host init <dir> --force` |脚手架到非空目录中。                            |
-| `lenso console update` |刷新 `.lenso/console` 中托管的 Runtime Console捆绑包。  |
-| `lenso console update --repo-root <path>` |更新当前目录之外的主机的控制台资产。 |
-| `lenso console bootstrap-admin --identifier <email>` |向密码验证用户授予第一个控制台管理员访问权限。       |
-| `lenso console bootstrap-admin --user-id <id>` |将第一个控制台管理员访问权限授予已知的身份验证用户 ID。       |
+| `lenso console install` |规划或应用独立的 Lenso Console 安装。|
+| `lenso console upgrade` |规划或应用不可变的 Console Service Release 升级。|
+| `lenso console doctor` |校验安装证据与可选的就绪状态。|
+| `lenso console operator bootstrap --console-url <url> --identifier <email>` |创建首个密码用户和经过审计的 Console Operator 授权。|
+| `lenso console operator bootstrap --user-id <id>` |向现有 Console Auth 用户授予首个 Operator 角色。|
 | `lenso serve` |启动本地 Postgres，运行迁移，然后运行 ​​API 和工作线程。  |
 | `lenso serve --separate-worker` |将 API 和工作线程作为单独的本地子进程运行。           |
 | `lenso serve --skip-db` |不要启动模板 Postgres 服务。                     |

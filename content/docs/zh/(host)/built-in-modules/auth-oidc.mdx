@@ -55,16 +55,16 @@ OIDC 访问令牌解析为与应用程序相同的身份验证用户 ID
 还要求 `runtime.stories.read`；其他模块页面检查自己的
 能力字符串。
 
-对于第一个生产管理员，请在 auth 用户之后从主机根运行此命令
-存在：
+对于独立安装的 Console，通过外部安装权限初始化首个 Operator：
 
 ```sh
-lenso console bootstrap-admin --user-id usr_admin --scope runtime.stories.read
+lenso console operator bootstrap \
+  --console-url https://console.example.com \
+  --identifier admin@example.com
 ```
 
-对于密码认证，`--identifier admin@example.com`可以解析认证用户id。
-引导后重新启动 API 和工作线程。一位管理员可以进入后
-控制台，从 Config 编辑相同的密钥。
+初始化后重启 Console API 和 Worker。已有身份可以改用 `--user-id` 选择；
+后续 Operator 通过 Console 的 identity Module 管理。
 
 ## 浏览器令牌边界
 
