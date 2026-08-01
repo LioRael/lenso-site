@@ -1,176 +1,31 @@
 ---
 title: 平台概念
-description: Lenso 原语使模块显式、可观察并且以后可以安全地拆分。
+description: 理解 Lenso 的 Module、Service、Host 与 System Plane 基础模型。
 ---
 
-Lenso 不仅仅是一个入门模板。它提供一组由 Host 持有的小型原语，
-让人类、Agent 和运维人员都能理解业务系统。
+## 核心模型
 
-## 核心理念
+- Module 是 Host 中的 Linked 业务能力边界。
+- Service 是独立运行、拥有进程、Store、交付和终态证据的代码。
+- Service 可以声明它提供的 Module，但 Service 本身不是 Module。
+- Lenso Console 是独立 System Plane 工作台，不是业务管理后台，也不是 effect authority。
 
-Lenso 应用程序从一个可部署的 Rust 后端开始：
+## Manifest 与行为
 
-- API 提供产品路由和 Runtime Console
-- 工作人员拥有运行时队列、Outbox调度和生命周期工作
-- 迁移应用程序拥有数据库设置
-- 模块声明它们的贡献
-- 主机控制加载、验证、配置、可观测性和发布形态
-
-这为团队提供了模块化整体的开发体验，而无需隐藏接口
-稍后需要将模块拆分为服务。
-
-## Manifest 数据、行为接口
-
-每个模块都通过 `ModuleManifest` 公开纯元数据。可执行的行为
-留在特定于源的接口后面，例如链接的 Rust 绑定或远程模块
-协议处理程序。
-
-```rust
-use lenso::{
-    ModuleManifest, ModuleHttpMethod, ModuleHttpRoute, RuntimeFunctionDeclaration,
-    RuntimeSurface,
-};
-
-pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("support")
-        .capabilities(vec![
-            "support.tickets.read".to_owned(),
-            "support.tickets.write".to_owned(),
-        ])
-        .http_routes(vec![ModuleHttpRoute {
-            method: ModuleHttpMethod::Post,
-            path: "/v1/support/tickets".to_owned(),
-            capability: Some("support.tickets.write".to_owned()),
-            display_name: Some("Create Ticket".to_owned()),
-            story_title: Some("Ticket Created".to_owned()),
-        }])
-        .runtime(RuntimeSurface {
-            functions: vec![RuntimeFunctionDeclaration {
-                name: "support.ticket.escalate.v1".to_owned(),
-                version: 1,
-                queue: "support".to_owned(),
-                input_schema: Some("support.ticket.escalate.v1".to_owned()),
-                retry_policy: None,
-            }],
-            schedules: vec![],
-        })
-        .build()
-}
-```
-
-Manifest是Runtime Console、安装检查、远程加载和
-代理编写的冒烟检查可以推理。它不是 SQL 处理程序的所在，
-运行时执行程序或实时远程客户端。
-
-## 主机拥有的生命周期
-
-生命周期也是声明数据。模块可以说出哪个启动检查和
-它需要激活作业，但工作人员决定何时运行它们并记录
-通过运行时拥有的路径获得结果。
-
-```rust
-use lenso::{
-    LifecycleActivationJobDeclaration, LifecycleActivationRunPolicy,
-    LifecycleStartupCheckDeclaration, LifecycleStartupCheckKind, LifecycleSurface,
-    ModuleManifest, RuntimeFunctionDeclaration, RuntimeSurface,
-};
-
-pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("support")
-        .runtime(RuntimeSurface {
-            functions: vec![RuntimeFunctionDeclaration {
-                name: "support.ticket.reindex.v1".to_owned(),
-                version: 1,
-                queue: "support".to_owned(),
-                input_schema: Some("support.ticket.reindex.v1".to_owned()),
-                retry_policy: None,
-            }],
-            schedules: vec![],
-        })
-        .lifecycle(LifecycleSurface {
-            startup_checks: vec![LifecycleStartupCheckDeclaration {
-                name: "reindex function is registered".to_owned(),
-                required: true,
-                check: LifecycleStartupCheckKind::FunctionRegistered {
-                    function_name: "support.ticket.reindex.v1".to_owned(),
-                },
-            }],
-            activation_jobs: vec![LifecycleActivationJobDeclaration {
-                name: "warm ticket index".to_owned(),
-                function_name: "support.ticket.reindex.v1".to_owned(),
-                run_policy: LifecycleActivationRunPolicy::EveryStartup,
-                input: serde_json::json!({ "reason": "startup" }),
-                required: false,
-            }],
-        })
-        .build()
-}
-```
-
-没有通用模块启动回调。这是故意的：启动工作是
-链接和远程模块之间可见、可重试且可比较。
+`ModuleManifest` 是纯数据合约，用来声明能力、路由、管理 Surface、运行时工作、
+Console Surface 与依赖。Linked Module 的可执行行为通过窄 Binding 接入。
+Service 的行为属于其 Provider API 和 Workload。
 
 ## 运行时证据
 
-Runtime Console不是装饰性仪表板。这是楼主亲眼所见的证据
-工作。
+Host 仍拥有请求身份解析、能力校验、队列、Outbox 与 Host Runtime Story。
+Service 拥有 Provider 执行和 Service Store 的终态证据。跨边界传递 correlation、
+trace、actor 与 operation identity，不引入分布式事务。
 
-Lenso 的 [Runtime Story](/docs/zh/runtime-stories) 回合请求 ID、相关性
-id、Outbox行、函数运行、远程代理调用和遥测跨越到
-操作员可读的业务叙述。
+## 拆分原则
 
-|来源 |它证明了什么 |
-| --- | --- |
-| `platform.outbox` |模块事件已提交并分派 |
-| `runtime.function_runs` |运行时工作已排队、重试、完成或失败 |
-| `platform.story_events` |商业和运营商事件被投射到Story中|
-| `platform.remote_http_proxy_calls` |远程模块流量跨越主机边界|
+默认保持 Linked。只有当独立运行时、部署节奏、团队所有权、Store、扩缩容或信任
+边界足以支付分布式系统成本时，才提取 Service。
 
-当一个模块完成后，答案不应该是“它可以编译”。应该是
-“主机加载了它，操作出现，运行时工作可见，并且
-Story有证据。”
-
-## 远程并不意味着不受管理
-
-远程模块用于真正的边界：单独的运行时、单独的所有者、
-单独的部署节奏或信任边界。他们不会成为第二个
-平台。
-
-主机仍拥有：
-
-- Manifest加载和 lint 结果
-- `/modules/{module}/http/{*path}` 代理命名空间
-- 调用者身份验证和能力检查
-- 请求和响应限制
-- 标头白名单
-- 运行时队列和重试策略
-- Outbox调度
-- Runtime Console 证据
-
-主机可以向远程模块进行身份验证，但不会转发
-呼叫者的Bearer Token或cookie。
-
-## 系统连接服务和模块
-
-当产品超出单一供应商时，`lenso.system.json` 会命名整个供应商
-系统图。服务拥有远程进程和部署目标。拥有模块
-业务能力。系统平面将它们与环境连接起来
-功能依赖性，因此 CLI 检查和 Runtime Console可以显示是否
-系统是连贯的。
-
-`lenso.system.v1`参见【业务系统平面](/docs/zh/service-system-plane)】
-合约和 CLI 流程。
-
-## 分割规则
-
-当模块属于应用程序时开始链接。当一个边界时移动远程
-是真实的足以支付：
-
-- 不同的运行时间
-- 不同的部署节奏
-- 不同的团队所有权
-- 不同的信任模型
-- 独立运营扩展
-
-在那之前，懒惰路径是好路径：一台主机，显式模块接口，
-和可见的证据。
+参阅 [Autonomous Services](/docs/zh/autonomous-services) 与
+[Service System Plane](/docs/zh/service-system-plane)。

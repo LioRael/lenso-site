@@ -10,7 +10,7 @@ Lenso 有两个可观察层：
 
 `platform-admin` 拥有 `/admin/runtime/*` 下的运行时可观测性 API。这是
 平台问题，而不是产品模块，并读取平台/运行时表，例如
-作为Outbox事件、Story 事件、运行时函数运行、远程代理调用，以及
+作为Outbox事件、Story 事件、运行时函数运行、Provider调用，以及
 遥测跨度。
 
 ## 健康探测
@@ -83,7 +83,7 @@ http://127.0.0.1:3000/console
 - 运行时函数声明和运行；
 - 作为函数运行排队后安排的运行时工作；
 - Outbox和Story 事件；
-- 远程 HTTP 代理调用；
+- Service Provider 调用；
 - 模块健康状况和安装状态；
 - 与遥测跨度相关的技术操作。
 

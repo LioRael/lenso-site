@@ -30,9 +30,9 @@ pub fn manifest() -> ModuleManifest {
 }
 ```
 
-The declaration makes the function visible and lintable. Linked modules still
-register executable handlers through their binding. Remote modules implement
-the remote invocation protocol.
+The declaration makes the function visible and lintable. Linked Modules
+register executable handlers through their binding. A Service owns the provider
+API used to execute operations for the Modules it declares.
 
 ## Scheduled runtime functions
 
@@ -79,8 +79,8 @@ module contract.
 The scheduler stores durable state in `runtime.scheduled_functions`. When a
 schedule is due, the worker enqueues the declared runtime function into
 `runtime.function_runs`; retries, dead letters, logs, and Runtime Story evidence
-then follow the same path as manually enqueued runtime work. A remote module can
-declare a schedule, but the host still owns scheduling and queue state.
+then follow the same path as manually enqueued runtime work. Provider execution
+does not transfer ownership of the Host queue or scheduling state.
 
 ## Runtime story evidence
 
@@ -91,7 +91,7 @@ The worker writes durable evidence:
 | `platform.outbox` | module event dispatch state |
 | `runtime.function_runs` | queued, running, retried, completed, or failed function work |
 | `platform.story_events` | story projection records |
-| execution logs | technical operations and remote runtime metadata |
+| execution logs | technical operations and provider runtime metadata |
 
 Runtime Console uses those records to show Stories, function operations, dead
 letters, queues, retries, and technical operations.
@@ -146,32 +146,26 @@ pub fn manifest() -> ModuleManifest {
 warn and continue. Activation jobs currently use `every_startup`; non-idempotent
 install or upgrade lifecycle state is intentionally deferred.
 
-## Event handler boundary
+## Service event-handler boundary
 
-Remote event handlers use the host-owned outbox relay:
+Service event handlers use the Host-owned outbox relay:
 
 1. module command writes business tables
 2. same transaction inserts `platform.outbox`
 3. worker claims pending outbox rows
-4. host invokes linked or remote handler
+4. Host invokes a Linked handler or Service provider operation
 5. handler may return a bounded `enqueue_function` action
 6. host inserts `runtime.function_runs`
 7. retries and dead letters stay in host tables
 
-Remote modules never claim outbox rows directly.
+Services never claim Host outbox rows directly.
 
-## Remote runtime boundary
+## Service runtime boundary
 
-For remote functions, the worker remains the only queue owner. The remote
-module is just an executor:
-
-```text
-POST /lenso/module/v1/runtime/functions/{function_name}/invoke
-```
-
-The host sends function run id, attempt, correlation id, actor context, trace
-context, and input. The remote returns output or a standard error envelope. The
-host maps retryable failures through the declared retry policy.
+For provider-backed functions, the Worker remains the Host queue owner. The
+Service owns its API, Workload, and terminal execution evidence. Correlation,
+actor, trace, and retry identities cross the provider contract explicitly; no
+distributed transaction or second Module source is introduced.
 
 ## Definition of done
 

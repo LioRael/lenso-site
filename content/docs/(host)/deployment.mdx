@@ -177,12 +177,12 @@ LOG_FORMAT=json
 RUST_LOG=info
 ```
 
-Add remote modules only when needed:
+Install independently deployed providers through an approved Service manifest
+and verify them before routing production traffic:
 
 ```sh
-REMOTE_MODULES=billing=https://billing.example.com/lenso/module/v1
-REMOTE_MODULE_BILLING_TOKEN=...
-REMOTE_MODULE_BILLING_TIMEOUT_MS=8000
+lenso service install https://billing.example.com/lenso/service/v1/manifest
+lenso service verify billing --json
 ```
 
 ## Release gate
@@ -213,7 +213,7 @@ Service Release, Store, Migration Workload, API, Worker, and Shell.
 - `APP_ENV` and `LENSO_COMPOSITION_PROFILE` are explicit.
 - Postgres migrations run before API and worker.
 - `lenso console doctor` verifies the independent Console installation.
-- Remote modules use host-to-remote tokens, not caller tokens.
-- `REMOTE_MODULES` changes are followed by API and worker restarts.
+- Service providers use Workload Identity or provider credentials, never caller tokens.
+- Service installation changes are followed by the required Host reconciliation.
 - `LOG_FORMAT=json` is enabled for structured production logs.
 - OpenTelemetry endpoint is configured only when a collector exists.

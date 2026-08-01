@@ -23,7 +23,7 @@ then run the full gate before release work.
 | `just release-check` | Runs the backend release gate. |
 | `just package-readiness` | Verifies the public `lenso` facade crate package surface. |
 
-Runtime Console checks live in the sibling `lenso-runtime-console` repository.
+Runtime Console checks live in the sibling `lenso-console` repository.
 Use its `pnpm check` path when a backend change affects Console metadata,
 OpenAPI-generated clients, module install state, or hosted bundle behavior.
 
@@ -55,7 +55,7 @@ Run the worker in a second shell:
 just worker
 ```
 
-For the first-user backend flow, including remote module fixture and
+For the first-user backend flow, including a Service provider fixture and
 Console-facing admin APIs:
 
 ```sh

@@ -21,14 +21,14 @@ both API and worker after install changes.
 | Console URL is unavailable | `lenso console doctor` and Console workload health | Restore the Console Service or apply a reviewed upgrade. |
 | Console reports `Operator required` | `GET /bootstrap/v1/status` | Run `lenso console operator bootstrap`, then restart Console API and Worker. |
 | Console opens but a managed Module is missing | System Registry and enrollment evidence | Verify the Module Release, Console UI artifact, and managed-Service enrollment. |
-| Remote module is installed but unhealthy | `lenso module doctor <name>` | Start the remote service, fix `readyUrl`, or clear stale `.lock` and `.pid` files called out by doctor. |
+| Service provider is installed but unhealthy | `lenso service doctor <provider> --json` | Start the Service, fix its declared readiness endpoint, or follow the reported recovery action. |
 | App lifecycle next step is unclear | `lenso app next` | Run `lenso app explain` to see generated-state, module, and service actions separately. |
 | Launchpad App Change Plan is empty | `.lenso/app-change-plan.json` | Run `lenso app plan --write-plan` or `lenso app plan --addon <name> --write-plan`. |
 | Capability pack is not shown in Launchpad | `lenso capability check <pack-dir>` | Fix the pack manifest, then rerun `lenso app compose --repo-root . --pack <pack-dir> --write-plan` or `--apply`. |
 | Launchpad App Change Plan is blocked | Console Launchpad plan panel | Review blocked changes; unsupported addons usually mean choosing a supported blueprint or addon. |
 | Launchpad App Proof is empty | `.lenso/app-proof.json` | Run `lenso app verify --write-proof` in the generated app root. |
 | Launchpad App Proof is drifted | `lenso app diff` | Preview safe generated-state repairs with `lenso app repair --dry-run`, then run `lenso app repair` if the plan is right. |
-| `REMOTE_MODULES` changed but nothing happens | process environment | Restart the process that loads modules. Environment values are read at startup. |
+| A Service installation changed but nothing happens | `lenso service doctor <provider> --json` | Reconcile the Host and follow the reported restart or recovery action. |
 | Auth works locally but sessions are slow | `auth.session_cache` and `REDIS_URL` | Install `auth --profile redis-session-cache` and provide Redis separately. |
 | Redis auth profile fails at runtime | Redis service availability | Start Redis and confirm `REDIS_URL` points at the right database. |
 | CORS blocks browser requests | `CORS_ALLOWED_ORIGINS` | Add the frontend origin or use the generated local defaults. |
@@ -68,7 +68,7 @@ cat .lenso/module-installs.json | jq .
 Check the environment written by install:
 
 ```sh
-grep -E 'REMOTE_MODULES|LENSO_MODULE_' .env
+grep -E 'LENSO_MODULE_' .env
 ```
 
 Then restart API and worker. Linked module installs can update `Cargo.toml` and
@@ -146,22 +146,22 @@ restore generated Launchpad, workspace, and system entries or missing scaffold
 directories. It does not overwrite existing service source files, and it should
 not delete unknown services.
 
-## Remote manifest URL does not respond
+## Service manifest URL does not respond
 
 Open the manifest directly:
 
 ```sh
-curl -sS http://127.0.0.1:4100/lenso/module/v1/manifest | jq .
+curl -sS http://127.0.0.1:4100/lenso/service/v1/manifest | jq .
 ```
 
-For gRPC modules, check the endpoint in `REMOTE_MODULES`:
+Then ask the CLI for the provider's exact diagnostic evidence:
 
 ```sh
-REMOTE_MODULES=crm=grpc://127.0.0.1:4100 lenso serve
+lenso service doctor billing --json
 ```
 
-Use `grpc://` or `grpcs://` only for gRPC remotes. Use the HTTP manifest URL for
-HTTP remotes.
+Fix the declared manifest, readiness URL, credentials, or deployment target
+rather than bypassing the Service installation record.
 
 ## Generated artifacts changed
 
@@ -191,7 +191,7 @@ For first-user smoke defaults, use:
 
 ```sh
 FIRST_USER_SMOKE_HTTP_PORT=3011 \
-FIRST_USER_SMOKE_REMOTE_MODULE_ADDR=127.0.0.1:4111 \
+FIRST_USER_SMOKE_PROVIDER_ADDR=127.0.0.1:4111 \
 just first-user-smoke
 ```
 

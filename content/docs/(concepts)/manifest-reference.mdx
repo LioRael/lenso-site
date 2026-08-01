@@ -8,10 +8,10 @@ host and Runtime Console can see: routes, admin surfaces, runtime functions,
 runtime schedules, events, lifecycle work, Console packages, dependencies, and
 capabilities.
 
-Executable behavior does not live in the manifest. Linked modules attach
-behavior through `LinkedBinding`; remote modules expose behavior through HTTP or
-gRPC protocols. This keeps every loading source producing the same serializable
-shape.
+Executable behavior does not live in the manifest. Linked Modules attach
+behavior through `LinkedBinding`. Independently running Services expose their
+own provider APIs and declare which Modules they provide. The pure manifest
+remains serializable in either topology.
 
 ## Minimal manifest
 

@@ -15,9 +15,9 @@ The host migration app collects:
 3. enabled first-party linked module migrations;
 4. host-linked module migrations from `HostComposition`.
 
-Remote modules are separate processes. Installing a remote module can write host
-configuration, receipts, services, and Console bundles, but it does not apply
-that module's private database migrations for you.
+Services are separate processes with their own Stores. Installing a Service can
+record provider and lifecycle state, but the Host migration runner never applies
+that Service's private migrations.
 
 ## Local commands
 
@@ -103,7 +103,7 @@ cargo run --bin api
   `billing/0002_add_invoice_status`.
 - Make SQL idempotent only when it is naturally safe; the runner already tracks
   applied names.
-- Keep remote module private database setup in the remote module package or
+- Keep Service Store migrations in the owning Service's migration Workload and
   deployment process.
 
 ## Verify

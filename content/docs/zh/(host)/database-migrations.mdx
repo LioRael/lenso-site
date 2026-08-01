@@ -15,7 +15,7 @@ Lenso 迁移是指向 SQL 字符串的仅附加 Rust 声明。
 3. 启用第一方链接模块迁移；
 4. 从 `HostComposition` 迁移主机链接模块。
 
-远程模块是单独的进程。安装remote模块可以写host
+Service是单独的进程。安装remote模块可以写host
 配置、回执、服务和控制台捆绑包，但不适用
 该模块的私有数据库为您迁移。
 
@@ -103,7 +103,7 @@ cargo run --bin api
   `billing/0002_add_invoice_status`。
 - 只有在自然安全的情况下才使SQL幂等；跑步者已经追踪
   应用的名称。
-- 将远程模块私有数据库设置保留在远程模块包中或
+- 将Service私有数据库设置保留在Service包中或
   部署过程。
 
 ## 核实

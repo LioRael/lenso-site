@@ -87,8 +87,6 @@ usually have on day one:
   ships a typed React package for the Runtime Console.
 - Out-of-process module: publish a service-backed module release, then use
   [Module Installation](/docs/module-installation) to install it into a host.
-- Remote protocol: read [Remote Module Protocol](/docs/remote-protocol) when
-  implementing HTTP JSON or gRPC remote modules outside the TypeScript kit.
 - Agent-assisted development: read [Agent Development](/docs/agent-development)
   and use skills, scaffolds, checks, and `/console` evidence.
 - Working reference: read [Examples](/docs/examples) and run the support-ticket
@@ -148,8 +146,6 @@ usually have on day one:
   <Card title="Auth and Capabilities" href="/docs/auth-capabilities" description="Use actor context, auth providers, capability declarations, scopes, and module-owned profile tables." />
   <Card title="Runtime and Lifecycle" href="/docs/runtime-lifecycle" description="Register runtime functions, cron schedules, lifecycle hooks, background workers, and remote runtime endpoints." />
   <Card title="Console Packages" href="/docs/console-packages" description="Build and publish typed React packages for module-owned Runtime Console surfaces." />
-  <Card title="Remote Modules" href="/docs/remote-modules" description="Run modules out of process while the host owns loading, proxying, and receipts." />
-  <Card title="Remote Module Protocol" href="/docs/remote-protocol" description="Implement the HTTP JSON or gRPC protocol for manifests, admin data, actions, proxy routes, functions, and events." />
   <Card title="Examples" href="/docs/examples" description="Use support-ticket and account-profile as runnable module proof points." />
 </CardGroup>
 
@@ -159,7 +155,6 @@ usually have on day one:
 - `lenso@0.3.33` is the GA Rust facade and Host runtime line.
 - `@lenso/cli@0.2.13` and `lenso-cli@0.2.13` expose the same published CLI surface.
 - `@lenso/service-kit@0.1.0` is the public TypeScript Service authoring path.
-- `@lenso/remote-module-kit@0.1.3` keeps compatibility with the older remote-module entrypoint.
 - Runtime Console `0.1.2` is distributed as a release archive and bundled into generated hosts.
 
 ## Mental Model

@@ -9,7 +9,7 @@ description: 了解每个 Lenso 模块公开的可序列化的 ModuleManifest �
 能力。
 
 可执行的行为并不存在于Manifest中。链接模块附加
-通过 `LinkedBinding` 的行为；远程模块通过 HTTP 或
+通过 `LinkedBinding` 的行为；Service通过 HTTP 或
 gRPC 协议。这使得每个加载源都产生相同的可序列化
 形态。
 
@@ -59,7 +59,7 @@ pub fn manifest() -> ModuleManifest {
 | `name` |稳定的模块 ID，例如 `auth`、`billing` 或 `support-ticket`。 |
 | `dependencies` |必须首先安装的其他模块。将此用于硬运行时假设，例如 `auth`。 |
 | `capabilities` |路由、管理界面、运行时工作或控制台页面可以引用的点分隔权限名称。 |
-| `http_routes` |模块拥有的 HTTP 路由元数据。链接模块仍然通过绑定挂载真实的 Axum 路由。远程路由代理使用此元数据来实现主机可见的路由意图。 |
+| `http_routes` |模块拥有的 HTTP 路由元数据。链接模块仍然通过绑定挂载真实的 Axum 路由。Service 路由代理使用此元数据来实现主机可见的路由意图。 |
 | `admin` |架构驱动、声明性自定义或嵌入式自定义操作员界面。 |
 | `runtime` |运行时函数和调度声明。申报是舱单数据；处理程序位于加载源中，并且调度仍由主机拥有。 |
 | `events` |事件处理程序声明。主机通过源绑定注册并调用后备处理程序。 |
@@ -160,7 +160,7 @@ ScheduledFunctionDeclaration {
 | --- | --- |
 | `module` |缺少模块名称。 |
 | `capability` |错误的命名或引用但未声明的功能。 |
-| `routes` |重复的方法/路径、缺少显示元数据或缺少远程路由功能。 |
+| `routes` |重复的方法/路径、缺少显示元数据或缺少Service 路由功能。 |
 | `admin.schema` |架构为空或缺少读取功能。 |
 | `admin.declarative` |空页、缺少查询值或无效的后备架构引用。 |
 | `admin.embedded` |非 HTTPS 条目 URL、缺少源允许列表或无效的后备权限。 |

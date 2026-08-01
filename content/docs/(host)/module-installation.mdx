@@ -76,15 +76,14 @@ release/provider concerns:
 The host still owns install state, queues, retries, Runtime Stories, and Console
 evidence.
 
-Legacy remote module manifests remain installable for compatibility:
+Install the owning Service through its Service manifest:
 
 ```sh
-lenso module install http://127.0.0.1:4110/lenso/module/v1/manifest
-lenso module install ./lenso.module.json --base-url https://example.com/lenso/module/v1
+lenso service install http://127.0.0.1:4110/lenso/service/v1/manifest
 ```
 
-After installation, restart the API and worker so the host reloads configured
-remote sources and console extension registry state.
+After installation, reconcile the Host and verify the provider with
+`lenso service doctor <provider> --json`.
 
 ## What install writes
 
@@ -92,17 +91,15 @@ The service/module install lane writes host-local files:
 
 | File | Purpose |
 | --- | --- |
-| `.env` | updates `REMOTE_MODULES=<provider>=<base_url>` and declared env values |
+| `.env` | records the CLI-managed Service provider entry and declared env values |
 | `.lenso/module-installs.json` | install receipt used by uninstall |
 | `.lenso/module-services.json` | service commands declared by the module |
-| `.lenso/console/extensions/<module>/` | copied same-origin console bundles |
-| `.lenso/console/extensions/registry.json` | hosted Console extension registry |
 
 Install commands from a manifest are planned but not run unless the operator
 opts in:
 
 ```sh
-lenso module install https://example.com/lenso/module/v1/manifest --run-install-commands
+lenso service install https://example.com/lenso/service/v1/manifest
 ```
 
 ## Catalog is discovery
@@ -113,7 +110,7 @@ the operator runs an install action.
 Runtime Console's Available Modules view reads, in order:
 
 1. explicit `.env` `LENSO_MODULE_CATALOG_FILE=<path>`
-2. already configured service or remote sources
+2. already configured Service providers
 3. built-in `builtin:lenso-official-module-catalog`
 
 The built-in catalog is the default discovery source for fresh hosts. It is not

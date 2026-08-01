@@ -24,7 +24,7 @@ or runs a module action, the useful questions are:
 - Which module owned it?
 - Did the host route, authorize, and record it?
 - Did it enqueue outbox or runtime work?
-- Did a remote module call succeed or fail?
+- Did a Service provider call succeed or fail?
 - Which technical operation explains the slow or failing node?
 
 A Runtime Story makes those answers visible in Runtime Console.
@@ -109,12 +109,12 @@ pub fn manifest() -> ModuleManifest {
 }
 ```
 
-Remote TypeScript modules use the same idea through route metadata.
+TypeScript Services use the same idea on the Modules they provide.
 
 ```ts
-import { defineRemoteModule, postRoute } from "@lenso/remote-module-kit";
+import { defineModule, defineService, postRoute } from "@lenso/service-kit";
 
-export const manifest = defineRemoteModule({
+const accountProfile = defineModule({
   capabilities: ["account_profile.organizations.write"],
   httpRoutes: [
     postRoute("/organizations/{id}/memberships", {
@@ -124,6 +124,12 @@ export const manifest = defineRemoteModule({
     }),
   ],
   name: "account-profile",
+  version: "0.1.0",
+});
+
+export const manifest = defineService({
+  modules: [accountProfile],
+  name: "account-profile-service",
   version: "0.1.0",
 });
 ```

@@ -17,7 +17,8 @@ The current committed contract surface is intentionally small:
 | --- | --- |
 | `contracts/openapi/app-api.v1.yaml` | API clients, SDK generation, Runtime Console API expectations |
 | `contracts/errors/error-response.v1.schema.json` | standard error envelope consumers |
-| `contracts/grpc/lenso/remote/v1/remote_module.proto` | native remote-module transport |
+| `contracts/services/lenso-service.v2.schema.json` | Service and provided-Module topology |
+| `contracts/services/support-grpc.v1.proto` | example Service-owned gRPC API |
 
 Rust route annotations and platform schemas are the source. Generated artifacts
 are committed so downstream users can depend on stable files.
@@ -75,7 +76,7 @@ Use the smallest gate that proves the changed surface:
 | OpenAPI or generated schema | `just generated-check` |
 | module boundary or contract layout | `just arch-check` |
 | release candidate | `just release-check` |
-| Runtime Console package work | `pnpm check` in `lenso-runtime-console` |
+| Runtime Console package work | `pnpm check` in `lenso-console` |
 | docs site work | `pnpm types:check` and `pnpm build` in `lenso-site` |
 
 For a public release, local green is not enough. Verify the published crate,

@@ -154,7 +154,6 @@ lenso serve
 | ---------------------------------------------------------------------- | ------------------------------------------------------------ |
 | `lenso module create billing` |在主机内创建一个链接的 Rust 模块。                 |
 | `lenso module create billing --with-console` |创建链接模块和匹配的 Runtime Console包。 |
-| `lenso module create billing --remote --output-dir ../module-packages` |创建一个独立的远程模块包。                   |
 | `lenso module create billing --dry-run` |预览生成的文件而不写入它们。                |
 | `lenso console package create billing` |仅创建Runtime Console包脚手架。              |
 
@@ -260,8 +259,6 @@ Provider和模块安装状态。工作区读取更喜欢 `lenso.workspace.json`
 | `lenso module release inspect <module-release.json>` |安装之前检查模块版本。                                    |
 | `lenso module release check <module-release.json> --base-url <url>` |当本地模块版本缺少安装输入时快速失败。                  |
 | `lenso module install <module-release.json> --base-url <url>` |从发布工件安装业务模块。                                |
-| `lenso module install <manifest-url>` |通过 URL 安装旧版远程模块。                                            |
-| `lenso module install ./lenso.module.json --base-url <url>` |安装旧版本地描述符，同时将主机指向已部署的基本 URL。 |
 | `lenso module install <ref> --dry-run` |预览 `.env`、回执、服务文件和控制台注册表更改。            |
 | `lenso module install <ref> --run-install-commands` |执行描述符声明的安装命令。                                     |
 | `lenso module install <ref> --no-console-extension` |跳过Runtime Console扩展注册。                                      |
@@ -297,9 +294,8 @@ lenso module uninstall billing
 ```
 
 `module update` 重复使用记录的安装回执
-`.lenso/module-installs.json`。远程更新刷新`REMOTE_MODULES`，已复制
-控制台捆绑包、服务状态和回执。链接更新重新应用
-描述符或内置模块条目。
+`.lenso/module-installs.json`。Linked Module 更新会重新应用 Descriptor 或
+内置 Module；独立 Provider 使用 `lenso service` 生命周期命令。
 
 仅当描述符缺少源字段且您需要使用 `--source linked` 时，才使用 `--source linked`
 需要强制加载源：
@@ -315,9 +311,8 @@ lenso module doctor
 lenso module doctor billing
 ```
 
-Doctor读取`REMOTE_MODULES`和`.lenso/module-services.json`，检查申报
-服务 `readyUrl` 端点，并在以下情况下指出过时的 `.lock` 或 `.pid` 文件
-主机启动的服务未准备就绪。
+Module Doctor 检查 Linked Module 组合与回执。Service Manifest、健康、
+部署观测和进程状态使用 `lenso service doctor <provider> --json`。
 
 ## 目录
 

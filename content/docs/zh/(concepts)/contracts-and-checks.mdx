@@ -17,7 +17,8 @@ Lenso 已为代理做好了准备，因为重要的界面是明确且可检查�
 | --- | --- |
 | `contracts/openapi/app-api.v1.yaml` | API 客户端、SDK 生成、Runtime Console API 期望 |
 | `contracts/errors/error-response.v1.schema.json` |标准错误信封消费者|
-| `contracts/grpc/lenso/remote/v1/remote_module.proto` |本机远程模块传输 |
+| `contracts/services/lenso-service.v2.schema.json` | Service 与其提供的 Module 拓扑 |
+| `contracts/services/support-grpc.v1.proto` | Service 自有 gRPC API 示例 |
 
 Rust 路由注释和平台模式是来源。生成的工件
 已提交，以便下游用户可以依赖稳定的文件。
@@ -75,7 +76,7 @@ pub async fn create_ticket(
 | OpenAPI 或生成的架构 | `just generated-check` |
 |模块边界或契约布局| `just arch-check` |
 |候选版本 | `just release-check` |
-|Runtime Console包工作| `lenso-runtime-console` 中的 `pnpm check` |
+|Runtime Console包工作| `lenso-console` 中的 `pnpm check` |
 |文档网站工作| `lenso-site` 中的 `pnpm types:check` 和 `pnpm build` |
 
 对于公开发布，仅本地绿色是不够的。验证已发布的箱子，

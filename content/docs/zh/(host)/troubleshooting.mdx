@@ -21,14 +21,14 @@ API 和worker 安装后都会发生变化。
 | Console 地址不可用 | `lenso console doctor` 与 Console Workload 健康状态 |恢复 Console Service，或应用经过审查的升级。|
 | Console 显示 `Operator required` | `GET /bootstrap/v1/status` |运行 `lenso console operator bootstrap`，然后重启 Console API 和 Worker。|
 | Console 打开但缺少受管 Module | System Registry 与 enrollment 证据 |校验 Module Release、Console UI artifact 和受管 Service enrollment。|
-|远程模块已安装但不健康 | `lenso module doctor <name>` |启动远程服务，修复`readyUrl`，或清除Doctor调出的过时的`.lock`和`.pid`文件。 |
+| Service Provider 已安装但不健康 | `lenso service doctor <provider> --json` |启动 Service、修复声明的健康端点，或执行诊断返回的恢复动作。 |
 |应用程序生命周期下一步尚不清楚 | `lenso app next` |运行 `lenso app explain` 来分别查看生成状态、模块和服务操作。 |
 | Launchpad 应用程序更改计划为空 | `.lenso/app-change-plan.json` |运行 `lenso app plan --write-plan` 或 `lenso app plan --addon <name> --write-plan`。 |
 |能力包未显示在 Launchpad 中 | `lenso capability check <pack-dir>` |修复包Manifest，然后重新运行 `lenso app compose --repo-root . --pack <pack-dir> --write-plan` 或 `--apply`。 |
 | Launchpad 应用更改计划被阻止 |控制台Launchpad计划面板 |审查被阻止的更改；不受支持的插件通常意味着选择受支持的蓝图或插件。 |
 | Launchpad 应用程序证明为空 | `.lenso/app-proof.json` |在生成的应用程序根目录中运行 `lenso app verify --write-proof`。 |
 | Launchpad App Proof 已漂移 | `lenso app diff` |使用 `lenso app repair --dry-run` 预览安全生成状态修复，如果计划正确，则运行 `lenso app repair`。 |
-| `REMOTE_MODULES` 发生了变化但没有任何反应 |工艺环境|重新启动加载模块的进程。环境值在启动时读取。 |
+| Service 安装变化后没有生效 | `lenso service doctor <provider> --json` |Reconcile Host，并执行诊断返回的重启或恢复动作。 |
 |身份验证在本地工作，但会话速度很慢 | `auth.session_cache` 和 `REDIS_URL` |安装`auth --profile redis-session-cache`并单独提供Redis。 |
 | Redis 身份验证配置文件在运行时失败 | Redis 服务可用性 |启动 Redis 并确认 `REDIS_URL` 指向正确的数据库。 |
 | CORS 阻止浏览器请求 | `CORS_ALLOWED_ORIGINS` |添加前端源或使用生成的本地默认值。 |
@@ -67,7 +67,7 @@ cat .lenso/module-installs.json | jq .
 检查install写的环境：
 
 ```sh
-grep -E 'REMOTE_MODULES|LENSO_MODULE_' .env
+grep -E 'LENSO_MODULE_' .env
 ```
 
 然后重新启动API和worker。链接模块安装可以更新 `Cargo.toml` 和
@@ -145,22 +145,21 @@ lenso app repair --dry-run
 目录。它不会覆盖现有的服务源文件，并且应该
 不删除未知服务。
 
-## 远程 Manifest URL 没有响应
+## Service Manifest URL 没有响应
 
 直接打开Manifest：
 
 ```sh
-curl -sS http://127.0.0.1:4100/lenso/module/v1/manifest | jq .
+curl -sS http://127.0.0.1:4100/lenso/service/v1/manifest | jq .
 ```
 
-对于 gRPC 模块，检查 `REMOTE_MODULES` 中的端点：
+然后通过 CLI 获取 Provider 的精确诊断证据：
 
 ```sh
-REMOTE_MODULES=crm=grpc://127.0.0.1:4100 lenso serve
+lenso service doctor billing --json
 ```
 
-仅将 `grpc://` 或 `grpcs://` 用于 gRPC 远程。使用 HTTP Manifest URL
-HTTP 遥控器。
+修复声明的 Manifest、健康 URL、凭据或部署目标，不要绕过 Service 安装记录。
 
 ## 生成的工件已更改
 
@@ -190,7 +189,7 @@ HTTP_PORT=3010 lenso serve
 
 ```sh
 FIRST_USER_SMOKE_HTTP_PORT=3011 \
-FIRST_USER_SMOKE_REMOTE_MODULE_ADDR=127.0.0.1:4111 \
+FIRST_USER_SMOKE_PROVIDER_ADDR=127.0.0.1:4111 \
 just first-user-smoke
 ```
 

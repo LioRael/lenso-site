@@ -22,15 +22,16 @@ A generated host contains:
 - optional Redis for auth session lookup
 - bundled Runtime Console served by the API
 
-This is a modular monolith first. Remote modules are the escape hatch for
-capabilities that need their own process, runtime, or deployment cadence.
+This is a modular monolith first. A Module is Linked into a Host. Code that
+needs its own process, runtime, Store, or deployment cadence is a Service that
+can provide Modules through explicit provider contracts.
 
 ## Repository ownership
 
 | Repository | Owns |
 | --- | --- |
 | `lenso` | Rust services, platform crates, first-party modules, migrations, contracts |
-| `lenso-runtime-console` | React Runtime Console, console package APIs, JavaScript module packages |
+| `lenso-console` | Independent Console Service, Shell, and Console package APIs |
 | `lenso-cli` | `lenso` command, host starter template, local service wrapper |
 | `lenso-examples` | Runnable module examples and smoke checks |
 
@@ -40,18 +41,21 @@ The public surface should stay small. Publish packages and commands only when
 they have a clear target author, a minimal install command, a stable import path
 or binary name, and README usage that starts from a blank project.
 
-## Linked or remote
+## Linked Module or Service
 
-Start linked when the module belongs to the same app and release cycle. Move it
-remote when it needs a different runtime, owner, deployment cadence, or trust
-boundary.
+Use a Linked Module when the capability belongs to the Host and its release
+cycle. Use a Service when code needs a different runtime, owner, deployment
+cadence, Store, or trust boundary.
 
-Remote modules still use host-owned loading, receipts, proxying, and Runtime
-Console visibility. The host remains the control plane.
+The Service owns its process and terminal operational evidence. The Host owns
+its Module composition, capability checks, and Data Plane. Lenso Console
+observes and coordinates through the System Plane without taking effect
+authority away from either side.
 
 ## Split later
 
-Keep a module linked in the host until there is a concrete reason to split it:
+Keep a Module Linked in the Host until there is a concrete reason to split it:
 different runtime, separate ownership, independent release cadence, or a trust
-boundary. When that reason exists, use the remote-module path while keeping
-loading, receipts, and operator visibility host-owned.
+boundary. When that reason exists, extract an independently running Service and
+install its declared provider contract. Remote Module is not a current loading
+source or public package category.
