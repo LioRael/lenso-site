@@ -10,7 +10,7 @@ This split is important:
 
 - official or explicit catalog = remember this module exists;
 - module install = write host-local install state;
-- host startup = load configured linked and service/remote sources.
+- Host composition = load Linked Modules and reconcile installed Services.
 
 ## Local catalog file
 
@@ -47,7 +47,7 @@ descriptors, and Console extension registry files. See
 Runtime Console's Available Modules view merges discovery sources:
 
 1. explicit `.env` `LENSO_MODULE_CATALOG_FILE=<path>`;
-2. already configured service or remote sources;
+2. already configured Service providers;
 3. built-in `builtin:lenso-official-module-catalog`.
 
 The built-in catalog is the default official source for fresh hosts. It is not a
@@ -66,9 +66,9 @@ lenso module install auth-password
 lenso module install auth-device
 ```
 
-Linked installs update the generated host's local composition and module
-settings. Service-backed installs update provider source configuration and
-optional service or Console extension state.
+Linked installs update the generated Host's local composition and Module
+settings. Service installation records provider and lifecycle state; Console UI
+artifacts are owned by the Module Release and independent Console Service.
 
 ## Catalog entry shape
 

@@ -211,7 +211,7 @@ const featureCards = [
 const footerColumns: Array<[string, Array<[string, string]>]> = [
   ['Start', [['Overview', '/docs'], ['Quickstart', '/docs/quickstart'], ['Product Blueprints', '/docs/product-blueprints'], ['CLI Reference', '/docs/cli-reference']]],
   ['Build', [['Host Composition', '/docs/host-composition'], ['Module Authoring', '/docs/module-authoring'], ['Module Installation', '/docs/module-installation'], ['Console Packages', '/docs/console-packages']]],
-  ['Extend', [['Capability Surfaces', '/docs/admin-surfaces'], ['Remote Modules', '/docs/remote-modules'], ['Remote Protocol', '/docs/remote-protocol'], ['Auth Capabilities', '/docs/auth-capabilities']]],
+  ['Extend', [['Capability Surfaces', '/docs/admin-surfaces'], ['Autonomous Services', '/docs/autonomous-services'], ['Service System', '/docs/service-system-plane'], ['Auth Capabilities', '/docs/auth-capabilities']]],
   ['Operate', [['Runtime Console', '/docs/runtime-console'], ['Reliability', '/docs/reliability-and-recovery'], ['Observability', '/docs/observability'], ['Deployment', '/docs/deployment']]],
   ['Concepts', [['Platform Concepts', '/docs/platform-concepts'], ['Runtime Stories', '/docs/runtime-stories'], ['Service System', '/docs/service-system-plane'], ['Autonomous Services', '/docs/autonomous-services']]],
   ['Agents', [['Agent Development', '/docs/agent-development'], ['Contracts and Checks', '/docs/contracts-and-checks'], ['Checks and Release', '/docs/checks-and-release'], ['API Clients', '/docs/api-clients']]],

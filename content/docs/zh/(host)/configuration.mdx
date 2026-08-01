@@ -41,7 +41,7 @@ LENSO_COMPOSITION_PROFILE=core
 [可观测性](/docs/zh/observability)。
 
 对于 `core`、`demo`、应用程序拥有的 `HostBuilder` 模块和
-远程源，请阅读 [Host Composition](/docs/zh/host-composition).
+Service Provider，请阅读 [Host Composition](/docs/zh/host-composition).
 
 默认情况下，本地开发身份验证拒绝公共 HTTP 绑定。如果你确实需要本地人
 主机位于 `0.0.0.0` 上，明确该风险：
@@ -59,23 +59,18 @@ Lenso Console 在自己的安装目录和 Service 环境中配置。业务 Host 
 `lenso console doctor` 检查安装，使用 `lenso console upgrade` 应用经过审查的
 Console Service Release。
 
-## 远程模块
+## Service 安装
 
-远程模块源通过`REMOTE_MODULES`配置：
-
-```sh
-REMOTE_MODULES=billing=http://127.0.0.1:4110/lenso/module/v1,crm=grpc://127.0.0.1:50051
-```
-
-对于每个远程模块名称，主机还会查找：
+独立运行的代码是 Service。通过 CLI 安装 Service Manifest，让 Host
+统一记录 Provider、安装回执和生命周期状态：
 
 ```sh
-REMOTE_MODULE_BILLING_TOKEN=secret-host-to-module-token
-REMOTE_MODULE_BILLING_TIMEOUT_MS=8000
+lenso service install https://billing.example.com/lenso/service/v1/manifest
 ```
 
-该令牌是主机到远程的身份验证。主机不转发主叫承载
-令牌或cookie到远程模块。
+不要把手工编辑 Provider 环境变量当成部署机制。Service 身份、凭据、健康状态
+与发布证据属于 Service 安装和 System Plane 合约。Host 不会把调用者的 bearer
+token 或 cookie 转发给 Provider。
 
 ## 模块本地配置
 

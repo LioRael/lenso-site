@@ -10,7 +10,7 @@ description: 了解 Lenso 模块发现目录、官方后备条目和安装边界
 
 - 官方或明确的目录=记住这个模块存在；
 - 模块安装=写入主机本地安装状态；
-- 主机启动 = 加载配置的链接源和服务/远程源。
+- 主机启动 = 加载配置的链接源和服务/Service Provider。
 
 ## 本地目录文件
 
@@ -47,7 +47,7 @@ lenso module install dist/lenso-service/support-suite-provider/modules/support-t
 Runtime Console的可用模块视图合并发现源：
 
 1. 显式 `.env` `LENSO_MODULE_CATALOG_FILE=<path>`；
-2. 已配置的服务或远程源；
+2. 已配置的服务或Service Provider；
 3. 内置`builtin:lenso-official-module-catalog`。
 
 内置目录是新主机的默认官方来源。它不是一个

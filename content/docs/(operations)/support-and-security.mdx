@@ -27,9 +27,9 @@ audience-limited JWT-SVID from the Workload API. Verify:
 - short-lived credentials and rotation behavior;
 - rejection of local System Sandbox identities outside development.
 
-Never forward an end user's browser bearer token or cookies to a remote module.
-The host resolves the caller and enforces the route's declared capability, then
-uses its own Service identity for the remote hop.
+Never forward an end user's browser bearer token or cookies to a Service
+provider. The Host resolves the caller and enforces the route's declared
+capability, then uses its own Workload Identity for the provider hop.
 
 ## Secrets and configuration
 

@@ -9,7 +9,7 @@ Runtime Story是 Lenso 对某个企业或运营商的持久记录
 不是要求用户将日志、队列行、代理调用、跟踪拼凑在一起，
 并重试，Lenso 按 `correlation_id` 对相关运行时证据进行分组并显示
 它作为一个Story：请求、模块操作、事件或功能工作、
-远程调用、状态及其背后的技术操作。
+Provider 调用、状态及其背后的技术操作。
 
 这是Lenso的核心理念之一。Story不仅仅是一个踪迹查看器，而且不是
 只是一个审核日志。这是模块化业务的操作员可读的叙述
@@ -24,7 +24,7 @@ Runtime Story是 Lenso 对某个企业或运营商的持久记录
 - 哪个模块拥有它？
 - 主机是否路由、授权并记录？
 - 它是否排队Outbox或运行时工作？
-- 远程模块调用成功还是失败？
+- Service Provider 调用成功还是失败？
 - 哪种技术操作可以解释节点缓慢或失败的原因？
 
 Runtime Story使这些答案在Runtime Console中可见。
@@ -36,7 +36,7 @@ Lenso 不要求模块作者手动构建Story图。主人
 
 |来源 |Story角色|
 | --- | --- |
-| `platform.story_events` |规范化的Story节点，例如 HTTP 请求、管理操作和远程代理调用 |
+| `platform.story_events` |规范化的Story节点，例如 HTTP 请求、管理操作和Provider调用 |
 | `platform.outbox` |已提交的模块事件和调度状态 |
 | `runtime.function_runs` |排队、正在运行、重试、已完成、失败或停止后台工作 |
 | `platform.remote_http_proxy_calls` |进程外模块流量的主机拥有的证据
@@ -109,12 +109,12 @@ pub fn manifest() -> ModuleManifest {
 }
 ```
 
-远程 TypeScript 模块通过路由元数据使用相同的想法。
+TypeScript Service 为其提供的 Module 声明相同的路由元数据。
 
 ```ts
-import { defineRemoteModule, postRoute } from "@lenso/remote-module-kit";
+import { defineModule, defineService, postRoute } from "@lenso/service-kit";
 
-export const manifest = defineRemoteModule({
+const accountProfile = defineModule({
   capabilities: ["account_profile.organizations.write"],
   httpRoutes: [
     postRoute("/organizations/{id}/memberships", {
@@ -124,6 +124,12 @@ export const manifest = defineRemoteModule({
     }),
   ],
   name: "account-profile",
+  version: "0.1.0",
+});
+
+export const manifest = defineService({
+  modules: [accountProfile],
+  name: "account-profile-service",
   version: "0.1.0",
 });
 ```

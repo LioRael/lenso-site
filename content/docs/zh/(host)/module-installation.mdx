@@ -76,15 +76,14 @@ lenso module install dist/lenso-service/support-suite-provider/modules/support-t
 主机仍然拥有安装状态、队列、重试、Runtime Story 和控制台
 证据。
 
-旧版远程模块 Manifest仍然可安装以实现兼容性：
+通过 Service Manifest 安装拥有该 Module 的 Service：
 
 ```sh
-lenso module install http://127.0.0.1:4110/lenso/module/v1/manifest
-lenso module install ./lenso.module.json --base-url https://example.com/lenso/module/v1
+lenso service install http://127.0.0.1:4110/lenso/service/v1/manifest
 ```
 
-安装后，重新启动API和worker，以便主机重新加载配置
-远程源和控制台扩展注册表状态。
+安装后，reconcile Host，并使用
+`lenso service doctor <provider> --json` 验证 Provider。
 
 ## 安装写了什么
 
@@ -92,7 +91,7 @@ lenso module install ./lenso.module.json --base-url https://example.com/lenso/mo
 
 |文件|目的|
 | --- | --- |
-| `.env` |更新 `REMOTE_MODULES=<provider>=<base_url>` 和声明的环境值 |
+| `.env` |记录 CLI 管理的 Service Provider 条目和声明的环境值 |
 | `.lenso/module-installs.json` |卸载使用的安装回执|
 | `.lenso/module-services.json` |模块声明的服务命令 |
 | `.lenso/console/extensions/<module>/` |复制同源控制台包 |
@@ -102,7 +101,7 @@ Manifest中的安装命令已计划但不会运行，除非操作员
 选择加入：
 
 ```sh
-lenso module install https://example.com/lenso/module/v1/manifest --run-install-commands
+lenso service install https://example.com/lenso/service/v1/manifest
 ```
 
 ## 目录是发现
@@ -113,7 +112,7 @@ lenso module install https://example.com/lenso/module/v1/manifest --run-install-
 Runtime Console的可用模块视图按顺序读取：
 
 1. 显式 `.env` `LENSO_MODULE_CATALOG_FILE=<path>`
-2. 已配置的服务或远程源
+2. 已配置的 Service Provider
 3. 内置`builtin:lenso-official-module-catalog`
 
 内置目录是新主机的默认发现源。它不是
@@ -139,11 +138,11 @@ lenso module doctor
 lenso module doctor billing
 ```
 
-删除主机本地远程源和控制台注册表项：
+删除主机本地Service Provider和控制台注册表项：
 
 ```sh
 lenso module uninstall billing
 ```
 
 卸载仅保留模块拥有的数据。它删除主机的本地安装
-状态;它不会删除远程服务数据库或业务记录。
+状态;它不会删除Service数据库或业务记录。

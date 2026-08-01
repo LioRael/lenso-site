@@ -23,8 +23,8 @@ needed to split a module into a service later.
 ## Manifest data, behavior seams
 
 Every module exposes pure metadata through `ModuleManifest`. Executable behavior
-stays behind source-specific seams such as linked Rust bindings or remote module
-protocol handlers.
+stays behind a Linked Rust binding or an independently running Service's
+provider contract.
 
 ```rust
 use lenso::{
@@ -59,9 +59,9 @@ pub fn manifest() -> ModuleManifest {
 }
 ```
 
-The manifest is what Runtime Console, install checks, remote loading, and
-agent-authored smoke checks can reason about. It is not where SQL handlers,
-runtime executors, or remote clients live.
+The manifest is what Lenso Console, install checks, and agent-authored smoke
+checks can reason about. It is not where SQL handlers, runtime executors, or
+Service clients live.
 
 ## Host-owned lifecycle
 
@@ -109,7 +109,7 @@ pub fn manifest() -> ModuleManifest {
 ```
 
 There is no generic module startup callback. That is deliberate: startup work is
-visible, retryable, and comparable across linked and remote modules.
+visible, retryable, and comparable across Linked Modules and Services.
 
 ## Runtime evidence
 
@@ -117,7 +117,7 @@ Runtime Console is not a decorative dashboard. It is the proof that the host saw
 the work.
 
 Lenso's [Runtime Stories](/docs/runtime-stories) turn request ids, correlation
-ids, outbox rows, function runs, remote proxy calls, and telemetry spans into an
+ids, outbox rows, function runs, provider calls, and telemetry spans into an
 operator-readable business narrative.
 
 | Source | What it proves |
@@ -125,22 +125,22 @@ operator-readable business narrative.
 | `platform.outbox` | module events were committed and dispatched |
 | `runtime.function_runs` | runtime work was enqueued, retried, completed, or failed |
 | `platform.story_events` | business and operator events were projected into stories |
-| `platform.remote_http_proxy_calls` | remote module traffic crossed the host boundary |
+| provider invocation evidence | Service traffic crossed an owned boundary |
 
 When a module is done, the answer should not be "it compiles." It should be
 "the host loaded it, the action appears, the runtime work is visible, and the
 story has evidence."
 
-## Remote does not mean unmanaged
+## Service boundaries remain owned
 
-Remote modules are for real boundaries: a separate runtime, separate owner,
-separate deploy cadence, or a trust boundary. They do not get to become a second
-platform.
+Services are for real boundaries: a separate runtime, separate owner, separate
+deploy cadence, Store ownership, or a trust boundary. They do not become a
+second kind of Module.
 
 The host still owns:
 
-- manifest loading and lint results
-- `/modules/{module}/http/{*path}` proxy namespace
+- Module composition and manifest lint results
+- capability enforcement at Host entrypoints
 - caller auth and capability checks
 - request and response limits
 - header allowlists
@@ -148,13 +148,13 @@ The host still owns:
 - outbox dispatch
 - Runtime Console evidence
 
-The host may authenticate to the remote module, but it does not forward the
+The Host may authenticate to a Service provider, but it does not forward the
 caller's bearer token or cookies.
 
 ## Systems connect services and modules
 
 When a product grows beyond one provider, `lenso.system.json` names the whole
-system graph. Services own remote processes and deployment targets. Modules own
+System graph. Services own processes and deployment targets. Modules own
 business capabilities. The system plane connects them with environments and
 capability dependencies so CLI checks and Runtime Console can show whether the
 system is coherent.
@@ -164,8 +164,8 @@ contract and CLI flow.
 
 ## The split rule
 
-Start linked when the module belongs to the app. Move remote when one boundary
-is real enough to pay for:
+Start Linked when the Module belongs to the app. Extract a Service when one
+boundary is real enough to pay for:
 
 - different runtime
 - different deployment cadence

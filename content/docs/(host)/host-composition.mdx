@@ -1,6 +1,6 @@
 ---
 title: Host Composition
-description: Understand how a Lenso host decides which linked and remote modules are loaded.
+description: Understand how a Lenso Host composes Linked Modules and connects independently running Services.
 ---
 
 Host composition is the place where a Lenso app decides which modules exist in
@@ -10,7 +10,7 @@ It is deliberately separate from module manifests:
 
 - a manifest says what one module contributes;
 - host composition says which linked modules the app owns;
-- environment config says which profile and remote module sources to load;
+- Service installation state says which providers supply Modules;
 - runtime config can enable or disable modules at startup.
 
 ## The generated host shape
@@ -79,12 +79,13 @@ A linked module can provide:
 - event handlers;
 - host-only contributions.
 
-Remote modules do not use `HostBuilder`. They are loaded from configured remote
-sources.
+Services do not become a second Module source in `HostBuilder`. An independently
+running Service owns its process, Store, and delivery; the Host connects to it
+through provider and System Plane contracts.
 
 ## Enable and disable modules
 
-Every linked, host-linked, and remote module gets a generated startup toggle:
+Every Linked Module gets a generated startup toggle:
 
 ```text
 modules.<module>.enabled
@@ -114,19 +115,12 @@ ModuleManifest::builder("auth-password")
 If a dependency is disabled, the dependent module is not loaded and Runtime
 Console shows that dependency state in module metadata.
 
-## Remote sources
+## Service providers
 
-Remote sources are environment configuration, not Rust host composition:
-
-```sh
-REMOTE_MODULES=billing=http://127.0.0.1:4110/lenso/module/v1,crm=grpc://127.0.0.1:50051
-REMOTE_MODULE_BILLING_TOKEN=secret-host-to-module-token
-REMOTE_MODULE_BILLING_TIMEOUT_MS=8000
-```
-
-At startup, the host fetches each remote manifest, validates it, builds the
-remote behavior binding, and registers proxy, admin, runtime, event, and Console
-metadata.
+Use `lenso service install <manifest>` for provider installation and
+`lenso service doctor <provider> --json` for readiness and drift. The Service
+manifest declares its provided Modules; the Host does not reinterpret the
+Service process as a Remote Module.
 
 ## What to change where
 
@@ -134,7 +128,7 @@ metadata.
 | --- | --- |
 | Add an app-owned Rust module | `src/lib.rs` host composition |
 | Add built-in auth to a product host | `HostBuilder::linked_module(builtins::auth())` |
-| Add a remote module | `lenso module install <manifest-url>` or `REMOTE_MODULES` |
+| Install a Service provider | `lenso service install <service-manifest-url>` |
 | Disable a module at startup | `LENSO_MODULE_<MODULE>_ENABLED=false` |
 | Configure module boot values | `LENSO_MODULE_<MODULE>__<KEY>=<value>` |
 | Make local catalog data discoverable | `.env` `LENSO_MODULE_CATALOG_FILE=<path>` |
@@ -149,7 +143,7 @@ lenso serve
 
 Then open `/console` and check:
 
-- Modules shows the expected linked and remote modules;
+- Modules shows the expected Linked Modules and installed Service providers;
 - disabled modules have an explainable status;
 - expected routes or admin surfaces appear;
 - Runtime Stories still load.

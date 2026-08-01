@@ -108,7 +108,7 @@ For a useful module, expect at least one visible proof point:
 | Data surface | Rows are readable in Data |
 | Admin action | The action appears with its declared input |
 | Runtime function | Function runs appear after invocation |
-| Remote route | Proxy calls are recorded after traffic |
+| Service route | Provider calls are recorded after traffic |
 | Console extension | The module-owned page appears in the registry |
 
 ## If a module is missing
@@ -116,7 +116,7 @@ For a useful module, expect at least one visible proof point:
 Check the boring things first:
 
 - Restart the API and worker after `lenso module install`.
-- Run `lenso module doctor <module-name>` for remote modules.
+- Run `lenso service doctor <provider> --json` for independently running Services.
 - Run `lenso capability check <pack-dir>` when a composed app is missing a
   capability pack you expected to see in Launchpad.
 - Confirm the module manifest declares the data, action, route, function, or

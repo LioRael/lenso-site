@@ -12,7 +12,8 @@ shapes from old examples.
 | --- | --- |
 | `contracts/openapi/app-api.v1.yaml` | endpoint paths, methods, DTOs, auth requirements, and response schemas |
 | `contracts/errors/error-response.v1.schema.json` | standard error envelope |
-| `contracts/grpc/lenso/remote/v1/remote_module.proto` | remote module gRPC protocol |
+| `contracts/services/lenso-service.v2.schema.json` | Service and provided-Module topology |
+| `contracts/services/support-grpc.v1.proto` | example Service-owned gRPC API |
 
 If an agent is writing an integration, route it through the `lenso-api-client`
 skill:

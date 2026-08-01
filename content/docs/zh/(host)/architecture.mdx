@@ -1,57 +1,33 @@
 ---
 title: 架构
-description: 当前的Lenso运行时形态和所有权边界。
+description: 理解当前 Lenso Host、Module、Service 与 Console 的所有权边界。
 ---
 
-Lenso 一开始是作为一个可部署的后端。这让第一用户的设置变得无聊
-仍然强制模块声明它们稍后需要的边界
-移出进程。
+Lenso 从模块化单体开始。Module 只有一种当前加载来源：Linked。需要独立进程、
+运行时、Store、发布节奏或信任边界的代码是 Service；Service 可以通过明确的
+Provider 合约提供 Module，但不会成为第二种 Module Source。
 
-对于更高级别的模型，请阅读[平台概念](/docs/zh/platform-concepts)。
-对于生成的工件和架构门，请阅读
-[合约和检查](/docs/zh/contracts-and-checks)。
+## 运行形态
 
-## 运行时形态
+一个生成的 Host 包含 API、Worker、Migration Workload 与 Host Store。
+Linked Module 通过组合根进入 Host，并共享 Host 的发布与事务边界。
 
-生成的主机包含：
+Lenso Console 是独立的 Operator-facing Service。它通过 System Plane 观察、
+规划、审批并聚合证据，但不会取得 Host 或业务 Service 的 effect authority。
 
-- 用于 HTTP 路由和管理 API 的 API 应用程序
-- 用于后台处理和运行时功能的工作应用程序
-- 用于确定性数据库设置的迁移应用程序
-- Postgres 用于主机拥有的持久性
-- 用于身份验证会话查找的可选 Redis
-- 由 API 提供服务的捆绑Runtime Console
+## 所有权
 
-这首先是一个模块化的整体。远程模块是逃生口
-需要自己的流程、运行时或部署节奏的功能。
-
-## 存储库所有权
-
-|存储库 |拥有 |
+| 组件 | 所有权 |
 | --- | --- |
-| `lenso` | Rust 服务、平台包、第一方模块、迁移、合约 |
-| `lenso-runtime-console` | React Runtime Console、控制台包 API、JavaScript 模块包 |
-| `lenso-cli` | `lenso` 命令、主机启动模板、本地服务包装器 |
-| `lenso-examples` |可运行模块示例和冒烟检查 |
+| Host | Linked Module 组合、Data Plane、能力校验、Host Store |
+| Service | 独立进程、Service Store、Provider API、终态执行证据 |
+| Lenso Console | Operator 工作流、计划与证据聚合 |
 
-## 包规则
+## Linked Module 或 Service
 
-公共面积应保持较小。仅在以下情况下发布包和命令
-他们有明确的目标作者、最少的安装命令、稳定的导入路径
-或二进制名称，以及从空白项目开始的自述文件用法。
+能力属于同一应用和发布周期时使用 Linked Module。只有在运行时、所有者、部署、
+Store 或信任边界真实存在时才提取 Service。
 
-## 链接或远程
-
-当模块属于同一个应用程序和发布周期时开始链接。移动它
-当需要不同的运行时、所有者、部署节奏或信任时远程
-边界。
-
-远程模块仍然使用主机拥有的加载、回执、代理和运行时
-控制台可见性。主机仍然是控制平面。
-
-## 稍后分开
-
-保持模块在主机中链接，直到有具体原因将其拆分：
-不同的运行时、单独的所有权、独立的发布节奏或信任
-边界。如果存在该原因，请使用远程模块路径，同时保留
-装载、回执和操作员可见性归主机所有。
+提取后，通过 `lenso service install <service-manifest>` 安装 Provider，并用
+`lenso service doctor <provider> --json` 验证健康与漂移。Remote Module
+不是当前加载来源或公开包类别。

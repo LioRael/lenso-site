@@ -154,7 +154,6 @@ lenso serve
 | ---------------------------------------------------------------------- | ------------------------------------------------------------ |
 | `lenso module create billing`                                          | Create a linked Rust module inside the host.                 |
 | `lenso module create billing --with-console`                           | Create a linked module and matching Runtime Console package. |
-| `lenso module create billing --remote --output-dir ../module-packages` | Create a standalone remote module package.                   |
 | `lenso module create billing --dry-run`                                | Preview generated files without writing them.                |
 | `lenso console package create billing`                                 | Create only a Runtime Console package scaffold.              |
 
@@ -260,8 +259,6 @@ generated operator evidence, not module authoring files.
 | `lenso module release inspect <module-release.json>`                | Inspect a module release before installing it.                                    |
 | `lenso module release check <module-release.json> --base-url <url>` | Fail fast when a local module release is missing install inputs.                  |
 | `lenso module install <module-release.json> --base-url <url>`       | Install a business module from a release artifact.                                |
-| `lenso module install <manifest-url>`                               | Install a legacy remote module by URL.                                            |
-| `lenso module install ./lenso.module.json --base-url <url>`         | Install a legacy local descriptor while pointing the host at a deployed base URL. |
 | `lenso module install <ref> --dry-run`                              | Preview `.env`, receipts, service files, and Console registry changes.            |
 | `lenso module install <ref> --run-install-commands`                 | Execute descriptor-declared install commands.                                     |
 | `lenso module install <ref> --no-console-extension`                 | Skip Runtime Console extension registration.                                      |
@@ -297,9 +294,9 @@ lenso module uninstall billing
 ```
 
 `module update` reuses the recorded install receipt from
-`.lenso/module-installs.json`. Remote updates refresh `REMOTE_MODULES`, copied
-Console bundles, service state, and receipts. Linked updates reapply the
-descriptor or built-in module entry.
+`.lenso/module-installs.json`. Linked updates reapply the descriptor or
+built-in Module entry; independently running providers use `lenso service`
+lifecycle commands.
 
 Use `--source linked` only when a descriptor is missing a source field and you
 need to force the loading source:
@@ -315,9 +312,9 @@ lenso module doctor
 lenso module doctor billing
 ```
 
-Doctor reads `REMOTE_MODULES` and `.lenso/module-services.json`, checks declared
-service `readyUrl` endpoints, and points out stale `.lock` or `.pid` files when
-a host-started service did not become ready.
+Doctor checks Linked Module composition and receipts. Use
+`lenso service doctor <provider> --json` for Service manifests, readiness,
+deployment observations, and stale process state.
 
 ## Catalogs
 

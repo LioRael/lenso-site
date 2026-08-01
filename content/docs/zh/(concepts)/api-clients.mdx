@@ -12,7 +12,8 @@ description: 从已提交的 OpenAPI 和错误合约中使用 Lenso HTTP API。
 | --- | --- |
 | `contracts/openapi/app-api.v1.yaml` |端点路径、方法、DTO、身份验证要求和响应模式 |
 | `contracts/errors/error-response.v1.schema.json` |标准错误包络 |
-| `contracts/grpc/lenso/remote/v1/remote_module.proto` |远程模块gRPC协议|
+| `contracts/services/lenso-service.v2.schema.json` | Service 与其提供的 Module 拓扑 |
+| `contracts/services/support-grpc.v1.proto` | Service 自有 gRPC API 示例 |
 
 如果代理正在编写集成，则通过 `lenso-api-client` 路由它
 技能：

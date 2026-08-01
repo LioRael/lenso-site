@@ -36,7 +36,7 @@ CI 控制应用；当Provider流程应该是时使用 Lenso Operator
 |运营商管理|您希望集群中有一个持久的期望状态对象 |服务/模块/发布语义、CR 导出、状态导入到控制台 |协调、工作负载资源、副本可用性 |
 
 在这两种模式下，主机始终拥有身份验证、功能检查、运行时队列、
-重试、Outbox、Runtime Story、远程调用和技术操作。
+重试、Outbox、Runtime Story、Provider 调用和技术操作。
 
 原料出口：
 
@@ -175,12 +175,11 @@ LOG_FORMAT=json
 RUST_LOG=info
 ```
 
-仅在需要时添加远程模块：
+通过经过审批的 Service Manifest 安装独立 Provider，并在承载生产流量前验证：
 
 ```sh
-REMOTE_MODULES=billing=https://billing.example.com/lenso/module/v1
-REMOTE_MODULE_BILLING_TOKEN=...
-REMOTE_MODULE_BILLING_TIMEOUT_MS=8000
+lenso service install https://billing.example.com/lenso/service/v1/manifest
+lenso service verify billing --json
 ```
 
 ## 发布门禁
@@ -211,7 +210,7 @@ Release、Store、Migration Workload、API、Worker 与 Shell。
 - `APP_ENV` 和 `LENSO_COMPOSITION_PROFILE` 是显式的。
 - Postgres 迁移在 API 和工作线程之前运行。
 - `lenso console doctor` 能够校验独立 Console 安装。
-- 远程模块使用主机到远程令牌，而不是调用者令牌。
-- `REMOTE_MODULES` 更改之后是 API 和工作线程重新启动。
+- Service Provider 使用 Workload Identity 或 Provider 凭据，绝不使用调用者令牌。
+- Service 安装变化后按 `service doctor` 的证据完成 Host reconcile。
 - `LOG_FORMAT=json` 已启用结构化生产日志。
 - 仅当收集器存在时才配置 OpenTelemetry 端点。

@@ -103,7 +103,7 @@ lenso app plan --write-plan
 ## 模块缺失时
 
 - 执行 `lenso module install` 后重启 API 与 Worker。
-- Remote Module 运行 `lenso module doctor <module-name>`。
+- Service Provider 运行 `lenso service doctor <provider> --json`。
 - Launchpad 缺少能力包时运行 `lenso capability check <pack-dir>`。
 - 确认 Manifest 声明了预期的数据、Action、Route、Function 或 Console Surface。
 

@@ -11,8 +11,6 @@ export default defineMeta({
     "auth-capabilities",
     "runtime-lifecycle",
     "console-packages",
-    "remote-modules",
-    "remote-protocol",
     "examples",
   ],
 });
