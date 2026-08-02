@@ -15,7 +15,7 @@ The current committed contract surface is intentionally small:
 
 | Contract | Consumer |
 | --- | --- |
-| `contracts/openapi/app-api.v1.yaml` | API clients, SDK generation, Runtime Console API expectations |
+| `contracts/openapi/app-api.v1.yaml` | API clients, SDK generation, Lenso Console API expectations |
 | `contracts/errors/error-response.v1.schema.json` | standard error envelope consumers |
 | `contracts/services/lenso-service.v2.schema.json` | Service and provided-Module topology |
 | `contracts/services/support-grpc.v1.proto` | example Service-owned gRPC API |
@@ -76,7 +76,7 @@ Use the smallest gate that proves the changed surface:
 | OpenAPI or generated schema | `just generated-check` |
 | module boundary or contract layout | `just arch-check` |
 | release candidate | `just release-check` |
-| Runtime Console package work | `pnpm check` in `lenso-console` |
+| Lenso Console package work | `pnpm check` in `lenso-console` |
 | docs site work | `pnpm types:check` and `pnpm build` in `lenso-site` |
 
 For a public release, local green is not enough. Verify the published crate,
@@ -112,13 +112,13 @@ Checks:
 - cargo check --bins
 - just generated-check
 
-Runtime Console:
+Lenso Console:
 - module appears in Modules
 - action appears in Data
 - story contains the action invocation
 ```
 
-If the work is supposed to appear in Runtime Console, a compile-only check is
+If the work is supposed to appear in Lenso Console, a compile-only check is
 not enough.
 
 ## Do not hand-edit generated files

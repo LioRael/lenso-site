@@ -1,10 +1,10 @@
 ---
 title: 管理界面
-description: 通过 Runtime Console公开模块数据、操作、查询和自定义操作员视图。
+description: 通过 Lenso Console公开模块数据、操作、查询和自定义操作员视图。
 ---
 
 管理界面是模块变得可操作的方式。他们描述了数据，
-Runtime Console无需导入即可显示的操作和只读值
+Lenso Console无需导入即可显示的操作和只读值
 模块内部结构。
 
 ## 三种界面模式
@@ -55,7 +55,7 @@ pub fn manifest() -> ModuleManifest {
 }
 ```
 
-Runtime Console通过主机拥有的 `/admin/data/*` 端点读取记录。
+Lenso Console通过主机拥有的 `/admin/data/*` 端点读取记录。
 模块内部保留强类型；通用管理数据跨越
 作为 JSON 记录的边界。
 

@@ -153,15 +153,14 @@ lenso serve
 | Command                                                                | Use it for                                                   |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------ |
 | `lenso module create billing`                                          | Create a linked Rust module inside the host.                 |
-| `lenso module create billing --with-console`                           | Create a linked module and matching Runtime Console package. |
+| `lenso module create billing --with-console-ui`                        | Create a linked Module with an isolated Console UI artifact. |
 | `lenso module create billing --dry-run`                                | Preview generated files without writing them.                |
-| `lenso console package create billing`                                 | Create only a Runtime Console package scaffold.              |
 
 Useful `module create` options:
 
 ```sh
 lenso module create support \
-  --with-console \
+  --with-console-ui \
   --area operations \
   --label "Support Tickets" \
   --route /support/tickets \
@@ -259,9 +258,8 @@ generated operator evidence, not module authoring files.
 | `lenso module release inspect <module-release.json>`                | Inspect a module release before installing it.                                    |
 | `lenso module release check <module-release.json> --base-url <url>` | Fail fast when a local module release is missing install inputs.                  |
 | `lenso module install <module-release.json> --base-url <url>`       | Install a business module from a release artifact.                                |
-| `lenso module install <ref> --dry-run`                              | Preview `.env`, receipts, service files, and Console registry changes.            |
+| `lenso module install <ref> --dry-run`                              | Preview the Module Release, receipts, and selected Console UI artifact.            |
 | `lenso module install <ref> --run-install-commands`                 | Execute descriptor-declared install commands.                                     |
-| `lenso module install <ref> --no-console-extension`                 | Skip Runtime Console extension registration.                                      |
 
 `module install` is the module-level entrypoint. Service releases resolve to a
 provider package or manifest; linked releases enable Rust code already available
@@ -280,8 +278,6 @@ the workspace `readyUrl`; standalone local package artifacts still need
 - `.lenso/module-installs.json`
 - `.lenso/module-services.json`
 - `.lenso/runtime-config-defaults.json`
-- `.lenso/console/extensions`
-- `.lenso/console/extensions/registry.json`
 
 Restart API and worker after installing or updating modules.
 
@@ -336,14 +332,15 @@ This uses the same install path as `lenso module install <manifest-url>`. Keep
 new automation on the direct install command unless you are specifically testing
 marketplace routing.
 
-## Console package plans
+## Console composition
 
-Runtime Console package install plans can be applied from the CLI:
+Plan and apply the exact Console Service composition separately from Module
+installation:
 
 ```sh
-lenso console package apply-plan
-lenso console package apply-plan --dry-run
+lenso console composition plan --composition-file composition.json --output plan.json
+lenso console composition apply --plan-file plan.json --approved-plan-digest sha256:...
 ```
 
-Use this when a module package updates dependencies or Console extension
-registration outside the normal module install path.
+The apply command accepts only the exact approved plan digest and persists the
+new composition revision atomically. It does not install same-origin packages.

@@ -1,9 +1,9 @@
 ---
 title: auth-oidc
-description: 让Runtime Console通过 OIDC 使用主机的身份验证会话。
+description: 让Lenso Console通过 OIDC 使用主机的身份验证会话。
 ---
 
-当生产Runtime Console用户应使用登录时安装 `auth-oidc`
+当生产Lenso Console用户应使用登录时安装 `auth-oidc`
 the host's real auth flow instead of development bearer tokens.这取决于
 `auth` 并重用相同的 `auth.users` 行作为应用程序登录。
 
@@ -29,13 +29,13 @@ LENSO_COMPOSITION_PROFILE=core
 
 LENSO_MODULE_AUTH_OIDC__ENABLED=true
 LENSO_MODULE_AUTH_OIDC__ISSUER=https://app.example.com
-LENSO_MODULE_AUTH_OIDC__CONSOLE_REDIRECT_URIS='["https://app.example.com/console/oidc/callback"]'
+LENSO_MODULE_AUTH_OIDC__CONSOLE_REDIRECT_URIS='["https://app.example.com/oidc/callback"]'
 LENSO_MODULE_AUTH_OIDC__JWKS='{"keys":[...]}'
 LENSO_MODULE_AUTH_OIDC__ID_TOKEN_PRIVATE_KEY_PEM="$OIDC_SIGNING_KEY_PEM"
 ```
 
 `console_client_id` 默认为 `lenso-console`。重定向 URI 必须匹配
-托管控制台回调路径完全相同：`/console/oidc/callback`。
+托管控制台回调路径完全相同：`/oidc/callback`。
 
 将 `id_token_private_key_pem` 保存在您的秘密存储中。 `jwks` 是公钥
 设置匹配该签名密钥。
@@ -69,5 +69,5 @@ lenso console operator bootstrap \
 ## 浏览器令牌边界
 
 请勿将浏览器控制台捆绑包与 `VITE_API_AUTH_TOKEN` 或服务一起提供
-Bearer Token融入其中。在生产中，`/console` 应该依赖密码
+Bearer Token融入其中。在生产中，配置的 Console Service URL 应该依赖密码
 登录、OIDC 回调存储以及上面的每用户范围。

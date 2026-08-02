@@ -4,8 +4,8 @@ description: Understand the serializable ModuleManifest contract that every Lens
 ---
 
 `ModuleManifest` is the pure-data contract for a module. It describes what the
-host and Runtime Console can see: routes, admin surfaces, runtime functions,
-runtime schedules, events, lifecycle work, Console packages, dependencies, and
+host and Lenso Console can see: routes, admin surfaces, runtime functions,
+runtime schedules, events, lifecycle work, Console surfaces, dependencies, and
 capabilities.
 
 Executable behavior does not live in the manifest. Linked Modules attach
@@ -17,8 +17,8 @@ remains serializable in either topology.
 
 ```rust
 use lenso::{
-    ConsoleArea, ConsolePackage, ConsoleSurface, ModuleHttpMethod,
-    ModuleHttpRoute, ModuleManifest,
+    ConsoleSurface, ConsoleSurfacePresentation, ModuleHttpMethod,
+    ModuleHttpRoute, ModuleManifest, CONSOLE_BRIDGE_PROTOCOL,
 };
 
 pub fn manifest() -> ModuleManifest {
@@ -38,13 +38,12 @@ pub fn manifest() -> ModuleManifest {
         .console(vec![ConsoleSurface {
             name: "billing-invoices".to_owned(),
             label: "Invoices".to_owned(),
-            area: ConsoleArea::Operations,
             route: "/billing/invoices".to_owned(),
-            package: ConsolePackage {
-                name: "@acme/lenso-billing-console".to_owned(),
-                export: "billingConsoleModule".to_owned(),
+            presentation: ConsoleSurfacePresentation::Isolated {
+                entry: "invoices".to_owned(),
+                bridge_protocol: CONSOLE_BRIDGE_PROTOCOL.to_owned(),
             },
-            icon: Some("Receipt".to_owned()),
+            icon: Some("receipt".to_owned()),
             required_capabilities: vec!["billing.invoice.read".to_owned()],
             navigation: None,
         }])
@@ -56,15 +55,15 @@ pub fn manifest() -> ModuleManifest {
 
 | Field | Purpose |
 | --- | --- |
-| `name` | Stable module id, such as `auth`, `billing`, or `support-ticket`. |
+| `module_id` | Canonical Module id, such as `lenso/auth` or `acme/billing`. The builder normalizes short first-party names. |
 | `dependencies` | Other modules that must be installed first. Use this for hard runtime assumptions such as `auth`. |
 | `capabilities` | Dot-separated permission names that routes, admin surfaces, runtime work, or Console pages can reference. |
-| `http_routes` | Module-owned HTTP route metadata. Linked modules still mount real Axum routes through bindings. Remote route proxying uses this metadata for host-visible route intent. |
+| `http_routes` | Module-owned HTTP route metadata. Linked Modules mount real Axum routes through bindings; Service-provided Modules retain the same declaration. |
 | `admin` | Schema-driven, declarative custom, or embedded custom operator surfaces. |
 | `runtime` | Runtime function and schedule declarations. The declaration is manifest data; handlers live in the loading source and scheduling stays host-owned. |
 | `events` | Event handler declarations. The host registers and invokes the backing handler through the source binding. |
 | `lifecycle` | Startup checks and activation jobs. The host validates and schedules these entries instead of giving modules arbitrary startup callbacks. |
-| `console` | Runtime Console frontend surfaces backed by trusted packages or hosted bundles. |
+| `console` | Declarative or isolated Console surfaces. Executable UI is bound by digest in the same Module Release, never by a same-origin package export. |
 | `story_display` | Console story-display metadata for timeline and inspection surfaces. |
 
 ## Builder methods
@@ -153,7 +152,7 @@ due.
 
 ## Lint categories
 
-The host exposes `manifest_lints` through module metadata, and Runtime Console
+The host exposes `manifest_lints` through module metadata, and Lenso Console
 groups them into categories:
 
 | Category | Common issue |
@@ -186,4 +185,4 @@ Change the manifest whenever the host or Console needs new metadata:
 - a new capability that will be referenced by another surface.
 
 After changing manifest shape, run the relevant local checks and open
-[Runtime Console](/docs/runtime-console) to verify the host-visible result.
+[Lenso Console](/docs/runtime-console) to verify the host-visible result.

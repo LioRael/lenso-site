@@ -25,7 +25,7 @@ lenso module install auth-password
 lenso module install auth-device
 ```
 
-`auth-password` 和 `auth-device` 取决于 `auth`。Runtime Console公开
+`auth-password` 和 `auth-device` 取决于 `auth`。Lenso Console公开
 通过模块元数据声明依赖关系，以便操作员可以了解为什么
 模块尚未准备好。
 
@@ -94,8 +94,6 @@ lenso service install http://127.0.0.1:4110/lenso/service/v1/manifest
 | `.env` |记录 CLI 管理的 Service Provider 条目和声明的环境值 |
 | `.lenso/module-installs.json` |卸载使用的安装回执|
 | `.lenso/module-services.json` |模块声明的服务命令 |
-| `.lenso/console/extensions/<module>/` |复制同源控制台包 |
-| `.lenso/console/extensions/registry.json` |托管控制台扩展注册表|
 
 Manifest中的安装命令已计划但不会运行，除非操作员
 选择加入：
@@ -109,7 +107,7 @@ lenso service install https://example.com/lenso/service/v1/manifest
 可用模块仅使用发现数据。它不会安装模块，直到
 操作员运行安装操作。
 
-Runtime Console的可用模块视图按顺序读取：
+Lenso Console的可用模块视图按顺序读取：
 
 1. 显式 `.env` `LENSO_MODULE_CATALOG_FILE=<path>`
 2. 已配置的 Service Provider
@@ -118,16 +116,11 @@ Runtime Console的可用模块视图按顺序读取：
 内置目录是新主机的默认发现源。它不是
 隐藏的安装数据库。
 
-## Runtime Console 安装流程
+## Lenso Console 工作流
 
-Runtime Console可以通过以下方式写入相同的主机本地安装状态：
-
-```text
-POST /admin/data/available-modules/{module}/install
-```
-
-这仍然是主机拥有的安装。浏览器没有安装npm
-打包或将第三方代码编译到官方控制台包中。
+Lenso Console 创建可审核的 Module change plan，记录 approval 与 submission
+证据，并观察 authority owner 返回的 terminal receipt。浏览器不会写入 Host
+本地安装文件，也不会安装 npm package。
 
 ## Doctor 与卸载
 

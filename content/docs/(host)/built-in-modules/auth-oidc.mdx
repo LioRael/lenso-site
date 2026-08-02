@@ -1,9 +1,9 @@
 ---
 title: auth-oidc
-description: Let Runtime Console use the host's auth sessions through OIDC.
+description: Let Lenso Console use the host's auth sessions through OIDC.
 ---
 
-Install `auth-oidc` when production Runtime Console users should sign in with
+Install `auth-oidc` when production Lenso Console users should sign in with
 the host's real auth flow instead of development bearer tokens. It depends on
 `auth` and reuses the same `auth.users` rows as application login.
 
@@ -29,13 +29,13 @@ LENSO_COMPOSITION_PROFILE=core
 
 LENSO_MODULE_AUTH_OIDC__ENABLED=true
 LENSO_MODULE_AUTH_OIDC__ISSUER=https://app.example.com
-LENSO_MODULE_AUTH_OIDC__CONSOLE_REDIRECT_URIS='["https://app.example.com/console/oidc/callback"]'
+LENSO_MODULE_AUTH_OIDC__CONSOLE_REDIRECT_URIS='["https://app.example.com/oidc/callback"]'
 LENSO_MODULE_AUTH_OIDC__JWKS='{"keys":[...]}'
 LENSO_MODULE_AUTH_OIDC__ID_TOKEN_PRIVATE_KEY_PEM="$OIDC_SIGNING_KEY_PEM"
 ```
 
 `console_client_id` defaults to `lenso-console`. The redirect URI must match the
-hosted Console callback path exactly: `/console/oidc/callback`.
+hosted Console callback path exactly: `/oidc/callback`.
 
 Keep `id_token_private_key_pem` in your secret store. `jwks` is the public key
 set matching that signing key.
@@ -71,5 +71,5 @@ Console's identity Module.
 ## Browser token boundary
 
 Do not ship a browser Console bundle with `VITE_API_AUTH_TOKEN` or a service
-bearer token baked into it. In production, `/console` should rely on password
+bearer token baked into it. In production, the configured Console Service URL should rely on password
 login, OIDC callback storage, and the per-user scopes above.

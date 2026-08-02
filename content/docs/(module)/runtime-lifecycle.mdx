@@ -5,7 +5,7 @@ description: Declare runtime functions, schedules, event handlers, lifecycle che
 
 Runtime work is host-owned. A module declares functions, schedules, event
 handlers, and lifecycle needs; the worker claims queues, applies retry policy,
-records runs, and projects evidence into Runtime Console.
+records runs, and projects evidence into Lenso Console.
 
 ## Function declaration
 
@@ -93,7 +93,7 @@ The worker writes durable evidence:
 | `platform.story_events` | story projection records |
 | execution logs | technical operations and provider runtime metadata |
 
-Runtime Console uses those records to show Stories, function operations, dead
+Lenso Console uses those records to show Stories, function operations, dead
 letters, queues, retries, and technical operations.
 
 See [Runtime Stories](/docs/runtime-stories) for the correlation model, story
@@ -176,4 +176,4 @@ A runtime-capable module is done when:
 - linked or remote executors are registered
 - lifecycle checks reference existing functions or capabilities
 - a smoke path creates a function run
-- Runtime Console shows the run, retry, failure, or story evidence
+- Lenso Console shows the run, retry, failure, or story evidence

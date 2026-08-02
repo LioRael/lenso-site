@@ -4,7 +4,7 @@ description: 安装持久用户、会话和身份验证控制台界面。
 ---
 
 当主机需要持久用户和会话来进行应用程序时安装 `auth`
-登录、Runtime Console 访问或两者。
+登录、Lenso Console 访问或两者。
 
 从生成的主机：
 
@@ -15,7 +15,7 @@ lenso serve
 ```
 
 CLI 更新Host 组合、依赖项、本地安装回执和
-Runtime Console扩展注册表。安装后重启API和worker
+Lenso Console扩展注册表。安装后重启API和worker
 或更新模块。
 
 ## 用户模型
@@ -40,7 +40,7 @@ create table app.profiles (
 
 重启后，验证：
 
-- `/console` 在模块下列出了 `auth`。
+- 配置的 Console Service URL 在模块下列出了 `auth`。
 - 数据显示身份验证用户和会话。
 - 操作包括会话撤销和用户启用或禁用操作。
 

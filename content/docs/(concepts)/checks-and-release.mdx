@@ -3,7 +3,7 @@ title: Checks and Release
 description: Know which local checks to run before changing manifests, contracts, generated hosts, or release artifacts.
 ---
 
-Lenso treats generated artifacts, contracts, manifests, and hosted Console assets
+Lenso treats generated artifacts, contracts, manifests, and Console UI artifacts
 as part of the product surface. Run the smallest useful check while developing,
 then run the full gate before release work.
 
@@ -23,9 +23,9 @@ then run the full gate before release work.
 | `just release-check` | Runs the backend release gate. |
 | `just package-readiness` | Verifies the public `lenso` facade crate package surface. |
 
-Runtime Console checks live in the sibling `lenso-console` repository.
+Lenso Console checks live in the sibling `lenso-console` repository.
 Use its `pnpm check` path when a backend change affects Console metadata,
-OpenAPI-generated clients, module install state, or hosted bundle behavior.
+OpenAPI-generated clients, Module composition, or isolated artifact behavior.
 
 ## What to run after a change
 
@@ -35,8 +35,8 @@ OpenAPI-generated clients, module install state, or hosted bundle behavior.
 | Public route, OpenAPI annotation, DTO, or error contract | `just generate && just generated-check && just check` |
 | `ModuleManifest` field, lint, admin surface, runtime, lifecycle, or Console surface | `just generate && just generated-check && just check` |
 | Generated host template or CLI-facing starter behavior | CLI starter smoke plus backend `just check` |
-| Runtime Console module metadata or install-state UI | Backend generated checks plus Runtime Console `pnpm check` |
-| Release package, hosted Console bundle, or publish workflow | `just release-check` and `just package-readiness` |
+| Lenso Console module metadata or install-state UI | Backend generated checks plus Lenso Console `pnpm check` |
+| Release package, Console UI artifact, or publish workflow | `just release-check` and `just package-readiness` |
 
 ## Local smoke
 
@@ -123,7 +123,7 @@ Collect these before publishing:
 
 - commit SHA;
 - `just release-check` result;
-- Runtime Console `pnpm check` result when publishing coordinated backend and
+- Lenso Console `pnpm check` result when publishing coordinated backend and
   frontend behavior;
 - generated artifact status from `just generated-check`;
 - known local infrastructure caveats;

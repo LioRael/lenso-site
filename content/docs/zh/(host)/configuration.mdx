@@ -1,6 +1,6 @@
 ---
 title: 配置
-description: 配置Lenso主机、模块源、Runtime Console 路径、遥测和模块本地值。
+description: 配置Lenso主机、模块源、Lenso Console 路径、遥测和模块本地值。
 ---
 
 生成的主机读取正常的环境变量。保持配置无聊：
@@ -32,12 +32,12 @@ LENSO_COMPOSITION_PROFILE=core
 | `DATABASE_MAX_CONNECTIONS` |数据库池大小 |
 | `HTTP_HOST` | API绑定主机，默认`127.0.0.1` |
 | `HTTP_PORT` | API端口，默认`3000` |
-| `CORS_ALLOWED_ORIGINS` |逗号分隔的 Runtime Console开发起源 |
+| `CORS_ALLOWED_ORIGINS` |逗号分隔的 Lenso Console开发起源 |
 | `RUST_LOG` |日志级别/过滤器 |
 | `LOG_FORMAT` | `compact` 或 `json` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` |可选的 OpenTelemetry 收集器端点 |
 
-对于运行状况探测、结构化日志和 Runtime Console 运行时视图，请阅读
+对于运行状况探测、结构化日志和 Lenso Console 运行时视图，请阅读
 [可观测性](/docs/zh/observability)。
 
 对于 `core`、`demo`、应用程序拥有的 `HostBuilder` 模块和
@@ -51,7 +51,7 @@ HTTP_HOST=0.0.0.0
 LENSO_ALLOW_DEV_AUTH_ON_PUBLIC_BIND=true
 ```
 
-## Runtime Console 路径
+## Lenso Console 路径
 
 Lenso Console 在自己的安装目录和 Service 环境中配置。业务 Host 不再提供复制
 的 Console 资源，也不再设置 `LENSO_CONSOLE_DIST_DIR`、
@@ -96,7 +96,7 @@ LENSO_MODULE_SUPPORT_ENABLED=false
 ```
 
 使用模块本地配置来获取启动时模块代码所需的值。使用运行时
-值运算符的配置描述符应通过 Runtime Console进行编辑。
+值运算符的配置描述符应通过 Lenso Console进行编辑。
 
 ## Redis
 

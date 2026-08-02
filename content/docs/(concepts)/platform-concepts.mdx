@@ -11,7 +11,7 @@ agents, and operators.
 
 A Lenso app starts as one deployable Rust backend:
 
-- the API serves product routes and Runtime Console
+- the API serves product routes and Lenso Console
 - the worker owns runtime queues, outbox dispatch, and lifecycle work
 - the migration app owns database setup
 - modules declare what they contribute
@@ -113,7 +113,7 @@ visible, retryable, and comparable across Linked Modules and Services.
 
 ## Runtime evidence
 
-Runtime Console is not a decorative dashboard. It is the proof that the host saw
+Lenso Console is not a decorative dashboard. It is the proof that the host saw
 the work.
 
 Lenso's [Runtime Stories](/docs/runtime-stories) turn request ids, correlation
@@ -146,7 +146,7 @@ The host still owns:
 - header allowlists
 - runtime queues and retry policy
 - outbox dispatch
-- Runtime Console evidence
+- Lenso Console evidence
 
 The Host may authenticate to a Service provider, but it does not forward the
 caller's bearer token or cookies.
@@ -156,7 +156,7 @@ caller's bearer token or cookies.
 When a product grows beyond one provider, `lenso.system.json` names the whole
 System graph. Services own processes and deployment targets. Modules own
 business capabilities. The system plane connects them with environments and
-capability dependencies so CLI checks and Runtime Console can show whether the
+capability dependencies so CLI checks and Lenso Console can show whether the
 system is coherent.
 
 See [Service System Plane](/docs/service-system-plane) for the `lenso.system.v1`

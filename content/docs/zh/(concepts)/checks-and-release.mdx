@@ -23,7 +23,7 @@ Lenso 处理生成的工件、合约、Manifest和托管控制台资产
 | `just release-check` |运行后端发布门禁。 |
 | `just package-readiness` |验证公共 `lenso` 外观板条箱包装界面。 |
 
-Runtime Console检查同级 `lenso-console` 存储库中的实时情况。
+Lenso Console检查同级 `lenso-console` 存储库中的实时情况。
 当后端更改影响控制台元数据时，使用其 `pnpm check` 路径，
 OpenAPI 生成的客户端、模块安装状态或托管捆绑包行为。
 
@@ -35,7 +35,7 @@ OpenAPI 生成的客户端、模块安装状态或托管捆绑包行为。
 |公共路由、OpenAPI 注解、DTO 或错误契约 | `just generate && just generated-check && just check` |
 | `ModuleManifest` 字段、lint、管理界面、运行时、生命周期或控制台界面 | `just generate && just generated-check && just check` |
 |生成的主机模板或面向 CLI 的入门行为 | CLI 入门冒烟加后端 `just check` |
-|Runtime Console模块元数据或安装状态 UI |后端生成的检查加上Runtime Console `pnpm check` |
+|Lenso Console模块元数据或安装状态 UI |后端生成的检查加上Lenso Console `pnpm check` |
 |发布包、托管控制台捆绑包或发布工作流 | `just release-check` 和 `just package-readiness` |
 
 ## 本地冒烟测试
@@ -122,7 +122,7 @@ gh release view vX.Y.Z
 
 - 提交 SHA；
 - `just release-check` 结果；
-- 发布协调后端时的 Runtime Console `pnpm check` 结果
+- 发布协调后端时的 Lenso Console `pnpm check` 结果
   前端行为；
 - 从 `just generated-check` 生成工件状态；
 - 已知的当地基础设施注意事项；

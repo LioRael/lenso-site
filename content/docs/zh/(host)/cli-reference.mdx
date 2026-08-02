@@ -153,15 +153,14 @@ lenso serve
 |命令|用它来 |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------ |
 | `lenso module create billing` |在主机内创建一个链接的 Rust 模块。                 |
-| `lenso module create billing --with-console` |创建链接模块和匹配的 Runtime Console包。 |
+| `lenso module create billing --with-console-ui` |创建带隔离 Console UI 制品的 Linked Module。 |
 | `lenso module create billing --dry-run` |预览生成的文件而不写入它们。                |
-| `lenso console package create billing` |仅创建Runtime Console包脚手架。              |
 
 有用的 `module create` 选项：
 
 ```sh
 lenso module create support \
-  --with-console \
+  --with-console-ui \
   --area operations \
   --label "Support Tickets" \
   --route /support/tickets \
@@ -259,9 +258,8 @@ Provider和模块安装状态。工作区读取更喜欢 `lenso.workspace.json`
 | `lenso module release inspect <module-release.json>` |安装之前检查模块版本。                                    |
 | `lenso module release check <module-release.json> --base-url <url>` |当本地模块版本缺少安装输入时快速失败。                  |
 | `lenso module install <module-release.json> --base-url <url>` |从发布工件安装业务模块。                                |
-| `lenso module install <ref> --dry-run` |预览 `.env`、回执、服务文件和控制台注册表更改。            |
+| `lenso module install <ref> --dry-run` |预览 Module Release、回执和选定的 Console UI 制品。            |
 | `lenso module install <ref> --run-install-commands` |执行描述符声明的安装命令。                                     |
-| `lenso module install <ref> --no-console-extension` |跳过Runtime Console扩展注册。                                      |
 
 `module install` 是模块级入口点。服务版本解决了
 Provider包或Manifest；链接版本使 Rust 代码已经可用
@@ -280,8 +278,6 @@ Provider包或Manifest；链接版本使 Rust 代码已经可用
 - `.lenso/module-installs.json`
 - `.lenso/module-services.json`
 - `.lenso/runtime-config-defaults.json`
-- `.lenso/console/extensions`
-- `.lenso/console/extensions/registry.json`
 
 安装或更新模块后重新启动API和worker。
 
@@ -334,14 +330,14 @@ lenso module marketplace install <manifest-url>
 直接安装命令的新自动化，除非您专门测试
 市场路由。
 
-## Console 包计划
+## Console composition
 
-可以从 CLI 应用Runtime Console包安装计划：
+Console Service composition 与 Module 安装分开计划和应用：
 
 ```sh
-lenso console package apply-plan
-lenso console package apply-plan --dry-run
+lenso console composition plan --composition-file composition.json --output plan.json
+lenso console composition apply --plan-file plan.json --approved-plan-digest sha256:...
 ```
 
-当模块包更新依赖项或控制台扩展时使用此选项
-在正常模块安装路径之外注册。
+Apply 只接受精确的 approved plan digest，并原子写入新的 composition
+revision；它不会安装同源 package。

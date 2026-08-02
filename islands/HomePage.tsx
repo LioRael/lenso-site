@@ -55,8 +55,8 @@ const lifecycleSteps = [
     index: '3',
     title: 'Verify the generated system',
     tag: 'app proof',
-    text: 'Doctor, App Proof, contracts, checks, and Runtime Console turn generated state into evidence humans and agents can review.',
-    links: [{ label: 'Runtime Console', icon: '/lenso-assets/lifecycle-runtime-console-a.svg' }],
+    text: 'Doctor, App Proof, contracts, checks, and Console turn generated state into evidence humans and agents can review.',
+    links: [{ label: 'Console', icon: '/lenso-assets/lifecycle-runtime-console-a.svg' }],
   },
   {
     index: '4',
@@ -107,7 +107,7 @@ const runtimeCards = [
     icon: '/lenso-assets/runtime-starter-manifest.svg',
   },
   {
-    title: 'Runtime Console',
+    title: 'Console',
     text: 'Inspect App Lifecycle, modules, service state, runtime stories, and operational evidence.',
     icon: '/lenso-assets/runtime-console-card.svg',
   },
@@ -123,7 +123,7 @@ const runtimeChannels = [
   'System Graph',
   'Service Workspace',
   'App Proof',
-  'Runtime Console',
+  'Console',
   'Capability Packs',
   'Module Manifests',
   'Runtime Stories',
@@ -134,7 +134,7 @@ const runtimeChannels = [
 const channelRows = [
   [
     { label: 'Product Blueprints', icon: '/lenso-assets/brand-api.svg', iconWidth: 23 },
-    { label: 'Runtime Console', icon: '/lenso-assets/runtime-console-card.svg' },
+    { label: 'Console', icon: '/lenso-assets/runtime-console-card.svg' },
     { label: 'App Proof', icon: '/lenso-assets/feature-contract.svg' },
     { label: 'Launchpad', icon: '/lenso-assets/feature-evidence.svg' },
   ],
@@ -188,7 +188,7 @@ const featureCards = [
   },
   {
     title: 'Verification loop',
-    text: 'Plans, Doctor, App Proof, contract checks, and Runtime Console make generated changes reviewable.',
+    text: 'Plans, Doctor, App Proof, contract checks, and Console make generated changes reviewable.',
     icon: '/lenso-assets/feature-channel.svg',
   },
   {
@@ -197,7 +197,7 @@ const featureCards = [
     icon: '/lenso-assets/feature-human.svg',
   },
   {
-    title: 'Runtime Console',
+    title: 'Console',
     text: 'See App Lifecycle, installed modules, service state, runtime stories, data surfaces, and delivery evidence.',
     icon: '/lenso-assets/feature-console.svg',
   },
@@ -212,7 +212,7 @@ const footerColumns: Array<[string, Array<[string, string]>]> = [
   ['Start', [['Overview', '/docs'], ['Quickstart', '/docs/quickstart'], ['Product Blueprints', '/docs/product-blueprints'], ['CLI Reference', '/docs/cli-reference']]],
   ['Build', [['Host Composition', '/docs/host-composition'], ['Module Authoring', '/docs/module-authoring'], ['Module Installation', '/docs/module-installation'], ['Console Packages', '/docs/console-packages']]],
   ['Extend', [['Capability Surfaces', '/docs/admin-surfaces'], ['Autonomous Services', '/docs/autonomous-services'], ['Service System', '/docs/service-system-plane'], ['Auth Capabilities', '/docs/auth-capabilities']]],
-  ['Operate', [['Runtime Console', '/docs/runtime-console'], ['Reliability', '/docs/reliability-and-recovery'], ['Observability', '/docs/observability'], ['Deployment', '/docs/deployment']]],
+  ['Operate', [['Console', '/docs/runtime-console'], ['Reliability', '/docs/reliability-and-recovery'], ['Observability', '/docs/observability'], ['Deployment', '/docs/deployment']]],
   ['Concepts', [['Platform Concepts', '/docs/platform-concepts'], ['Runtime Stories', '/docs/runtime-stories'], ['Service System', '/docs/service-system-plane'], ['Autonomous Services', '/docs/autonomous-services']]],
   ['Agents', [['Agent Development', '/docs/agent-development'], ['Contracts and Checks', '/docs/contracts-and-checks'], ['Checks and Release', '/docs/checks-and-release'], ['API Clients', '/docs/api-clients']]],
   ['Reference', [['Manifest Reference', '/docs/manifest-reference'], ['Architecture', '/docs/architecture'], ['API Reference', '/docs/api'], ['Troubleshooting', '/docs/troubleshooting']]],
@@ -498,7 +498,7 @@ function RuntimePrimitiveSection() {
   return (
     <section className="mx-auto min-h-[588px] max-w-[1392px] pt-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:min-h-[664px] max-[900px]:min-h-[1132px] max-[560px]:!min-h-0 max-[560px]:pt-16">
       <SectionIntro
-        copy="App Composer, module manifests, service contracts, Runtime Console, and agent workflows all read from the same explicit system model."
+        copy="App Composer, module manifests, service contracts, Console, and agent workflows all read from the same explicit system model."
         title="One system model across app, module, service, and agent"
       />
 
@@ -621,7 +621,7 @@ function ConsoleShowcaseSection() {
         data-scroll-reveal
       >
         <h2 className="w-[560px] max-w-full text-[40px] font-normal leading-[48px] text-[var(--site-ink)] max-[560px]:text-[32px] max-[560px]:leading-[38px]">
-          Runtime Console turns system state into evidence
+          Console turns system state into evidence
         </h2>
         <p className="max-w-[566px] text-lg leading-7 text-[var(--site-muted)]">
           Inspect what the host actually loaded, catch readiness gaps, review App Proof, and copy
@@ -648,13 +648,13 @@ function ConsoleShowcaseSection() {
       </div>
 
       <Link
-        aria-label="Explore the Runtime Console documentation"
+        aria-label="Explore the Console documentation"
         className="mt-12 block overflow-hidden rounded-xl border border-[var(--site-border)] bg-[var(--site-surface)] shadow-[var(--site-shadow-control)] transition-transform duration-300 hover:-translate-y-1 max-[560px]:mt-8"
         data-scroll-reveal
         href="/docs/runtime-console"
       >
         <Image
-          alt="Lenso Runtime Console App Lifecycle view showing services, modules, Doctor checks, App Proof, and next actions"
+          alt="Lenso Console App Lifecycle view showing services, modules, Doctor checks, App Proof, and next actions"
           className="block h-auto w-full"
           height={1200}
           loading="lazy"
@@ -663,7 +663,7 @@ function ConsoleShowcaseSection() {
         />
       </Link>
       <p className="mt-3 text-sm leading-5 text-[var(--site-muted)]">
-        App Lifecycle in Runtime Console — the generated app, its readiness, proof, and next action in one view.
+        App Lifecycle in Console — the generated app, its readiness, proof, and next action in one view.
       </p>
 
       <div className="mt-10 grid grid-cols-2 gap-8 max-[760px]:grid-cols-1" data-scroll-reveal>

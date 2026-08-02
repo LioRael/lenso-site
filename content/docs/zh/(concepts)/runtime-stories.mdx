@@ -27,7 +27,7 @@ Provider 调用、状态及其背后的技术操作。
 - Service Provider 调用成功还是失败？
 - 哪种技术操作可以解释节点缓慢或失败的原因？
 
-Runtime Story使这些答案在Runtime Console中可见。
+Runtime Story使这些答案在Lenso Console中可见。
 
 ## Story是如何构建的
 
@@ -42,7 +42,7 @@ Lenso 不要求模块作者手动构建Story图。主人
 | `platform.remote_http_proxy_calls` |进程外模块流量的主机拥有的证据
 |遥测跨度|尽可能将技术操作链接回Story节点|
 
-Runtime Console通过 `/admin/runtime/stories` 读取这些记录并
+Lenso Console通过 `/admin/runtime/stories` 读取这些记录并
 呈现：
 
 - 包含标题、状态、持续时间、服务和模式的Story列表项；
@@ -140,7 +140,7 @@ export const manifest = defineService({
 
 ## API 形态
 
-Runtime Console调用主机拥有的运行时 API：
+Lenso Console调用主机拥有的运行时 API：
 
 ```sh
 curl -sS \

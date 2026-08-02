@@ -28,7 +28,7 @@ curl -sS -X POST http://127.0.0.1:3000/v1/auth/anonymous/login \
 
 重启后，验证：
 
-- `/console` 在模块元数据中列出 `auth-anonymous`。
+- 配置的 Console Service URL 在模块元数据中列出 `auth-anonymous`。
 - 运行时证据显示请求后的匿名登录 HTTP 路由。
 - 身份验证用户表将用户显示为匿名，直到链接真实凭证为止。
 

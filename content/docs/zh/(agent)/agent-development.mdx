@@ -1,10 +1,10 @@
 ---
 title: Agent 开发
-description: 使用 Lenso 技能、脚手架、检查和 Runtime Console 证据，与编码 Agent 协作开发。
+description: 使用 Lenso 技能、脚手架、检查和 Lenso Console 证据，与编码 Agent 协作开发。
 ---
 
 Lenso 已为代理做好准备，因为工作流有轨道：公共技能、明确
-Manifest、生成的合约、重点检查和 `/console` 验证。
+Manifest、生成的合约、重点检查和 配置的 Console Service URL 验证。
 它不需要自定义代理运行时。
 
 当人类或编码 Agent将产品创意转变为产品时，请使用此路径
@@ -45,8 +45,8 @@ Lenso 存储库中的 `skills/`。复制或注册这些技能目录
 3. 使用 CLI 搭建脚手架，而不是手动构建形态。
 4. 实施一项有用的功能。
 5. 添加一项可运行检查，如果未连接该功能，该检查将失败。
-6. 打开 `/console` 并确认模块证据可见。
-7. 报告命令、检查结果和 Runtime Console 证据。
+6. 打开 配置的 Console Service URL 并确认模块证据可见。
+7. 报告命令、检查结果和 Lenso Console 证据。
 
 对于公开的证明点，从这个提示开始：
 
@@ -57,13 +57,13 @@ Build a support ticket module for a Lenso app.
 预计路由是：
 
 ```text
-lenso-business-planning -> lenso-start -> lenso app compose -> lenso agent task --from-app-plan -> checks -> /console
+lenso-business-planning -> lenso-start -> lenso app compose -> lenso agent task --from-app-plan -> checks -> Console Service 根地址
 ```
 
 对于可重用切片，通过能力包进行路由：
 
 ```text
-lenso capability init -> lenso capability library add -> lenso capability fit -> lenso app compose --pack -> lenso agent task --for-capability -> checks -> /console
+lenso capability init -> lenso capability library add -> lenso capability fit -> lenso app compose --pack -> lenso agent task --for-capability -> checks -> Console Service 根地址
 ```
 
 ## Prompt 结构
@@ -77,7 +77,7 @@ First slice:
 - tickets have title, status, priority, requester email, and assignee
 - operators can list tickets and assign one
 - escalation is a runtime function
-- the module is visible in /console
+- the module is visible in Console Service 根地址
 - leave one smoke check
 ```
 
@@ -89,17 +89,17 @@ First slice:
 | --- | --- |
 |主机首发| `cargo check --bins` |
 |能力包 | `lenso capability fit <pack> --repo-root .` 加上 Launchpad 应用程序变更计划证据 |
-| Rust 模块 |舱单或冒烟检查以及 `/console` 证据 |
+| Rust 模块 |舱单或冒烟检查以及 配置的 Console Service URL 证据 |
 |服务支持模块|包烟加`lenso module release check <module-release.json>` |
 |合约/API 工作 | `just generated-check` |
 |架构敏感的后端工作 | `just arch-check` |
 
 检查应该是小型的、局部的，并且与能力相关。只编译
-当更改应该出现在Runtime Console中时，通过是不够的。
+当更改应该出现在Lenso Console中时，通过是不够的。
 
 ## 控制台证据
 
-以`/console`作为楼主看到作品的最终证明：
+以配置的 Console Service URL作为楼主看到作品的最终证明：
 
 - 模块显示模块和Manifest状态。
 - 数据显示声明的模式管理界面。

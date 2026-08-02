@@ -3,8 +3,8 @@ title: Host 快速开始
 description: 创建 Launchpad 应用或 Lenso Host，并在本地运行完整系统。
 ---
 
-当你需要一个能够加载模块、运行服务进程并提供 Runtime Console 的本地
-Lenso 应用时，从这里开始。
+当你需要一个能够加载 Module 并运行 Service 进程的本地 Lenso 应用时，
+从这里开始。Lenso Console 是独立运行的 Service。
 
 完成本页后，你将拥有：
 
@@ -12,7 +12,7 @@ Lenso 应用时，从这里开始。
 - 可选的业务能力包
 - 本地 Postgres
 - API 与 Worker 进程
-- 位于 `/console` 的 Runtime Console
+- 用于运维工作流的独立 Console Service
 
 ## 前置条件
 
@@ -42,7 +42,7 @@ lenso --version
 
 App Composer 是推荐的第一条路径。下面的命令会创建一个 support-desk
 应用，其中包含 Host、TypeScript 与 Rust 服务、系统描述文件、Launchpad
-状态以及可供 Runtime Console 和 Agent 读取的 App Change Plan。
+状态以及可供 Lenso Console 和 Agent 读取的 App Change Plan。
 
 ```sh
 lenso app list
@@ -61,9 +61,9 @@ lenso agent task --from-app-plan "add enterprise SLA escalation"
 lenso dev up
 ```
 
-`lenso dev up` 会先启动 `lenso.workspace.json` 中声明的服务，再启动 Host。
-打开 `/console` 后，首屏 `/launchpad` 会展示生成的服务、模块、Addon、
-Doctor 状态、检查Manifest和下一条运维命令。
+`lenso dev up` 会先启动 `lenso.workspace.json` 中声明的 Service，再启动
+Host。完整的本地 Console Service 使用 Console checkout 中的
+`lenso console dev`；独立环境使用 `lenso console install`。
 
 ## 使用能力包
 
@@ -98,13 +98,12 @@ lenso serve
 ```
 
 `lenso serve` 会启动 starter Postgres、执行迁移，然后持续运行 API 与
-Worker。已发布的 `lenso-cli` 还会把 Runtime Console 复制到 Host 中，因此
-Host 可以直接在 `/console` 提供界面，无需额外安装 Node.js 或 pnpm。
+Worker。它不会复制或托管 Console Web 资源。
 
 服务就绪后打开：
 
 - `/v1/app/status`：Host API 健康状态
-- `/console`：Runtime Console
+- 配置的 Console Service URL：独立的 Lenso Console
 
 ## 手动运行各进程
 
