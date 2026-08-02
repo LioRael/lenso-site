@@ -36,7 +36,7 @@ const scenes = [
   {
     eyebrow: "Prove",
     headline: "Check the runtime before shipping.",
-    subline: "Runtime Console turns generated work into visible evidence.",
+    subline: "Console turns generated work into visible evidence.",
     command: "lenso app verify",
     visual: "console",
     duration: 390,
@@ -388,7 +388,7 @@ function ConsoleShot() {
         <Dot color="#f2c14e" />
         <Dot color="#59c878" />
         <span style={{ color: fog, fontFamily: monoFont, fontSize: 20, marginLeft: 14 }}>
-          Runtime Console / Launchpad
+          Console / Launchpad
         </span>
       </div>
       <Img
