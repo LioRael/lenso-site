@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Configure a Lenso host, module sources, Runtime Console paths, telemetry, and module-local values.
+description: Configure a Lenso host, module sources, Lenso Console paths, telemetry, and module-local values.
 ---
 
 Generated hosts read normal environment variables. Keep configuration boring:
@@ -32,12 +32,12 @@ Local development defaults to `demo` when `APP_ENV` is `local`, `dev`,
 | `DATABASE_MAX_CONNECTIONS` | database pool size |
 | `HTTP_HOST` | API bind host, default `127.0.0.1` |
 | `HTTP_PORT` | API port, default `3000` |
-| `CORS_ALLOWED_ORIGINS` | comma-separated Runtime Console dev origins |
+| `CORS_ALLOWED_ORIGINS` | comma-separated Lenso Console dev origins |
 | `RUST_LOG` | log level/filter |
 | `LOG_FORMAT` | `compact` or `json` |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | optional OpenTelemetry collector endpoint |
 
-For health probes, structured logs, and Runtime Console runtime views, read
+For health probes, structured logs, and Lenso Console runtime views, read
 [Observability](/docs/observability).
 
 For the difference between `core`, `demo`, app-owned `HostBuilder` Modules,
@@ -98,7 +98,7 @@ LENSO_MODULE_SUPPORT_ENABLED=false
 ```
 
 Use module-local config for values module code needs at boot. Use runtime
-config descriptors for values operators should edit through Runtime Console.
+config descriptors for values operators should edit through Lenso Console.
 
 ## Redis
 

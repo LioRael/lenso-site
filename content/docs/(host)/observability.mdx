@@ -1,12 +1,12 @@
 ---
 title: Observability
-description: Use health probes, structured logs, OTLP traces, and Runtime Console runtime views.
+description: Use health probes, structured logs, OTLP traces, and Lenso Console runtime views.
 ---
 
 Lenso has two observability layers:
 
 - process-level health, logs, and traces for operators;
-- Runtime Console views backed by platform/runtime tables for module activity.
+- Lenso Console views backed by platform/runtime tables for module activity.
 
 `platform-admin` owns runtime observability APIs under `/admin/runtime/*`. It is
 a platform concern, not a product module, and reads platform/runtime tables such
@@ -69,15 +69,15 @@ endpoint:
 unset OTEL_EXPORTER_OTLP_ENDPOINT
 ```
 
-## Runtime Console views
+## Lenso Console views
 
 Open:
 
 ```text
-http://127.0.0.1:3000/console
+http://127.0.0.1:3030/
 ```
 
-Use Runtime Console to inspect:
+Use Lenso Console to inspect:
 
 - loaded modules and manifest lints;
 - runtime function declarations and runs;
@@ -88,14 +88,14 @@ Use Runtime Console to inspect:
 - technical operations linked to telemetry spans.
 
 When a module action fails, copy the `correlation_id` from the API error or log
-line and search Runtime Console story/technical-operation views with that id.
+line and search Lenso Console story/technical-operation views with that id.
 Cron-triggered work uses the same evidence path: the worker records schedule
 state, enqueues a runtime function run when due, and the function run appears in
-the same Runtime Console views as other background work.
+the same Lenso Console views as other background work.
 
 ## What to log from modules
 
-Use structured fields that connect logs to Runtime Console evidence:
+Use structured fields that connect logs to Lenso Console evidence:
 
 ```rust
 use lenso::host::http::HttpRequestContext;

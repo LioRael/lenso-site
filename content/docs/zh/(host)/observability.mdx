@@ -1,12 +1,12 @@
 ---
 title: 可观测性
-description: 使用运行状况探测、结构化日志、OTLP 跟踪和 Runtime Console 运行时视图。
+description: 使用运行状况探测、结构化日志、OTLP 跟踪和 Lenso Console 运行时视图。
 ---
 
 Lenso 有两个可观察层：
 
 - 操作员的流程级运行状况、日志和跟踪；
-- Runtime Console 视图由模块活动的平台/运行时表支持。
+- Lenso Console 视图由模块活动的平台/运行时表支持。
 
 `platform-admin` 拥有 `/admin/runtime/*` 下的运行时可观测性 API。这是
 平台问题，而不是产品模块，并读取平台/运行时表，例如
@@ -69,15 +69,15 @@ just observability-up
 unset OTEL_EXPORTER_OTLP_ENDPOINT
 ```
 
-## Runtime Console 视图
+## Lenso Console 视图
 
 打开：
 
 ```text
-http://127.0.0.1:3000/console
+http://127.0.0.1:3030/
 ```
 
-使用Runtime Console检查：
+使用Lenso Console检查：
 
 - 加载的模块和Manifest lints；
 - 运行时函数声明和运行；
@@ -88,14 +88,14 @@ http://127.0.0.1:3000/console
 - 与遥测跨度相关的技术操作。
 
 当模块操作失败时，从 API 错误或日志中复制 `correlation_id`
-使用该 ID 行并搜索Runtime Console Story/技术操作视图。
+使用该 ID 行并搜索Lenso Console Story/技术操作视图。
 Cron 触发的工作使用相同的证据路径：工作人员记录时间表
 状态，在到期时将运行时函数运行排入队列，并且该函数运行出现在
-与其他后台工作相同的 Runtime Console 视图。
+与其他后台工作相同的 Lenso Console 视图。
 
 ## 从模块记录什么
 
-使用结构化字段将日志连接到Runtime Console 证据：
+使用结构化字段将日志连接到Lenso Console 证据：
 
 ```rust
 use lenso::host::http::HttpRequestContext;

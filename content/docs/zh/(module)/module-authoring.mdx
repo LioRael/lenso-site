@@ -21,7 +21,7 @@ cargo add lenso@0.3.33
 - Runtime Function 声明
 - Event Handler 声明
 - HTTP Route 声明
-- Runtime Console 界面声明
+- Lenso Console 界面声明
 
 ## 最小 Manifest
 
@@ -92,7 +92,7 @@ fn manifest_lints_cleanly() {
 }
 ```
 
-Manifest 告诉 Host 哪些能力应当出现在 Runtime Console 中，但它不会替代
+Manifest 告诉 Host 哪些能力应当出现在 Lenso Console 中，但它不会替代
 实际的 Route Handler、SQL 或 Runtime Function 实现。
 
 ## 创建模块
@@ -101,13 +101,13 @@ Manifest 告诉 Host 哪些能力应当出现在 Runtime Console 中，但它不
 lenso module create billing
 ```
 
-只有模块确实需要自己的运维页面时才加入 Console Package：
+只有 Module 确实需要自己的运维页面时才加入隔离 Console UI 制品：
 
 ```sh
-lenso module create billing --with-console
+lenso module create billing --with-console-ui
 ```
 
-一般的数据、Action 和运行时证据已经会出现在 Host 自带的 Runtime Console 中。
+一般的数据、Action 和运行时证据已经会出现在 独立运行的 Lenso Console 中。
 
 ## 接入 Linked Route
 
@@ -156,7 +156,7 @@ async fn status() -> Json<BillingStatus> {
 2. 提供一个 Host 可见的数据界面或 Route。
 3. 提供一个 Action 或 Runtime Function。
 4. 添加一个在模块未安装时必定失败的 Smoke Check。
-5. 打开 `/console`，确认能力和证据可见。
+5. 打开 配置的 Console Service URL，确认能力和证据可见。
 
 不要在第一个模块中提前建立复杂的框架层。等第二个模块出现真实复用需求后再
 提取共享代码，通常成本更低。
@@ -166,7 +166,7 @@ async fn status() -> Json<BillingStatus> {
 - Manifest lint 没有错误
 - 至少一个有用能力通过 Host 可见
 - 模块未安装时 Smoke Check 会失败
-- `/console` 能显示运维人员需要的模块证据
+- 配置的 Console Service URL 能显示运维人员需要的模块证据
 
 ## 下一步
 

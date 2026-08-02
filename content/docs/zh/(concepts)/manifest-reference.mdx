@@ -4,7 +4,7 @@ description: 了解每个 Lenso 模块公开的可序列化的 ModuleManifest �
 ---
 
 `ModuleManifest` 是模块的纯数据合约。它描述了什么
-主机和 Runtime Console可以看到：路由、管理界面、运行时功能、
+主机和 Lenso Console可以看到：路由、管理界面、运行时功能、
 运行时计划、事件、生命周期工作、控制台包、依赖项和
 能力。
 
@@ -64,7 +64,7 @@ pub fn manifest() -> ModuleManifest {
 | `runtime` |运行时函数和调度声明。申报是舱单数据；处理程序位于加载源中，并且调度仍由主机拥有。 |
 | `events` |事件处理程序声明。主机通过源绑定注册并调用后备处理程序。 |
 | `lifecycle` |启动检查和激活作业。主机验证并安排这些条目，而不是向模块提供任意启动回调。 |
-| `console` |Runtime Console前端界面由受信任的包或托管包支持。 |
+| `console` |Lenso Console前端界面由受信任的包或托管包支持。 |
 | `story_display` |时间线和检查界面的控制台Story显示元数据。 |
 
 ## 构建器方法
@@ -153,7 +153,7 @@ ScheduledFunctionDeclaration {
 
 ## Lint类别
 
-主机通过模块元数据和 Runtime Console公开 `manifest_lints`
+主机通过模块元数据和 Lenso Console公开 `manifest_lints`
 将它们分为几类：
 
 |类别 |常见问题 |
@@ -186,4 +186,4 @@ ScheduledFunctionDeclaration {
 - 将被另一个界面引用的新功能。
 
 更改 Manifest形态后，运行相关的本地检查并打开
-[Runtime Console](/docs/zh/runtime-console) 验证主机可见结果。
+[Lenso Console](/docs/zh/runtime-console) 验证主机可见结果。

@@ -25,7 +25,7 @@ lenso module install auth-password
 lenso module install auth-device
 ```
 
-`auth-password` and `auth-device` depend on `auth`. Runtime Console exposes
+`auth-password` and `auth-device` depend on `auth`. Lenso Console exposes
 declared dependencies through module metadata so the operator can see why a
 module is not ready.
 
@@ -107,7 +107,7 @@ lenso service install https://example.com/lenso/service/v1/manifest
 Available Modules uses discovery data only. It does not install a module until
 the operator runs an install action.
 
-Runtime Console's Available Modules view reads, in order:
+Lenso Console's Available Modules view reads, in order:
 
 1. explicit `.env` `LENSO_MODULE_CATALOG_FILE=<path>`
 2. already configured Service providers
@@ -116,16 +116,11 @@ Runtime Console's Available Modules view reads, in order:
 The built-in catalog is the default discovery source for fresh hosts. It is not
 a hidden install database.
 
-## Runtime Console install flow
+## Lenso Console workflow
 
-Runtime Console can write the same host-local install state through:
-
-```text
-POST /admin/data/available-modules/{module}/install
-```
-
-This is still host-owned installation. The browser does not install npm
-packages or compile third-party code into the official Console bundle.
+Lenso Console creates a reviewed Module change plan, records approval and
+submission evidence, and observes the owning target's terminal receipt. The
+browser does not write Host-local install files or install npm packages.
 
 ## Doctor and uninstall
 

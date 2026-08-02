@@ -5,7 +5,7 @@ description: 选择适合你的 Lenso 路径，并运行一个可验证的本地
 
 Lenso 是面向 Rust 业务系统的 Agent-ready 模块化应用框架。
 
-从一个可部署的后端开始，按业务能力加入模块，再通过 Runtime Console
+从一个可部署的后端开始，按业务能力加入模块，再通过 Lenso Console
 验证系统事实。只有当所有权、数据和运维边界真正稳定后，才把某个模块拆成
 独立服务。
 
@@ -17,16 +17,16 @@ HTTP 路径与协议名称保留原文，便于直接复制并与源码对应。
 ## 选择你的路径
 
 <CardGroup>
-  <Card title="快速开始" href="/docs/zh/quickstart" description="安装 CLI，创建应用，并运行 API、Worker、Postgres 与 Runtime Console。" />
+  <Card title="快速开始" href="/docs/zh/quickstart" description="安装 CLI，创建应用并运行 API、Worker 与 Service；Console 独立安装。" />
   <Card title="开发模块" href="/docs/zh/module-authoring" description="声明模块数据、路由、操作、运行时函数和 Console 界面。" />
-  <Card title="Runtime Console" href="/docs/zh/runtime-console" description="检查模块、数据、操作、Runtime Story 和发布证据。" />
+  <Card title="Lenso Console" href="/docs/zh/runtime-console" description="检查模块、数据、操作、Runtime Story 和发布证据。" />
   <Card title="API 参考" href="/docs/zh/api" description="浏览由 OpenAPI 合约生成的接口和代码示例。" />
 </CardGroup>
 
 ## 第一次使用
 
 1. 阅读[快速开始](/docs/zh/quickstart)，创建一个可运行的 Lenso 应用。
-2. 打开 `/console`，确认 Host、模块和运行时证据均可见。
+2. 启动独立的 Console Service，并确认 System composition 与运行时证据可见。
 3. 阅读[模块开发](/docs/zh/module-authoring)，加入第一个业务能力。
 4. 使用项目提供的检查命令验证代码、合约和生成产物。
 
@@ -47,12 +47,12 @@ HTTP 路径与协议名称保留原文，便于直接复制并与源码对应。
 - **模块优先。** 一个部署单元内保持清晰的业务边界。
 - **Host 持有策略。** Host 负责模块装载、身份、运行时调度和证据聚合。
 - **合约可提交。** OpenAPI、事件、错误和运行时合约与代码一起评审。
-- **先证明，再发布。** “能够启动”不等于完成；Runtime Console 与检查结果才是可复核证据。
+- **先证明，再发布。** “能够启动”不等于完成；Lenso Console 与检查结果才是可复核证据。
 - **按需拆分。** 只有真实的所有权和运维需求出现时，才迁移为 Autonomous Service。
 
-## 当前发布线
+## 安装入口
 
-- `lenso@0.3.33`：Rust facade 与 Host runtime
-- `@lenso/cli@0.2.13` / `lenso-cli@0.2.13`：CLI
-- `@lenso/service-kit@0.1.0`：TypeScript Service 开发套件
-- Runtime Console `0.1.2`：随生成的 Host 打包发布
+- Rust Module 与 Host 使用当前 `lenso` facade。
+- `@lenso/cli` 与 `lenso-cli` 都提供 `lenso` 命令。
+- TypeScript Service 使用 `@lenso/service-kit`。
+- Lenso Console 使用 `lenso console install` 独立安装。

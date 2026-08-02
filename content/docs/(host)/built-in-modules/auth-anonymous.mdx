@@ -28,7 +28,7 @@ The response includes `user_id`, `session_id`, `token`, `expires_at`, and
 
 After restart, verify:
 
-- `/console` lists `auth-anonymous` in module metadata.
+- the configured Console Service URL lists `auth-anonymous` in module metadata.
 - Runtime evidence shows the anonymous login HTTP route after a request.
 - The auth Users table shows the user as anonymous until a real credential is linked.
 

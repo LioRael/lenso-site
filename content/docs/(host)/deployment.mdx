@@ -87,7 +87,7 @@ provider process resources only.
 
 `status --write-state` stores the current deployment observation, and
 `wait --write-state` appends rollout observations to the local deployment
-history. Runtime Console reads that Host-local evidence; it does not need
+history. Lenso Console reads that Host-local evidence; it does not need
 browser access to the cluster.
 
 ## Promotion loop
@@ -156,7 +156,7 @@ Install Lenso Console independently from the business Host. Use
 for installation evidence, and `lenso console upgrade` for immutable Service
 Release upgrades.
 
-## Runtime Console access
+## Lenso Console access
 
 `APP_ENV=production` disables development bearer tokens. Production Operators
 sign in through the Console Service's own password or OIDC flow. Initialize the

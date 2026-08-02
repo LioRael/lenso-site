@@ -3,8 +3,8 @@ title: Host Quickstart
 description: Create a Launchpad app or scaffold a Lenso host and run it locally.
 ---
 
-Use this path when you want a local Lenso app that can load modules, run service
-processes, and serve the Runtime Console.
+Use this path when you want a local Lenso app that can load Modules and run
+Service processes. Lenso Console is installed and operated independently.
 
 You will finish with:
 
@@ -12,7 +12,7 @@ You will finish with:
 - optional capability packs for reusable business slices
 - local Postgres
 - API and worker processes
-- Runtime Console at `/console`
+- an independently running Console Service for operator workflows
 
 ## Prerequisites
 
@@ -44,7 +44,7 @@ lenso --version
 App Composer is the recommended first path. It creates a support-desk app with
 a host, TypeScript and Rust services, `lenso.system.json`,
 `lenso.workspace.json`, `.lenso/launchpad.json`, and an App Change Plan that
-Runtime Console and agents can read.
+Lenso Console and agents can read.
 
 ```sh
 lenso app list
@@ -63,10 +63,9 @@ lenso agent task --from-app-plan "add enterprise SLA escalation"
 lenso dev up
 ```
 
-`lenso dev up` starts services from `lenso.workspace.json`, then starts the host.
-Open Runtime Console at `/console`; its first screen is `/launchpad` and shows
-the generated services, modules, addons, doctor status, checklist, and next
-operator command.
+`lenso dev up` starts Services from `lenso.workspace.json`, then starts the host.
+Use `lenso console dev` from a Console checkout for the complete local Console
+Service, or `lenso console install` for an independently installed environment.
 
 To compose a reusable slice that carries seed module and service manifests plus
 agent handoff context, create a capability pack and pass it to App Composer:
@@ -98,14 +97,13 @@ lenso serve
 ```
 
 `lenso serve` starts the starter Postgres service, runs migrations, then keeps
-the API and worker running until Ctrl-C. Published `lenso-cli` builds also copy
-the bundled Runtime Console into the host, so the API serves it at `/console`
-without requiring Node.js or pnpm in the host application.
+the API and worker running until Ctrl-C. It does not bundle or serve Console
+assets.
 
 Open these URLs after the command prints that the services are ready:
 
 - `/v1/app/status` for host API health
-- `/console` for Runtime Console
+- the configured Console Service URL for operator workflows
 
 ## Manual service loop
 

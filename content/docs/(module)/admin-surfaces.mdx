@@ -1,10 +1,10 @@
 ---
 title: Admin Surfaces
-description: Expose module data, actions, queries, and custom operator views through Runtime Console.
+description: Expose module data, actions, queries, and custom operator views through Lenso Console.
 ---
 
 Admin surfaces are how a module becomes operable. They describe the data,
-actions, and read-only values that Runtime Console can show without importing
+actions, and read-only values that Lenso Console can show without importing
 module internals.
 
 ## Three surface modes
@@ -55,7 +55,7 @@ pub fn manifest() -> ModuleManifest {
 }
 ```
 
-Runtime Console reads the records through host-owned `/admin/data/*` endpoints.
+Lenso Console reads the records through host-owned `/admin/data/*` endpoints.
 The module keeps strong types internally; generic admin data crosses the
 boundary as JSON records.
 

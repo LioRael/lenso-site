@@ -20,7 +20,7 @@ A generated host contains:
 - migration app for deterministic database setup
 - Postgres for host-owned persistence
 - optional Redis for auth session lookup
-- bundled Runtime Console served by the API
+- System Plane endpoints consumed by an independently running Lenso Console
 
 This is a modular monolith first. A Module is Linked into a Host. Code that
 needs its own process, runtime, Store, or deployment cadence is a Service that

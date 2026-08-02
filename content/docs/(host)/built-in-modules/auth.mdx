@@ -4,7 +4,7 @@ description: Install durable users, sessions, and the auth Console surface.
 ---
 
 Install `auth` when the host needs durable users and sessions for application
-login, Runtime Console access, or both.
+login, Lenso Console access, or both.
 
 From a generated host:
 
@@ -15,7 +15,7 @@ lenso serve
 ```
 
 The CLI updates host composition, dependencies, local install receipts, and the
-Runtime Console extension registry. Restart the API and worker after installing
+Lenso Console extension registry. Restart the API and worker after installing
 or updating modules.
 
 ## User model
@@ -40,7 +40,7 @@ store a mapping from the account row to `auth_user_id`.
 
 After restart, verify:
 
-- `/console` lists `auth` under Modules.
+- the configured Console Service URL lists `auth` under Modules.
 - Data shows Auth users and sessions.
 - Actions include session revoke and user enable or disable actions.
 

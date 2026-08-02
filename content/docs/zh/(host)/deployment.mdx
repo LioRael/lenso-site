@@ -87,7 +87,7 @@ lenso service deploy wait support-suite-provider \
 
 `status --write-state` 存储当前的部署观察，并且
 `wait --write-state` 将推出观察结果附加到本地部署
-历史。Runtime Console读取主机本地证据；它不需要
+历史。Lenso Console读取主机本地证据；它不需要
 浏览器访问集群。
 
 ## 晋级流程
@@ -155,7 +155,7 @@ Lenso Console 应独立于业务 Host 安装。使用 `lenso console install` �
 审查的 Release Manifest，使用 `lenso console doctor` 校验安装证据，并使用
 `lenso console upgrade` 执行不可变的 Service Release 升级。
 
-## Runtime Console 访问
+## Lenso Console 访问
 
 `APP_ENV=production` 会禁用开发 Bearer Token。生产 Operator 通过 Console
 Service 自己的密码或 OIDC 流程登录。使用

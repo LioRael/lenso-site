@@ -27,7 +27,7 @@ or runs a module action, the useful questions are:
 - Did a Service provider call succeed or fail?
 - Which technical operation explains the slow or failing node?
 
-A Runtime Story makes those answers visible in Runtime Console.
+A Runtime Story makes those answers visible in Lenso Console.
 
 ## How stories are built
 
@@ -42,7 +42,7 @@ records small, durable facts as work moves through platform-owned seams.
 | `platform.remote_http_proxy_calls` | host-owned evidence for out-of-process module traffic |
 | telemetry spans | technical operations linked back to story nodes when possible |
 
-Runtime Console reads those records through `/admin/runtime/stories` and
+Lenso Console reads those records through `/admin/runtime/stories` and
 renders:
 
 - a story list item with title, status, duration, services, and pattern;
@@ -140,7 +140,7 @@ is better for users.
 
 ## API shape
 
-Runtime Console calls the host-owned runtime APIs:
+Lenso Console calls the host-owned runtime APIs:
 
 ```sh
 curl -sS \

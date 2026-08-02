@@ -1,24 +1,18 @@
 ---
-title: Console Packages
-description: Add module-owned Runtime Console pages through explicit package and route contracts.
+title: Module Console UI
+description: Ship module-owned Console pages as verified isolated web artifacts.
 ---
 
-Console packages are module-owned Runtime Console pages. They are different from
-admin surfaces:
+A Module may contribute Console navigation and pages, but executable UI never
+runs inside the Console Shell JavaScript realm. The manifest declares the
+surface; the same immutable Module Release binds its verified UI artifact.
 
-- `AdminSurface` describes generic or declarative data rendering under
-  `/admin/data/*`.
-- `ConsoleSurface` describes a Runtime Console route and frontend package export
-  that the host may mount.
-
-## Backend declaration
-
-Declare Console surfaces in `ModuleManifest.console`:
+## Declare an isolated surface
 
 ```rust
 use lenso::{
-    ConsoleArea, ConsoleNavigation, ConsoleNavigationGroup, ConsolePackage,
-    ConsoleSurface, ConsoleWorkspaceRef, ModuleManifest,
+    ConsoleNavigation, ConsoleSurface, ConsoleSurfacePresentation,
+    ConsoleWorkspaceRef, ModuleManifest, CONSOLE_BRIDGE_PROTOCOL,
 };
 
 pub fn manifest() -> ModuleManifest {
@@ -27,11 +21,10 @@ pub fn manifest() -> ModuleManifest {
         .console(vec![ConsoleSurface {
             name: "contacts".to_owned(),
             label: "Contacts".to_owned(),
-            area: ConsoleArea::Data,
             route: "/crm/contacts".to_owned(),
-            package: ConsolePackage {
-                name: "@vendor/crm-console".to_owned(),
-                export: "crmConsoleModule".to_owned(),
+            presentation: ConsoleSurfacePresentation::Isolated {
+                entry: "contacts".to_owned(),
+                bridge_protocol: CONSOLE_BRIDGE_PROTOCOL.to_owned(),
             },
             icon: Some("briefcase".to_owned()),
             required_capabilities: vec!["crm.contacts.read".to_owned()],
@@ -41,12 +34,7 @@ pub fn manifest() -> ModuleManifest {
                     label: "CRM".to_owned(),
                     icon: Some("briefcase".to_owned()),
                 },
-                group: Some(ConsoleNavigationGroup {
-                    id: "customers".to_owned(),
-                    label: "Customers".to_owned(),
-                    icon: None,
-                    order: Some(20),
-                }),
+                group: None,
                 order: Some(10),
             }),
         }])
@@ -54,98 +42,38 @@ pub fn manifest() -> ModuleManifest {
 }
 ```
 
-Keep the backend declaration and frontend `console-surface.json` aligned. A
-Rust test can load the JSON and compare it with the manifest surface.
+The Module Release must contain a `ConsoleUiArtifact` with format
+`isolated_web`, the exact artifact locator and SHA-256 digest, an entry mapping
+such as `{ name: "contacts", path: "index.html" }`,
+`lenso.console-bridge.v1`, requested permissions, and provenance. A release is
+invalid when an isolated surface has no matching artifact entry.
 
-## Frontend package rule
-
-Console packages import the host through the public host API only:
-
-```ts
-import { defineConsoleModule } from "@lenso/runtime-console-api";
-```
-
-Allowed:
-
-- package-local files
-- declared dependencies
-- `@lenso/runtime-console-api`
-
-Forbidden:
-
-- deep imports from Runtime Console pages, hooks, components, stores, or data
-- host bearer tokens
-- ad hoc globals
-- direct access to host query clients
-
-## Workspace package workflow
-
-In the `lenso-console` repository:
+Create a Module with this surface using:
 
 ```sh
-pnpm create:console-package crm
-pnpm check:console-packages
-pnpm check
+lenso module create crm --with-console-ui
+lenso module dev --console-ui
 ```
 
-The scaffold creates package registration files, a package manifest, and a Rust
-surface snippet. Use that generated snippet as the starting point for the
-backend `ModuleManifest.console` declaration.
+## Runtime boundary
 
-## Dynamic hosted bundles
+The Console Service downloads the complete selected artifact set only through a
+reviewed composition operation. It verifies every digest and records an atomic
+composition receipt. The Shell then loads each page in a sandboxed iframe and
+grants only the reviewed subset of requested Bridge operations for the exact
+Module Release and artifact digests.
 
-Installed third-party modules can ship already-built Console bundles. The host
-serves them from:
+An artifact may use `@lenso/console-bridge` to exchange structured messages with
+the Shell. It cannot receive ambient credentials, import Shell internals, use
+same-origin storage, or call a managed Service directly.
 
-```text
-/console/extensions/*
-```
+There is no `/console/extensions/*` registry, same-origin JavaScript bundle,
+`@lenso/runtime-console-api`, or separate Console package installation command.
+UI lifecycle follows ordinary `lenso module install|update|disable|remove` and
+`lenso console composition plan|apply` operations.
 
-Runtime Console reads:
+## Missing UI evidence
 
-```text
-/console/extensions/registry.json
-```
-
-Registry entries bind a package/export to a same-origin bundle:
-
-```json
-{
-  "version": 1,
-  "bundles": [
-    {
-      "packageName": "@vendor/crm-console",
-      "exportName": "crmConsoleModule",
-      "entry": "/console/extensions/crm/entry.js",
-      "hostApi": "1",
-      "styles": ["/console/extensions/crm/entry.css"]
-    }
-  ]
-}
-```
-
-Rules:
-
-- entries and styles must be same-origin URLs
-- `hostApi` must match the Runtime Console host API version
-- malformed exports are rejected before route registration
-- React and the host API are externalized through stable host entries
-- the browser does not install npm packages
-
-## Styling
-
-Console extension CSS should reference the token contract at build time:
-
-```css
-@reference "@lenso/runtime-console-api/theme.css";
-```
-
-Do not emit a second host theme. Extension styles should consume host tokens,
-not redefine them.
-
-## Missing package behavior
-
-If a backend manifest declares a Console surface but the host has not trusted or
-registered the package, Runtime Console should show the missing package state
-instead of silently hiding the module. That is install evidence for the
-operator, not a frontend bug.
+If the manifest declares a surface but the selected artifact is absent,
+unverified, or lacks a grant, Console reports that composition gap. It does not
+silently load a package or execute an unreviewed fallback.

@@ -1,5 +1,5 @@
 ---
-title: Runtime Console
+title: Lenso Console
 description: Verify module data, actions, runtime workflows, and operational visibility.
 ---
 
@@ -7,7 +7,7 @@ Lenso Console is the independently installed operator-facing System Plane for
 one Lenso System. Its Console Shell, API, Worker, Auth domain, System Registry,
 and Service Store run separately from the business Services it manages.
 
-![Runtime Console App Lifecycle view showing services, modules, Doctor checks, App Proof, and next actions](/lenso-assets/console/app-lifecycle.png)
+![Lenso Console App Lifecycle view showing services, modules, Doctor checks, App Proof, and next actions](/lenso-assets/console/app-lifecycle.png)
 
 The App Lifecycle view puts the generated system, readiness gaps, proof state,
 and next operator action in one place. A warning is evidence to act on, not a
@@ -68,8 +68,8 @@ When the Console Service is running, open its root URL (locally,
 - Actions: admin actions declared by modules.
 - Runtime: function runs, story events, and remote proxy evidence.
 
-This is the fastest way to catch a module that compiles but is not visible to
-the host.
+This is the fastest way to catch a Module that exists in code but is absent from
+the reviewed System or Console composition.
 
 If the runtime page shows a story, read it as the host's business-level evidence
 graph. [Runtime Stories](/docs/runtime-stories) explains how the title, nodes,

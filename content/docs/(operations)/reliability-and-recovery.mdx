@@ -12,7 +12,7 @@ An Autonomous Service selects a reusable development, standard, or critical
 profile and may add validated overrides. The effective contract defines limits
 for queues, workflows, dependencies, readiness, liveness, and degraded modes.
 
-The Service evaluates its own local state. Runtime Console displays the report,
+The Service evaluates its own local state. Lenso Console displays the report,
 but Console availability does not determine readiness or business completion.
 
 | State | Meaning |
@@ -83,7 +83,7 @@ existing state.
 ## Control-plane outage
 
 The data plane keeps Service-local health, workflows, Inbox, Outbox, and Story
-segments independent of the System Plane and Runtime Console. During an outage:
+segments independent of the System Plane and Lenso Console. During an outage:
 
 1. stop accepting new operator mutations;
 2. preserve Service-local business execution according to its reliability
