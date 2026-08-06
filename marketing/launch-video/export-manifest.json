@@ -1,0 +1,44 @@
+{
+  "schema": "lenso.launch-video-export.v1",
+  "composition": "LensoLaunch",
+  "format": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "durationSeconds": 42,
+    "videoCodec": "H.264",
+    "audioCodec": "MPEG-4 AAC"
+  },
+  "output": {
+    "path": "../../public/lenso-assets/launch/lenso-launch.mp4",
+    "sha256": "b11960b4984561ee61360ffdf59e3886cd4aecfcaf35978dd3be7c18f35746e2"
+  },
+  "variants": [
+    {
+      "composition": "LensoSocialCut",
+      "durationSeconds": 15,
+      "path": "../../public/lenso-assets/launch/lenso-launch-15s.mp4",
+      "sha256": "eca6c70cb35b442953abe37dce54c305f5cd9d7eb8f10c68c0ff5f9656c0f7bd",
+      "poster": {
+        "path": "../../public/lenso-assets/launch/lenso-launch-15s-frame.png",
+        "frame": 250,
+        "sha256": "cc64af3d51095ef30d53d41acd3e833da1d45a86511e092594dbbad8775b96ee"
+      }
+    }
+  ],
+  "poster": {
+    "path": "../../public/lenso-assets/launch/lenso-launch-frame.png",
+    "frame": 540,
+    "sha256": "ca04cd45c4a125fe0fe8d156ee9a5ec5bdc407731f26d634c72c35208b098dcc"
+  },
+  "sourceAssets": [
+    "public/brand/lenso-wordmark.svg",
+    "public/audio/lenso-intro.wav"
+  ],
+  "audio": {
+    "kind": "procedural-original",
+    "generator": "scripts/generate-audio.mjs",
+    "sampleRate": 48000,
+    "channels": 2
+  }
+}
