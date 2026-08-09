@@ -16,7 +16,7 @@ Manifest、生成的合约、重点检查和 配置的 Console Service URL 验�
 模块：
 
 ```sh
-npx skills add lenso-dev/skills
+npx skills add LioRael/lenso
 ```
 
 如果您在本地结账处工作，相同的技能文件位于
@@ -29,12 +29,19 @@ Lenso 存储库中的 `skills/`。复制或注册这些技能目录
 | --- | --- | --- |
 |澄清模糊的商业想法| `lenso-business-planning` |选择第一个有用的切片 |
 |选择正确的公共路径 | `lenso-start` |路由到主机、链接模块、服务支持模块或 API 客户端 |
-|编写生成的业务应用程序 | `lenso-start` | `lenso app compose ./acme-support --blueprint support-desk --addon support-sla --apply` |
-|创建可重用的能力包 | `lenso-business-planning` | `lenso capability init support-sla --dir ./capabilities/support-sla --lang ts --for-blueprint support-desk` |
+|组合或演进生成的业务应用 | `lenso-app-composition` |检查当前的 `lenso app --help` |
+|创建可重用的能力包 | `lenso-app-composition` |检查当前的 `lenso capability --help` |
 |启动主机应用程序 | `lenso-starter-host` | `lenso host init <dir>` |
 |构建 Rust 模块 | `lenso-module-authoring` | `lenso module create <name>` |
-|构建进程外服务模块 | `lenso-service-module-authoring` | `lenso service create <name> --lang ts` |
+|构建进程外服务模块 | `lenso-service-authoring` | `lenso service create <name> --lang ts` |
+|构建或改进 Console Surface | `lenso-console-surface-authoring` |检查当前 Console Module 包和所属 Module 声明 |
 |使用 Lenso API | `lenso-api-client` | `contracts/openapi/app-api.v1.yaml` |
+|构建独立权威 Service | `lenso-autonomous-service-authoring` |先验证当前 GA Support Manifest |
+|演进 Contract | `lenso-contract-evolution` |盘点生产者、消费者和已提交制品 |
+|设计 Durable Workflow | `lenso-durable-workflow` |定义不可变版本和稳定标识 |
+|提取 linked Module | `lenso-module-extraction` |运行当前 extraction readiness 命令 |
+|诊断事故 | `lenso-incident-recovery` |先收集精确证据再执行恢复 |
+|准备或恢复发布 | `lenso-reviewed-release` |读取所属仓库的发布流程 |
 
 公共技能包位于Lenso存储库的`skills/`目录中。
 
@@ -57,7 +64,7 @@ Build a support ticket module for a Lenso app.
 预计路由是：
 
 ```text
-lenso-business-planning -> lenso-start -> lenso app compose -> lenso agent task --from-app-plan -> checks -> Console Service 根地址
+lenso-start -> lenso-business-planning -> lenso-app-composition -> 实现 skill -> checks -> Console Service 根地址
 ```
 
 对于可重用切片，通过能力包进行路由：
@@ -91,8 +98,8 @@ First slice:
 |能力包 | `lenso capability fit <pack> --repo-root .` 加上 Launchpad 应用程序变更计划证据 |
 | Rust 模块 |舱单或冒烟检查以及 配置的 Console Service URL 证据 |
 |服务支持模块|包烟加`lenso module release check <module-release.json>` |
-|合约/API 工作 | `just generated-check` |
-|架构敏感的后端工作 | `just arch-check` |
+|合约/API 工作 |所属仓库的生成与新鲜度检查 |
+|架构敏感的后端工作 |所属仓库的架构检查 |
 
 检查应该是小型的、局部的，并且与能力相关。只编译
 当更改应该出现在Lenso Console中时，通过是不够的。
