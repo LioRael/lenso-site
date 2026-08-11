@@ -1,64 +1,87 @@
 ---
 title: Product Blueprints
-description: Create service-ready product apps, add product addons, and hand the result to Lenso Console or a coding agent.
+description: Materialize an exact product-shaped app composition for local development.
 ---
 
-Product Blueprints are the fastest path from product idea to a runnable Lenso
-system. A blueprint creates a host, service processes, module manifests,
-`lenso.system.json`, `lenso.workspace.json`, and Launchpad state. Addons extend
-that generated app without making you hand-edit service graph JSON first.
-Capability packs bundle a reusable product slice around modules, services,
-seed manifests, docs, and agent handoff context.
+Product Blueprints are the shortest path from a product idea to a runnable
+Lenso System. A blueprint creates the app source shape and the single
+`lenso.app.json` composition lock that selects its Modules.
 
-Use this path when you want a product-shaped starting point instead of a blank
-host.
-
-## Built-in blueprints
-
-| Blueprint | Shape | Good first addon |
-| --- | --- | --- |
-| `support-desk` | TypeScript support API, Rust notification worker, ticket-oriented capabilities | `support-sla` |
-| `backoffice-crm` | TypeScript CRM service for internal customer operations | `customer-profile` |
-| `ops-console` | Rust audit service for operational views and internal actions | `notifications` |
-
-List and inspect what your installed CLI supports:
+## Inspect available blueprints
 
 ```sh
 lenso app list
 lenso app inspect support-desk
 ```
 
-## Create and extend an app
+The Support Desk blueprint is the maintained product-level foundation. By
+itself it selects `auth`, `notification-worker`, and `support-api`. The product
+acceptance adds the Support Ticket and Story Module selections through its
+checked-in capability pack. Its runner separately builds and reconciles the
+exact Console Surface artifacts from the Console checkout.
+
+## Compose the foundation
 
 ```sh
-lenso app compose ./acme-support \
-  --blueprint support-desk \
-  --addon support-sla \
-  --addon customer-profile \
-  --apply
-cd acme-support
-lenso app next
-lenso app explain
-lenso dev doctor --write-state
-lenso app verify --write-proof
-lenso app diff
-lenso agent task --from-app-plan "add overdue ticket escalation"
-lenso dev up
+lenso app compose ./support-desk --blueprint support-desk --apply
 ```
 
-`lenso app compose` is the app-level composition command. It can create the app,
-apply several addons, and write composition context into `.lenso/app-change-plan.json`.
-`lenso app add` remains available for one addon at a time. Addons can add another service,
-module, capability dependency, workspace entry, Launchpad checklist item, and
-agent context in one step. It is not a replacement for `lenso module install`.
-Use `lenso app plan --addon <name> --write-plan` first when you want a
-reviewable App Change Plan for Console, agents, or a dry-run apply step.
+Composition writes `support-desk/lenso.app.json`. The file records:
 
-## Compose with a capability pack
+- the app protocol, identity, and monotonic revision;
+- selected blueprint and capability packs;
+- each immutable Module Release identity, version, owner, content digest, and
+  business contributions;
+- resolved dependency identities, versions, and content digests;
+- linked or service-backed implementation bindings;
+- blueprint and capability-pack provenance.
 
-Use a capability pack when a slice should travel as one local unit across apps:
-for example, a support SLA pack with one service-provided module, a seed module
-manifest, and an agent task prompt.
+The composition file is not a process launcher, credential file, or production
+delivery record. `lenso system dev` interprets its declared bindings through the
+local runtime and Adapter boundaries.
+
+## Compose the product acceptance
+
+```sh
+lenso app compose ./support-desk \
+  --blueprint support-desk \
+  --pack ./fixtures/acceptance/support-desk/capability \
+  --implementation support-api=linked \
+  --implementation notification-worker=linked \
+  --implementation lenso/platform-story=linked \
+  --apply
+```
+
+Run this command from the `lenso-examples` repository root. The pack contributes
+`support/tickets` Service delivery and `lenso/platform-story`; the implementation
+flags make the local acceptance bindings explicit. Before startup, the runner
+uses public `lenso service workspace init --force` and
+`lenso service workspace add support-ticket` commands to register the one
+service-backed Provider with its `lenso.service.json` in the app workspace.
+
+Run the supported black-box path rather than starting this pack-backed
+composition without that workspace entry:
+
+```sh
+pnpm acceptance:support-desk
+```
+
+## Run the foundation locally
+
+```sh
+cd support-desk
+lenso system dev --system-file lenso.app.json --dry-run --json
+lenso system dev --system-file lenso.app.json
+```
+
+The dry run validates the exact foundation launch shape without allocating
+resources. The normal run starts only the locally declared processes. Use
+`--cleanup` to stop resources owned by that run.
+
+## Extend with a capability pack
+
+A capability pack is reusable local composition input for Modules, Services,
+documentation, and agent context:
 
 ```sh
 lenso capability init support-sla \
@@ -67,80 +90,30 @@ lenso capability init support-sla \
   --for-blueprint support-desk
 lenso capability library add ./capabilities/support-sla
 lenso capability fit support-sla --repo-root .
-lenso app compose ./acme-support \
-  --blueprint support-desk \
-  --pack support-sla \
-  --apply
-cd acme-support
-lenso agent task --for-capability support-sla "add enterprise SLA escalation"
+lenso app compose --repo-root . --pack support-sla --apply
 ```
 
-`lenso capability library add` records the pack in the local app library.
-`lenso capability fit` checks blueprint support, duplicate modules and services,
-and validation failures before Compose records the pack in Launchpad and App
-Change Plan state.
+Capability packs do not install a Module Release, publish a Service, or mutate
+production infrastructure. Recompose the app so every accepted selection is
+captured by a new `lenso.app.json` revision.
 
-## What gets written
+## Connect and inspect status
 
-| File | Purpose |
-| --- | --- |
-| `.lenso/launchpad.json` | Generated first-run state for services, modules, addons, capability packs, checklist, supported addons, and next command. |
-| `.lenso/dev-doctor.json` | Latest `lenso dev doctor --write-state` result for Console and agents. |
-| `.lenso/app-proof.json` | Latest `lenso app verify --write-proof` result for generated-state drift, Console, and agents. |
-| `.lenso/app-change-plan.json` | Latest `lenso app plan --write-plan` result for safe generated-state changes, blocked changes, requested packs, and next command. |
-| `lenso.system.json` | Product system graph: services, modules, capabilities, and dependencies. |
-| `lenso.workspace.json` | Local service process list used by `lenso dev up`. |
+Console Service accepts an exact `lenso.system.v2` topology and Management
+Binding derived from the composed app. Once connected, it loads only the
+receipt-bound Surfaces and reports direct object status. Console never widens
+the composition or selects a deployment target.
 
-## Verify generated state
-
-Use App Change Plan before applying addons or generated-state repairs:
-
-```sh
-lenso app compose --repo-root . --addon support-sla --addon customer-profile --write-plan
-lenso app plan --addon support-sla --write-plan
-lenso app apply .lenso/app-change-plan.json --dry-run
-```
-
-`app compose` writes a reviewable local plan with requested, applied, and pending
-addons or capability packs. `app plan` writes the same generated-state repair surface. `app apply`
-only applies safe generated control-plane changes and supported addon applications
-from that plan. It does not overwrite existing service source files or delete
-unknown services.
-
-Use App Proof after adding addons or before handing work to another agent:
-
-```sh
-lenso app verify --write-proof
-lenso app diff
-lenso app repair --dry-run
-```
-
-`app verify` compares Launchpad state, workspace services, system services, and
-the latest dev doctor output. `app diff` fails when generated state drift is
-present. `app repair` writes only safe generated control-plane state and missing
-scaffold directories; existing service source files stay user-owned.
-
-App Proof is local generated-state evidence. It is not a security attestation,
-deployment gate, signature system, or distributed version negotiation layer.
-
-Lenso Console reads the Launchpad, doctor, and proof endpoints through the
-host admin API. `/launchpad` shows generated services, modules, applied addons,
-capability packs, supported addons, doctor status, proof drift, App Change Plan
-status, and the next operator command.
+Follow [Host Quickstart](/docs/quickstart) for the full four-step lifecycle or
+[Examples](/docs/examples) for the Support Desk product acceptance.
 
 ## Boundaries
 
-- Product Blueprints create an app and local service graph.
-- Addons extend a generated app.
-- Capability packs compose reusable slices across modules, services, docs, and
-  agent handoff context.
-- Capability libraries are local discovery files; they do not install modules or
-  services.
-- `lenso module install` remains the module-level install entrypoint.
-- `lenso service install` remains the service provider install entrypoint.
-- Kubernetes delivery remains optional; generated apps run locally without a
-  cluster.
-
-The result is service-ready, not service-mesh-required. Start locally, keep the
-host-owned runtime and observability model, then move services to independent
-deployment when their boundaries are stable.
+- A blueprint creates source and local composition; it does not deploy.
+- `lenso.app.json` is the exact application composition and lock.
+- Modules retain stable business identity across linked and service-backed
+  delivery.
+- Provider Services remain Host-managed. Autonomous Services use the separate
+  Rust `lenso.service.v2` runtime.
+- Production release, promotion, rollback, and infrastructure remain external
+  delivery responsibilities.

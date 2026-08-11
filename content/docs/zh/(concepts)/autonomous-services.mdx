@@ -1,125 +1,77 @@
 ---
-title: 自主服务
-description: 了解lenso.service.v2边界、服务拥有的运行时、持久工作流、身份和无集群开发。
+title: Service Capability Tiers
+description: 准确选择当前 Provider 或 Autonomous Service 层级，不夸大语言支持。
 ---
 
-自治服务是业务边界拥有其运行时的点，
-数据、发布和操作证据。这不是默认起点
-对于每个模块。
+Lenso 明确区分两个进程外 Service Capability Tiers。它们解决不同的所有权
+问题，并使用不同运行时合约。
 
-Lenso 保持了三种不同的形态：
+## Service Capability Tiers（服务能力层级）
 
-| 形态 | 何时选择 | 运行时所有者 |
-| --- | --- | --- |
-| Linked 模块 | 能力属于应用，并共享应用的发布节奏。 | Host |
-| Service-backed 模块 | 独立进程提供模块，但 Host 仍持有队列、重试、策略和证据。 | Host |
-| Autonomous Service | 边界必须持有工作负载、存储、工作流、Outbox、健康状态、身份和发布证据。 | Service |
+| 层级 | 合约 | 运行时持有者 | 当前语言 | 适用场景 |
+| --- | --- | --- | --- | --- |
+| Provider tier | `lenso.service.v1` | Host | Rust 与 TypeScript | Service 进程提供 Module，Host 继续持有 Policy、Queue、Retry、Outbox 分发与 Runtime Story。 |
+| Autonomous Service tier | `lenso.service.v2` | Service | Rust | 稳定业务边界必须持有自己的 Workload、业务运行时、service-owned storage、运维与发布节奏。 |
 
-## 服务合约
+层级描述 Service 职责，不会替换 Module 身份。Support Ticket Module 可以从
+Linked 交付迁移到 Provider 交付，之后再迁移到 Autonomous Service，同时保持
+业务合约名称不变。
 
-`lenso.service.v2` 描述一项逻辑服务，与有多少个服务无关
-处理它运行的进程。服务可以声明：
+## Provider tier
 
-- API、Worker、迁移和扩展工作负载；
-- 它拥有的模块；
-- 一个或多个逻辑服务存储；
-- 租赁方式及经营区域；
-- 配置、可靠性、API、事件和依赖契约。
+Provider 向 Host 导出一个或多个 Module。Host 对调用进行认证、应用 Capability
+Policy、调度 Runtime Function、持有 Retry 与 Queue、分发 Outbox events，并记录
+Runtime Story。Provider 实现声明的 Module Operation，但不会成为另一个 Host
+运行时。
 
-当其工作负载计数或部署拓扑时，服务身份保持稳定
-变化。 Kubernetes 部署是适配器细节，而不是业务
-身份。
+该层级支持 Rust 和 `@lenso/service-kit`。TypeScript Kit 生成并提供
+`lenso.service.v1` Manifest、Module Release、HTTP Handler 和受支持的 Provider
+Transport Surface。
 
-## 服务拥有的运行时
+当团队需要独立实现进程，但应用仍持有协调职责时，Provider 通常是合适的第一
+进程边界。
 
-`lenso-autonomous-service` 运行时验证之前的完整定义
-启动，将服务和模块迁移应用到注入的存储，运行
-服务拥有的队列，并中继其事务Outbox。它无法启动
-通过主机或重新解释Provider v1 Manifest。
+## Autonomous Service tier
 
-边界有意严格：
+Rust `lenso-autonomous-service` 运行时校验 `lenso.service.v2`，并启动 Service
+持有的运行时图。当前 Rust framework capabilities 包括：
 
-- 业务路由和迁移仍然来自自有模块；
-- 工作流状态、计时器、尝试、Inbox和Outbox保留在服务存储中；
-- 当系统平面或运行时运行状况和本地证据仍然可用
-  控制台不可用；
-- 部署编排从不参与业务请求流量。
+- 从版本化合约生成 direct HTTP/gRPC Client 与 Server；
+- 使用 Service 自有 Inbox 与事务 Outbox 处理 business events；
+- 版本化 durable workflows、Timer、Retry、Child Workflow 与 Compensation；
+- 使用 SPIFFE 生产 Adapter 和确定性本地身份的 Workload identity；
+- 为 Actor、Tenant、Deadline、Causation 与 Idempotency 传播提供签名
+  delegated context；
+- service-owned storage、Migration、Health、Operation Record 与本地 Story
+  Segment。
 
-## Durable Workflow
+业务流量通过声明合约在 Service 之间直连，不经过 Console，也不经过 Host
+Provider Proxy。System Plane 不可用不会停止 Service 本地执行。
 
-模块可以声明版本化的工作流定义。每个实例都固定准确的
-定义工件和摘要，因此升级不能默默地重新解释工作
-已经在运行了。
+## 明确的语言支持
 
-转换保留Story、因果关系、租户、参与者、截止日期和幂等性
-语境。重试计时器很耐用。子工作流保留显式的父链接。
-已完成的效果可以声明补偿请求和完成事件；这
-工作流保持 `compensating`，直到远程反转得到确认。
+**TypeScript does not provide Autonomous Service parity.**
 
-这不是分布式事务。每个服务都有自己的业务
-本地效果和持久消息状态。
+`@lenso/service-kit` 当前只支持 Provider tier。它没有实现
+`lenso.service.v2` 运行时、Service Store、Durable Workflow 运行时、Workload
+identity、delegated context 校验、direct contract 运行时或 Service 自有
+System Plane Operation。需要这些 Autonomous Service 能力时，请使用 Rust。
 
-## 身份和证据
+这是当前支持边界，不是路线图承诺。TypeScript Provider 即使运行在独立进程，
+也不能因此标记为 Autonomous。
 
-生产调用者以稳定的 `service:<service-id>` 主体身份进行身份验证。
-第一个受支持的生产配置文件使用 SPIFFE X.509-SVID mTLS 和
-受众限制 JWT-SVID。本地系统沙箱使用确定性
-仅用于开发的身份Provider。
+## 只为具体原因迁移边界
 
-每个服务都会公开一个经过身份验证的仅附加Story片段提要。饲料
-使用精确的受众、租户授权、签名的不透明游标和稳定的
-段修订。集合是只读的：它不能确认、推进或
-解锁工作流执行。
+至少存在一个真实边界时，才选择 Autonomous Service tier：
 
-Lenso Console在Story聚合器收集后显示联合Story
-那些部分。延迟或不可用的控制台不会更改本地服务
-执行。
+- 独立团队或发布节奏；
+- 隔离的数据权限；
+- 独立信任边界；
+- 独立运维的可靠性或扩缩容；
+- 必须脱离 Host 持续运行的运行时行为。
 
-## 无集群开发
+否则保持 Linked Module，或使用 Provider tier。两者都保留清晰的后续迁移路径，
+同时避免过早承担 Autonomous 运维成本。
 
-使用系统沙箱进行最短的多服务证明：
-
-```sh
-lenso system dev \
-  --system-file lenso.system.json \
-  --sandbox-file lenso.sandbox.json
-```
-
-在不分配资源的情况下验证确切的启动计划：
-
-```sh
-lenso system dev \
-  --system-file lenso.system.json \
-  --sandbox-file lenso.sandbox.json \
-  --dry-run --json
-```
-
-运行一个已声明的故障场景并让沙箱仅清理
-其拥有的资源：
-
-```sh
-lenso system dev \
-  --system-file lenso.system.json \
-  --sandbox-file lenso.sandbox.json \
-  --scenario api-crash --json
-```
-
-Kubernetes 是一个可选的交付适配器。本地不需要
-服务开发或服务合约本身。
-
-## 何时移动边界
-
-在边界至少有一个具体理由存在后选择自治：
-
-- 独立所有权或发布节奏；
-- 隔离数据权威；
-- 明确的信任边界；
-- 独立运行的可靠性或扩展性；
-- 无法合理地驻留在 Rust 主机中的运行时。
-
-如果都不适用，请保持功能链接。显式接口采取后续行动
-机械化，无需提前支付运营成本。
-
-继续系统的[服务系统平面](/docs/zh/service-system-plane)]
-组合或[单区域 GA](/docs/zh/single-region-ga) 为支持的
-生产信封。
+混合拓扑组合参见 [Service System Plane](/docs/zh/service-system-plane)；Support
+Desk 公开生命周期参见[示例](/docs/zh/examples)。

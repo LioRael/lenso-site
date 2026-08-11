@@ -1,201 +1,121 @@
 ---
 title: Module Authoring
-description: Author modules with explicit manifests, contracts, and checks.
+description: Add a business capability with an explicit manifest, Business API, and owner-local checks.
 ---
 
-Use this path when you want to add business capability to an existing Lenso host.
-A good first module is small: one data surface, one action or route, one runtime
-function or workflow, and one smoke check that proves it is wired.
+A Module is a stable business capability inside a Lenso app. Its identity and
+contracts stay the same whether the implementation is linked into the Host or
+delivered by a Provider Service.
 
-## Rust facade
+Start with one real workflow: one typed Business API, its implementation, and a
+smoke check that fails when the Module is absent.
 
-For Rust module-authoring declarations, use the public facade crate:
+## Use the Rust facade
 
 ```sh
-cargo add lenso@0.3.33
+cargo add lenso --features host
 ```
 
-The facade focuses on serializable declarations and manifest linting:
+The public facade exposes serializable Module declarations, manifest linting,
+HTTP route metadata, runtime functions, event handlers, lifecycle declarations,
+and Console Surfaces. The `host` feature enables the public HTTP and linked
+Module authoring helpers used by a runnable Host.
 
-- schema-admin declarations
-- runtime function declarations
-- event handler declarations
-- HTTP route declarations
-- Lenso Console surface declarations
-
-## Manifest code
-
-This is the smallest useful shape: one capability, one data surface, one HTTP
-route, and one runtime function declaration.
+## Declare the Module
 
 ```rust
 use lenso::{
-    AdminSchema, EntitySchema, FieldSchema, FieldType, ModuleHttpMethod,
-    ModuleHttpRoute, ModuleManifest, ModuleSource, RuntimeFunctionDeclaration,
-    RuntimeSurface, ModuleManifestLintSeverity, lint_module_manifest,
+    ModuleHttpMethod, ModuleHttpRoute, ModuleManifest, ModuleManifestLintSeverity,
+    lint_module_manifest,
 };
 
 pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("billing")
+    ModuleManifest::builder("support/tickets")
         .capabilities(vec![
-            "billing.invoices.read".to_owned(),
-            "billing.invoices.write".to_owned(),
+            "support.tickets.read".to_owned(),
+            "support.tickets.write".to_owned(),
         ])
-        .admin(AdminSchema {
-            entities: vec![EntitySchema {
-                name: "invoices".to_owned(),
-                label: "Invoices".to_owned(),
-                read_capability: "billing.invoices.read".to_owned(),
-                fields: vec![
-                    FieldSchema {
-                        name: "id".to_owned(),
-                        label: "ID".to_owned(),
-                        field_type: FieldType::String,
-                        nullable: false,
-                    },
-                    FieldSchema {
-                        name: "total_cents".to_owned(),
-                        label: "Total".to_owned(),
-                        field_type: FieldType::Integer,
-                        nullable: false,
-                    },
-                ],
-            }],
-        })
         .http_routes(vec![ModuleHttpRoute {
             method: ModuleHttpMethod::Post,
-            path: "/v1/billing/invoices".to_owned(),
-            capability: Some("billing.invoices.write".to_owned()),
-            display_name: Some("Create Invoice".to_owned()),
-            story_title: Some("Invoice Created".to_owned()),
+            path: "/v1/support/tickets".to_owned(),
+            capability: Some("support.tickets.write".to_owned()),
+            display_name: Some("Create ticket".to_owned()),
+            story_title: Some("Ticket created".to_owned()),
+            operation: None,
         }])
-        .runtime(RuntimeSurface {
-            functions: vec![RuntimeFunctionDeclaration {
-                name: "billing.invoice.send.v1".to_owned(),
-                version: 1,
-                queue: "billing".to_owned(),
-                input_schema: Some("billing.invoice.send.v1".to_owned()),
-                retry_policy: None,
-            }],
-            schedules: vec![],
-        })
         .build()
 }
 
 #[test]
 fn manifest_lints_cleanly() {
-    let lints = lint_module_manifest(ModuleSource::Linked, &manifest());
-    assert!(
-        lints
-            .iter()
-            .all(|lint| lint.severity != ModuleManifestLintSeverity::Error)
-    );
+    let issues = lint_module_manifest(&manifest());
+    assert!(issues
+        .iter()
+        .all(|issue| issue.severity != ModuleManifestLintSeverity::Error));
 }
 ```
 
-The manifest tells the host what should appear in Lenso Console. It does not
-replace your route handlers, SQL, or runtime function implementation.
+The manifest declares the public shape. `support/tickets` is the fully qualified
+business identity used by the App Composition, Module Release, and Business API
+bindings. Route handlers, SQL, and runtime implementations remain app-owned
+code.
 
-## Scaffold the module
+## Scaffold
 
 ```sh
 lenso module create billing
 ```
 
-Add an isolated Console UI artifact when the Module needs its own operator page:
+The current scaffold command accepts a runnable unqualified local slug. It is a
+generic starting point; it does not replace a product-owned fully qualified
+identity such as `support/tickets`.
+
+Add Module-owned Console UI only when the operator workflow needs a distinct
+interactive Surface:
 
 ```sh
 lenso module create billing --with-console-ui
 ```
 
-Use `--with-console-ui` only when declarative views are insufficient. The UI is
-bound to the same Module Release and runs behind the Console Bridge.
+The generated UI must be published as a digest-bound `console_ui_esm` artifact
+in the same Module Release. It uses the generated Business API client through
+Surface Gateway; it does not receive target credentials.
 
-## Linked route code
+## Implement the Business API
 
-A generated host module wires HTTP through `LinkedBinding`:
+Keep operation names domain-specific: `listTickets`, `createTicket`,
+`updateTicket`, and `closeTicket` describe the Support Ticket lifecycle. Define
+actor, tenant, deadline, idempotency, revision, and typed error behavior in the
+committed OpenAPI contract.
 
-```rust
-use lenso::host::http::{
-    ApiOpenApiRouter, Json, LinkedBinding, LinkedHttpContribution, OpenApiRouter,
-    routes,
-};
-use serde::Serialize;
-use utoipa::ToSchema;
+Linked implementations attach the route contribution to `LinkedBinding`.
+Provider implementations export the same Module contract over
+`lenso.service.v1`. Neither delivery mode changes the Module name or operation
+IDs.
 
-#[derive(Serialize, ToSchema)]
-struct BillingStatus {
-    status: &'static str,
-}
+## Minimal vertical slice
 
-pub fn http_binding() -> LinkedBinding {
-    LinkedBinding::builder()
-        .http(LinkedHttpContribution {
-            public_prefixes: &["/v1/billing/"],
-            merge: merge_http,
-        })
-        .build()
-}
+1. Declare one capability and one Business API operation.
+2. Implement the route and persistence behavior.
+3. Generate the client from the committed contract.
+4. Add a smoke check through the public API.
+5. If UI is needed, bind one exact Console Surface and its narrow Surface Grant.
+6. Compose a new `lenso.app.json` revision and run it through
+   `lenso system dev`.
+7. Connect Console and inspect the Module's direct state.
 
-fn merge_http(base: ApiOpenApiRouter) -> ApiOpenApiRouter {
-    base.merge(OpenApiRouter::new().routes(routes!(status)))
-}
+## Completion criteria
 
-#[utoipa::path(
-    get,
-    path = "/v1/billing/status",
-    operation_id = "billing_status",
-    tag = "billing"
-)]
-async fn status() -> Json<BillingStatus> {
-    Json(BillingStatus { status: "ok" })
-}
-```
+- manifest lint is clean;
+- the public Business API completes one useful workflow;
+- the smoke check fails when the Module is not selected and bound by the
+  composed app;
+- generated clients match the committed contract;
+- a selected Console Surface is bound to the exact Module Release and artifact;
+- no browser or test bypasses the public API to reach the Store.
 
-The starter app shows a fuller version with app-owned SQL and authenticated
-item routes under `src/modules/app`.
-
-## Minimal module shape
-
-Build the smallest module that proves a real user workflow:
-
-1. Declare the module manifest.
-2. Add one host-visible data surface or route.
-3. Add one action or runtime function.
-4. Add one smoke check that fails when the module is not installed.
-5. Open the configured Console Service URL and confirm the capability is visible.
-
-Avoid adding a framework layer before the second module needs it. Shared code is
-cheap to extract after the shape is real.
-
-## Definition of done
-
-A first module is ready when:
-
-- the manifest lints cleanly
-- one useful capability is visible through the host
-- one smoke check fails if the module is not installed
-- the configured Console Service URL shows the module evidence an operator would expect
-
-## Agent-ready loop
-
-The public proof loop is intentionally small:
-
-```text
-lenso-business-planning -> lenso-start -> lenso-module-authoring -> lenso module create -> checks -> the Console Service root URL
-```
-
-Use [Examples](/docs/examples) when you want a runnable reference instead of a
-blank module.
-
-For exact manifest fields, builder methods, and lint categories, use
-[Manifest Reference](/docs/manifest-reference).
-
-When the module needs operator-facing UI, continue with
-[Admin Surfaces](/docs/admin-surfaces) and
-[Console Packages](/docs/console-packages). When it needs hooks, workers, or
-runtime endpoints, continue with
-[Runtime and Lifecycle](/docs/runtime-lifecycle).
-
-For agent-assisted work, use [Agent Development](/docs/agent-development) to
-route from product prompt to skill, scaffold, check, and the configured Console Service URL evidence.
+For exact declaration fields, read [Manifest Reference](/docs/manifest-reference).
+For Surface design, continue with
+[Business APIs and Console Surfaces](/docs/admin-surfaces) and
+[Module Console UI](/docs/console-packages). For a runnable product seam, use
+[Examples](/docs/examples).

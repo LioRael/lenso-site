@@ -1,186 +1,120 @@
 ---
 title: Host Quickstart
-description: Create a Launchpad app or scaffold a Lenso host and run it locally.
+description: Compose a Support Desk app, run it locally, connect Console, and inspect exact status.
 ---
 
-Use this path when you want a local Lenso app that can load Modules and run
-Service processes. Lenso Console is installed and operated independently.
-
-You will finish with:
-
-- a generated service-ready app or host app
-- optional capability packs for reusable business slices
-- local Postgres
-- API and worker processes
-- an independently running Console Service for operator workflows
+This quickstart follows the public Lenso lifecycle end to end. You will create
+one exact app composition, run it through the System Sandbox, connect it to an
+independent Console Service, and inspect direct object status.
 
 ## Prerequisites
 
 - Rust and Cargo
+- Node.js and pnpm for the Support Desk Provider
 - Docker for local Postgres
-- a terminal that can run long-lived local services
+- a terminal that can keep local processes running
 
 ## Install the CLI
 
+Install either package that exposes the `lenso` command:
+
 ```sh
 cargo install lenso-cli
-```
-
-You can also install the packaged CLI with npm:
-
-```sh
+# or
 npm install -g @lenso/cli
 ```
 
-The current GA CLI line is `0.2.13`. Verify the installed binary before using a
-release or support command:
+Confirm the installed version before continuing:
 
 ```sh
 lenso --version
 ```
 
-## Create an App Composer app
-
-App Composer is the recommended first path. It creates a support-desk app with
-a host, TypeScript and Rust services, `lenso.system.json`,
-`lenso.workspace.json`, `.lenso/launchpad.json`, and an App Change Plan that
-Lenso Console and agents can read.
+## 1. Compose
 
 ```sh
-lenso app list
-lenso app inspect support-desk
-lenso app compose ./acme-support \
-  --blueprint support-desk \
-  --addon support-sla \
-  --addon customer-profile \
-  --apply
-cd acme-support
-lenso app next
-lenso app explain
-lenso dev status
-lenso dev doctor --write-state
-lenso agent task --from-app-plan "add enterprise SLA escalation"
-lenso dev up
+lenso app compose ./support-desk --blueprint support-desk --apply
+cd support-desk
 ```
 
-`lenso dev up` starts Services from `lenso.workspace.json`, then starts the host.
-Use `lenso console dev` from a Console checkout for the complete local Console
-Service, or `lenso console install` for an independently installed environment.
+The bare blueprint selects `auth`, `notification-worker`, and `support-api`.
+The pack-backed Support Ticket and Story composition is exercised separately
+by the [product acceptance](/docs/examples), which also registers its
+service-backed Provider before local startup.
 
-To compose a reusable slice that carries seed module and service manifests plus
-agent handoff context, create a capability pack and pass it to App Composer:
+Inspect `lenso.app.json`. It is the exact application composition and lock: app
+revision and content digest, immutable Module Release selections, resolved
+dependencies, implementation bindings, and provenance must agree before the
+System starts.
+
+## 2. Run locally
 
 ```sh
-lenso capability init support-sla \
-  --dir ./capabilities/support-sla \
-  --lang ts \
-  --for-blueprint support-desk
-lenso capability library add ./capabilities/support-sla
-lenso capability fit support-sla --repo-root .
-lenso app compose ./acme-support \
-  --blueprint support-desk \
-  --pack support-sla \
-  --apply
+lenso system dev --system-file lenso.app.json --dry-run --json
+lenso system dev --system-file lenso.app.json
 ```
 
-Capability packs are local composition metadata. They do not replace
-`lenso module install` for module capabilities or `lenso service install` for
-out-of-process providers.
-
-## Create a blank host
+The second command starts the declared app and persistent Local Control Adapter.
+Keep it running. Use the explicit cleanup entrypoint when finished:
 
 ```sh
-lenso host init my-lenso-app
-cd my-lenso-app
-cp .env.example .env
-lenso serve
+lenso system dev --system-file lenso.app.json --cleanup
 ```
 
-`lenso serve` starts the starter Postgres service, runs migrations, then keeps
-the API and worker running until Ctrl-C. It does not bundle or serve Console
-assets.
+## 3. Connect
 
-Open these URLs after the command prints that the services are ready:
+Install or run Console Service independently. Authenticate as a Console
+operator, submit each business Service target's signed
+`{offer, receipt, baseUrl}` to
+`POST /api/console/v1/enrollment-receipts`, then submit the app's exact
+`lenso.system.v2` topology and Management Binding to:
 
-- `/v1/app/status` for host API health
-- the configured Console Service URL for operator workflows
-
-## Manual service loop
-
-If you want to run each process yourself:
-
-```sh
-docker compose up -d postgres
-cargo run --bin migrate
-cargo run --bin api
+```text
+POST /api/console/v1/system/connect
 ```
 
-Run the worker in a second shell:
+The enrollment endpoint accepts loopback targets in this local slice; it is not
+a remote production self-service path. The CLI-owned
+`lenso-local-control-adapter` is bound as `workload-control:<system>` and does
+not use business enrollment; every other topology Service requires an active
+signed enrollment. The connection request requires the
+content digest of the supplied topology. Browser code
+never receives Service or Adapter credentials. Console stores the connection;
+it does not start, deploy, adopt, or repair the app.
 
-```sh
-cargo run --bin worker
+## 4. Status
+
+Open Console and select **Services**, or call:
+
+```text
+GET /api/console/v1/system
 ```
 
-## Service workspace loop
+System, Service, Module, Surface, and Adapter projections each report their own
+connection state and reason: `connected`, `unavailable`, `incompatible`, or
+`unmanaged`. Workload operational state is a separate dimension.
 
-For out-of-process providers, create a service and let the workspace file track
-it:
+For a locally controlled Workload, use the supported Suspend/Resume or
+Stop/Start action. Console returns an asynchronous Operation Record and polls
+the Adapter until it reaches a terminal state. If the Adapter cannot be
+reached, Workload observation becomes `unknown` and mutation is rejected
+immediately.
 
-```sh
-lenso service create support-suite-provider --lang ts --output-dir services --port 4110
-lenso service workspace list
-lenso service dev
-```
+## Add a business capability
 
-`lenso service dev` starts services from `lenso.workspace.json`, then installed
-service processes from `.lenso/module-services.json`, then the host.
-Workspace commands also read the older `.lenso/services.json` path when a host
-has not yet moved to `lenso.workspace.json`.
+Modules own business identity whether linked into the Host or provided by a
+Service. Start with [Module Authoring](/docs/module-authoring), then expose a
+typed Business API and a receipt-bound Console Surface when the workflow needs
+operator UI.
 
-After the services are running, check them from another shell:
+TypeScript `@lenso/service-kit` supports the Provider tier. Use Rust for the
+Autonomous Service tier. The exact distinction is documented in
+[Service Capability Tiers](/docs/autonomous-services).
 
-```sh
-lenso service workspace check
-```
+## Next
 
-## Add auth with Redis sessions
-
-Generated hosts do not install auth by default. Add Redis-backed auth session
-lookup only when the app needs it:
-
-```sh
-lenso module install auth --profile redis-session-cache
-```
-
-The profile enables the auth dependency's Redis feature, writes `REDIS_URL` to
-`.env`, and records `auth.session_cache=redis` in
-`.lenso/runtime-config-defaults.json`. Provide Redis separately; the starter
-Docker Compose file starts Postgres only.
-
-## If something is blank
-
-- Console is unavailable: run `lenso console doctor` against its independent installation.
-- A module is not visible: restart the API and worker after installing it.
-- A Service is not ready: run `lenso service doctor <provider> --json`.
-- Launchpad is empty: run `lenso dev status` in the generated app root.
-- Launchpad doctor is empty: run `lenso dev doctor --write-state`.
-- App lifecycle is unclear: run `lenso app next` or `lenso app explain`.
-
-## Next step
-
-After the system is running, use the independently installed
-[Lenso Console](/docs/runtime-console) to inspect managed Services and runtime
-evidence. If you need to wire profiles, CORS, telemetry, or Service
-installation settings, continue with
-[Configuration](/docs/configuration). To add business capability, continue with
-[Module Authoring](/docs/module-authoring).
-
-For command options beyond this happy path, use
-[CLI Reference](/docs/cli-reference). If the host starts but a module or Console
-surface is missing, use [Troubleshooting](/docs/troubleshooting).
-
-For blueprint and addon details, read
-[Product Blueprints](/docs/product-blueprints).
-
-To add real authentication, continue with
-[Built-in Modules](/docs/built-in-modules).
+- [Product Blueprints](/docs/product-blueprints) explains the composition lock.
+- [Lenso Console](/docs/runtime-console) explains connection, status, Surfaces,
+  and Workload Control.
+- [Examples](/docs/examples) describes the Support Desk black-box acceptance.
+- [CLI Reference](/docs/cli-reference) lists the current public entrypoints.

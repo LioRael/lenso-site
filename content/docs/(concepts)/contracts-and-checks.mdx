@@ -7,7 +7,7 @@ Lenso is agent-ready because important surfaces are explicit and checkable. The
 agent does not have to infer the system from conventions alone.
 
 If you are consuming the API rather than changing it, start with
-[API Clients](/docs/api-clients).
+[API Reference](/docs/api).
 
 ## Committed contracts
 
@@ -98,15 +98,15 @@ that are easy to accidentally break:
 The goal is not ceremony. The goal is to catch architectural drift before it
 turns into a framework people have to memorize.
 
-## Agent proof checklist
+## Agent change checklist
 
-When an agent changes Lenso, ask for evidence in this shape:
+When an agent changes Lenso, ask for checks and visible status in this shape:
 
 ```text
 Changed:
 - module manifest
 - linked route
-- admin action
+- business operation
 
 Checks:
 - cargo check --bins
@@ -114,8 +114,9 @@ Checks:
 
 Lenso Console:
 - module appears in Modules
-- action appears in Data
-- story contains the action invocation
+- receipt-bound Surface appears under the Module
+- generated client calls the declared business operation through Surface Gateway
+- story contains the business operation
 ```
 
 If the work is supposed to appear in Lenso Console, a compile-only check is

@@ -5,7 +5,7 @@ description: Declare runtime functions, schedules, event handlers, lifecycle che
 
 Runtime work is host-owned. A module declares functions, schedules, event
 handlers, and lifecycle needs; the worker claims queues, applies retry policy,
-records runs, and projects evidence into Lenso Console.
+records runs, and projects bounded records into Lenso Console.
 
 ## Function declaration
 
@@ -15,7 +15,7 @@ Declare runtime functions in the manifest:
 use lenso::{ModuleManifest, RuntimeFunctionDeclaration, RuntimeSurface};
 
 pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("support")
+    ModuleManifest::builder("support/tickets")
         .runtime(RuntimeSurface {
             functions: vec![RuntimeFunctionDeclaration {
                 name: "support.ticket.escalate.v1".to_owned(),
@@ -23,8 +23,10 @@ pub fn manifest() -> ModuleManifest {
                 queue: "support".to_owned(),
                 input_schema: Some("support.ticket.escalate.v1".to_owned()),
                 retry_policy: None,
+                operation: None,
             }],
             schedules: vec![],
+            workflows: vec![],
         })
         .build()
 }
@@ -45,7 +47,7 @@ use lenso::{
 };
 
 pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("support")
+    ModuleManifest::builder("support/tickets")
         .runtime(RuntimeSurface {
             functions: vec![RuntimeFunctionDeclaration {
                 name: "support.ticket.escalate_overdue.v1".to_owned(),
@@ -53,6 +55,7 @@ pub fn manifest() -> ModuleManifest {
                 queue: "support".to_owned(),
                 input_schema: Some("support.ticket.escalate_overdue.v1".to_owned()),
                 retry_policy: None,
+                operation: None,
             }],
             schedules: vec![ScheduledFunctionDeclaration {
                 name: "escalate-overdue-tickets".to_owned(),
@@ -60,6 +63,7 @@ pub fn manifest() -> ModuleManifest {
                 cron: "*/15 * * * *".to_owned(),
                 input: serde_json::json!({ "source": "cron" }),
             }],
+            workflows: vec![],
         })
         .build()
 }
@@ -78,13 +82,13 @@ module contract.
 
 The scheduler stores durable state in `runtime.scheduled_functions`. When a
 schedule is due, the worker enqueues the declared runtime function into
-`runtime.function_runs`; retries, dead letters, logs, and Runtime Story evidence
+`runtime.function_runs`; retries, dead letters, logs, and Runtime Story records
 then follow the same path as manually enqueued runtime work. Provider execution
 does not transfer ownership of the Host queue or scheduling state.
 
-## Runtime story evidence
+## Runtime Story records
 
-The worker writes durable evidence:
+The worker writes durable records:
 
 | Table/source | Meaning |
 | --- | --- |
@@ -111,7 +115,7 @@ use lenso::{
 };
 
 pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("support")
+    ModuleManifest::builder("support/tickets")
         .runtime(RuntimeSurface {
             functions: vec![RuntimeFunctionDeclaration {
                 name: "support.ticket.reindex.v1".to_owned(),
@@ -119,8 +123,10 @@ pub fn manifest() -> ModuleManifest {
                 queue: "support".to_owned(),
                 input_schema: Some("support.ticket.reindex.v1".to_owned()),
                 retry_policy: None,
+                operation: None,
             }],
             schedules: vec![],
+            workflows: vec![],
         })
         .lifecycle(LifecycleSurface {
             startup_checks: vec![LifecycleStartupCheckDeclaration {
@@ -163,7 +169,7 @@ Services never claim Host outbox rows directly.
 ## Service runtime boundary
 
 For provider-backed functions, the Worker remains the Host queue owner. The
-Service owns its API, Workload, and terminal execution evidence. Correlation,
+Service owns its API, Workload, and terminal execution records. Correlation,
 actor, trace, and retry identities cross the provider contract explicitly; no
 distributed transaction or second Module source is introduced.
 
@@ -176,4 +182,4 @@ A runtime-capable module is done when:
 - linked or remote executors are registered
 - lifecycle checks reference existing functions or capabilities
 - a smoke path creates a function run
-- Lenso Console shows the run, retry, failure, or story evidence
+- Lenso Console shows the run, retry, failure, or Story records

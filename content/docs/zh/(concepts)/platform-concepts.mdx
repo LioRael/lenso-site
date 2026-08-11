@@ -1,31 +1,85 @@
 ---
 title: 平台概念
-description: 理解 Lenso 的 Module、Service、Host 与 System Plane 基础模型。
+description: 理解 Lenso 公开生命周期背后的应用、Module、Service 与 System Plane 边界。
 ---
+
+Lenso 是面向 Rust 业务系统、agent-ready 的模块化应用与微服务框架。它从一份
+精确应用组合开始，并在产品增长过程中保持每个边界明确。
 
 ## 核心模型
 
-- Module 是 Host 中的 Linked 业务能力边界。
-- Service 是独立运行、拥有进程、Store、交付和终态证据的代码。
-- Service 可以声明它提供的 Module，但 Service 本身不是 Module。
-- Lenso Console 是独立 System Plane 工作台，不是业务管理后台，也不是 effect authority。
+| 概念 | 当前合约 | 职责 |
+| --- | --- | --- |
+| App Composition | `lenso.app.json` | 锁定应用修订、内容摘要、不可变 Module Release、依赖、Implementation Binding 与 Provenance。 |
+| Module | `lenso.module.v1` | 持有稳定业务身份、强类型 Business API、Event、运行时声明与可选 Console Surface。 |
+| Provider Service | `lenso.service.v1` | 由独立 Rust 或 TypeScript 进程提供 Module，运行时协调仍由 Host 持有。 |
+| Autonomous Service | `lenso.service.v2` | 使用 Rust 运行时持有自己的 Workload、Service Store、身份、Workflow 与运维。 |
+| System topology | `lenso.system.v2` | 命名混合拓扑中的精确 Host、Service、Module、Workload、合约与管理关系。 |
+| Console Service | Console API | 连接精确拓扑、加载回执绑定的 Surface，并报告直接对象状态。 |
 
-## Manifest 与行为
+这些合约相互组合，而不是相互替换。Support Ticket Module 从 Linked 交付迁移到
+Provider 时，不会改变业务身份或 Operation 名称。Autonomous Service 增加独立
+持有的运行时边界，同时保持声明合约明确。
 
-`ModuleManifest` 是纯数据合约，用来声明能力、路由、管理 Surface、运行时工作、
-Console Surface 与依赖。Linked Module 的可执行行为通过窄 Binding 接入。
-Service 的行为属于其 Provider API 和 Workload。
+## 公开生命周期
 
-## 运行时证据
+开发者、运维人员与 Coding Agent 使用相同四步：
 
-Host 仍拥有请求身份解析、能力校验、队列、Outbox 与 Host Runtime Story。
-Service 拥有 Provider 执行和 Service Store 的终态证据。跨边界传递 correlation、
-trace、actor 与 operation identity，不引入分布式事务。
+1. **Compose（组合）**：从产品蓝图生成精确 `lenso.app.json`。
+2. **Run locally（本地运行）**：使用 `lenso system dev` 与 Local Control Adapter。
+3. **Connect（连接）**：把已签名本地 Service Enrollment、精确 `lenso.system.v2`
+   拓扑及其 Management Binding 提交到独立安装的 Console Service。
+4. **Status（状态）**：直接读取每个 Service、Module、Surface、Adapter 与 Workload。
 
-## 拆分原则
+生产发布和部署由外部交付系统持有。Console 不创建、接管、发布、部署或修复已
+连接应用。
 
-默认保持 Linked。只有当独立运行时、部署节奏、团队所有权、Store、扩缩容或信任
-边界足以支付分布式系统成本时，才提取 Service。
+## Module 保持业务身份
 
-参阅 [Autonomous Services](/docs/zh/autonomous-services) 与
+`ModuleManifest` 是可序列化声明数据，命名 Capability、Business API Route、
+Runtime Function、Event、Lifecycle Work、依赖与 Console Surface。可执行 Handler
+保留在 Linked Binding 或 Service 实现中。
+
+运维 UI 是与同一不可变 Module Release 绑定摘要的 `console_ui_esm` 制品。生成
+客户端通过 Surface Gateway、在精确 Surface Grant 下调用声明 Operation。
+浏览器代码不会获得 Service 凭据，也不能直接访问 Store。
+
+## Service Capability Tiers
+
+Provider 与 Autonomous Service 是不同所有权层级，不能把任意进程外 Module
+都称为 Autonomous：
+
+- Provider `lenso.service.v1` 由 Host 持有，支持 Rust 与 TypeScript。
+- Autonomous Service `lenso.service.v2` 由 Service 持有，仅支持 Rust。
+
+当前 Rust Autonomous Service 能力包括 direct HTTP/gRPC、Event Contracts、
+Durable Workflows、Workload Identity、Delegated Actor Context 与 service-owned
+storage。TypeScript does not provide Autonomous Service parity。
+
+准确支持边界参见
+[Service Capability Tiers](/docs/zh/autonomous-services)。
+
+## 分离 Data Plane 与 System Plane
+
+业务调用使用声明的 Module 或 Service 合约。Autonomous Service 流量在 Service
+之间直连，不经过 Console，也不经过 Host Provider Proxy。接收边界在本地校验
+Actor、Tenant、Deadline、Idempotency、Identity 与合约 Policy。
+
+Console 是面向运维人员的 System Plane。保存连接前，它会校验精确的活动
+Enrollment、拓扑摘要、Management Binding 与已发布 Core Contract。浏览器
+Surface 使用同源 Console Service，目标凭据只保留在服务端。
+
+## 状态属于具体对象
+
+每个已连接对象报告一种状态与直接原因：
+
+- `connected`：精确合约与在线目标一致；
+- `unavailable`：当前无法观察声明目标；
+- `incompatible`：协议、合约、Release 或制品不匹配；
+- `unmanaged`：当前 Management Binding 未覆盖对象。
+
+Local Control Adapter 不可用时，Workload 观察结果为 `unknown`，变更会被拒绝，
+不排队也不回退。Console 不会把这些状态合成为应用总分。
+
+完整生命周期参见 [Host 快速开始](/docs/zh/quickstart)；混合拓扑连接模型参见
 [Service System Plane](/docs/zh/service-system-plane)。

@@ -7,7 +7,7 @@ Lenso 已为代理做好了准备，因为重要的界面是明确且可检查�
 代理不必仅根据约定来推断系统。
 
 如果您正在使用 API 而不是更改它，请从
-[API 客户端](/docs/zh/api-clients)。
+[API 参考](/docs/zh/api)。
 
 ## 已提交的合约
 
@@ -98,15 +98,15 @@ npm 包、GitHub Release 或用户实际会使用的工作流工件
 目标不是仪式。目标是赶在它之前赶上架构漂移
 变成了人们必须记住的框架。
 
-## Agent 证明 Manifest
+## Agent 变更清单
 
-当特工更换 Lenso 时，请按以下形式索取证据：
+Agent 修改 Lenso 时，请按以下形式检查变更与可见状态：
 
 ```text
 Changed:
 - module manifest
 - linked route
-- admin action
+- business operation
 
 Checks:
 - cargo check --bins
@@ -114,8 +114,9 @@ Checks:
 
 Lenso Console:
 - module appears in Modules
-- action appears in Data
-- story contains the action invocation
+- receipt-bound Surface appears under the Module
+- generated client calls the declared business operation through Surface Gateway
+- story contains the business operation
 ```
 
 如果工作应该出现在Lenso Console中，则仅进行编译检查

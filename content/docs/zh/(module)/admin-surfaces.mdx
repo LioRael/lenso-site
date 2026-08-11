@@ -1,218 +1,70 @@
 ---
-title: 管理界面
-description: 通过 Lenso Console公开模块数据、操作、查询和自定义操作员视图。
+title: Business API 与 Console Surface
+description: 设计强类型 Module Operation，并把 Console UI 绑定到精确生成客户端。
 ---
 
-管理界面是模块变得可操作的方式。他们描述了数据，
-Lenso Console无需导入即可显示的操作和只读值
-模块内部结构。
+运维工作流使用与其他可信 Client 相同的业务合约。Module 声明 Business API、
+发布生成客户端，并在 Module Release 中交付精确 Console Surface。Console 提供
+已认证 Actor，并执行已连接应用的 Surface Grant。
 
-## 三种界面模式
+## 从 Business API 开始
 
-|模式|使用时 |
+围绕业务能力建模 Operation，不要使用 framework-wide Record 抽象。对于
+Support Ticket Module，可以定义：
+
+| Operation | 业务行为 |
 | --- | --- |
-| `Schema` |该模块公开普通列表/详细业务记录 |
-| `DeclarativeCustom` |该模块需要使用受信任的控制台组件提供更丰富的主机渲染页面 |
-| `EmbeddedCustom` |该模块拥有一个单独的 UI 运行时，并且必须被沙箱化 |
+| `listTickets` | 返回当前 Actor 与 Tenant 可见的 Ticket。 |
+| `createTicket` | 使用调用方提供的 Idempotency Key 创建 Ticket。 |
+| `updateTicket` | 对现有 Ticket 执行修订绑定的更新。 |
+| `closeTicket` | 通过领域转换关闭 Ticket。 |
 
-从 `Schema` 开始。仅当操作员工作流需要时才转向声明式
-不仅仅是表格和详细视图。仅当模块真正拥有时才使用嵌入
-无法表达为数据的 UI。
+OpenAPI 合约定义输入、输出、错误、Actor、Tenant、Deadline 与 Idempotency
+行为。从已提交合约生成 Client，并在所属仓库中检查生成结果。
 
-## Schema 界面
+## 绑定 Surface
 
-Schema 界面是无聊但有用的路径。该模块声明实体和
-领域；主机通过模块的管理数据源读取记录。
+`ModuleManifest.console` 命名 Surface 与 ESM Entry。Module Release 把该 Entry
+绑定到不可变 `console_ui_esm` 制品。应用组合选择精确 Module Release 与 UI
+制品摘要。
 
-```rust
-use lenso::{AdminSchema, EntitySchema, FieldSchema, FieldType, ModuleManifest};
+Surface Grant 把访问范围缩小到：
 
-pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("support")
-        .capabilities(vec!["support.tickets.read".to_owned()])
-        .admin(AdminSchema {
-            entities: vec![EntitySchema {
-                name: "tickets".to_owned(),
-                label: "Tickets".to_owned(),
-                read_capability: "support.tickets.read".to_owned(),
-                fields: vec![
-                    FieldSchema {
-                        name: "title".to_owned(),
-                        label: "Title".to_owned(),
-                        field_type: FieldType::String,
-                        nullable: false,
-                    },
-                    FieldSchema {
-                        name: "status".to_owned(),
-                        label: "Status".to_owned(),
-                        field_type: FieldType::String,
-                        nullable: false,
-                    },
-                ],
-            }],
-        })
-        .build()
-}
-```
+- 一个 Module 身份与 Module Release 摘要；
+- 一个 UI 制品摘要；
+- 一个 Business API Contract 摘要；
+- 一组明确的 Operation ID。
 
-Lenso Console通过主机拥有的 `/admin/data/*` 端点读取记录。
-模块内部保留强类型；通用管理数据跨越
-作为 JSON 记录的边界。
+安装或连接 Surface 不会自动授予 Module 中的全部 Operation。
 
-## 声明式自定义界面
+## 通过 Surface Gateway 调用
 
-声明性自定义界面让模块可以构建更丰富的操作页面，而无需
-运输前端代码。Manifest提供结构化数据；运行时
-控制台拥有渲染、样式、可访问性和行为。
+生成客户端使用 `ConsoleClient.surfaceApi` 提供的同源 Surface Gateway。Console Service
+先重新检查 Browser Session、Console Actor、可选 Tenant、精确已连接 System
+和完整 Surface Grant，再调用目标 Module。
 
-```rust
-use lenso::{
-    AdminAction, AdminActionDangerLevel, AdminActionInputField,
-    AdminActionInputSchema, AdminDeclarativeComponent, AdminDeclarativePage,
-    AdminDeclarativeSection, AdminDeclarativeSurface, AdminSchema, EntitySchema,
-    FieldSchema, FieldType, ModuleManifest,
-};
+浏览器不会获得目标凭据。它不得调用 Service Base URL、查询 Service Store，
+也不得发明未声明的 Operation。
 
-fn fallback_schema() -> AdminSchema {
-    AdminSchema {
-        entities: vec![EntitySchema {
-            name: "tickets".to_owned(),
-            label: "Tickets".to_owned(),
-            read_capability: "support.tickets.read".to_owned(),
-            fields: vec![FieldSchema {
-                name: "title".to_owned(),
-                label: "Title".to_owned(),
-                field_type: FieldType::String,
-                nullable: false,
-            }],
-        }],
-    }
-}
+## 按直接对象状态设计
 
-pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("support")
-        .capabilities(vec![
-            "support.tickets.read".to_owned(),
-            "support.tickets.assign".to_owned(),
-            "support.metrics.read".to_owned(),
-        ])
-        .declarative_admin(AdminDeclarativeSurface {
-            pages: vec![AdminDeclarativePage {
-                name: "overview".to_owned(),
-                label: "Overview".to_owned(),
-                sections: vec![
-                    AdminDeclarativeSection {
-                        name: "ticket-count".to_owned(),
-                        label: "Ticket Count".to_owned(),
-                        component: AdminDeclarativeComponent::QueryValue {
-                            query: "ticket_metrics".to_owned(),
-                            capability: "support.metrics.read".to_owned(),
-                            value_path: "open_count".to_owned(),
-                        },
-                    },
-                    AdminDeclarativeSection {
-                        name: "tickets".to_owned(),
-                        label: "Tickets".to_owned(),
-                        component: AdminDeclarativeComponent::EntityTable {
-                            entity: "tickets".to_owned(),
-                        },
-                    },
-                ],
-            }],
-            actions: vec![AdminAction {
-                name: "assign_ticket".to_owned(),
-                label: "Assign Ticket".to_owned(),
-                capability: "support.tickets.assign".to_owned(),
-                input_schema: Some(AdminActionInputSchema {
-                    fields: vec![AdminActionInputField {
-                        name: "assignee".to_owned(),
-                        label: "Assignee".to_owned(),
-                        field_type: FieldType::String,
-                        required: true,
-                        description: Some("User id to assign".to_owned()),
-                    }],
-                }),
-                confirmation: None,
-                danger_level: AdminActionDangerLevel::Low,
-            }],
-            fallback_schema: Some(fallback_schema()),
-        })
-        .build()
-}
-```
+每个目标只呈现一种状态和直接原因：
 
-`fallback_schema` 让控制台呈现可信实体表/详细信息并读取
-通过相同的管理数据路径进行记录。它不会将模块变成
-普通Schema 界面，未在 `/admin/data/schema` 中列出。
+- `connected`：允许 Surface Grant 包含的操作；
+- `unavailable`：在安全时保留当前数据，并提供重试；
+- `incompatible`：指出 Contract、Release 或制品不匹配；
+- `unmanaged`：说明对象不在当前 Binding 范围内。
 
-## 操作和查询
+不要把这些状态合成为应用总分，也不要静默回退到其他目标。
 
-声明性页面可以显示只读查询值并调用声明的操作。
-主机验证Manifest、检查功能声明、验证
-动作输入，然后调用模块行为接口。
+## 授权检查清单
 
-|声明|主机端点形态|
-| --- | --- |
-| `AdminDeclarativeComponent::QueryValue` | `/admin/data/{module}/queries/{query}` |
-| `AdminAction` | `/admin/data/{module}/actions/{action}` |
-| `fallback_schema`实体| `/admin/data/{module}/{entity}` |
+- 在目标 Module 校验 Actor 与 Tenant，不能只依赖浏览器。
+- 更新必须绑定当前业务修订。
+- 可重试写入必须要求 Idempotency Key。
+- 传播调用方 Deadline，并拒绝已过期工作。
+- Surface Operation ID 必须比 Module Contract 更窄。
+- 返回强类型 Problem Response，不包含 Secret 或 Transport Diagnostic。
 
-成功和失败的管理操作调用都会投射到运行时中
-Story和技术操作，因此操作员的工作留下了证据。
-
-## 嵌入式定制界面
-
-嵌入式自定义界面是模块拥有的 UI 的逃生口。他们开始
-作为具有明确来源且没有主机桥的沙盒 iframe。
-
-```rust
-use lenso::{
-    AdminEmbeddedEntry, AdminEmbeddedRuntime, AdminEmbeddedSurface,
-    AdminPermission, AdminSandboxPolicy, ModuleManifest,
-};
-
-pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("crm")
-        .embedded_admin(AdminEmbeddedSurface {
-            runtime: AdminEmbeddedRuntime::Iframe,
-            entry: AdminEmbeddedEntry::Url {
-                url: "https://crm.example.test/admin".to_owned(),
-                allowed_origins: vec!["https://crm.example.test".to_owned()],
-            },
-            sandbox: AdminSandboxPolicy {
-                allow_scripts: true,
-                allow_forms: false,
-                allow_popups: false,
-                allow_same_origin: false,
-            },
-            permissions: vec![AdminPermission::ReadEntity {
-                entity: "contacts".to_owned(),
-            }],
-            fallback_schema: None,
-        })
-        .build()
-}
-```
-
-不要使用嵌入式界面来走私主机令牌、任意 JavaScript
-桥接器，或私有控制台导入到模块中。主机/模块通信
-需要一个版本化的协议。
-
-## 模块本地配置
-
-模块本地配置属于静态主机配置，不可编辑的运行时配置
-数据库行：
-
-```sh
-LENSO_MODULE_AUTH_PASSWORD__JWT_ISSUER=acme
-LENSO_MODULE_SUPPORT__DEFAULT_ASSIGNEE=usr_1
-```
-
-模块加载切换是单独的并且仅重新启动：
-
-```sh
-LENSO_MODULE_SUPPORT_ENABLED=false
-```
-
-使用运行时配置来获取操作员可编辑的平台值。使用模块本地环境
-配置模块代码在启动时所需的值。
+制品打包参见 [Module Console UI](/docs/zh/console-packages)；Capability 设计参见
+[Auth and Capabilities](/docs/zh/auth-capabilities)。

@@ -1,164 +1,88 @@
 ---
 title: Start Here
-description: Choose the right Lenso path and get to a verified local system.
+description: Compose a Lenso app, run it locally, connect Console, and read exact System status.
 ---
 
-Lenso is an agent-ready modular app framework for Rust business systems.
+Lenso is an agent-ready modular application and microservice framework for Rust
+business systems. Start with one explicit app composition. Keep business
+capabilities as linked Modules or Provider-backed Modules, then move a stable
+boundary to an Autonomous Service only when it needs independent ownership.
 
-Start with one deployable backend, add business modules, then verify the system
-through the Lenso Console. These docs are organized around the two jobs users
-usually have on day one:
+The public developer lifecycle has four steps.
 
-- Host builders create and operate the app that loads modules.
-- Module authors add business capability through manifests, routes, actions,
-  runtime functions, and optional console surfaces.
-- Service owners move stable boundaries into independently operated Autonomous
-  Services without making Kubernetes a local-development requirement.
+## Compose
 
-## Choose Your Path
+Materialize one exact `lenso.app.json` from a product blueprint:
 
-- New host app: read [Host Quickstart](/docs/quickstart) and finish with the
-  API, worker, Postgres, and the configured Console Service URL running.
-- Product-shaped app: read [Product Blueprints](/docs/product-blueprints) when
-  you want a generated service-ready app plus supported addons.
-- Host configuration: read [Configuration](/docs/configuration) when you need
-  real env variables for profiles, CORS, Redis, telemetry, Console paths, or
-  service tokens.
-- Host composition: read [Host Composition](/docs/host-composition) when you
-  need to understand profiles, `HostBuilder`, linked modules, service sources,
-  and module startup toggles.
-- Platform model: read [Platform Concepts](/docs/platform-concepts) to
-  understand manifests, host-owned runtime work, and remote boundaries.
-- Runtime evidence model: read [Runtime Stories](/docs/runtime-stories) to
-  understand Lenso's story graph, correlation model, and operator-readable
-  business evidence.
-- Autonomous boundary: read [Autonomous Services](/docs/autonomous-services)
-  before moving Workloads, Store, workflows, identity, and reliability out of
-  the Host.
-- GA operations: read [Single-Region GA](/docs/single-region-ga) for the exact
-  supported component set, evidence gates, migrations, and Contract Retirement.
-- Failure planning: read
-  [Reliability and Recovery](/docs/reliability-and-recovery) for degraded modes,
-  scenarios, restore, disaster recovery, and control-plane outage behavior.
-- Production trust: read [Support and Security](/docs/support-and-security) for
-  support manifests, SPIFFE identity, secrets, Console access, and approvals.
-- Manifest fields: read [Manifest Reference](/docs/manifest-reference) when you
-  need exact `ModuleManifest` fields, builder methods, capabilities, route
-  metadata, and lint categories.
-- API integrations: read [API Clients](/docs/api-clients) when consuming Lenso
-  HTTP APIs from OpenAPI or handling the standard error envelope.
-- Contract work: read [Contracts and Checks](/docs/contracts-and-checks) before
-  changing generated artifacts, OpenAPI, gRPC, or architecture-sensitive code.
-- Release safety: read [Checks and Release](/docs/checks-and-release) when you
-  need to know which `just` gate matches a code, contract, Console, or release
-  change.
-- CLI work: read [CLI Reference](/docs/cli-reference) for `lenso host`,
-  `lenso app`, `lenso serve`, `lenso module`, module release checks, catalogs,
-  marketplace compatibility, and Console composition plans.
-- Install flow: read [Module Installation](/docs/module-installation) when you
-  need to know what the CLI writes locally and how a running host registers
-  modules through the admin API.
-- Catalogs: read [Module Catalogs](/docs/module-catalogs) when you need the
-  difference between discovery, install, and the official fallback catalog.
-- Deployment: read [Deployment](/docs/deployment) before packaging a generated
-  Host, installing Console independently, or wiring migrations and workers.
-- Data changes: read [Database and Migrations](/docs/database-migrations) before
-  adding host-linked module SQL or running deploy migrations.
-- Operations: read [Observability](/docs/observability) for health probes,
-  structured logs, OTLP traces, and Lenso Console runtime views.
-- Host verification: read [Lenso Console](/docs/runtime-console) and confirm
-  module health, data, actions, and runtime evidence.
-- Broken local setup: read [Troubleshooting](/docs/troubleshooting) to diagnose
-  blank Console, missing modules, remote service readiness, CORS, Redis,
-  generated artifacts, busy ports, and release-gate failures.
-- Built-in auth: read [Built-in Modules](/docs/built-in-modules) and install
-  `auth`, `auth-anonymous`, `auth-password`, or `auth-device` into a host.
-- Rust module: read [Module Authoring](/docs/module-authoring) and scaffold one
-  useful capability with a smoke check.
-- Operator surfaces: read [Admin Surfaces](/docs/admin-surfaces) when the module
-  needs data pages, actions, query values, or custom Console UI.
-- Auth and permissions: read
-  [Auth and Capabilities](/docs/auth-capabilities) when a module needs actor
-  identity, session integration, or capability-scoped operations.
-- Runtime work: read [Runtime and Lifecycle](/docs/runtime-lifecycle) when you
-  need handlers, lifecycle declarations, background workers, or remote runtime
-  endpoints.
-- Module Console UI: read [Module Console UI](/docs/console-packages) when a
-  Module ships a verified isolated web artifact.
-- Out-of-process module: publish a service-backed module release, then use
-  [Module Installation](/docs/module-installation) to install it into a host.
-- Agent-assisted development: read [Agent Development](/docs/agent-development)
-  and use skills, scaffolds, checks, and the configured Console Service URL evidence.
-- Working reference: read [Examples](/docs/examples) and run the support-ticket
-  or account-profile smokes.
+```sh
+lenso app compose ./support-desk --blueprint support-desk --apply
+```
 
-## Concepts
+The bare blueprint selects `auth`, `notification-worker`, and `support-api`.
+The resulting file binds the app revision, artifact digests, dependency
+selections, and linked or service-backed Module implementations. Treat it as
+the application composition and lock; do not copy process commands into it by
+hand. The Support Ticket and Story product seam is the pack-backed
+[Support Desk acceptance](/docs/examples).
+
+## Run locally
+
+Start the declared System and Local Control Adapter through the public CLI:
+
+```sh
+cd support-desk
+lenso system dev --system-file lenso.app.json
+```
+
+Local development does not require Kubernetes. Production release and
+deployment remain owned by external delivery systems, not Console.
+
+## Connect
+
+Run Console Service independently, submit the signed local Service Enrollment Receipt,
+then submit the exact topology and Management Binding to its authenticated
+Connect System API. Console records the
+connection and auto-composes receipt-bound `console_ui_esm` Module Surfaces. It
+does not create, deploy, adopt, delete, release, or repair workloads.
+
+Continue with [Lenso Console](/docs/runtime-console) for the server-side
+connection boundary and browser flow.
+
+## Status
+
+Read the connected System in Console. System, Service, Module, Surface, and
+Adapter projections report one of `connected`, `unavailable`, `incompatible`,
+or `unmanaged`, with a direct reason when action is needed. Workload operational
+state is separate. An unavailable control Adapter leaves Workload observation
+`unknown` and rejects mutation without queueing or fallback.
+
+## Choose a build path
 
 <CardGroup>
-  <Card title="Platform Concepts" href="/docs/platform-concepts" description="Understand Lenso's manifest-first modules, host-owned lifecycle, runtime evidence, and split-later model." />
-  <Card title="Autonomous Services" href="/docs/autonomous-services" description="Move a stable boundary into Service-owned Workloads, Store, workflows, identity, and evidence." />
-  <Card title="Runtime Stories" href="/docs/runtime-stories" description="Learn how Lenso groups requests, actions, queues, remote calls, and traces into business-level runtime evidence." />
-  <Card title="Manifest Reference" href="/docs/manifest-reference" description="Read the ModuleManifest fields, builder methods, capability rules, route metadata, and lint categories." />
-  <Card title="API Clients" href="/docs/api-clients" description="Consume Lenso APIs from committed OpenAPI contracts and handle the standard error envelope." />
-  <Card title="Contracts and Checks" href="/docs/contracts-and-checks" description="Use committed OpenAPI, error, and gRPC contracts with the right local gates." />
-  <Card title="Checks and Release" href="/docs/checks-and-release" description="Choose the right local gate for Rust, OpenAPI, generated artifacts, Console metadata, and release packaging." />
+  <Card title="Host Quickstart" href="/docs/quickstart" description="Compose and run one local app through the supported public lifecycle." />
+  <Card title="Product Blueprints" href="/docs/product-blueprints" description="Materialize a product-shaped lenso.app.json and understand its locked selections." />
+  <Card title="Module Authoring" href="/docs/module-authoring" description="Build linked business capabilities with explicit Business APIs and Console Surfaces." />
+  <Card title="Service Capability Tiers" href="/docs/autonomous-services" description="Choose the exact Provider or Autonomous Service capability tier and supported language." />
+  <Card title="Examples" href="/docs/examples" description="Run the Support Desk product acceptance through public entrypoints." />
+  <Card title="API Reference" href="/docs/api" description="Browse the API reference synchronized from the framework contract source." />
 </CardGroup>
 
-## Agent
+## Core boundaries
 
-<CardGroup>
-  <Card title="Agent Development" href="/docs/agent-development" description="Turn product prompts into Lenso hosts, modules, checks, and Lenso Console evidence." />
-</CardGroup>
+- **Modules keep business identity.** Delivery may be linked or provided by a
+  Service without renaming the capability.
+- **Business APIs stay typed.** Module Surfaces call declared operations with a
+  generated client and an exact Surface Grant.
+- **Console is a System Plane.** It reports current state and invokes supported
+  target-owned operations; it is not a deployment plane.
+- **Rust owns both service tiers.** TypeScript currently supports Provider
+  authoring only. See [Service Capability Tiers](/docs/autonomous-services).
+- **Split only stable boundaries.** Autonomous Services own their runtime,
+  storage, identity, and operations; they are not the default starting point.
 
-## Host
+## Install
 
-<CardGroup>
-  <Card title="Quickstart" href="/docs/quickstart" description="Install the CLI, scaffold an app, and run its API, worker, and Services." />
-  <Card title="Product Blueprints" href="/docs/product-blueprints" description="Create service-ready product apps, add supported addons, run dev doctor, and hand off to Console or agents." />
-  <Card title="CLI Reference" href="/docs/cli-reference" description="Use host, serve, Module, Service, Console composition, and doctor commands." />
-  <Card title="Configuration" href="/docs/configuration" description="Map profiles, ports, CORS, telemetry, Console paths, service sources, and module-owned env variables." />
-  <Card title="Host Composition" href="/docs/host-composition" description="Understand linked profiles, HostBuilder, host-owned modules, service sources, dependencies, and startup toggles." />
-  <Card title="Database and Migrations" href="/docs/database-migrations" description="Add host-linked module SQL, run migrations, and keep applied migration names stable." />
-  <Card title="Observability" href="/docs/observability" description="Use health probes, structured logs, OTLP traces, and Lenso Console runtime views." />
-  <Card title="Built-in Modules" href="/docs/built-in-modules" description="Install auth, password login, device policy, Redis sessions, and auth Console surfaces." />
-  <Card title="Module Installation" href="/docs/module-installation" description="Understand linked installs, service-backed module releases, catalog discovery, admin install requests, and uninstall cleanup." />
-  <Card title="Module Catalogs" href="/docs/module-catalogs" description="Separate discovery catalogs, local install state, available modules, and the official fallback catalog." />
-  <Card title="Deployment" href="/docs/deployment" description="Package a generated Host, run migrations, and install Console as an independent Service." />
-  <Card title="Troubleshooting" href="/docs/troubleshooting" description="Diagnose blank Console, missing modules, remote services, CORS, Redis, generated artifacts, busy ports, and release gates." />
-  <Card title="Lenso Console" href="/docs/runtime-console" description="Use the independent operator System Plane for plans, approvals, receipts, and runtime evidence." />
-  <Card title="Architecture" href="/docs/architecture" description="Understand the deployable host shape, package boundaries, and service-ready path." />
-</CardGroup>
-
-## Operate
-
-<CardGroup>
-  <Card title="Single-Region GA" href="/docs/single-region-ga" description="Validate the exact supported component set and use migration-first GA operations." />
-  <Card title="Reliability and Recovery" href="/docs/reliability-and-recovery" description="Prove degraded modes, failure behavior, restore, disaster recovery, and deterministic cleanup." />
-  <Card title="Support and Security" href="/docs/support-and-security" description="Keep support, workload identity, secrets, Console access, and approval boundaries fail-closed." />
-  <Card title="API Reference" href="/docs/api" description="Browse the committed OpenAPI contract as searchable operation pages and generated code samples." />
-</CardGroup>
-
-## Module
-
-<CardGroup>
-  <Card title="Module Authoring" href="/docs/module-authoring" description="Declare module data, routes, actions, runtime functions, and console surfaces." />
-  <Card title="Admin Surfaces" href="/docs/admin-surfaces" description="Expose schema data, declarative pages, actions, query values, and sandboxed custom UI." />
-  <Card title="Auth and Capabilities" href="/docs/auth-capabilities" description="Use actor context, auth providers, capability declarations, scopes, and module-owned profile tables." />
-  <Card title="Runtime and Lifecycle" href="/docs/runtime-lifecycle" description="Register runtime functions, cron schedules, lifecycle hooks, background workers, and remote runtime endpoints." />
-  <Card title="Module Console UI" href="/docs/console-packages" description="Build and publish verified isolated UI artifacts owned by their Modules." />
-  <Card title="Examples" href="/docs/examples" description="Use support-ticket and account-profile as runnable module proof points." />
-</CardGroup>
-
-## What to install
-
-- Public skills: `npx skills add LioRael/lenso`.
-- Install the current `lenso` facade for Rust Module and Host declarations.
-- Install either `@lenso/cli` or `lenso-cli`; both expose the `lenso` command.
-- Use `@lenso/service-kit` for TypeScript Service authoring.
-- Install Lenso Console independently with `lenso console install`.
-
-## Mental Model
-
-Lenso is modular-first and service-ready, but it is not a Kubernetes-first
-microservice platform. Build one deployable system first. Split selected
-modules only when their ownership, data, and operational boundaries are real.
+- Rust Module and Host declarations use the current `lenso` facade.
+- `@lenso/cli` and `lenso-cli` both expose the `lenso` command.
+- `@lenso/service-kit` authors TypeScript Provider services.
+- Lenso Console is installed independently with `lenso console install`.

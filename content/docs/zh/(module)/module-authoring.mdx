@@ -1,178 +1,111 @@
 ---
-title: 模块开发
-description: 使用明确的 Manifest、合约和检查开发 Lenso 模块。
+title: Module 开发
+description: 使用明确 Manifest、Business API 与仓库本地检查加入业务能力。
 ---
 
-当你要向现有 Lenso Host 添加业务能力时，使用这条路径。第一个模块应该保持
-足够小：一个数据界面、一个 Action 或 Route、一个运行时函数，以及一个能够
-证明模块已经正确接入的 Smoke Check。
+Module 是 Lenso 应用中的稳定业务能力。无论实现链接到 Host，还是由 Provider
+Service 交付，其身份与合约都保持不变。
 
-## Rust facade
+从一个真实工作流开始：一份强类型 Business API、对应实现，以及在 Module
+缺失时必定失败的 Smoke Check。
 
-Rust 模块声明使用公开的 facade crate：
+## 使用 Rust facade
 
 ```sh
-cargo add lenso@0.3.33
+cargo add lenso --features host
 ```
 
-该 crate 主要提供可序列化的声明与 Manifest lint：
+公开 facade 提供可序列化 Module 声明、Manifest lint、HTTP Route Metadata、
+Runtime Function、Event Handler、Lifecycle 声明与 Console Surface。`host` feature
+会启用可运行 Host 所需的公开 HTTP 与 Linked Module Authoring Helper。
 
-- Schema Admin 声明
-- Runtime Function 声明
-- Event Handler 声明
-- HTTP Route 声明
-- Lenso Console 界面声明
-
-## 最小 Manifest
-
-下面的示例声明一个能力集合、一个数据界面、一条 HTTP Route 和一个运行时函数：
+## 声明 Module
 
 ```rust
 use lenso::{
-    AdminSchema, EntitySchema, FieldSchema, FieldType, ModuleHttpMethod,
-    ModuleHttpRoute, ModuleManifest, ModuleSource, RuntimeFunctionDeclaration,
-    RuntimeSurface, ModuleManifestLintSeverity, lint_module_manifest,
+    ModuleHttpMethod, ModuleHttpRoute, ModuleManifest, ModuleManifestLintSeverity,
+    lint_module_manifest,
 };
 
 pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("billing")
+    ModuleManifest::builder("support/tickets")
         .capabilities(vec![
-            "billing.invoices.read".to_owned(),
-            "billing.invoices.write".to_owned(),
+            "support.tickets.read".to_owned(),
+            "support.tickets.write".to_owned(),
         ])
-        .admin(AdminSchema {
-            entities: vec![EntitySchema {
-                name: "invoices".to_owned(),
-                label: "Invoices".to_owned(),
-                read_capability: "billing.invoices.read".to_owned(),
-                fields: vec![
-                    FieldSchema {
-                        name: "id".to_owned(),
-                        label: "ID".to_owned(),
-                        field_type: FieldType::String,
-                        nullable: false,
-                    },
-                    FieldSchema {
-                        name: "total_cents".to_owned(),
-                        label: "Total".to_owned(),
-                        field_type: FieldType::Integer,
-                        nullable: false,
-                    },
-                ],
-            }],
-        })
         .http_routes(vec![ModuleHttpRoute {
             method: ModuleHttpMethod::Post,
-            path: "/v1/billing/invoices".to_owned(),
-            capability: Some("billing.invoices.write".to_owned()),
-            display_name: Some("Create Invoice".to_owned()),
-            story_title: Some("Invoice Created".to_owned()),
+            path: "/v1/support/tickets".to_owned(),
+            capability: Some("support.tickets.write".to_owned()),
+            display_name: Some("Create ticket".to_owned()),
+            story_title: Some("Ticket created".to_owned()),
+            operation: None,
         }])
-        .runtime(RuntimeSurface {
-            functions: vec![RuntimeFunctionDeclaration {
-                name: "billing.invoice.send.v1".to_owned(),
-                version: 1,
-                queue: "billing".to_owned(),
-                input_schema: Some("billing.invoice.send.v1".to_owned()),
-                retry_policy: None,
-            }],
-            schedules: vec![],
-        })
         .build()
 }
 
 #[test]
 fn manifest_lints_cleanly() {
-    let lints = lint_module_manifest(ModuleSource::Linked, &manifest());
-    assert!(
-        lints
-            .iter()
-            .all(|lint| lint.severity != ModuleManifestLintSeverity::Error)
-    );
+    let issues = lint_module_manifest(&manifest());
+    assert!(issues
+        .iter()
+        .all(|issue| issue.severity != ModuleManifestLintSeverity::Error));
 }
 ```
 
-Manifest 告诉 Host 哪些能力应当出现在 Lenso Console 中，但它不会替代
-实际的 Route Handler、SQL 或 Runtime Function 实现。
+Manifest 声明公开形态。`support/tickets` 是 App Composition、Module Release 与
+Business API Binding 使用的完全限定业务身份。Route Handler、SQL 与 Runtime
+实现仍是应用自有代码。
 
-## 创建模块
+## 创建脚手架
 
 ```sh
 lenso module create billing
 ```
 
-只有 Module 确实需要自己的运维页面时才加入隔离 Console UI 制品：
+当前脚手架命令接收可运行的非限定本地 slug。它只是通用起点，不能替代
+`support/tickets` 这类产品自有的完全限定身份。
+
+只有运维工作流确实需要独立交互 Surface 时，才加入 Module 自有 Console UI：
 
 ```sh
 lenso module create billing --with-console-ui
 ```
 
-一般的数据、Action 和运行时证据已经会出现在 独立运行的 Lenso Console 中。
+生成 UI 必须作为摘要绑定的 `console_ui_esm` 制品发布在同一 Module Release
+中。它通过 Surface Gateway 使用生成的 Business API Client，不会获得目标
+凭据。
 
-## 接入 Linked Route
+## 实现 Business API
 
-生成的 Host 通过 `LinkedBinding` 接入模块 HTTP Route：
+Operation 名称应体现领域：`listTickets`、`createTicket`、`updateTicket` 和
+`closeTicket` 描述 Support Ticket 生命周期。在已提交 OpenAPI 合约中定义
+Actor、Tenant、Deadline、Idempotency、Revision 与强类型错误行为。
 
-```rust
-use lenso::host::http::{
-    ApiOpenApiRouter, Json, LinkedBinding, LinkedHttpContribution, OpenApiRouter,
-    routes,
-};
-use serde::Serialize;
-use utoipa::ToSchema;
+Linked 实现把 Route Contribution 接入 `LinkedBinding`。Provider 实现通过
+`lenso.service.v1` 导出同一 Module Contract。两种交付模式都不会改变 Module
+名称或 Operation ID。
 
-#[derive(Serialize, ToSchema)]
-struct BillingStatus {
-    status: &'static str,
-}
+## 最小垂直切片
 
-pub fn http_binding() -> LinkedBinding {
-    LinkedBinding::builder()
-        .http(LinkedHttpContribution {
-            public_prefixes: &["/v1/billing/"],
-            merge: merge_http,
-        })
-        .build()
-}
-
-fn merge_http(base: ApiOpenApiRouter) -> ApiOpenApiRouter {
-    base.merge(OpenApiRouter::new().routes(routes!(status)))
-}
-
-#[utoipa::path(
-    get,
-    path = "/v1/billing/status",
-    operation_id = "billing_status",
-    tag = "billing"
-)]
-async fn status() -> Json<BillingStatus> {
-    Json(BillingStatus { status: "ok" })
-}
-```
-
-## 推荐的最小模块形态
-
-1. 声明 Module Manifest。
-2. 提供一个 Host 可见的数据界面或 Route。
-3. 提供一个 Action 或 Runtime Function。
-4. 添加一个在模块未安装时必定失败的 Smoke Check。
-5. 打开 配置的 Console Service URL，确认能力和证据可见。
-
-不要在第一个模块中提前建立复杂的框架层。等第二个模块出现真实复用需求后再
-提取共享代码，通常成本更低。
+1. 声明一个 Capability 和一个 Business API Operation。
+2. 实现 Route 与持久化行为。
+3. 从已提交合约生成 Client。
+4. 通过公开 API 添加 Smoke Check。
+5. 需要 UI 时，绑定一个精确 Console Surface 与窄 Surface Grant。
+6. 组合新的 `lenso.app.json` 修订，并通过 `lenso system dev` 运行。
+7. 连接 Console，检查 Module 的直接状态。
 
 ## 完成标准
 
-- Manifest lint 没有错误
-- 至少一个有用能力通过 Host 可见
-- 模块未安装时 Smoke Check 会失败
-- 配置的 Console Service URL 能显示运维人员需要的模块证据
+- Manifest lint 通过；
+- 公开 Business API 完成一个有用工作流；
+- Module 未被已组合应用选择并绑定时，Smoke Check 失败；
+- 生成 Client 与已提交合约一致；
+- 选定 Console Surface 绑定到精确 Module Release 与制品；
+- 浏览器和测试都不会绕过公开 API 访问 Store。
 
-## 下一步
-
-- 可运行示例：[Examples](/docs/zh/examples)
-- 精确字段与 lint 分类：[Manifest Reference](/docs/zh/manifest-reference)
-- 数据和 Action 界面：[Admin Surfaces](/docs/zh/admin-surfaces)
-- Console 扩展包：[Console Packages](/docs/zh/console-packages)
-- Hook、Worker 和 Runtime Endpoint：[Runtime and Lifecycle](/docs/zh/runtime-lifecycle)
-- Agent 辅助开发：[Agent Development](/docs/zh/agent-development)
+精确声明字段参见 [Manifest Reference](/docs/zh/manifest-reference)。Surface 设计
+参见 [Business API 与 Console Surface](/docs/zh/admin-surfaces)和
+[Module Console UI](/docs/zh/console-packages)。可运行产品边界参见
+[示例](/docs/zh/examples)。

@@ -5,6 +5,11 @@ description: Use platform auth extractors and module capabilities without import
 
 Modules do not import the `auth` module to authenticate requests. Auth is a
 host concern delivered through middleware, request context, and Axum extractors.
+Enable the public Host HTTP API in the application crate:
+
+```sh
+cargo add lenso --features host
+```
 
 ## Request flow
 
@@ -13,7 +18,7 @@ HTTP request
   -> platform-http middleware reads Authorization or Cookie
   -> ActorResolver chain resolves ActorContext
   -> RequestContext stores the actor
-  -> handler extracts UserActor, ServiceActor, AdminActor, or OptionalActor
+  -> a user-only handler extracts UserActor
 ```
 
 The current actor variants are:
@@ -55,28 +60,28 @@ runs.
 Declare module capabilities in the manifest:
 
 ```rust
-use lenso::{AdminSchema, EntitySchema, ModuleManifest};
+use lenso::{ModuleHttpMethod, ModuleHttpRoute, ModuleManifest};
 
 pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("support")
+    ModuleManifest::builder("support/tickets")
         .capabilities(vec![
             "support.tickets.read".to_owned(),
             "support.tickets.assign".to_owned(),
         ])
-        .admin(AdminSchema {
-            entities: vec![EntitySchema {
-                name: "tickets".to_owned(),
-                label: "Tickets".to_owned(),
-                read_capability: "support.tickets.read".to_owned(),
-                fields: vec![],
-            }],
-        })
+        .http_routes(vec![ModuleHttpRoute {
+            method: ModuleHttpMethod::Post,
+            path: "/v1/support/tickets/{ticket_id}/assign".to_owned(),
+            capability: Some("support.tickets.assign".to_owned()),
+            display_name: Some("Assign ticket".to_owned()),
+            story_title: Some("Ticket assigned".to_owned()),
+            operation: None,
+        }])
         .build()
 }
 ```
 
-Lenso Console and admin data APIs use these declarations to lint manifests
-and enforce access to declared surfaces.
+Lenso Console, Surface Gateway, and Business APIs use these declarations to
+lint manifests and enforce access to declared operations.
 
 ## Checking scopes
 
@@ -102,8 +107,9 @@ async fn assign_ticket(user: UserActor) -> Result<Json<serde_json::Value>, AppEr
 }
 ```
 
-Use the same capability names in route metadata, admin schemas, declarative
-actions, and Console surfaces. That keeps lints and operator views useful.
+Use the same capability names in Business API route metadata, Surface Grants,
+and Console Surfaces. That keeps target authorization, lints, and operator UI
+consistent.
 
 ## Auth module boundary
 

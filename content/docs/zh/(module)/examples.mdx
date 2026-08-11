@@ -1,109 +1,90 @@
 ---
 title: 示例
-description: 证明公共 Lenso 创作路径的可运行模块。
+description: 通过公开 Lenso 入口运行 Support Desk 产品级验收。
 ---
 
-当您想要工作模块代码而不是空白脚手架时，请使用这些示例。
-他们证明模块可以连接到主机并通过冒烟进行验证
-检查。
+[Lenso examples 仓库](https://github.com/LioRael/lenso-examples)包含产品级
+Support Desk 验收。它是完整应用模型的最高验收边界；更低层的 framework、
+CLI、client、Console、browser、transport 与 container 测试支持这一场景，
+但不会取代它。
 
-示例存储库是
-[LioRael/lenso-examples](https://github.com/LioRael/lenso-examples)。
+## 前置条件
+
+- Node.js 与 pnpm；
+- Rust 与 Cargo；`Cargo` 始终是必需的，因为 Console Migration 与 Service
+  Startup 会使用它，`LENSO_CLI_BIN` 只会跳过 CLI 构建；
+- PostgreSQL 的 `initdb`、`postgres` 与 `pg_isready`；
+- 可启动的 headless Chrome 兼容浏览器；
+- 与 `lenso-examples` 同级且命名为 `lenso`、`lenso-cli`、`lenso-console` 的
+  checkout。
+
+也可通过 `LENSO_FRAMEWORK_ROOT`、`LENSO_CLI_ROOT` 与 `LENSO_CONSOLE_ROOT`
+指定这些路径。
 
 ## 安装
 
 ```sh
 git clone https://github.com/LioRael/lenso-examples
 cd lenso-examples
-pnpm install
+pnpm install --frozen-lockfile
 ```
 
-## 运行冒烟
+## 运行产品级验收
 
 ```sh
-pnpm smoke
+pnpm acceptance:support-desk
 ```
 
-对于主机级验证，请运行：
+Runner 会构建 Linked Service Kit、必要时构建 CLI、构建 Console Service 与
+Module Artifact，然后只驱动公开的开发、业务、Console 与浏览器入口。默认会
+自动启动 disposable PostgreSQL；若显式提供 `LENSO_ACCEPTANCE_DATABASE_URL`，
+数据库名必须包含 `acceptance`。仅在需要检查临时运行目录时设置
+`LENSO_ACCEPTANCE_KEEP_TEMP=1`。
 
-```sh
-pnpm host-api-smoke
-```
+仓库默认 `pnpm check` 保持为快速静态与组件门禁；跨仓库产品验收需要显式运行
+`pnpm acceptance:support-desk`。
 
-## 支持票
+## 场景覆盖范围
 
-支持票证模块是代理就绪的证明点。它变成了这个提示
-进入真正的模块：
+### Compose（组合）
 
-```text
-Build a support ticket module for a Lenso app.
-```
+场景生成精确 `lenso.app.json`，然后校验其修订、摘要、依赖选择，以及 Linked
+或 Service-backed Module Binding。
 
-它包括票证数据、HTTP 路由、管理操作、运行时升级
-函数、控制台可见的元数据和主机 API 冒烟。
+### Run locally（本地运行）
 
-使用[Agent 开发](/docs/zh/agent-development) 进行完整的提示检查
-工作流。
+Runner 使用精确 `lenso.service.json` 物化唯一 Support Ticket Provider，然后
+针对 `support-desk/lenso.workspace.json` 调用公开的
+`lenso service workspace init --force` 与
+`lenso service workspace add support-ticket`。随后通过 `lenso system dev`
+启动 System、真实 Support Desk 进程与 Local Control Adapter。清理只停止该次
+运行持有的资源。
 
-```sh
-pnpm smoke:support-ticket
-pnpm host-api-smoke:support-ticket
-```
+### Connect（连接）
 
-## 账户资料
+它独立启动 Console Service，提交已签名的本地 Service Enrollment Offer 与 Receipt，
+并在不使用环境或部署 API 的情况下连接精确 System 拓扑。真实浏览器无需手工启用，即可加载回执绑定的 Support Ticket 与
+Story `console_ui_esm` Surface。
 
-账户配置文件模块是后续证明。这取决于 `auth`，而
-拥有个人资料、组织和会员数据。
+### Status（状态）
 
-```sh
-pnpm smoke:account-profile
-pnpm host-api-smoke:account-profile
-```
+浏览器使用 Support Ticket 生成客户端与 Surface Gateway 列出、创建、更新和
+关闭真实 Ticket。场景覆盖 Actor、Tenant、Deadline、Idempotency、Surface
+Grant、Console Actor 与目标 Module 授权行为。
 
-## 如何选择示例
+它在 System Connection Projection 中校验 `connected`、`unavailable`、
+`incompatible` 与 `unmanaged`，每种状态都有直接原因。它另外完成一次受支持
+的本地 Workload 往返操作，并跟踪异步 Operation Record 到最终状态。Adapter
+不可用时，Workload Observation 返回 `unknown`，变更会被拒绝且不排队、不回退。
 
-- 当您需要完整的代理就绪模块循环时，请先阅读支持票证。
-- 当您想查看模块在拥有时依赖于身份验证时，请阅读账户配置文件
-  自己的产品数据。
+## 权限边界
 
-## 本地主机安装
+- 浏览器代码不会获得 Service 或 Adapter 凭据。
+- 业务记录只通过声明的 Business API 访问。
+- Console 不选择环境，也不变更发布、部署或生产基础设施。
+- 场景不会直接查询数据库。
+- 所有 Surface 都绑定到已连接应用中的精确 Module Release、UI 制品、合约与
+  Operation ID。
 
-运行支持票证服务，打包它，然后安装生成的模块
-从生成的主机中释放：
-
-```sh
-pnpm start:support-ticket
-pnpm service-package:support-ticket
-lenso module release inspect dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json
-lenso module install dist/lenso-service/support-suite-provider/modules/support-ticket/lenso.module-release.json \
-  --base-url http://127.0.0.1:4110/lenso/service/v1
-```
-
-安装Provider后，使用环境感知的服务发布计划
-对于包升级：
-
-```sh
-lenso service env add staging \
-  --service support-suite-provider \
-  --target kubernetes \
-  --namespace lenso-staging \
-  --image ghcr.io/acme/support-suite-provider:0.4.0 \
-  --public-base-url https://support-staging.example.com
-
-lenso service release plan support-suite-provider \
-  dist/lenso-service/support-suite-provider/lenso.service-package.json \
-  --env staging \
-  --output .lenso/support-suite-provider.staging.release-plan.json
-lenso service policy check .lenso/support-suite-provider.staging.release-plan.json --fail-on breaking
-lenso service deploy export support-suite-provider \
-  --env staging \
-  --target kubernetes \
-  --output-dir examples/support-ticket/kubernetes/staging
-lenso service release apply .lenso/support-suite-provider.staging.release-plan.json --env staging
-```
-
-控制台服务显示发布风险、Provider历史记录、部署环境、
-Kubernetes 推出观察，以及与 `.lenso/service-releases.json` 的偏差
-和`.lenso/service-deployments.json`。
-
-重启主机，打开配置的 Console Service URL，确认模块出现。
+手工运行生命周期请参见 [Host 快速开始](/docs/zh/quickstart)；连接与状态请参见
+[Lenso Console](/docs/zh/runtime-console)。

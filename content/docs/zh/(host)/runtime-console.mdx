@@ -1,34 +1,109 @@
 ---
 title: Lenso Console
-description: 验证模块数据、Action、运行时工作流和运维可见性。
+description: 连接精确 System、加载 Module Surface，并检查直接运维状态。
 ---
 
-Lenso Console 是独立安装的运维 System Plane，负责管理一个 Lenso System。
-Console Shell、API、Worker、Auth 域、System Registry 与 Service Store 均独立于
-受管业务 Service 运行。
+Lenso Console 是独立安装、面向运维人员的 System Plane，负责一个 Lenso
+System。其 Shell、API、Worker、Auth 域、Registry 与 Store 均独立于受观察的
+业务 Service 运行。
 
-![Lenso Console App Lifecycle 页面，展示服务、模块、Doctor 检查、App Proof 和下一步操作](/lenso-assets/console/app-lifecycle.png)
+Console 职责刻意保持狭窄：连接、报告状态、加载精确 Module Surface，以及调用
+目标持有的强类型操作。它不会创建、部署、接管、删除、发布、升级、回滚或
+协调生产 Workload。
 
-App Lifecycle 把生成后的系统、就绪缺口、证明状态和下一步运维操作放在同一处。
-警告是需要采取行动的证据，不是应当隐藏的 Dashboard 状态。
+## Enrollment 本地目标
 
-## 核心界面
+Support Desk 本地验收把已签名的双边交换提交到：
 
-![Runtime Stories 执行图，展示一次请求如何分发到多个 Function、Event 和 Service](/lenso-assets/console/runtime-story-graph.png)
+```text
+POST /api/console/v1/enrollment-receipts
+```
 
-Runtime Stories 将业务流程和技术证据关联起来。你可以在 Graph、Timeline、
-Heatmap、Waterfall 和 Flame 视图之间切换，同时保留贯穿整条链路的 Correlation。
+Body 只包含 `{offer, receipt, baseUrl}`，Route 要求
+`console.system.connect`。Console 使用仅服务端可见、按白名单配置的 Ed25519
+信任项校验双方签名，然后保存精确 Enrollment Grant 与 Receipt。当前受支持切片
+要求 `baseUrl` 是 loopback 目标。CLI 自有 `lenso-local-control-adapter` 以
+`workload-control:<system>` 绑定，不使用业务 Enrollment；其余每个拓扑 Service
+都必须具备 active signed Enrollment。
 
-![Runtime Overview，展示队列压力、最近活动、失败和死信](/lenso-assets/console/runtime-overview.png)
+该 Endpoint 不是远程或生产自助 Enrollment。远程生产目标仍需要经过批准的
+mTLS 与证书固定 Transport Seam。
 
-Runtime Overview 将需要运维人员关注的信息集中到一个工作区，包括队列压力、
-运行中的 Function、失败、死信、最近活动和 Failure Stream。
+## 连接 System
+
+公开连接边界是：
+
+```text
+POST /api/console/v1/system/connect
+```
+
+经过认证的请求包含一份精确 `lenso.system.v2` 拓扑、其 SHA-256 摘要，以及
+同一 System 的 Management Binding。Console 会先校验 Service、Module、
+Workload、Adapter、权限与 Policy 一致，再保存连接。
+
+读取完整 System 需要 `console.system.read`；连接需要
+`console.system.connect`。Service-scoped Grant 无法授权这两个路由。
+
+未签名 Registry 写入绝不是连接捷径。Connect 会校验精确的活动 Enrollment、
+Management Binding 与已发布 Core Contract。
+
+## 读取状态
+
+```text
+GET /api/console/v1/system
+```
+
+响应与 **Services** 页面显示每个对象的直接状态：
+
+| 状态 | 含义 |
+| --- | --- |
+| `connected` | 精确合约、摘要、Binding 与在线目标一致。 |
+| `unavailable` | 当前无法观察声明的目标；原因会指出失败边界。 |
+| `incompatible` | 协议、Schema、制品或能力不匹配。 |
+| `unmanaged` | Observed 或 Enrolled 对象位于当前拓扑与 Management Binding 之外。 |
+
+Console 不会合成第二套应用总分。Service 可以保持 connected，同时某个 Module
+或 Adapter 显示自己的可操作状态。
+
+## Module Surface
+
+Module 自有 UI 是与 Manifest 位于同一个 Module Release 的不可变
+`console_ui_esm` 制品。加载到 Shell 前，Console 会校验制品摘要、生成的
+`lenso.console-module.v1` Manifest、协议范围、Entry、Style、Module 身份，
+以及精确 System Receipt。
+
+Surface 使用公开 `@lenso/console-module-api`、`@lenso/console-ui` 与注入的
+强类型 Host API。读取或修改业务记录时，它通过同源 Surface Gateway 调用
+生成客户端。服务端对每次请求重新
+检查已认证 Console Actor、Module 身份、制品摘要、Module Release 摘要、
+Contract 摘要，以及 Surface Grant 允许的 Operation ID。
+
+Service Bearer Token 与 Adapter 凭据只保留在服务端。浏览器代码不会获得它们，
+也不会直连业务 Service。
+
+制品开发参见 [Module Console UI](/docs/zh/console-packages)；操作设计参见
+[Business API 与 Console Surface](/docs/zh/admin-surfaces)。
+
+## Workload Control
+
+Workload 路由是以下路径下的同源 Console Service Endpoint：
+
+```text
+/api/console/v1/systems/{systemId}/workloads
+```
+
+已连接拓扑必须命名稳定 Workload Reference，并绑定强类型
+`lenso.workload-control.v1` Adapter。Console 派生 Actor，只发送声明的操作，
+持久化异步 Operation Record，再按 Operation 身份轮询到终态。
+
+本地 Adapter 可以支持 Suspend/Resume 或 Stop/Start。Adapter 无法访问时，
+观察结果为 `unknown` 且没有修订。变更会 fail closed，不排队、不改道，也不从
+进程状态猜测结果。活动 Adapter 与 Console Workload 不能通过此路径控制自己。
 
 ## 访问控制
 
-`lenso console dev` 可以使用仅限本地的开发身份。正式安装的 Console Service
-没有默认账号或密码。通过外部安装权限创建第一个密码用户和经过审计的
-Operator 授权：
+正式安装的 Console Service 没有默认凭据。通过外部安装权限创建第一个密码
+用户和经过审计的 Operator Role：
 
 ```sh
 lenso console operator bootstrap \
@@ -37,89 +112,16 @@ lenso console operator bootstrap \
   --identifier admin@example.com
 ```
 
-在交互式终端中，CLI 会隐藏密码输入并要求二次确认。自动化环境必须通过
-`--password-stdin` 或权限受限的 `--password-file` 提供密码。
+交互终端会隐藏密码输入。自动化必须使用 `--password-stdin` 或通过
+`--password-file` 读取权限受限的普通文件。不要把 Service Bearer Token 放入
+浏览器构建。
 
-该命令只授予 Console Minimum scopes，校验必要的 System Registry 状态，写入
-追加式审计记录，并在已有 Operator 时拒绝重复执行。首次初始化后需要重启
-Console API 和 Worker；后续 Operator 通过 Console 的 identity Module 管理。
+认证能力边界参见 [Auth Capabilities](/docs/zh/auth-capabilities)。
 
-不要把 Service Bearer Token 放进浏览器端 Console 构建。OIDC 生产配置请参阅
-[auth-oidc](/docs/zh/built-in-modules/auth-oidc)。
+## 运维边界
 
-## 首次检查
-
-Console Service 运行后，打开它的根地址（本地默认为
-`http://127.0.0.1:3030/`），依次检查：
-
-- **App Lifecycle**：生成的服务、模块、Addon、能力包、Dev Doctor、App Proof、Change Plan 和下一条运维命令。
-- **Modules**：已加载模块、Manifest 状态和 lint 结果。
-- **Data**：模块暴露的 Schema Admin 表。
-- **Actions**：模块声明的 Admin Action。
-- **Runtime**：Function Run、Story Event 和 Remote Proxy 证据。
-
-这能最快发现“代码可以编译，但模块实际上没有被 Host 加载”的问题。
-
-## Launchpad 证据
-
-生成的应用通过只读 Host Admin Endpoint 暴露本地证据文件：
-
-| 证据 | 写入命令 | Console 用途 |
-| --- | --- | --- |
-| `.lenso/launchpad.json` | `lenso app create`、`add`、`compose` | 服务、模块、Addon、能力包、检查Manifest和下一条命令 |
-| `.lenso/dev-doctor.json` | `lenso dev doctor --write-state` | 文件、命令和可选实时就绪检查 |
-| `.lenso/app-proof.json` | `lenso app verify --write-proof` | 生成状态漂移、证明检查和修复命令 |
-| `.lenso/app-change-plan.json` | `lenso app plan --write-plan` | 安全变更、阻塞变更、请求、证明状态和 Apply 命令 |
-
-App Proof 为空时，在生成应用根目录运行：
-
-```sh
-lenso app verify --write-proof
-```
-
-如果存在漂移，先执行 `lenso app diff`，再使用
-`lenso app repair --dry-run` 预览安全修复。
-
-App Change Plan 为空时，可运行：
-
-```sh
-lenso app next
-lenso app explain
-lenso app plan --write-plan
-```
-
-## 模块证据
-
-一个有用的模块至少应当提供一个可见证明点：
-
-| 模块能力 | Console 中的证据 |
-| --- | --- |
-| Data Surface | Data 页面可以读取记录 |
-| Admin Action | Action 及其输入声明可见 |
-| Runtime Function | 调用后出现 Function Run |
-| Remote Route | 流量经过后记录 Proxy Call |
-| Console Extension | 模块页面出现在 Registry 中 |
-
-## 模块缺失时
-
-- 执行 `lenso module install` 后重启 API 与 Worker。
-- Service Provider 运行 `lenso service doctor <provider> --json`。
-- Launchpad 缺少能力包时运行 `lenso capability check <pack-dir>`。
-- 确认 Manifest 声明了预期的数据、Action、Route、Function 或 Console Surface。
-
-## 扩展边界
-
-模块自有 Console UI 通过 `ModuleManifest.console` 声明，并绑定到同一个经过
-审查的 Module Release。UI 通过版本化 Console Bridge 隔离，不接收 Host Bearer
-Token，也不得深度导入 Console 内部实现。
-
-## 升级 Console Service
-
-通过外部 CLI 规划并应用不可变的 Console Service Release：
-
-```sh
-lenso console upgrade --help
-```
-
-安装或升级后运行 `lenso console doctor`，校验确切 Release、Store、Workload
-健康状态和安装证据。
+- Console 报告已连接应用状态，不持有应用组合。
+- 业务写入通过声明的 Business API 与 Surface Grant。
+- 强类型管理操作在其所属 Service 或 Adapter 中执行。
+- 生产发布与部署位于 Console 之外。
+- Console 不可用不会停止 Autonomous Service 的业务执行。

@@ -5,6 +5,11 @@ description: 使用平台身份验证提取器和模块功能，无需导入身�
 
 模块不导入 `auth` 模块来验证请求。验证是一个
 主机关注点通过中间件、请求上下文和 Axum 提取器传递。
+在应用 crate 中启用公开 Host HTTP API：
+
+```sh
+cargo add lenso --features host
+```
 
 ## 请求流程
 
@@ -13,7 +18,7 @@ HTTP request
   -> platform-http middleware reads Authorization or Cookie
   -> ActorResolver chain resolves ActorContext
   -> RequestContext stores the actor
-  -> handler extracts UserActor, ServiceActor, AdminActor, or OptionalActor
+  -> a user-only handler extracts UserActor
 ```
 
 当前的演员变体是：
@@ -55,28 +60,28 @@ async fn me(user: UserActor) -> Json<MeResponse> {
 在Manifest中声明模块功能：
 
 ```rust
-use lenso::{AdminSchema, EntitySchema, ModuleManifest};
+use lenso::{ModuleHttpMethod, ModuleHttpRoute, ModuleManifest};
 
 pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("support")
+    ModuleManifest::builder("support/tickets")
         .capabilities(vec![
             "support.tickets.read".to_owned(),
             "support.tickets.assign".to_owned(),
         ])
-        .admin(AdminSchema {
-            entities: vec![EntitySchema {
-                name: "tickets".to_owned(),
-                label: "Tickets".to_owned(),
-                read_capability: "support.tickets.read".to_owned(),
-                fields: vec![],
-            }],
-        })
+        .http_routes(vec![ModuleHttpRoute {
+            method: ModuleHttpMethod::Post,
+            path: "/v1/support/tickets/{ticket_id}/assign".to_owned(),
+            capability: Some("support.tickets.assign".to_owned()),
+            display_name: Some("Assign ticket".to_owned()),
+            story_title: Some("Ticket assigned".to_owned()),
+            operation: None,
+        }])
         .build()
 }
 ```
 
-Lenso Console和管理数据 API 使用这些声明来检查Manifest
-并强制访问已声明的界面。
+Lenso Console、Surface Gateway 与 Business API 使用这些声明检查 Manifest，
+并强制执行已声明 Operation 的访问权限。
 
 ## 检查范围
 
@@ -102,8 +107,8 @@ async fn assign_ticket(user: UserActor) -> Result<Json<serde_json::Value>, AppEr
 }
 ```
 
-在路由元数据、管理模式、声明性中使用相同的功能名称
-操作和控制台界面。这使得 lint 和操作员视图保持有用。
+在 Business API Route Metadata、Surface Grant 与 Console Surface 中使用相同
+Capability 名称，使目标授权、Lint 与运维 UI 保持一致。
 
 ## Auth 模块边界
 

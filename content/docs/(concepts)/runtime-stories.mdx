@@ -1,195 +1,103 @@
 ---
 title: Runtime Stories
-description: Understand Lenso's business-level runtime evidence model.
+description: Follow one business flow through the receipt-bound Story Module Surface.
 ---
 
-A Runtime Story is Lenso's durable record of what one business or operator
-action caused inside the host.
+A Runtime Story is the operator-readable record of one correlated business
+flow. In the current product model, Stories are contributed by the exact
+`lenso/platform-story` Module Release and rendered by its `console_ui_esm`
+Surface inside Console.
 
-Instead of asking users to piece together logs, queue rows, proxy calls, traces,
-and retries, Lenso groups related runtime evidence by `correlation_id` and shows
-it as one story: the request, the module action, the event or function work, the
-remote calls, the status, and the technical operations behind it.
+Stories are not a top-level Console workspace, an application-wide score, or a
+browser shortcut to Host administration routes.
 
-This is one of Lenso's core ideas. A story is not just a trace viewer and not
-just an audit log. It is the operator-readable narrative for a modular business
-system.
+## Composition ownership
 
-## What a story answers
+The Support Desk product acceptance selects `lenso/platform-story` through its
+checked-in capability pack. The runner builds the matching Console artifact,
+then puts the exact Module Release digest, UI artifact digest, contract digest,
+and Surface Grant in the connected `lenso.system.v2` topology.
 
-When a user creates a ticket, syncs a contact, adds an organization membership,
-or runs a module action, the useful questions are:
+Console loads the Story Surface only when those identities agree with the
+connected app receipt. Changing a UI build, Module Release, or Business API
+contract requires a newly matching composition and connection.
 
-- What user-facing thing happened?
-- Which module owned it?
-- Did the host route, authorize, and record it?
-- Did it enqueue outbox or runtime work?
-- Did a Service provider call succeed or fail?
-- Which technical operation explains the slow or failing node?
+## Browser boundary
 
-A Runtime Story makes those answers visible in Lenso Console.
-
-## How stories are built
-
-Lenso does not ask module authors to manually build story graphs. The host
-records small, durable facts as work moves through platform-owned seams.
-
-| Source | Story role |
-| --- | --- |
-| `platform.story_events` | normalized story nodes such as HTTP requests, admin actions, and remote proxy calls |
-| `platform.outbox` | committed module events and dispatch status |
-| `runtime.function_runs` | queued, running, retried, completed, failed, or dead background work |
-| `platform.remote_http_proxy_calls` | host-owned evidence for out-of-process module traffic |
-| telemetry spans | technical operations linked back to story nodes when possible |
-
-Lenso Console reads those records through `/admin/runtime/stories` and
-renders:
-
-- a story list item with title, status, duration, services, and pattern;
-- a detail graph with nodes and edges;
-- timeline items for runtime work;
-- heatmap and technical-operation views for diagnosis.
-
-## The grouping key
-
-The main key is `correlation_id`.
-
-One incoming request gets a request id and correlation id. Anything the host
-does on behalf of that request should preserve the same correlation id. Causation
-ids connect a child node to the node that caused it.
+The Story Surface uses the injected typed Host API and a generated client
+through same-origin Surface Gateway:
 
 ```text
-POST /v1/support/tickets
-  correlation_id = corr_ticket_123
-  request_id     = req_create_ticket
-
-story nodes:
-  httpreq_req_create_ticket
-  outbox_evt_ticket_created
-  fnrun_support_ticket_escalate
-  remoteproxy_rproxy_notify_crm
+Story console_ui_esm Surface
+  -> generated client
+  -> Console Surface Gateway
+  -> declared Story Business API
 ```
 
-This is why Lenso can show a business-level story without coupling every module
-to a single workflow engine.
+For every request, Console Service rechecks:
 
-## Naming the story
+- the authenticated Console actor;
+- the exact connected System;
+- Module and Module Release identity;
+- UI artifact and contract digests;
+- the allowed operation ID in the Surface Grant;
+- target Module authorization.
 
-Good story names come from module metadata. For normal HTTP routes, set
-`display_name` for the node and `story_title` for the story.
+Service bearer tokens stay on the server. The browser receives neither Service
+credentials nor a generic endpoint for arbitrary records.
 
-```rust
-use lenso::{ModuleHttpMethod, ModuleHttpRoute};
+## What a Story shows
 
-let route = ModuleHttpRoute {
-    method: ModuleHttpMethod::Post,
-    path: "/v1/support/tickets".to_owned(),
-    capability: Some("support.tickets.write".to_owned()),
-    display_name: Some("Create ticket".to_owned()),
-    story_title: Some("Support ticket created".to_owned()),
-};
-```
+A Story groups records by stable correlation and causation identities. The
+Surface can present:
 
-For runtime functions or other execution names, declare `story_display`
-metadata.
+- a business title and direct status;
+- the initiating actor and tenant context allowed by policy;
+- related Module, Service, event, function, and workflow nodes;
+- causal edges and a time-ordered activity list;
+- direct failure details without inventing a second app-wide health score.
 
-```rust
-use lenso::{ModuleManifest, StoryDisplayDescriptor, StoryDisplaySource};
+Technical logs and traces remain owned by their runtime. A Story links the
+business flow without replacing those tools or redefining Service ownership.
 
-pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("identity")
-        .story_display(vec![StoryDisplayDescriptor {
-            source: StoryDisplaySource::ExecutionName {
-                name: "identity.create_user".to_owned(),
-            },
-            display_name: "Create User".to_owned(),
-            story_title: Some("User Registration".to_owned()),
-        }])
-        .build()
-}
-```
+## Authoring guidance
 
-TypeScript Services use the same idea on the Modules they provide.
+Module authors should:
 
-```ts
-import { defineModule, defineService, postRoute } from "@lenso/service-kit";
+- keep business operation IDs and capability names stable;
+- give user-facing operations clear display names;
+- propagate actor, tenant, correlation, causation, deadline, and trace context;
+- use declared events, functions, or workflows for follow-up work;
+- keep secrets, tokens, and sensitive payloads out of Story records.
 
-const accountProfile = defineModule({
-  capabilities: ["account_profile.organizations.write"],
-  httpRoutes: [
-    postRoute("/organizations/{id}/memberships", {
-      capability: "account_profile.organizations.write",
-      displayName: "Add membership",
-      storyTitle: "Organization membership added",
-    }),
-  ],
-  name: "account-profile",
-  version: "0.1.0",
-});
+The Provider tier remains Host-owned and can be Rust or TypeScript. An
+Autonomous Service owns its Rust runtime and Store; it propagates the same
+bounded context over direct HTTP/gRPC, Event Contracts, or Durable Workflows.
+See [Service Capability Tiers](/docs/autonomous-services).
 
-export const manifest = defineService({
-  modules: [accountProfile],
-  name: "account-profile-service",
-  version: "0.1.0",
-});
-```
+## Connection and operational state
 
-If metadata is missing, the story builder falls back to humanized execution
-names or event names. That keeps the page useful, but intentional story metadata
-is better for users.
+The Story Module and Surface have connection projections such as `connected`,
+`unavailable`, `incompatible`, or `unmanaged`, each with a direct reason.
+Workload operational state is separate.
 
-## API shape
+If Console or the Story Surface is unavailable, the view is unavailable;
+established business execution continues in its owning Host or Autonomous
+Service. Console does not become a data plane dependency.
 
-Lenso Console calls the host-owned runtime APIs:
+## Product acceptance
+
+Run the product-level black-box path from `lenso-examples`:
 
 ```sh
-curl -sS \
-  -H "Authorization: Bearer $LENSO_DEV_TOKEN" \
-  "http://127.0.0.1:3000/admin/runtime/stories?limit=10" | jq .
-
-curl -sS \
-  -H "Authorization: Bearer $LENSO_DEV_TOKEN" \
-  "http://127.0.0.1:3000/admin/runtime/stories/corr_ticket_123" | jq .
+pnpm acceptance:support-desk
 ```
 
-The list response includes title, `correlation_id`, status, duration,
-`node_count`, `error_count`, services, pattern, and root error. The detail
-response includes summary, nodes, edges, and timeline items.
+The real browser loads both Support Ticket and Story Surfaces without manual
+enablement, exercises ticket operations through Surface Gateway, and verifies
+that the exact receipt, actor, tenant, contract, and operation identities stay
+bound throughout the flow.
 
-## Authoring for good stories
-
-Treat story quality as part of module quality:
-
-- give user-facing routes a clear `display_name` and `story_title`;
-- keep capability names stable so the story can be tied to permissions;
-- preserve request and correlation context when enqueueing work;
-- use outbox events and runtime functions for follow-up work instead of hidden
-  side effects;
-- avoid raw secrets, tokens, passwords, or sensitive payloads in story metadata;
-- add a smoke check that triggers the module path and asserts a story appears.
-
-The smoke check can be simple:
-
-```ts
-await waitFor("account-profile runtime story", async () => {
-  const stories = await fetchJson(`${apiBaseUrl}/admin/runtime/stories?limit=5`);
-  return stories.data?.some(
-    (story) =>
-      story.title === "Organization membership added" &&
-      story.status === "completed" &&
-      story.services?.includes("account-profile")
-  );
-});
-```
-
-## What stories are not
-
-Runtime Stories do not replace:
-
-- structured logs for process-level debugging;
-- distributed tracing for low-level latency analysis;
-- audit history for compliance-specific config changes;
-- workflow definitions for long-running business orchestration.
-
-They sit above those layers. A story is the compact answer to "what happened in
-the business system, and where is the evidence?"
+Continue with [Lenso Console](/docs/runtime-console) for System connection and
+Surface loading, or [Module Console UI](/docs/console-packages) for artifact
+authoring.
