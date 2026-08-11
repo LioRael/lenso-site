@@ -1,37 +1,118 @@
 ---
 title: Lenso Console
-description: Verify module data, actions, runtime workflows, and operational visibility.
+description: Connect an exact System, load Module Surfaces, and inspect direct operational status.
 ---
 
 Lenso Console is the independently installed operator-facing System Plane for
-one Lenso System. Its Console Shell, API, Worker, Auth domain, System Registry,
-and Service Store run separately from the business Services it manages.
+one Lenso System. Its Shell, API, Worker, Auth domain, Registry, and Store run
+separately from the business Services it observes.
 
-![Lenso Console App Lifecycle view showing services, modules, Doctor checks, App Proof, and next actions](/lenso-assets/console/app-lifecycle.png)
+Console has a deliberately narrow role: connect, report status, load exact
+Module Surfaces, and invoke typed target-owned operations. It does not create,
+deploy, adopt, delete, release, upgrade, roll back, or reconcile production
+workloads.
 
-The App Lifecycle view puts the generated system, readiness gaps, proof state,
-and next operator action in one place. A warning is evidence to act on, not a
-dashboard state to hide.
+## Enroll the local target
 
-## Core views
+The Support Desk local acceptance submits its signed bilateral exchange to:
 
-![Runtime Stories execution graph showing one request fan-out across functions, events, and services](/lenso-assets/console/runtime-story-graph.png)
+```text
+POST /api/console/v1/enrollment-receipts
+```
 
-Runtime Stories connects a business flow to its technical evidence. Switch
-between graph, timeline, heatmap, waterfall, and flame views without losing the
-correlation that ties the work together.
+The body contains only `{offer, receipt, baseUrl}` and the route requires
+`console.system.connect`. Console validates both signatures against its
+server-only allowlisted Ed25519 trust configuration before storing the exact
+Enrollment Grant and Receipt. In this supported slice, `baseUrl` must be a
+loopback target. The CLI-owned `lenso-local-control-adapter` is bound as
+`workload-control:<system>` and does not use business enrollment; every other
+topology Service requires an active signed enrollment.
 
-![Runtime Overview showing queue pressure, recent activity, failures, and dead letters](/lenso-assets/console/runtime-overview.png)
+This endpoint is not remote or production self-service enrollment. A remote
+production target still requires the approved mTLS and certificate-pinning
+transport seam.
 
-Runtime Overview makes operator attention explicit: queue pressure, active
-functions, failures, dead letters, recent activity, and the failure stream share
-one workspace.
+## Connect a System
+
+The public connection boundary is:
+
+```text
+POST /api/console/v1/system/connect
+```
+
+The authenticated request contains one exact `lenso.system.v2` topology, its
+SHA-256 digest, and a Management Binding for the same System. Console validates
+that services, modules, workloads, adapters, permissions, and policy all agree
+before storing the connection.
+
+Whole-System reads require `console.system.read`; connection requires
+`console.system.connect`. Service-scoped grants cannot authorize either route.
+
+An unsigned registry write is never a connection shortcut. Connect validates
+the exact active enrollment, Management Binding, and advertised Core contract.
+
+## Read status
+
+```text
+GET /api/console/v1/system
+```
+
+The response and **Services** page show direct state for each object:
+
+| State | Meaning |
+| --- | --- |
+| `connected` | The exact contract, digest, binding, and live target agree. |
+| `unavailable` | The declared target cannot currently be observed; the reason identifies the failing boundary. |
+| `incompatible` | A protocol, schema, artifact, or capability does not match. |
+| `unmanaged` | An observed or enrolled object is outside the current topology and Management Binding. |
+
+Console does not synthesize a second app-wide score. A Service can be connected
+while one Module or Adapter has its own actionable state.
+
+## Module Surfaces
+
+A Module-owned UI is an immutable `console_ui_esm` artifact in the same Module
+Release as its manifest. Console validates the artifact digest, generated
+`lenso.console-module.v1` manifest, protocol range, entries, styles, Module
+identity, and exact System receipt before loading it in the Shell.
+
+The Surface uses the public `@lenso/console-module-api` and
+`@lenso/console-ui` packages with the injected typed Host API. For business
+records it calls a generated client through the same-origin Surface Gateway.
+The server rechecks the authenticated Console actor, Module identity,
+artifact digest, Module Release digest, contract digest, and allowed operation
+ID from the Surface Grant on every request.
+
+Service bearer tokens and Adapter credentials stay on the server. Browser code
+never receives them and never connects directly to a business Service.
+
+Continue with [Module Console UI](/docs/console-packages) for artifact authoring
+or [Business APIs and Console Surfaces](/docs/admin-surfaces) for operation
+design.
+
+## Workload Control
+
+Workload routes are same-origin Console Service endpoints below:
+
+```text
+/api/console/v1/systems/{systemId}/workloads
+```
+
+The connected topology must name stable Workload references and bind a typed
+`lenso.workload-control.v1` Adapter. Console derives the actor, sends only the
+declared action, persists the asynchronous Operation Record, and polls the
+operation identity to a terminal state.
+
+Local Adapters may support Suspend/Resume or Stop/Start. An unreachable Adapter
+produces `unknown` observation state with no revision. Mutations fail closed;
+they are not queued, rerouted, or guessed from process state. The active
+Adapter and Console Workload cannot target themselves through this path.
 
 ## Access control
 
-`lenso console dev` may use a local-only development identity. An installed
-Console Service has no default credentials. Bootstrap its first password user
-and audited Operator grant from the external installation authority:
+An installed Console Service has no default credentials. Bootstrap its first
+password user and audited Operator role from the external installation
+authority:
 
 ```sh
 lenso console operator bootstrap \
@@ -40,102 +121,18 @@ lenso console operator bootstrap \
   --identifier admin@example.com
 ```
 
-In an interactive terminal, the CLI prompts for and confirms the password
-without echoing it. Automation must provide a secret through
-`--password-stdin` or a private regular file through `--password-file`.
+Interactive terminals prompt without echoing the password. Automation must use
+`--password-stdin` or a private regular file through `--password-file`. Do not
+put Service bearer tokens in a browser build.
 
-The command grants only the Console Minimum scopes, verifies the mandatory
-System Registry state, writes append-only audit evidence, and refuses to run
-after an Operator already exists. Restart the Console API and Worker after the
-initial bootstrap. Additional Operators are managed through the Console's
-identity Module.
+For authentication capability boundaries, read
+[Auth Capabilities](/docs/auth-capabilities).
 
-Do not put service bearer tokens in a browser Console build.
+## Operational boundary
 
-For the OIDC production setup, read
-[auth-oidc](/docs/built-in-modules/auth-oidc).
-
-## First checks
-
-When the Console Service is running, open its root URL (locally,
-`http://127.0.0.1:3030/`) and check:
-
-- App Lifecycle: generated services, modules, addons, capability packs, dev
-  doctor status, App Proof drift, App Change Plan status, App Composer
-  requests, and the next operator command.
-- Modules: loaded modules, manifest status, and lint results.
-- Data: schema-admin tables exposed by loaded modules.
-- Actions: admin actions declared by modules.
-- Runtime: function runs, story events, and remote proxy evidence.
-
-This is the fastest way to catch a Module that exists in code but is absent from
-the reviewed System or Console composition.
-
-If the runtime page shows a story, read it as the host's business-level evidence
-graph. [Runtime Stories](/docs/runtime-stories) explains how the title, nodes,
-edges, timeline, and technical operations are produced.
-
-## Launchpad evidence
-
-Generated apps expose local evidence files through read-only host admin
-endpoints:
-
-| Evidence | Written by | Console use |
-| --- | --- | --- |
-| `.lenso/launchpad.json` | `lenso app create`, `lenso app add`, and `lenso app compose` | Services, modules, addons, capability packs, checklist, and next command. |
-| `.lenso/dev-doctor.json` | `lenso dev doctor --write-state` | Local file, command, and optional live readiness checks. |
-| `.lenso/app-proof.json` | `lenso app verify --write-proof` | Generated-state drift, proof checks, and repair command. |
-| `.lenso/app-change-plan.json` | `lenso app plan --write-plan` or `lenso app compose --write-plan` | Safe changes, blocked changes, composer requests, requested packs, proof status, and apply command. |
-
-If App Proof is empty, run `lenso app verify --write-proof` in the generated app
-root. If it is drifted, run `lenso app diff` and preview safe repairs with
-`lenso app repair --dry-run`.
-If App Change Plan is empty, run `lenso app next`, `lenso app explain`,
-`lenso app plan --write-plan`, or `lenso app compose --repo-root . --addon <name>
---write-plan` before applying generated app changes.
-For capability packs, use `lenso app compose --repo-root . --pack <pack-dir>
---write-plan`.
-When the pack comes from the local library, use `lenso capability fit <pack>
---repo-root .` first; Console shows the same pack fit status from the App Change
-Plan.
-
-## Module evidence
-
-For a useful module, expect at least one visible proof point:
-
-| Module capability | Console evidence |
-| --- | --- |
-| Data surface | Rows are readable in Data |
-| Admin action | The action appears with its declared input |
-| Runtime function | Function runs appear after invocation |
-| Service route | Provider calls are recorded after traffic |
-| Console extension | The module-owned page appears in the registry |
-
-## If a module is missing
-
-Check the boring things first:
-
-- Restart the API and worker after `lenso module install`.
-- Run `lenso service doctor <provider> --json` for independently running Services.
-- Run `lenso capability check <pack-dir>` when a composed app is missing a
-  capability pack you expected to see in Launchpad.
-- Confirm the module manifest declares the data, action, route, function, or
-  console surface you expected to see.
-
-## Extension boundary
-
-Module-owned Console UI is declared through `ModuleManifest.console`, bound to
-the same reviewed Module Release, and isolated behind the versioned Console
-Bridge. UI artifacts do not receive host bearer tokens or deep-import Console
-internals.
-
-## Upgrade the Console Service
-
-Plan and apply an immutable Console Service Release through the external CLI:
-
-```sh
-lenso console upgrade --help
-```
-
-Run `lenso console doctor` after installation or upgrade to verify the exact
-release, Store, workload health, and installation evidence.
+- Console reports connected application state; it does not own application
+  composition.
+- Business writes go through declared Business APIs and Surface Grants.
+- Typed management operations execute in their owning Service or Adapter.
+- Production release and deployment remain external to Console.
+- Console outage does not stop Autonomous Service business execution.

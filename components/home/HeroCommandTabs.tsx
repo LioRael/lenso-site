@@ -7,8 +7,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 const heroCommands = [
   {
     id: 'humans',
-    label: 'Compose app',
-    command: 'lenso app compose ./acme-support --blueprint support-desk --apply',
+    label: 'Compose Support Desk',
+    command: 'lenso app compose ./support-desk --blueprint support-desk --apply',
     href: '/docs/product-blueprints',
   },
   {

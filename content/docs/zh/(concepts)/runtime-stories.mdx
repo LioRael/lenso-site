@@ -1,195 +1,98 @@
 ---
 title: Runtime Story
-description: 了解Lenso 的业务级运行时证据模型。
+description: 通过回执绑定的 Story Module Surface 跟踪一条业务流程。
 ---
 
-Runtime Story是 Lenso 对某个企业或运营商的持久记录
-主机内部引起的动作。
+Runtime Story 是一条相关业务流程的 Operator-readable Record。在当前产品模型
+中，Story 由精确 `lenso/platform-story` Module Release 贡献，并由其
+`console_ui_esm` Surface 在 Console 内渲染。
 
-不是要求用户将日志、队列行、代理调用、跟踪拼凑在一起，
-并重试，Lenso 按 `correlation_id` 对相关运行时证据进行分组并显示
-它作为一个Story：请求、模块操作、事件或功能工作、
-Provider 调用、状态及其背后的技术操作。
+Story 不是顶级 Console Workspace、应用总分，也不是浏览器直连 Host 管理路由
+的捷径。
 
-这是Lenso的核心理念之一。Story不仅仅是一个踪迹查看器，而且不是
-只是一个审核日志。这是模块化业务的操作员可读的叙述
-系统。
+## 组合所有权
 
-## Story给出了怎样的答案
+Support Desk 产品验收通过仓库内的 Capability Pack 选择
+`lenso/platform-story`。Runner 构建匹配的 Console Artifact，再把精确 Module
+Release Digest、UI Artifact Digest、Contract Digest 与 Surface Grant 放入已连接
+的 `lenso.system.v2` 拓扑。
 
-当用户创建票证、同步联系人、添加组织成员身份时，
-或运行模块操作，有用的问题是：
+只有这些身份与已连接应用回执一致时，Console 才会加载 Story Surface。UI
+Build、Module Release 或 Business API Contract 发生变化后，需要重新生成匹配的
+组合与连接。
 
-- 发生了什么面向用户的事情？
-- 哪个模块拥有它？
-- 主机是否路由、授权并记录？
-- 它是否排队Outbox或运行时工作？
-- Service Provider 调用成功还是失败？
-- 哪种技术操作可以解释节点缓慢或失败的原因？
+## 浏览器边界
 
-Runtime Story使这些答案在Lenso Console中可见。
-
-## Story是如何构建的
-
-Lenso 不要求模块作者手动构建Story图。主人
-当工作在平台拥有的接口中移动时，记录微小而持久的事实。
-
-|来源 |Story角色|
-| --- | --- |
-| `platform.story_events` |规范化的Story节点，例如 HTTP 请求、管理操作和Provider调用 |
-| `platform.outbox` |已提交的模块事件和调度状态 |
-| `runtime.function_runs` |排队、正在运行、重试、已完成、失败或停止后台工作 |
-| `platform.remote_http_proxy_calls` |进程外模块流量的主机拥有的证据
-|遥测跨度|尽可能将技术操作链接回Story节点|
-
-Lenso Console通过 `/admin/runtime/stories` 读取这些记录并
-呈现：
-
-- 包含标题、状态、持续时间、服务和模式的Story列表项；
-- 带有节点和边的详细图；
-- 运行时工作的时间线项目；
-- 用于诊断的热力图和技术操作视图。
-
-## 分组键
-
-主键是`correlation_id`。
-
-一个传入请求会获取一个请求 id 和相关 id。楼主什么都有
-代表该请求的确实应该保留相同的相关ID。因果关系
-ids 将子节点连接到导致它的节点。
+Story Surface 使用注入的 Typed Host API，并通过同源 Surface Gateway 调用生成
+客户端：
 
 ```text
-POST /v1/support/tickets
-  correlation_id = corr_ticket_123
-  request_id     = req_create_ticket
-
-story nodes:
-  httpreq_req_create_ticket
-  outbox_evt_ticket_created
-  fnrun_support_ticket_escalate
-  remoteproxy_rproxy_notify_crm
+Story console_ui_esm Surface
+  -> generated client
+  -> Console Surface Gateway
+  -> declared Story Business API
 ```
 
-这就是为什么Lenso可以在不耦合每个模块的情况下展示业务级别的Story
-到单个工作流引擎。
+每个请求中，Console Service 都会重新校验：
 
-## 为Story命名
+- 已认证 Console Actor；
+- 精确已连接 System；
+- Module 与 Module Release Identity；
+- UI Artifact 与 Contract Digest；
+- Surface Grant 允许的 Operation ID；
+- 目标 Module 授权。
 
-好的Story名称来自模块元数据。对于普通 HTTP 路由，设置
-`display_name` 为节点，`story_title` 为Story。
+Service Bearer Token 留在服务端。浏览器不会获得 Service Credential，也不会
+获得任意访问记录的通用 Endpoint。
 
-```rust
-use lenso::{ModuleHttpMethod, ModuleHttpRoute};
+## Story 显示什么
 
-let route = ModuleHttpRoute {
-    method: ModuleHttpMethod::Post,
-    path: "/v1/support/tickets".to_owned(),
-    capability: Some("support.tickets.write".to_owned()),
-    display_name: Some("Create ticket".to_owned()),
-    story_title: Some("Support ticket created".to_owned()),
-};
-```
+Story 按稳定 Correlation 与 Causation Identity 对记录分组。Surface 可以展示：
 
-对于运行时函数或其他执行名称，声明 `story_display`
-元数据。
+- 业务标题与直接状态；
+- Policy 允许的发起 Actor 与 Tenant Context；
+- 相关 Module、Service、Event、Function 与 Workflow Node；
+- 因果 Edge 与按时间排序的 Activity；
+- 直接 Failure 细节，而不创建第二套应用总分。
 
-```rust
-use lenso::{ModuleManifest, StoryDisplayDescriptor, StoryDisplaySource};
+技术日志与 Trace 仍由其运行时持有。Story 连接业务流程，但不会取代这些工具，
+也不会重新定义 Service 所有权。
 
-pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("identity")
-        .story_display(vec![StoryDisplayDescriptor {
-            source: StoryDisplaySource::ExecutionName {
-                name: "identity.create_user".to_owned(),
-            },
-            display_name: "Create User".to_owned(),
-            story_title: Some("User Registration".to_owned()),
-        }])
-        .build()
-}
-```
+## 创作建议
 
-TypeScript Service 为其提供的 Module 声明相同的路由元数据。
+Module Author 应当：
 
-```ts
-import { defineModule, defineService, postRoute } from "@lenso/service-kit";
+- 保持 Business Operation ID 与 Capability Name 稳定；
+- 为面向用户的 Operation 提供清晰 Display Name；
+- 传播 Actor、Tenant、Correlation、Causation、Deadline 与 Trace Context；
+- 使用声明的 Event、Function 或 Workflow 承载后续工作；
+- 不在 Story Record 中写入 Secret、Token 或敏感 Payload。
 
-const accountProfile = defineModule({
-  capabilities: ["account_profile.organizations.write"],
-  httpRoutes: [
-    postRoute("/organizations/{id}/memberships", {
-      capability: "account_profile.organizations.write",
-      displayName: "Add membership",
-      storyTitle: "Organization membership added",
-    }),
-  ],
-  name: "account-profile",
-  version: "0.1.0",
-});
+Provider Tier 仍由 Host 持有，可使用 Rust 或 TypeScript。Autonomous Service
+持有其 Rust Runtime 与 Store，并通过 Direct HTTP/gRPC、Event Contract 或
+Durable Workflow 传播同样受限的 Context。参见
+[Service Capability Tiers](/docs/zh/autonomous-services)。
 
-export const manifest = defineService({
-  modules: [accountProfile],
-  name: "account-profile-service",
-  version: "0.1.0",
-});
-```
+## 连接状态与运行状态
 
-如果元数据丢失，Story构建器就会退回到人性化执行
-名称或事件名称。这使页面保持有用，但有意的Story元数据
-对用户来说更好。
+Story Module 与 Surface 的 Connection Projection 可以是 `connected`、
+`unavailable`、`incompatible` 或 `unmanaged`，并带有直接原因。Workload
+Operational State 是独立维度。
 
-## API 形态
+Console 或 Story Surface 不可用时，只影响该视图；已建立的业务执行仍在所属
+Host 或 Autonomous Service 中继续。Console 不会成为 Data Plane 依赖。
 
-Lenso Console调用主机拥有的运行时 API：
+## 产品级验收
+
+从 `lenso-examples` 运行产品级黑盒路径：
 
 ```sh
-curl -sS \
-  -H "Authorization: Bearer $LENSO_DEV_TOKEN" \
-  "http://127.0.0.1:3000/admin/runtime/stories?limit=10" | jq .
-
-curl -sS \
-  -H "Authorization: Bearer $LENSO_DEV_TOKEN" \
-  "http://127.0.0.1:3000/admin/runtime/stories/corr_ticket_123" | jq .
+pnpm acceptance:support-desk
 ```
 
-列表响应包括标题、`correlation_id`、状态、持续时间、
-`node_count`、`error_count`、服务、模式和根错误。细节
-响应包括摘要、节点、边和时间线项。
+真实浏览器无需手工启用即可加载 Support Ticket 与 Story Surface，通过 Surface
+Gateway 执行 Ticket Operation，并校验精确 Receipt、Actor、Tenant、Contract 与
+Operation Identity 在整个流程中保持绑定。
 
-## 创作好Story
-
-将Story质量视为模块质量的一部分：
-
-- 为面向用户的路由提供明确的 `display_name` 和 `story_title`；
-- 保持功能名称稳定，以便Story可以与权限绑定；
-- 在排队工作时保留请求和相关上下文；
-- 使用Outbox事件和运行时函数进行后续工作而不是隐藏
-  副作用；
-- 避免Story元数据中的原始秘密、令牌、密码或敏感负载；
-- 添加一个冒烟检查来触发模块路径并断言Story出现。
-
-冒烟检查可以很简单：
-
-```ts
-await waitFor("account-profile runtime story", async () => {
-  const stories = await fetchJson(`${apiBaseUrl}/admin/runtime/stories?limit=5`);
-  return stories.data?.some(
-    (story) =>
-      story.title === "Organization membership added" &&
-      story.status === "completed" &&
-      story.services?.includes("account-profile")
-  );
-});
-```
-
-## 什么Story不是
-
-Runtime Story不会取代：
-
-- 用于进程级调试的结构化日志；
-- 用于低级延迟分析的分布式跟踪；
-- 合规性特定配置更改的审核历史记录；
-- 用于长期运行的业务编排的工作流定义。
-
-它们位于这些层之上。Story是对“发生了什么”的简洁回答
-业务系统，证据在哪里？”
+System 连接与 Surface 加载参见 [Lenso Console](/docs/zh/runtime-console)；Artifact
+创作参见 [Module Console UI](/docs/zh/console-packages)。

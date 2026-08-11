@@ -3,7 +3,7 @@ import { defineConfig } from "blume";
 export default defineConfig({
   title: "Lenso",
   description:
-    "Build agent-ready Rust business systems as explicit modules, then split stable boundaries into services.",
+    "Compose, run locally, connect, and read status for agent-ready Rust modular applications and microservices.",
   logo: {
     text: "Lenso",
     href: "/",

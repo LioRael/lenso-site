@@ -1,50 +1,49 @@
 ---
 title: Manifest 参考
-description: 了解每个 Lenso 模块公开的可序列化的 ModuleManifest 合约。
+description: 理解每个 Lenso Module 公开的可序列化 ModuleManifest 合约。
 ---
 
-`ModuleManifest` 是模块的纯数据合约。它描述了什么
-主机和 Lenso Console可以看到：路由、管理界面、运行时功能、
-运行时计划、事件、生命周期工作、控制台包、依赖项和
-能力。
+`ModuleManifest` 是 Module 的纯数据合约。它描述 Host 与 Lenso Console 可见的
+Business API Route、Runtime Function、Schedule、Event、Lifecycle Work、Console
+Surface、依赖与 Capability。
 
-可执行的行为并不存在于Manifest中。链接模块附加
-通过 `LinkedBinding` 的行为；Service通过 HTTP 或
-gRPC 协议。这使得每个加载源都产生相同的可序列化
-形态。
+可执行行为不在 Manifest 中。Linked Module 通过 `LinkedBinding` 附加行为；独立
+运行的 Service 公开自己的 Provider API，并声明其提供的 Module。纯 Manifest
+在两种拓扑中都保持可序列化。
 
 ## 最小 Manifest
 
 ```rust
 use lenso::{
-    ConsoleArea, ConsolePackage, ConsoleSurface, ModuleHttpMethod,
-    ModuleHttpRoute, ModuleManifest,
+    ConsoleSurface, ConsoleSurfacePresentation, ModuleHttpMethod,
+    ModuleHttpRoute, ModuleManifest, ModuleRequirement,
 };
 
 pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("billing")
+    ModuleManifest::builder("acme/billing")
         .capabilities(vec![
             "billing.invoice.read".to_owned(),
             "billing.invoice.write".to_owned(),
         ])
-        .dependencies(vec!["auth".to_owned()])
+        .requires(vec![
+            ModuleRequirement::new("lenso/auth", "*").expect("valid requirement"),
+        ])
         .http_routes(vec![ModuleHttpRoute {
             method: ModuleHttpMethod::Get,
             path: "/v1/billing/invoices".to_owned(),
             capability: Some("billing.invoice.read".to_owned()),
             display_name: Some("List invoices".to_owned()),
             story_title: Some("Billing invoices".to_owned()),
+            operation: None,
         }])
         .console(vec![ConsoleSurface {
             name: "billing-invoices".to_owned(),
             label: "Invoices".to_owned(),
-            area: ConsoleArea::Operations,
             route: "/billing/invoices".to_owned(),
-            package: ConsolePackage {
-                name: "@acme/lenso-billing-console".to_owned(),
-                export: "billingConsoleModule".to_owned(),
+            presentation: ConsoleSurfacePresentation::Esm {
+                entry: "invoices".to_owned(),
             },
-            icon: Some("Receipt".to_owned()),
+            icon: Some("receipt".to_owned()),
             required_capabilities: vec!["billing.invoice.read".to_owned()],
             navigation: None,
         }])
@@ -54,29 +53,27 @@ pub fn manifest() -> ModuleManifest {
 
 ## 字段
 
-|领域|目的|
+| 字段 | 用途 |
 | --- | --- |
-| `name` |稳定的模块 ID，例如 `auth`、`billing` 或 `support-ticket`。 |
-| `dependencies` |必须首先安装的其他模块。将此用于硬运行时假设，例如 `auth`。 |
-| `capabilities` |路由、管理界面、运行时工作或控制台页面可以引用的点分隔权限名称。 |
-| `http_routes` |模块拥有的 HTTP 路由元数据。链接模块仍然通过绑定挂载真实的 Axum 路由。Service 路由代理使用此元数据来实现主机可见的路由意图。 |
-| `admin` |架构驱动、声明性自定义或嵌入式自定义操作员界面。 |
-| `runtime` |运行时函数和调度声明。申报是舱单数据；处理程序位于加载源中，并且调度仍由主机拥有。 |
-| `events` |事件处理程序声明。主机通过源绑定注册并调用后备处理程序。 |
-| `lifecycle` |启动检查和激活作业。主机验证并安排这些条目，而不是向模块提供任意启动回调。 |
-| `console` |Lenso Console前端界面由受信任的包或托管包支持。 |
-| `story_display` |时间线和检查界面的控制台Story显示元数据。 |
+| `module_id` | 规范的完全限定 Module ID，例如 `lenso/auth` 或 `acme/billing`。 |
+| `requires` | 必须先安装的完全限定 Module，并显式声明版本要求与可选的所需 Capability。 |
+| `capabilities` | Route、Runtime Work 或 Console Page 可引用的点分隔权限名称。 |
+| `http_routes` | Module 自有 HTTP Route Metadata。Linked Module 通过 Binding 挂载真实 Axum Route；Service-provided Module 保留相同声明。 |
+| `runtime` | Runtime Function 与 Schedule 声明。Handler 位于加载源中，调度仍由 Host 持有。 |
+| `events` | Event Handler 声明。Host 通过 Source Binding 注册并调用后备 Handler。 |
+| `lifecycle` | Startup Check 与 Activation Job。Host 校验并调度这些条目，不向 Module 提供任意 Startup Callback。 |
+| `console` | Declarative 或 ESM Console Surface。可执行 UI 在同一 Module Release 中按摘要绑定，不使用同源 Package Export。 |
+| `story_display` | Timeline 与检查 Surface 使用的 Console Story Display Metadata。 |
 
-## 构建器方法
+## Builder 方法
 
 ```rust
-ModuleManifest::builder("billing")
-    .dependencies(vec!["auth".to_owned()])
+ModuleManifest::builder("acme/billing")
+    .requires(vec![
+        ModuleRequirement::new("lenso/auth", "*").expect("valid requirement"),
+    ])
     .capabilities(vec!["billing.invoice.read".to_owned()])
     .http_routes(vec![/* ModuleHttpRoute */])
-    .admin(/* AdminSchema */)
-    .declarative_admin(/* AdminDeclarativeSurface */)
-    .embedded_admin(/* AdminEmbeddedSurface */)
     .runtime(/* RuntimeSurface */)
     .events(/* EventSurface */)
     .lifecycle(/* LifecycleSurface */)
@@ -85,11 +82,7 @@ ModuleManifest::builder("billing")
     .build();
 ```
 
-使用 `admin`、`declarative_admin` 和 `embedded_admin` 作为替代方案。一个模块
-其Manifest中有一个管理界面；它仍然可以暴露多个控制台
-通过 `console` 的曲面。
-
-## 能力命名
+## Capability 命名
 
 使用点分隔的小写名称：
 
@@ -97,23 +90,22 @@ ModuleManifest::builder("billing")
 <module>.<resource>.<action>
 ```
 
-好的例子：
+推荐示例：
 
 ```text
 billing.invoice.read
 billing.invoice.write
-support.ticket.assign
+support.tickets.assign
 auth.session.revoke
 ```
 
-避免使用 `BillingRead`、`billing/read` 或 `read_invoice` 等名称。显现
-当功能名称不是点分隔的小写字母时，lint 会发出警告，并且它们还会
-当路由或管理权限引用Manifest中的功能时发出警告
-不声明。
+避免 `BillingRead`、`billing/read` 或 `read_invoice`。Capability 名称不是点分隔
+小写格式，或 Route、Console Permission 引用了 Manifest 未声明的 Capability
+时，Manifest Lint 会发出警告。
 
-## 路由元数据
+## Route Metadata
 
-`ModuleHttpRoute` 是元数据：
+`ModuleHttpRoute` 是 Metadata：
 
 ```rust
 ModuleHttpRoute {
@@ -122,20 +114,20 @@ ModuleHttpRoute {
     capability: Some("billing.invoice.write".to_owned()),
     display_name: Some("Void invoice".to_owned()),
     story_title: Some("Invoice voided".to_owned()),
+    operation: None,
 }
 ```
 
-保持这些值对操作员友好：
+保持这些值便于运维人员理解：
 
-- `path` 应该是主机可见的路径。
-- `capability` 应与 `capabilities` 中的值匹配。
-- `display_name` 对于时间轴节点来说应该足够紧凑。
-- 当路由开始商业Story时，`story_title` 应该自然地阅读。
+- `path` 应是 Host 可见路径；
+- `capability` 应匹配 `capabilities` 中的值；
+- `display_name` 应足够紧凑，适合 Timeline Node；
+- Route 开始一段 Business Story 时，`story_title` 应自然可读。
 
-## 运行时调度
+## Runtime Schedule
 
-`RuntimeSurface.schedules` 声明主机何时应将运行时排入队列
-功能：
+`RuntimeSurface.schedules` 声明 Host 何时把 Runtime Function 加入队列：
 
 ```rust
 ScheduledFunctionDeclaration {
@@ -146,44 +138,39 @@ ScheduledFunctionDeclaration {
 }
 ```
 
-时间表使用 5 字段 UTC cron。预定的功能也必须出现在
-`RuntimeSurface.functions`;主机验证该关系并持续存在
-调度状态，并在调度时将正常的 `runtime.function_runs` 入队
-到期的。
+Schedule 使用 5 字段 UTC Cron。该 Function 也必须存在于
+`RuntimeSurface.functions`；Host 会校验关系、持久化 Schedule State，并在到期
+时加入正常 `runtime.function_runs` 队列。
 
-## Lint类别
+## Lint 类别
 
-主机通过模块元数据和 Lenso Console公开 `manifest_lints`
-将它们分为几类：
+Host 通过 Module Metadata 公开 `manifest_lints`，Lenso Console 按以下类别分组：
 
-|类别 |常见问题 |
+| 类别 | 常见问题 |
 | --- | --- |
-| `module` |缺少模块名称。 |
-| `capability` |错误的命名或引用但未声明的功能。 |
-| `routes` |重复的方法/路径、缺少显示元数据或缺少Service 路由功能。 |
-| `admin.schema` |架构为空或缺少读取功能。 |
-| `admin.declarative` |空页、缺少查询值或无效的后备架构引用。 |
-| `admin.embedded` |非 HTTPS 条目 URL、缺少源允许列表或无效的后备权限。 |
-| `runtime` |缺少函数名称、重复函数、错误的队列名称或无效的重试策略。 |
-| `runtime.schedule` |缺少计划名称、无效的 cron 表达式或引用未知函数的计划。 |
-| `events` |缺少事件名称或重复的处理程序名称。 |
-| `lifecycle` |引用未知运行时函数的启动检查或激活作业。 |
-| `console` |重复的路由、缺少标签、无效的包装形态或保留的导航工作区 ID。 |
+| `module` | 缺少 Module 名称。 |
+| `capability` | 命名错误，或引用了未声明的 Capability。 |
+| `routes` | Method/Path 重复、缺少 Display Metadata，或 Remote Route 缺少 Capability。 |
+| `runtime` | 缺少 Function 名称、Function 重复、Queue 名称错误或 Retry Policy 无效。 |
+| `runtime.schedule` | 缺少 Schedule 名称、Cron 无效，或引用未知 Function。 |
+| `events` | 缺少 Event 名称，或 Handler 名称重复。 |
+| `lifecycle` | Startup Check 或 Activation Job 引用了未知 Runtime Function。 |
+| `console` | Route 重复、Label 缺失、Artifact Shape 无效，或使用保留 Navigation Workspace ID。 |
 
-将 `error` lints 视为拦截器。将 `warning` lint 视为操作员体验
-除非页面明确表示该警告对于本地峰值是可以接受的。
+把 `error` Lint 视为阻断项。除非页面明确说明某个本地实验可接受，否则把
+`warning` 视为需要处理的 Operator Experience 问题。
 
-## 何时更改 Manifest
+## 何时修改 Manifest
 
-每当主机或控制台需要新元数据时更改 Manifest：
+当 Host 或 Console 需要新 Metadata 时修改 Manifest：
 
-- 新的公共路由或路由能力；
-- 一个新的数据管理实体；
-- 一个新的模块拥有的控制台页面；
-- 新的运行时函数、调度或事件处理程序；
-- 生命周期启动检查或激活作业；
-- 新的依赖项，例如 `auth`；
-- 将被另一个界面引用的新功能。
+- 新的 Public Route 或 Route Capability；
+- 新的 Business API Operation 或 Operation Capability；
+- 新的 Module-owned Console Page；
+- 新的 Runtime Function、Schedule 或 Event Handler；
+- Lifecycle Startup Check 或 Activation Job；
+- `auth` 等新依赖；
+- 将被另一个 Surface 引用的新 Capability。
 
-更改 Manifest形态后，运行相关的本地检查并打开
-[Lenso Console](/docs/zh/runtime-console) 验证主机可见结果。
+修改 Manifest Shape 后，运行 Owner-local Check，并打开
+[Lenso Console](/docs/zh/runtime-console)检查 Host 可见结果。

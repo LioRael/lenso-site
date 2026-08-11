@@ -1,212 +1,150 @@
 ---
 title: Troubleshooting
-description: Diagnose common host, module install, Console, service, capability pack, and release-check problems.
+description: Diagnose the current Compose, Run locally, Connect, and Status lifecycle.
 ---
 
-Start by separating host state from module state:
+Keep each lifecycle boundary separate. A valid composition does not imply a
+running process, and a running process does not imply a connected Console
+object.
+
+## First checks
 
 ```sh
-git status --short
-lenso module doctor
-curl -sS http://127.0.0.1:3000/api/admin/modules | jq .
+test -f ./support-desk/lenso.app.json
+lenso system dev --system-file ./support-desk/lenso.app.json --dry-run --json
+curl -sS http://127.0.0.1:3030/api/console/v1/system
 ```
 
-If the host is running but the Console does not show the expected module, restart
-both API and worker after install changes.
+The Console request also requires an authenticated actor with
+`console.system.read`.
 
 ## Common symptoms
 
-| Symptom | Check | Fix |
+| Symptom | Check | Action |
 | --- | --- | --- |
-| Console URL is unavailable | `lenso console doctor` and Console workload health | Restore the Console Service or apply a reviewed upgrade. |
-| Console reports `Operator required` | `GET /bootstrap/v1/status` | Run `lenso console operator bootstrap`, then restart Console API and Worker. |
-| Console opens but a managed Module is missing | System Registry and enrollment evidence | Verify the Module Release, Console UI artifact, and managed-Service enrollment. |
-| Service provider is installed but unhealthy | `lenso service doctor <provider> --json` | Start the Service, fix its declared readiness endpoint, or follow the reported recovery action. |
-| App lifecycle next step is unclear | `lenso app next` | Run `lenso app explain` to see generated-state, module, and service actions separately. |
-| Launchpad App Change Plan is empty | `.lenso/app-change-plan.json` | Run `lenso app plan --write-plan` or `lenso app plan --addon <name> --write-plan`. |
-| Capability pack is not shown in Launchpad | `lenso capability check <pack-dir>` | Fix the pack manifest, then rerun `lenso app compose --repo-root . --pack <pack-dir> --write-plan` or `--apply`. |
-| Launchpad App Change Plan is blocked | Console Launchpad plan panel | Review blocked changes; unsupported addons usually mean choosing a supported blueprint or addon. |
-| Launchpad App Proof is empty | `.lenso/app-proof.json` | Run `lenso app verify --write-proof` in the generated app root. |
-| Launchpad App Proof is drifted | `lenso app diff` | Preview safe generated-state repairs with `lenso app repair --dry-run`, then run `lenso app repair` if the plan is right. |
-| A Service installation changed but nothing happens | `lenso service doctor <provider> --json` | Reconcile the Host and follow the reported restart or recovery action. |
-| Auth works locally but sessions are slow | `auth.session_cache` and `REDIS_URL` | Install `auth --profile redis-session-cache` and provide Redis separately. |
-| Redis auth profile fails at runtime | Redis service availability | Start Redis and confirm `REDIS_URL` points at the right database. |
-| CORS blocks browser requests | `CORS_ALLOWED_ORIGINS` | Add the frontend origin or use the generated local defaults. |
-| OTLP exporter errors in local smoke | `OTEL_EXPORTER_OTLP_ENDPOINT` | Unset it for normal local smoke or start observability services. |
-| `just generated-check` fails | git diff | Do not hand-edit generated files. Run `just generate` and commit the generated artifact changes with the source change. |
-| `just release-check` fails on infrastructure | Docker, ports, Postgres | Fix local services first, then rerun the gate. Treat code failures as release blockers. |
+| `lenso.app.json` is missing | Compose output directory and source pack path | Run the compose command again from the directory that owns the pack. |
+| Local startup rejects the composition | `lenso system dev ... --dry-run --json` | Fix the reported digest, binding, workspace, or process declaration before starting. |
+| A business Service cannot enroll | Signed offer and receipt, allowlisted keys, and loopback `baseUrl` | Submit exactly `{offer, receipt, baseUrl}` to the enrollment endpoint. Remote self-service is not supported. |
+| Connect rejects a business Service | Active signed enrollment and advertised Core contract | Correct the Service identity or contract; do not bypass enrollment. |
+| Connect rejects the topology | Topology SHA-256 digest and Management Binding | Submit the exact `lenso.system.v2` document and matching binding. |
+| Local Control Adapter appears unenrolled | Adapter ID and binding | Use `lenso-local-control-adapter` with `workload-control:<system>`; this CLI-owned Adapter does not use business enrollment. |
+| A Module Surface is absent | Module Release, UI artifact, contract, and Surface Grant digests | Reconnect the exact app whose receipt binds all of those identities. |
+| Adapter connection is `unavailable` | Local Control Adapter process and target-owned status endpoint | Restart the local run. Workload observation remains `unknown`; mutation is not queued. |
+| An object is `incompatible` | Protocol, schema, capability, and artifact details in its reason | Align the declared contract and reconnect the same identity. |
+| An object is `unmanaged` | Whether the observed or enrolled object belongs to the current topology and Management Binding | Add it to an intentional future composition or leave it outside this connected System. |
+| Product acceptance cannot find a repository | Sibling checkout names or root override variables | Provide `LENSO_FRAMEWORK_ROOT`, `LENSO_CLI_ROOT`, and `LENSO_CONSOLE_ROOT`. |
+| Product acceptance cannot start PostgreSQL | `initdb`, `postgres`, and `pg_isready` on `PATH` | Install local PostgreSQL binaries or provide a disposable `LENSO_ACCEPTANCE_DATABASE_URL` whose database name contains `acceptance`. |
+| Browser acceptance cannot start | Headless Chrome-compatible browser and installed dependencies | Run `pnpm install --frozen-lockfile`, then retry the explicit acceptance command. |
 
-## Console is unavailable or stale
+## Compose
 
-Inspect the independent installation first:
+The bare Support Desk blueprint contains `auth`, `notification-worker`, and
+`support-api`:
 
 ```sh
-lenso console doctor --help
+lenso app compose ./support-desk --blueprint support-desk --apply
 ```
 
-Plan an immutable Release upgrade when the installed version is stale:
+The Support Ticket and Story Modules come from the acceptance capability pack,
+not from the bare blueprint. Run the full product command from the
+`lenso-examples` repository root; see
+[Product Blueprints](/docs/product-blueprints).
+
+If the source pack path is relative, changing the current directory changes
+what the CLI can resolve. `--apply` writes the generated composition atomically.
+Inspect `support-desk/lenso.app.json` rather than editing it by hand.
+
+## Run locally
+
+Use dry run output to isolate composition and workspace failures without
+starting processes:
 
 ```sh
-lenso console upgrade --help
+lenso system dev --system-file ./support-desk/lenso.app.json --dry-run --json
 ```
 
-Then open the configured Console Service URL. The local source checkout defaults
-to:
+Start only after that command succeeds:
+
+```sh
+lenso system dev --system-file ./support-desk/lenso.app.json
+```
+
+If a previous run still owns the adapter socket or processes, use the bounded
+cleanup entrypoint:
+
+```sh
+lenso system dev --system-file ./support-desk/lenso.app.json --cleanup
+```
+
+Cleanup targets only resources recorded for that local run.
+
+## Connect
+
+For every business Service in the local topology, submit the bilateral signed
+exchange first:
 
 ```text
-http://127.0.0.1:3030/
+POST /api/console/v1/enrollment-receipts
+body: {offer, receipt, baseUrl}
+permission: console.system.connect
 ```
 
-## Module install did not appear
+Console validates both signatures using its server-only allowlist. In the
+current local slice, `baseUrl` must be loopback HTTP. Remote targets require a
+future mTLS and certificate-pinning seam; HTTPS and remote self-service are
+rejected here.
 
-Check the local receipt:
+Then connect:
+
+```text
+POST /api/console/v1/system/connect
+```
+
+The request must carry the exact `lenso.system.v2` topology, its SHA-256 digest,
+and the Management Binding for the same System. Console also checks active
+enrollment and the advertised Core contract. There is no unsigned registry
+write that substitutes for this path.
+
+## Status
+
+```text
+GET /api/console/v1/system
+```
+
+Connection state and Workload operational state are different dimensions:
+
+| Dimension | Objects | Values |
+| --- | --- | --- |
+| Connection projection | System, Service, Module, Surface, Adapter | `connected`, `unavailable`, `incompatible`, `unmanaged` |
+| Workload operation | Workload observation | target-owned states such as `running`, `suspended`, `stopped`, `unknown` |
+
+`unmanaged` describes an observed or enrolled object outside the current
+topology and Management Binding. A business Service declared by the topology
+cannot connect without active enrollment.
+
+When the Local Control Adapter is unavailable, Workload operational state is
+`unknown`. Console rejects control requests immediately; it does not queue,
+reroute, or infer a result from process state.
+
+## Surface opens but business data fails
+
+The browser must call the generated client through Surface Gateway. Confirm
+that the connected receipt binds the exact Module identity, Module Release
+digest, `console_ui_esm` artifact digest, Business API contract digest, and
+allowed operation IDs.
+
+Service credentials remain in Console Service. Do not add credentials to the
+browser or call the business Service directly from the Surface.
+
+## Product acceptance
+
+Run the complete black-box entrypoint explicitly:
 
 ```sh
-cat .lenso/module-installs.json | jq .
+pnpm acceptance:support-desk
 ```
 
-Check the environment written by install:
-
-```sh
-grep -E 'LENSO_MODULE_' .env
-```
-
-Then restart API and worker. Linked module installs can update `Cargo.toml` and
-`src/lib.rs`, so rebuild the host when necessary.
-
-## Service is not ready
-
-Run:
-
-```sh
-lenso service workspace check
-lenso module doctor
-```
-
-Doctor checks declared services in `.lenso/module-services.json` and reports:
-
-- service not configured;
-- service disabled;
-- service ready;
-- manual service not ready;
-- stale host-started state;
-- ready URL not responding.
-
-If the provider is an external service, start it yourself and make sure the
-`readyUrl` responds before starting the host.
-
-## Launchpad App Change Plan
-
-App Change Plan gives operators and agents a reviewable file before generated
-state changes are applied:
-
-```sh
-lenso app plan --write-plan
-lenso app apply .lenso/app-change-plan.json --dry-run
-```
-
-For addon changes, include the addon name:
-
-```sh
-lenso app plan --addon support-sla --write-plan
-```
-
-For multiple addon requests, use App Composer:
-
-```sh
-lenso app compose --repo-root . --addon support-sla --addon customer-profile --write-plan
-lenso app next
-lenso app explain
-```
-
-For capability pack requests, pass the pack directory:
-
-```sh
-lenso capability check ./capabilities/support-sla
-lenso app compose --repo-root . --pack ./capabilities/support-sla --write-plan
-lenso agent task --for-capability support-sla "continue the requested work"
-```
-
-If the plan is blocked, do not apply it. Use the blocked item message and command
-to pick a supported addon or pack, fix the generated state first, or continue
-manually.
-
-## Launchpad App Proof drift
-
-App Proof checks generated control-plane state for product blueprints:
-
-```sh
-lenso app verify --write-proof
-lenso app diff
-lenso app repair --dry-run
-```
-
-Use the dry run output to decide whether repair is appropriate. Repair can
-restore generated Launchpad, workspace, and system entries or missing scaffold
-directories. It does not overwrite existing service source files, and it should
-not delete unknown services.
-
-## Service manifest URL does not respond
-
-Open the manifest directly:
-
-```sh
-curl -sS http://127.0.0.1:4100/lenso/service/v1/manifest | jq .
-```
-
-Then ask the CLI for the provider's exact diagnostic evidence:
-
-```sh
-lenso service doctor billing --json
-```
-
-Fix the declared manifest, readiness URL, credentials, or deployment target
-rather than bypassing the Service installation record.
-
-## Generated artifacts changed
-
-When `just generated-check` fails, inspect the diff:
-
-```sh
-git diff -- contracts generated
-```
-
-If the diff matches your Rust/OpenAPI change, keep it. If it does not, fix the
-source and regenerate:
-
-```sh
-just generate
-just generated-check
-```
-
-## Ports are busy
-
-Change the host port for one shell:
-
-```sh
-HTTP_PORT=3010 lenso serve
-```
-
-For first-user smoke defaults, use:
-
-```sh
-FIRST_USER_SMOKE_HTTP_PORT=3011 \
-FIRST_USER_SMOKE_PROVIDER_ADDR=127.0.0.1:4111 \
-just first-user-smoke
-```
-
-## Release gate fails
-
-Run the smaller checks to find the failing layer:
-
-```sh
-just fmt-check
-just rust-check
-just test
-just generated-check
-just arch-check
-```
-
-If only Docker or Postgres is failing, fix local infrastructure and rerun. If
-formatting, compile, tests, generated contracts, or architecture checks fail,
-treat the failure as release-blocking code work.
+The runner resolves `lenso`, `lenso-cli`, and `lenso-console` as sibling
+checkouts by default, starts disposable PostgreSQL when no acceptance database
+URL is supplied, and cleans its temporary directory. See
+[Examples](/docs/examples) for all prerequisites and overrides.

@@ -6,32 +6,30 @@ import { ThemeSwitcher } from '../components/home/ThemeSwitcher';
 
 const heroDemoFrames = [
   {
-    command: 'lenso app compose ./acme-support --blueprint support-desk --apply',
+    command: 'lenso app compose ./support-desk --blueprint support-desk --apply',
     items: [
-      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'acme-support/', trail: true },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'lenso.system.json' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'lenso.workspace.json' },
-      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: '.lenso/' },
-      { depth: 2, icon: '/lenso-assets/tree-file.svg', label: 'launchpad.json' },
+      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'support-desk/', trail: true },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'lenso.app.json' },
+      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: 'services/' },
+      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: 'modules/' },
     ],
   },
   {
-    command: 'lenso app compose --pack support-sla --apply',
+    command: 'lenso system dev --system-file lenso.app.json',
     items: [
-      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'capabilities/', trail: true },
-      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: 'support-sla/' },
-      { depth: 2, icon: '/lenso-assets/tree-file.svg', label: 'lenso.capability.json' },
-      { depth: 2, icon: '/lenso-assets/tree-folder.svg', label: 'modules/' },
-      { depth: 2, icon: '/lenso-assets/tree-folder.svg', label: 'services/' },
+      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'support-desk/', trail: true },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'support-api · running' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'notification-worker · running' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'lenso-local-control-adapter · running' },
     ],
   },
   {
-    command: 'lenso app verify --write-proof',
+    command: 'GET /api/console/v1/system',
     items: [
-      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: '.lenso/', trail: true },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'app-proof.json' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'dev-doctor.json' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'app-change-plan.json' },
+      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'support-desk/', trail: true },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'support-api · connected' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'auth · connected' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'lenso-local-control-adapter · connected' },
     ],
   },
 ];
@@ -39,92 +37,92 @@ const heroDemoFrames = [
 const lifecycleSteps = [
   {
     index: '1',
-    title: 'Compose from a product blueprint',
-    tag: 'blueprint',
-    text: 'Start from a real product shape with a host, services, modules, local processes, and Launchpad state already connected.',
-    links: [{ label: 'Product Blueprints', icon: '/lenso-assets/lifecycle-starter-host-a.svg' }],
+    title: 'Compose',
+    tag: 'lenso.app.json',
+    text: 'Materialize the exact app revision, artifact digests, dependency selections, and linked or service-backed bindings.',
+    links: [{ label: 'Product Blueprints', icon: '/lenso-assets/runtime-starter-manifest.svg' }],
   },
   {
     index: '2',
-    title: 'Extend with explicit capabilities',
-    tag: 'compose',
-    text: 'Add modules, services, addons, or team-owned capability packs through a reviewable App Change Plan.',
-    links: [{ label: 'Capability Packs', icon: '/lenso-assets/lifecycle-chat-sdk.svg' }],
+    title: 'Run locally',
+    tag: 'system dev',
+    text: 'Run the app through lenso system dev with its declared processes and Local Control Adapter—no cluster required.',
+    links: [{ label: 'System Sandbox', icon: '/lenso-assets/runtime-starter-models.svg' }],
   },
   {
     index: '3',
-    title: 'Verify the generated system',
-    tag: 'app proof',
-    text: 'Doctor, App Proof, contracts, checks, and Console turn generated state into evidence humans and agents can review.',
-    links: [{ label: 'Console', icon: '/lenso-assets/lifecycle-runtime-console-a.svg' }],
+    title: 'Connect',
+    tag: 'system connection',
+    text: 'Submit signed local Service enrollment, then the exact topology and Management Binding. Console observes the app; it does not deploy or adopt it.',
+    links: [{ label: 'Console', icon: '/lenso-assets/runtime-console-card.svg' }],
   },
   {
     index: '4',
-    title: 'Evolve stable boundaries into services',
-    tag: 'service system',
-    text: 'Keep one deployable app while boundaries are changing, then move selected capabilities into independently delivered services.',
-    links: [{ label: 'Service System', icon: '/lenso-assets/lifecycle-starter-host-b.svg' }],
+    title: 'Status',
+    tag: 'connected',
+    text: 'Read direct connection state for each System object, then inspect and control supported local Workloads through their separate operational state.',
+    links: [{ label: 'System status', icon: '/lenso-assets/feature-console.svg' }],
   },
 ];
 
 const lifecyclePanels = [
   {
-    folder: '.lenso/',
-    file: 'launchpad.json',
-    lines: ['{', '"blueprint": "support-desk"', '"services": ["api", "notifications"]', '"nextCommand": "lenso dev up"'],
-  },
-  {
-    folder: 'capabilities/support-sla/',
-    file: 'lenso.capability.json',
-    lines: ['{', '"name": "support-sla"', '"modules": ["sla-policy"]', '"services": ["notifications"]'],
-  },
-  {
-    folder: '.lenso/',
-    file: 'app-proof.json',
-    lines: ['{', '"status": "verified"', '"generatedState": "current"', '"doctor": "passing"'],
-  },
-  {
     folder: './',
-    file: 'lenso.system.json',
-    lines: ['{', '"services": ["host", "notifications"]', '"modules": ["tickets", "sla-policy"]', '"contracts": "explicit"'],
+    file: 'lenso.app.json',
+    lines: ['{', '"revision": 1', '"contentDigest": "sha256:…"', '"modules": [ … ]'],
+  },
+  {
+    folder: '$',
+    file: 'lenso system dev',
+    lines: ['{', '"systemId": "support-desk"', '"adapter": "lenso-local-control-adapter"', '"state": "running"'],
+  },
+  {
+    folder: 'POST',
+    file: '/api/console/v1/system/connect',
+    lines: ['{', '"systemId": "support-desk"', '"topologyDigest": "sha256:…"', '"managementBinding": { … }'],
+  },
+  {
+    folder: 'GET',
+    file: '/api/console/v1/system',
+    lines: ['{', '"status": "connected"', '"services": [ … ]', '"modules": [ … ]'],
   },
 ];
 
 const runtimeCards = [
   {
     title: 'Generated app',
-    text: 'A runnable host, service workspace, system graph, and Launchpad state from one product blueprint.',
-    icon: '/lenso-assets/runtime-release-checks.png',
-  },
-  {
-    title: 'Module manifest',
-    text: 'Explicit routes, data, actions, lifecycle, dependencies, and console surfaces.',
-    icon: '/lenso-assets/runtime-starter-models.svg',
-  },
-  {
-    title: 'Capability packs',
-    text: 'Reusable product slices that can carry modules, services, docs, and agent context.',
+    text: 'One content-bound selection of Module Releases, dependencies, and implementation bindings.',
     icon: '/lenso-assets/runtime-starter-manifest.svg',
   },
   {
+    title: 'Module manifest',
+    text: 'Explicit Business API operations, runtime behavior, dependencies, and Console Surfaces.',
+    icon: '/lenso-assets/runtime-starter-models.svg',
+  },
+  {
+    title: 'Business API',
+    text: 'Generated clients call declared module operations through scoped Surface Grants.',
+    icon: '/lenso-assets/brand-api.svg',
+  },
+  {
     title: 'Console',
-    text: 'Inspect App Lifecycle, modules, service state, runtime stories, and operational evidence.',
+    text: 'Connect an exact System, load receipt-bound Surfaces, and report direct object states.',
     icon: '/lenso-assets/runtime-console-card.svg',
   },
   {
-    title: 'Agent rails',
-    text: 'Bounded planning, generation, checks, proof, and concrete next actions.',
-    icon: '/lenso-assets/runtime-proof-skills.svg',
+    title: 'Service tiers',
+    text: 'Provider and Autonomous Service contracts make ownership and language support explicit.',
+    icon: '/lenso-assets/feature-contract.svg',
   },
 ];
 
 const runtimeChannels = [
-  'App Lifecycle',
-  'System Graph',
-  'Service Workspace',
-  'App Proof',
-  'Console',
-  'Capability Packs',
+  'App Composition',
+  'System Connection',
+  'Service Status',
+  'Workload Status',
+  'Console Surfaces',
+  'Surface Grants',
   'Module Manifests',
   'Runtime Stories',
   'Service Contracts',
@@ -135,44 +133,44 @@ const channelRows = [
   [
     { label: 'Product Blueprints', icon: '/lenso-assets/brand-api.svg', iconWidth: 23 },
     { label: 'Console', icon: '/lenso-assets/runtime-console-card.svg' },
-    { label: 'App Proof', icon: '/lenso-assets/feature-contract.svg' },
-    { label: 'Launchpad', icon: '/lenso-assets/feature-evidence.svg' },
+    { label: 'App Composition', icon: '/lenso-assets/feature-contract.svg' },
+    { label: 'System Status', icon: '/lenso-assets/feature-console.svg' },
   ],
   [
     { label: 'Capability Packs', icon: '/lenso-assets/runtime-starter-manifest.svg' },
-    { label: 'Service System', icon: '/lenso-assets/lifecycle-release-checks.svg' },
-    { label: 'Module Contracts', icon: '/lenso-assets/feature-proof.svg' },
+    { label: 'Service System', icon: '/lenso-assets/runtime-starter-models.svg' },
+    { label: 'Module Contracts', icon: '/lenso-assets/feature-contract.svg' },
   ],
   [
-    { label: 'Doctor', icon: '/lenso-assets/lifecycle-release-checks.svg' },
-    { label: 'Change Plans', icon: '/lenso-assets/feature-contract.svg' },
-    { label: 'Runtime Stories', icon: '/lenso-assets/lifecycle-starter-host-a.svg' },
-    { label: 'Agent Skills', icon: '/lenso-assets/runtime-proof-skills.svg' },
-    { label: 'Delivery', icon: '/lenso-assets/runtime-release-checks.png' },
+    { label: 'Business APIs', icon: '/lenso-assets/brand-api.svg' },
+    { label: 'Surface Grants', icon: '/lenso-assets/feature-contract.svg' },
+    { label: 'Runtime Stories', icon: '/lenso-assets/runtime-starter-models.svg' },
+    { label: 'Agent Skills', icon: '/lenso-assets/runtime-starter-manifest.svg' },
+    { label: 'Workload Control', icon: '/lenso-assets/feature-console.svg' },
   ],
 ];
 
-const proofRows = [
-  ['app_plan', -0.1875, 9],
-  ['doctor', 5.75, 8],
-  ['contract_check', 68.765625, 35],
-  ['app_proof', 224.328125, 8],
-  ['delivery_gate', 218.7109375, 63],
+const statusRows = [
+  ['compose', -0.1875, 9],
+  ['run_local', 5.75, 8],
+  ['connect', 68.765625, 35],
+  ['status', 224.328125, 8],
+  ['control', 218.7109375, 63],
 ] as const;
 
-const proofAxisWidth = 287.609375;
+const statusAxisWidth = 287.609375;
 
 const agentRows = [
-  ['blueprint: support-desk', 'Ready', 'app'],
-  ['capability: support-sla', 'Ready', 'pack'],
-  ['change plan', 'Review', 'plan'],
-  ['module contracts', 'Verified', 'check'],
-  ['doctor state', 'Verified', 'proof'],
-  ['app proof', 'Verified', 'json'],
+  ['app: support-desk', 'Composed', 'json'],
+  ['system: support-desk', 'Running', 'local'],
+  ['console', 'Connected', 'system'],
+  ['module contracts', 'Current', 'lock'],
+  ['surface: support-tickets', 'Connected', 'module'],
+  ['service: support-suite-provider', 'Running', 'service'],
   ['runtime stories', 'Running', 'live'],
-  ['service delivery', 'Queued', 'gate'],
-  ['generated drift', 'Clear', 'diff'],
-  ['next action', 'Ready', 'agent'],
+  ['local control', 'Connected', 'adapter'],
+  ['workload', 'Running', 'state'],
+  ['next action', 'Available', 'agent'],
 ];
 
 const featureCards = [
@@ -183,12 +181,12 @@ const featureCards = [
   },
   {
     title: 'Explicit contracts',
-    text: 'Routes, actions, data, events, service dependencies, and operator surfaces stay named and inspectable.',
-    icon: '/lenso-assets/feature-evidence.svg',
+    text: 'Business APIs, events, service dependencies, and operator surfaces stay named and inspectable.',
+    icon: '/lenso-assets/feature-contract.svg',
   },
   {
-    title: 'Verification loop',
-    text: 'Plans, Doctor, App Proof, contract checks, and Console make generated changes reviewable.',
+    title: 'Public lifecycle',
+    text: 'Compose, Run locally, Connect, and Status keep every developer and operator on the same path.',
     icon: '/lenso-assets/feature-channel.svg',
   },
   {
@@ -198,31 +196,31 @@ const featureCards = [
   },
   {
     title: 'Console',
-    text: 'See App Lifecycle, installed modules, service state, runtime stories, data surfaces, and delivery evidence.',
+    text: 'See the connected System, module Surfaces, direct object states, runtime stories, and local workload operations.',
     icon: '/lenso-assets/feature-console.svg',
   },
   {
     title: 'Service-ready evolution',
     text: 'Build modular first, then move stable boundaries into independently delivered services without rewriting the product model.',
-    icon: '/lenso-assets/feature-proof.svg',
+    icon: '/lenso-assets/feature-contract.svg',
   },
 ];
 
 const footerColumns: Array<[string, Array<[string, string]>]> = [
   ['Start', [['Overview', '/docs'], ['Quickstart', '/docs/quickstart'], ['Product Blueprints', '/docs/product-blueprints'], ['CLI Reference', '/docs/cli-reference']]],
-  ['Build', [['Host Composition', '/docs/host-composition'], ['Module Authoring', '/docs/module-authoring'], ['Module Installation', '/docs/module-installation'], ['Console Packages', '/docs/console-packages']]],
-  ['Extend', [['Capability Surfaces', '/docs/admin-surfaces'], ['Autonomous Services', '/docs/autonomous-services'], ['Service System', '/docs/service-system-plane'], ['Auth Capabilities', '/docs/auth-capabilities']]],
-  ['Operate', [['Console', '/docs/runtime-console'], ['Reliability', '/docs/reliability-and-recovery'], ['Observability', '/docs/observability'], ['Deployment', '/docs/deployment']]],
-  ['Concepts', [['Platform Concepts', '/docs/platform-concepts'], ['Runtime Stories', '/docs/runtime-stories'], ['Service System', '/docs/service-system-plane'], ['Autonomous Services', '/docs/autonomous-services']]],
-  ['Agents', [['Agent Development', '/docs/agent-development'], ['Contracts and Checks', '/docs/contracts-and-checks'], ['Checks and Release', '/docs/checks-and-release'], ['API Clients', '/docs/api-clients']]],
-  ['Reference', [['Manifest Reference', '/docs/manifest-reference'], ['Architecture', '/docs/architecture'], ['API Reference', '/docs/api'], ['Troubleshooting', '/docs/troubleshooting']]],
-  ['Modules', [['Built-in Modules', '/docs/built-in-modules'], ['Module Catalogs', '/docs/module-catalogs'], ['Admin Surfaces', '/docs/admin-surfaces'], ['Runtime Lifecycle', '/docs/runtime-lifecycle']]],
+  ['Build', [['Product Blueprints', '/docs/product-blueprints'], ['Module Authoring', '/docs/module-authoring'], ['Business API Surfaces', '/docs/admin-surfaces'], ['Module Console UI', '/docs/console-packages']]],
+  ['Extend', [['Business API Surfaces', '/docs/admin-surfaces'], ['Service Capability Tiers', '/docs/autonomous-services'], ['Service System', '/docs/service-system-plane'], ['Auth Capabilities', '/docs/auth-capabilities']]],
+  ['Operate', [['Console', '/docs/runtime-console'], ['Service System', '/docs/service-system-plane'], ['Troubleshooting', '/docs/troubleshooting'], ['Examples', '/docs/examples']]],
+  ['Concepts', [['Platform Concepts', '/docs/platform-concepts'], ['Runtime Stories', '/docs/runtime-stories'], ['Service System', '/docs/service-system-plane'], ['Service Capability Tiers', '/docs/autonomous-services']]],
+  ['Agents', [['Agent Development', '/docs/agent-development'], ['Contracts and Checks', '/docs/contracts-and-checks'], ['Service System', '/docs/service-system-plane'], ['Examples', '/docs/examples']]],
+  ['Reference', [['Manifest Reference', '/docs/manifest-reference'], ['Service Capability Tiers', '/docs/autonomous-services'], ['API Reference', '/docs/api'], ['Troubleshooting', '/docs/troubleshooting']]],
+  ['Modules', [['Module Authoring', '/docs/module-authoring'], ['Module Console UI', '/docs/console-packages'], ['Business API Surfaces', '/docs/admin-surfaces'], ['Runtime Lifecycle', '/docs/runtime-lifecycle']]],
   ['Community', [['GitHub', 'https://github.com/LioRael/lenso'], ['Issues', 'https://github.com/LioRael/lenso/issues'], ['Discussions', 'https://github.com/LioRael/lenso/discussions'], ['Examples', 'https://github.com/LioRael/lenso-examples']]],
 ];
 
 const newLabels = new Set([
   'Product Blueprints',
-  'Autonomous Services',
+  'Service Capability Tiers',
   'Agent Development',
 ]);
 
@@ -287,8 +285,8 @@ function Hero() {
         <HeroCommandTabs />
 
         <p className="ml-6 mt-6 max-w-[601px] text-lg leading-7 text-[var(--site-muted)] max-[1199px]:max-w-[559px] max-[900px]:ml-0 max-[900px]:!max-w-none max-[560px]:text-base max-[560px]:leading-7">
-          Lenso is the modular app framework for composing real product shapes,
-          verifying every change, and evolving stable boundaries into services.
+          Lenso is the Rust modular application and microservice framework for
+          composing a real product, running it locally, and evolving stable boundaries.
         </p>
 
         <div
@@ -428,8 +426,8 @@ function LifecycleSection() {
     <section className="mx-auto max-w-[1392px] py-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none">
       <div data-lifecycle>
         <SectionIntro
-          copy="Start with a product blueprint, add reusable business capabilities, verify the generated system, and split services only when their boundaries are ready."
-          title="From product blueprint to running system"
+          copy="Materialize one app composition, run it through the public local entrypoint, connect its exact topology to Console, and read direct object status."
+          title="Compose, Run locally, Connect, Status"
         />
 
         <div className="mt-11 grid grid-cols-[566px_684px] justify-between gap-12 max-[1100px]:grid-cols-[minmax(0,1fr)_minmax(0,520px)] max-[900px]:grid-cols-1">
@@ -498,7 +496,7 @@ function RuntimePrimitiveSection() {
   return (
     <section className="mx-auto min-h-[588px] max-w-[1392px] pt-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:min-h-[664px] max-[900px]:min-h-[1132px] max-[560px]:!min-h-0 max-[560px]:pt-16">
       <SectionIntro
-        copy="App Composer, module manifests, service contracts, Console, and agent workflows all read from the same explicit system model."
+        copy="App Composer, module manifests, service contracts, Console, and agent workflows all read the same explicit system model."
         title="One system model across app, module, service, and agent"
       />
 
@@ -538,10 +536,10 @@ function RuntimePrimitiveSection() {
 
           <div className="relative min-h-[268px] rounded-xl border border-transparent p-5">
             <p className="font-mono text-sm font-medium uppercase leading-5 text-[var(--site-ink)]">
-              Evidence
+              System status
             </p>
             <p className="mt-1 text-sm leading-5 text-[var(--site-muted)]">
-              Where the same facts become reviewable and actionable.
+              Where the same facts remain observable and actionable.
             </p>
             <div className="relative mt-4 min-h-[190px] flex-1 overflow-hidden rounded-lg bg-[var(--site-surface)] p-4 shadow-[var(--site-shadow-control)]">
               <div
@@ -561,7 +559,7 @@ function RuntimePrimitiveSection() {
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium leading-5 text-[var(--site-ink)]">
-                    App Lifecycle
+                    Connected System
                   </p>
                   <div className="mt-2 grid grid-cols-2 gap-y-0 text-sm leading-[22px] text-[var(--site-ink)]">
                     {runtimeChannels.map((channel) => (
@@ -621,11 +619,11 @@ function ConsoleShowcaseSection() {
         data-scroll-reveal
       >
         <h2 className="w-[560px] max-w-full text-[40px] font-normal leading-[48px] text-[var(--site-ink)] max-[560px]:text-[32px] max-[560px]:leading-[38px]">
-          Console turns system state into evidence
+          Console reports the connected System
         </h2>
         <p className="max-w-[566px] text-lg leading-7 text-[var(--site-muted)]">
-          Inspect what the host actually loaded, catch readiness gaps, review App Proof, and copy
-          the next concrete command from one operator workspace.
+          Inspect the exact topology, load receipt-bound Module Surfaces, read direct object
+          status, and invoke only supported local workload operations.
         </p>
       </div>
 
@@ -635,38 +633,19 @@ function ConsoleShowcaseSection() {
       >
         <p>
           <span className="block font-medium text-[var(--site-ink)]">See the whole app</span>
-          Services, modules, addons, and capability packs.
+          Services, modules, Workloads, Adapters, and capability bindings.
         </p>
         <p>
           <span className="block font-medium text-[var(--site-ink)]">Find the gap</span>
-          Doctor, drift, blocked plans, and missing proof.
+          Every unavailable, incompatible, or unmanaged connection projection includes a direct reason.
         </p>
         <p>
           <span className="block font-medium text-[var(--site-ink)]">Take the next step</span>
-          Commands and evidence that humans and agents can review.
+          Browser actions use Console Service and never receive direct Service credentials.
         </p>
       </div>
 
-      <Link
-        aria-label="Explore the Console documentation"
-        className="mt-12 block overflow-hidden rounded-xl border border-[var(--site-border)] bg-[var(--site-surface)] shadow-[var(--site-shadow-control)] transition-transform duration-300 hover:-translate-y-1 max-[560px]:mt-8"
-        data-scroll-reveal
-        href="/docs/runtime-console"
-      >
-        <Image
-          alt="Lenso Console App Lifecycle view showing services, modules, Doctor checks, App Proof, and next actions"
-          className="block h-auto w-full"
-          height={1200}
-          loading="lazy"
-          src="/lenso-assets/console/app-lifecycle.png"
-          width={1920}
-        />
-      </Link>
-      <p className="mt-3 text-sm leading-5 text-[var(--site-muted)]">
-        App Lifecycle in Console — the generated app, its readiness, proof, and next action in one view.
-      </p>
-
-      <div className="mt-10 grid grid-cols-2 gap-8 max-[760px]:grid-cols-1" data-scroll-reveal>
+      <div className="mt-12 grid grid-cols-2 gap-8 max-[760px]:grid-cols-1" data-scroll-reveal>
         <div>
           <Link
             aria-label="Explore Runtime Stories documentation"
@@ -689,9 +668,9 @@ function ConsoleShowcaseSection() {
 
         <div>
           <Link
-            aria-label="Explore observability documentation"
+            aria-label="Explore Console status documentation"
             className="block overflow-hidden rounded-xl border border-[var(--site-border)] bg-[var(--site-surface)] shadow-[var(--site-shadow-control)] transition-transform duration-300 hover:-translate-y-1"
-            href="/docs/observability"
+            href="/docs/runtime-console"
           >
             <Image
               alt="Runtime Overview showing queue pressure, recent activity, failures, and dead letters"
@@ -715,7 +694,7 @@ function SystemsSection() {
   return (
     <section className="mx-auto min-h-[965px] max-w-[1392px] pb-[120px] pt-[168px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:min-h-[1103px] max-[900px]:min-h-[2359px] max-[560px]:!min-h-0 max-[560px]:pb-16 max-[560px]:pt-24">
       <SectionIntro
-        copy="Lenso gives humans and coding agents bounded plans, explicit contracts, recoverable changes, and evidence instead of hidden framework magic."
+        copy="Lenso gives humans and coding agents explicit contracts, bounded actions, direct status, and recoverable local operations instead of hidden framework magic."
         title="Built to make change reviewable"
         titleWidth="w-[560px]"
       />
@@ -725,7 +704,7 @@ function SystemsSection() {
         data-scroll-reveal
       >
         <div>
-          <ProofChart />
+          <StatusChart />
           <div className="pr-3">
             <FeatureCard card={featureCards[0]} />
           </div>
@@ -752,11 +731,11 @@ function SystemsSection() {
   );
 }
 
-function ProofChart() {
+function StatusChart() {
   return (
     <div className="mb-6 h-[261px] rounded-l-sm border border-[var(--site-border)] p-5 font-mono text-xs leading-4 text-[var(--site-ink)] max-[560px]:h-40">
       <div className="flex h-full flex-col justify-center gap-2.5">
-        {proofRows.map(([label, left, width]) => (
+        {statusRows.map(([label, left, width]) => (
           <div className="grid grid-cols-[122px_1fr] items-center gap-3" key={label}>
             <span>{label}</span>
             <span className="relative h-6">
@@ -766,8 +745,8 @@ function ProofChart() {
               <span
                 className="absolute top-0.5 h-5 rounded border border-[var(--site-success-border)] bg-[var(--site-success-bg)]"
                 style={{
-                  left: `${(left / proofAxisWidth) * 100}%`,
-                  width: `${(width / proofAxisWidth) * 100}%`,
+                  left: `${(left / statusAxisWidth) * 100}%`,
+                  width: `${(width / statusAxisWidth) * 100}%`,
                 }}
               />
             </span>
@@ -789,7 +768,7 @@ function AgentTable() {
           >
             <span className="overflow-hidden text-ellipsis whitespace-nowrap">{agent}</span>
             <span className="flex items-center gap-2">
-              <span className={`h-2 w-2 rounded-full ${['Ready', 'Verified', 'Running', 'Clear'].includes(status) ? 'bg-[var(--site-success)]' : 'bg-[var(--site-faint)]'}`} />
+              <span className={`h-2 w-2 rounded-full ${['Composed', 'Current', 'Running', 'Connected'].includes(status) ? 'bg-[var(--site-success)]' : 'bg-[var(--site-faint)]'}`} />
               {status}
             </span>
             <span className="text-[var(--site-muted)]">{size}</span>
@@ -863,7 +842,7 @@ function CtaSection() {
         data-scroll-reveal
       >
         <h2 className="max-w-[540px] text-[40px] font-normal leading-[48px] text-[var(--site-ink)] max-[560px]:text-[32px] max-[560px]:leading-[38px]">
-          Compose a real product app, then grow it safely.
+          Compose, Run locally, Connect, Status.
         </h2>
         <Link
           className="mt-1 inline-flex h-12 w-[121px] items-center justify-center rounded-full bg-[var(--site-ink)] px-3 text-base font-medium leading-6 text-[var(--site-inverse)]"

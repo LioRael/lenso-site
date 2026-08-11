@@ -1,58 +1,85 @@
 ---
 title: 从这里开始
-description: 选择适合你的 Lenso 路径，并运行一个可验证的本地系统。
+description: 组合 Lenso 应用、在本地运行、连接 Console，并读取精确的 System 状态。
 ---
 
-Lenso 是面向 Rust 业务系统的 Agent-ready 模块化应用框架。
+Lenso 是面向 Rust 业务系统的 Agent-ready 模块化应用与微服务框架。
+先建立一个明确的应用组合，把业务能力保留为 Linked Module 或
+Provider-backed Module；只有边界需要独立所有权时，才迁移为
+Autonomous Service。
 
-从一个可部署的后端开始，按业务能力加入模块，再通过 Lenso Console
-验证系统事实。只有当所有权、数据和运维边界真正稳定后，才把某个模块拆成
-独立服务。
+公开开发生命周期只有四步。
 
-:::note
-中文站已覆盖全部指南、概念、运维文档和 API 参考。命令、代码标识符、
-HTTP 路径与协议名称保留原文，便于直接复制并与源码对应。
-:::
+## Compose（组合）
 
-## 选择你的路径
+从产品蓝图生成唯一的 `lenso.app.json`：
+
+```sh
+lenso app compose ./support-desk --blueprint support-desk --apply
+```
+
+Bare Blueprint 选择 `auth`、`notification-worker` 与 `support-api`。生成文件
+绑定应用修订、制品摘要、依赖选择，以及 Linked 或 Service-backed Module
+实现。它就是应用组合与锁；不要手工把进程命令复制进去。Support Ticket 与
+Story 产品链由 Pack-backed [Support Desk 验收](/docs/zh/examples)覆盖。
+
+## Run locally（本地运行）
+
+通过公开 CLI 启动声明的 System 和 Local Control Adapter：
+
+```sh
+cd support-desk
+lenso system dev --system-file lenso.app.json
+```
+
+本地开发不需要 Kubernetes。生产发布和部署由外部交付系统持有，
+不属于 Console 权限。
+
+## Connect（连接）
+
+独立运行 Console Service，提交已签名的本地 Service Enrollment Receipt，然后通过
+经过认证的 Connect System API 提交精确拓扑与 Management Binding。Console 记录连接，并自动组合与回执绑定的
+`console_ui_esm` Module Surface。它不会创建、部署、接管、删除、发布或修复
+Workload。
+
+服务端连接边界和浏览器流程请继续阅读
+[Lenso Console](/docs/zh/runtime-console)。
+
+## Status（状态）
+
+在 Console 中读取已连接的 System。System、Service、Module、Surface 与
+Adapter Projection 显示 `connected`、`unavailable`、`incompatible` 或
+`unmanaged`，需要处理时会给出直接原因。Workload Operational State 是独立
+维度；控制 Adapter 不可用时，Workload Observation 为 `unknown`，变更会被
+拒绝且不排队、不回退。
+
+## 选择开发路径
 
 <CardGroup>
-  <Card title="快速开始" href="/docs/zh/quickstart" description="安装 CLI，创建应用并运行 API、Worker 与 Service；Console 独立安装。" />
-  <Card title="开发模块" href="/docs/zh/module-authoring" description="声明模块数据、路由、操作、运行时函数和 Console 界面。" />
-  <Card title="Lenso Console" href="/docs/zh/runtime-console" description="检查模块、数据、操作、Runtime Story 和发布证据。" />
-  <Card title="API 参考" href="/docs/zh/api" description="浏览由 OpenAPI 合约生成的接口和代码示例。" />
+  <Card title="Host 快速开始" href="/docs/zh/quickstart" description="通过受支持的公开生命周期组合并运行一个本地应用。" />
+  <Card title="产品蓝图" href="/docs/zh/product-blueprints" description="生成具备产品形态的 lenso.app.json，并理解其中锁定的选择。" />
+  <Card title="Module 开发" href="/docs/zh/module-authoring" description="使用明确的 Business API 与 Console Surface 构建 Linked 业务能力。" />
+  <Card title="Service Capability Tiers" href="/docs/zh/autonomous-services" description="选择准确的 Provider 或 Autonomous Service 能力层级与支持语言。" />
+  <Card title="示例" href="/docs/zh/examples" description="通过公开入口运行 Support Desk 产品级验收。" />
+  <Card title="API 参考" href="/docs/zh/api" description="浏览从 framework 权威合约源同步的 API 参考。" />
 </CardGroup>
 
-## 第一次使用
+## 核心边界
 
-1. 阅读[快速开始](/docs/zh/quickstart)，创建一个可运行的 Lenso 应用。
-2. 启动独立的 Console Service，并确认 System composition 与运行时证据可见。
-3. 阅读[模块开发](/docs/zh/module-authoring)，加入第一个业务能力。
-4. 使用项目提供的检查命令验证代码、合约和生成产物。
+- **Module 保持业务身份。** 能力可以 Linked 交付，也可以由 Service 提供，
+  不需要改名。
+- **Business API 保持强类型。** Module Surface 使用生成客户端和精确的
+  Surface Grant 调用声明的操作。
+- **Console 是 System Plane。** 它报告当前状态并调用目标持有的受支持操作，
+  不是部署平面。
+- **Rust 支持两个服务层级。** TypeScript 当前只支持 Provider 开发；详见
+  [Service Capability Tiers](/docs/zh/autonomous-services)。
+- **只拆分稳定边界。** Autonomous Service 持有自己的运行时、存储、身份与
+  运维，不是默认起点。
 
-## 按目标查找文档
+## 安装
 
-- 创建产品形态的应用：[Product Blueprints](/docs/zh/product-blueprints)
-- 配置环境变量、CORS、Redis 和遥测：[Configuration](/docs/zh/configuration)
-- 理解 Host 与模块组合：[Host Composition](/docs/zh/host-composition)
-- 安装和管理模块：[Module Installation](/docs/zh/module-installation)
-- 设计独立 Service 边界：[Autonomous Services](/docs/zh/autonomous-services)
-- 理解运行时证据模型：[Runtime Stories](/docs/zh/runtime-stories)
-- 准备单区域 GA：[Single-Region GA](/docs/zh/single-region-ga)
-- 可靠性与恢复：[Reliability and Recovery](/docs/zh/reliability-and-recovery)
-- Agent 辅助开发：[Agent Development](/docs/zh/agent-development)
-
-## 核心原则
-
-- **模块优先。** 一个部署单元内保持清晰的业务边界。
-- **Host 持有策略。** Host 负责模块装载、身份、运行时调度和证据聚合。
-- **合约可提交。** OpenAPI、事件、错误和运行时合约与代码一起评审。
-- **先证明，再发布。** “能够启动”不等于完成；Lenso Console 与检查结果才是可复核证据。
-- **按需拆分。** 只有真实的所有权和运维需求出现时，才迁移为 Autonomous Service。
-
-## 安装入口
-
-- Rust Module 与 Host 使用当前 `lenso` facade。
+- Rust Module 与 Host 声明使用当前 `lenso` facade。
 - `@lenso/cli` 与 `lenso-cli` 都提供 `lenso` 命令。
-- TypeScript Service 使用 `@lenso/service-kit`。
+- TypeScript Provider 使用 `@lenso/service-kit`。
 - Lenso Console 使用 `lenso console install` 独立安装。

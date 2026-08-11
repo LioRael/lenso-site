@@ -1,172 +1,110 @@
 ---
 title: Host 快速开始
-description: 创建 Launchpad 应用或 Lenso Host，并在本地运行完整系统。
+description: 组合 Support Desk、在本地运行、连接 Console，并检查精确状态。
 ---
 
-当你需要一个能够加载 Module 并运行 Service 进程的本地 Lenso 应用时，
-从这里开始。Lenso Console 是独立运行的 Service。
-
-完成本页后，你将拥有：
-
-- 一个生成的 service-ready 应用或空白 Host
-- 可选的业务能力包
-- 本地 Postgres
-- API 与 Worker 进程
-- 用于运维工作流的独立 Console Service
+本快速开始完整使用公开 Lenso 生命周期：创建唯一的应用组合，通过 System
+Sandbox 在本地运行，把它连接到独立 Console Service，然后检查每个对象的
+直接状态。
 
 ## 前置条件
 
 - Rust 与 Cargo
-- 用于运行本地 Postgres 的 Docker
-- 可以持续运行服务进程的终端
+- Support Desk Provider 使用的 Node.js 与 pnpm
+- 用于本地 Postgres 的 Docker
+- 能持续运行本地进程的终端
 
 ## 安装 CLI
 
+安装任意一个提供 `lenso` 命令的软件包：
+
 ```sh
 cargo install lenso-cli
-```
-
-也可以使用 npm 安装打包后的 CLI：
-
-```sh
+# 或
 npm install -g @lenso/cli
 ```
 
-当前 GA CLI 版本线为 `0.2.13`。执行发布或支持命令前先确认版本：
+继续前确认版本：
 
 ```sh
 lenso --version
 ```
 
-## 使用 App Composer 创建应用
-
-App Composer 是推荐的第一条路径。下面的命令会创建一个 support-desk
-应用，其中包含 Host、TypeScript 与 Rust 服务、系统描述文件、Launchpad
-状态以及可供 Lenso Console 和 Agent 读取的 App Change Plan。
+## 1. Compose（组合）
 
 ```sh
-lenso app list
-lenso app inspect support-desk
-lenso app compose ./acme-support \
-  --blueprint support-desk \
-  --addon support-sla \
-  --addon customer-profile \
-  --apply
-cd acme-support
-lenso app next
-lenso app explain
-lenso dev status
-lenso dev doctor --write-state
-lenso agent task --from-app-plan "add enterprise SLA escalation"
-lenso dev up
+lenso app compose ./support-desk --blueprint support-desk --apply
+cd support-desk
 ```
 
-`lenso dev up` 会先启动 `lenso.workspace.json` 中声明的 Service，再启动
-Host。完整的本地 Console Service 使用 Console checkout 中的
-`lenso console dev`；独立环境使用 `lenso console install`。
+Bare Blueprint 选择 `auth`、`notification-worker` 与 `support-api`。Pack-backed
+Support Ticket 与 Story 组合由独立的[产品级验收](/docs/zh/examples)覆盖；该
+Runner 还会在本地启动前注册 Service-backed Provider。
 
-## 使用能力包
+检查 `lenso.app.json`。它是精确的应用组合与锁：应用修订与内容摘要、不可变
+Module Release 选择、已解析依赖、Implementation Binding 与 Provenance 必须
+一致，System 才能启动。
 
-能力包可以携带种子模块、服务Manifest和 Agent 交接上下文，用于复用产品切片：
+## 2. Run locally（本地运行）
 
 ```sh
-lenso capability init support-sla \
-  --dir ./capabilities/support-sla \
-  --lang ts \
-  --for-blueprint support-desk
-lenso capability library add ./capabilities/support-sla
-lenso capability fit support-sla --repo-root .
-lenso app compose ./acme-support \
-  --blueprint support-desk \
-  --pack support-sla \
-  --apply
+lenso system dev --system-file lenso.app.json --dry-run --json
+lenso system dev --system-file lenso.app.json
 ```
 
-能力包属于本地组合元数据。它不会替代模块能力使用的
-`lenso module install`，也不会替代进程外服务使用的
-`lenso service install`。
-
-## 创建空白 Host
-
-如果不需要产品 Blueprint，可以从最小 Host 开始：
+第二条命令启动声明的应用和持久 Local Control Adapter。完成后使用明确的
+清理入口：
 
 ```sh
-lenso host init my-lenso-app
-cd my-lenso-app
-cp .env.example .env
-lenso serve
+lenso system dev --system-file lenso.app.json --cleanup
 ```
 
-`lenso serve` 会启动 starter Postgres、执行迁移，然后持续运行 API 与
-Worker。它不会复制或托管 Console Web 资源。
+## 3. Connect（连接）
 
-服务就绪后打开：
+独立安装或运行 Console Service。以 Console Operator 身份认证后，先把每个
+业务 Service 目标已签名的 `{offer, receipt, baseUrl}` 提交到
+`POST /api/console/v1/enrollment-receipts`，再把应用的精确
+`lenso.system.v2` 拓扑和 Management Binding 提交到：
 
-- `/v1/app/status`：Host API 健康状态
-- 配置的 Console Service URL：独立的 Lenso Console
-
-## 手动运行各进程
-
-如果希望分别控制进程：
-
-```sh
-docker compose up -d postgres
-cargo run --bin migrate
-cargo run --bin api
+```text
+POST /api/console/v1/system/connect
 ```
 
-在另一个终端运行 Worker：
+当前本地切片的 Enrollment Endpoint 只接受 loopback 目标，不是远程生产自助
+路径。CLI 自有 `lenso-local-control-adapter` 以 `workload-control:<system>`
+绑定，不使用业务 Enrollment；其余每个拓扑 Service 都必须具备 active signed
+Enrollment。连接请求必须携带所提交拓扑的内容摘要。浏览器代码不会获得 Service 或 Adapter
+凭据。Console 只存储连接，不启动、部署、接管或修复应用。
 
-```sh
-cargo run --bin worker
+## 4. Status（状态）
+
+打开 Console 并选择 **Services**，或调用：
+
+```text
+GET /api/console/v1/system
 ```
 
-## 运行进程外服务
+System、Service、Module、Surface 与 Adapter Projection 分别报告连接状态与
+原因：`connected`、`unavailable`、`incompatible` 或 `unmanaged`。Workload
+Operational State 是独立维度。
 
-创建一个 Service，并让工作区文件管理它：
+对于本地受控 Workload，可执行受支持的 Suspend/Resume 或 Stop/Start 操作。
+Console 返回异步 Operation Record，并轮询 Adapter 直到终态。Adapter 无法访问
+时，Workload Observation 为 `unknown`，变更会立即被拒绝。
 
-```sh
-lenso service create support-suite-provider --lang ts --output-dir services --port 4110
-lenso service workspace list
-lenso service dev
-```
+## 添加业务能力
 
-`lenso service dev` 会启动 `lenso.workspace.json` 中的服务、
-`.lenso/module-services.json` 中已安装的服务进程，最后启动 Host。服务运行后，
-在另一个终端检查工作区：
+无论 Module 链接到 Host，还是由 Service 提供，它都保持业务身份。先阅读
+[Module 开发](/docs/zh/module-authoring)，再根据运维流程的需要，公开强类型
+Business API 与回执绑定的 Console Surface。
 
-```sh
-lenso service workspace check
-```
-
-## 添加 Redis Session 的认证模块
-
-生成的 Host 默认不安装认证模块。需要 Redis-backed Session 查询时执行：
-
-```sh
-lenso module install auth --profile redis-session-cache
-```
-
-该 Profile 会启用认证依赖的 Redis feature，把 `REDIS_URL` 写入 `.env`，
-并在 `.lenso/runtime-config-defaults.json` 中记录
-`auth.session_cache=redis`。Redis 需要单独提供；starter Docker Compose
-默认只启动 Postgres。
-
-## 常见空白状态
-
-- Console 不可用：对其独立安装运行 `lenso console doctor`。
-- 看不到模块：安装模块后重启 API 与 Worker。
-- Service 模块未就绪：运行 `lenso module doctor <module-name>`。
-- Launchpad 为空：在生成应用的根目录运行 `lenso dev status`。
-- Launchpad 没有 Doctor 结果：运行 `lenso dev doctor --write-state`。
-- 不清楚下一步：运行 `lenso app next` 或 `lenso app explain`。
+TypeScript `@lenso/service-kit` 支持 Provider tier。Autonomous Service tier
+使用 Rust。准确边界参见
+[Service Capability Tiers](/docs/zh/autonomous-services)。
 
 ## 下一步
 
-System 启动后，前往独立安装的 [Lenso Console](/docs/zh/runtime-console)
-检查受管 Service 和运行时证据。要加入业务能力，继续阅读
-[模块开发](/docs/zh/module-authoring)。
-
-环境变量、CORS、遥测或Service凭据请参阅
-[Configuration](/docs/zh/configuration)。完整命令选项请参阅
-[CLI Reference](/docs/zh/cli-reference)。
+- [产品蓝图](/docs/zh/product-blueprints)说明应用组合锁。
+- [Lenso Console](/docs/zh/runtime-console)说明连接、状态、Surface 和 Workload Control。
+- [示例](/docs/zh/examples)说明 Support Desk 黑盒验收。
+- [CLI 参考](/docs/zh/cli-reference)列出当前公开入口。

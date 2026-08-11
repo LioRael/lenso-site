@@ -1,177 +1,93 @@
 ---
 title: Platform Concepts
-description: The Lenso primitives that make modules explicit, observable, and safe to split later.
+description: Understand the app, Module, Service, and System Plane boundaries behind the public Lenso lifecycle.
 ---
 
-Lenso is not just a starter template. The useful part is the set of small,
-host-owned primitives that make a business system understandable to humans,
-agents, and operators.
+Lenso is an agent-ready modular application and microservice framework for Rust
+business systems. It starts with one exact application composition and keeps
+each boundary explicit as the product grows.
 
-## The core idea
+## Core model
 
-A Lenso app starts as one deployable Rust backend:
+| Concept | Current contract | Responsibility |
+| --- | --- | --- |
+| App Composition | `lenso.app.json` | Locks the app revision, content digest, immutable Module Releases, dependencies, implementation bindings, and provenance. |
+| Module | `lenso.module.v1` | Owns a stable business identity, typed Business API, events, runtime declarations, and optional Console Surfaces. |
+| Provider Service | `lenso.service.v1` | Provides Modules from a separate Rust or TypeScript process while the Host owns runtime coordination. |
+| Autonomous Service | `lenso.service.v2` | Uses the Rust runtime to own its Workloads, Service Store, identity, workflows, and operations. |
+| System topology | `lenso.system.v2` | Names the exact Host, Services, Modules, Workloads, contracts, and management relationships in a mixed topology. |
+| Console Service | Console API | Connects the exact topology, loads receipt-bound Surfaces, and reports direct object status. |
 
-- the API serves product routes and Lenso Console
-- the worker owns runtime queues, outbox dispatch, and lifecycle work
-- the migration app owns database setup
-- modules declare what they contribute
-- the host controls loading, auth, config, observability, and release shape
+The contracts compose; they do not replace one another. Moving a Support
+Ticket Module from linked delivery to a Provider does not rename its business
+identity or operations. An Autonomous Service adds an independently owned
+runtime boundary while keeping its declared contracts explicit.
 
-That gives a team the ergonomics of a modular monolith without hiding the seams
-needed to split a module into a service later.
+## Public lifecycle
 
-## Manifest data, behavior seams
+The same four steps apply to developers, operators, and coding agents:
 
-Every module exposes pure metadata through `ModuleManifest`. Executable behavior
-stays behind a Linked Rust binding or an independently running Service's
-provider contract.
+1. **Compose** an exact `lenso.app.json` from a product blueprint.
+2. **Run locally** with `lenso system dev` and the Local Control Adapter.
+3. **Connect** signed local Service enrollment, the exact `lenso.system.v2` topology,
+   and its Management Binding to the separately installed Console Service.
+4. **Status** each Service, Module, Surface, Adapter, and Workload directly.
 
-```rust
-use lenso::{
-    ModuleManifest, ModuleHttpMethod, ModuleHttpRoute, RuntimeFunctionDeclaration,
-    RuntimeSurface,
-};
+Production release and deployment stay with external delivery systems. Console
+does not create, adopt, release, deploy, or repair the connected app.
 
-pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("support")
-        .capabilities(vec![
-            "support.tickets.read".to_owned(),
-            "support.tickets.write".to_owned(),
-        ])
-        .http_routes(vec![ModuleHttpRoute {
-            method: ModuleHttpMethod::Post,
-            path: "/v1/support/tickets".to_owned(),
-            capability: Some("support.tickets.write".to_owned()),
-            display_name: Some("Create Ticket".to_owned()),
-            story_title: Some("Ticket Created".to_owned()),
-        }])
-        .runtime(RuntimeSurface {
-            functions: vec![RuntimeFunctionDeclaration {
-                name: "support.ticket.escalate.v1".to_owned(),
-                version: 1,
-                queue: "support".to_owned(),
-                input_schema: Some("support.ticket.escalate.v1".to_owned()),
-                retry_policy: None,
-            }],
-            schedules: vec![],
-        })
-        .build()
-}
-```
+## Modules keep business identity
 
-The manifest is what Lenso Console, install checks, and agent-authored smoke
-checks can reason about. It is not where SQL handlers, runtime executors, or
-Service clients live.
+`ModuleManifest` is serializable declaration data. It names capabilities,
+Business API routes, runtime functions, events, lifecycle work, dependencies,
+and Console Surfaces. Executable handlers stay in either a linked binding or a
+Service implementation.
 
-## Host-owned lifecycle
+Operator UI is a digest-bound `console_ui_esm` artifact in the same immutable
+Module Release. Its generated client calls declared operations through Surface
+Gateway under an exact Surface Grant. Browser code receives neither Service
+credentials nor direct Store access.
 
-Lifecycle is also declaration data. A module can say which startup checks and
-activation jobs it needs, but the worker decides when to run them and records
-the result through runtime-owned paths.
+## Service capability tiers
 
-```rust
-use lenso::{
-    LifecycleActivationJobDeclaration, LifecycleActivationRunPolicy,
-    LifecycleStartupCheckDeclaration, LifecycleStartupCheckKind, LifecycleSurface,
-    ModuleManifest, RuntimeFunctionDeclaration, RuntimeSurface,
-};
+Provider and Autonomous Service are different ownership levels, not two names
+for any out-of-process Module:
 
-pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("support")
-        .runtime(RuntimeSurface {
-            functions: vec![RuntimeFunctionDeclaration {
-                name: "support.ticket.reindex.v1".to_owned(),
-                version: 1,
-                queue: "support".to_owned(),
-                input_schema: Some("support.ticket.reindex.v1".to_owned()),
-                retry_policy: None,
-            }],
-            schedules: vec![],
-        })
-        .lifecycle(LifecycleSurface {
-            startup_checks: vec![LifecycleStartupCheckDeclaration {
-                name: "reindex function is registered".to_owned(),
-                required: true,
-                check: LifecycleStartupCheckKind::FunctionRegistered {
-                    function_name: "support.ticket.reindex.v1".to_owned(),
-                },
-            }],
-            activation_jobs: vec![LifecycleActivationJobDeclaration {
-                name: "warm ticket index".to_owned(),
-                function_name: "support.ticket.reindex.v1".to_owned(),
-                run_policy: LifecycleActivationRunPolicy::EveryStartup,
-                input: serde_json::json!({ "reason": "startup" }),
-                required: false,
-            }],
-        })
-        .build()
-}
-```
+- Provider `lenso.service.v1` is Host-owned and supports Rust and TypeScript.
+- Autonomous Service `lenso.service.v2` is Service-owned and Rust only.
 
-There is no generic module startup callback. That is deliberate: startup work is
-visible, retryable, and comparable across Linked Modules and Services.
+Current Rust Autonomous Service capabilities include direct HTTP/gRPC, Event
+Contracts, Durable Workflows, Workload Identity, Delegated Actor Context, and
+service-owned storage. TypeScript does not provide Autonomous Service parity.
 
-## Runtime evidence
+See [Service Capability Tiers](/docs/autonomous-services) for the exact support
+boundary.
 
-Lenso Console is not a decorative dashboard. It is the proof that the host saw
-the work.
+## Data Plane and System Plane stay separate
 
-Lenso's [Runtime Stories](/docs/runtime-stories) turn request ids, correlation
-ids, outbox rows, function runs, provider calls, and telemetry spans into an
-operator-readable business narrative.
+Business calls use declared Module or Service contracts. Autonomous Service
+traffic goes directly between Services; it does not pass through Console or a
+Host Provider proxy. Each receiving boundary verifies actor, tenant, deadline,
+idempotency, identity, and contract policy locally.
 
-| Source | What it proves |
-| --- | --- |
-| `platform.outbox` | module events were committed and dispatched |
-| `runtime.function_runs` | runtime work was enqueued, retried, completed, or failed |
-| `platform.story_events` | business and operator events were projected into stories |
-| provider invocation evidence | Service traffic crossed an owned boundary |
+Console is the operator-facing System Plane. It validates the exact active
+enrollment, topology digest, Management Binding, and advertised Core contract
+before storing a connection. Its browser surfaces use the same-origin Console
+Service, which keeps target credentials server-side.
 
-When a module is done, the answer should not be "it compiles." It should be
-"the host loaded it, the action appears, the runtime work is visible, and the
-story has evidence."
+## Status is object-specific
 
-## Service boundaries remain owned
+Every connected object reports one state with a direct reason:
 
-Services are for real boundaries: a separate runtime, separate owner, separate
-deploy cadence, Store ownership, or a trust boundary. They do not become a
-second kind of Module.
+- `connected`: the exact contract and live target agree;
+- `unavailable`: the declared target cannot currently be observed;
+- `incompatible`: a protocol, contract, release, or artifact does not match;
+- `unmanaged`: no current Management Binding covers the object.
 
-The host still owns:
+An unavailable Local Control Adapter leaves Workload observation `unknown` and
+rejects mutation without queueing or fallback. Console does not collapse these
+states into an app-wide score.
 
-- Module composition and manifest lint results
-- capability enforcement at Host entrypoints
-- caller auth and capability checks
-- request and response limits
-- header allowlists
-- runtime queues and retry policy
-- outbox dispatch
-- Lenso Console evidence
-
-The Host may authenticate to a Service provider, but it does not forward the
-caller's bearer token or cookies.
-
-## Systems connect services and modules
-
-When a product grows beyond one provider, `lenso.system.json` names the whole
-System graph. Services own processes and deployment targets. Modules own
-business capabilities. The system plane connects them with environments and
-capability dependencies so CLI checks and Lenso Console can show whether the
-system is coherent.
-
-See [Service System Plane](/docs/service-system-plane) for the `lenso.system.v1`
-contract and CLI flow.
-
-## The split rule
-
-Start Linked when the Module belongs to the app. Extract a Service when one
-boundary is real enough to pay for:
-
-- different runtime
-- different deployment cadence
-- different team ownership
-- different trust model
-- independent operational scaling
-
-Until then, the lazy path is the good path: one host, explicit module seams,
-and visible evidence.
+Continue with [Host Quickstart](/docs/quickstart) for the complete lifecycle or
+[Service System Plane](/docs/service-system-plane) for the mixed-topology
+connection model.

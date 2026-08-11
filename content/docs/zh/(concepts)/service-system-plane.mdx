@@ -1,142 +1,123 @@
 ---
 title: Service System Plane
-description: 使用lenso.system.json 描述服务、模块、依赖项和部署通道，无需 Kubernetes。
+description: 连接精确 lenso.system.v2 混合拓扑，同时避免把 Console 变成部署平面。
 ---
 
-服务系统平面是模块安装和服务之上的层
-Provider。当有多个产品时，它可以帮助团队描述整个 Lenso 产品系统
-服务和模块开始相互依赖。
+Service System Plane 描述一个 Lenso 应用中的 Host、Provider Service、
+Autonomous Service、Module、Workload、合约与管理 Adapter 如何组合。当前混合
+拓扑合约是 `lenso.system.v2`。
 
-它故意不是一个服务网格。它也不是 Kubernetes
-要求。系统可以是本地的、外部部署的、Kubernetes 支持的，或者
-运营商管理。
+该拓扑不是 Service Mesh、业务请求 Router、进程启动器或生产部署记录。它是
+Console 连接 System 时校验的精确图。
 
-## 三个层次
+## 组合与拓扑职责不同
 
-|水平|合约|它拥有什么 |
-| --- | --- | --- |
-|模块| `lenso.module.v1` |业务能力、权限、界面、运行时名称 |
-|服务 | `lenso.service.v1` |独立进程、SDK 语言、Manifest端点、部署包 |
-|系统| `lenso.system.v1` |服务所有权、模块放置、依赖关系图、环境 |
+| 合约 | 职责 |
+| --- | --- |
+| `lenso.app.json` | 应用组合与锁：应用修订、内容摘要、不可变 Module Release、依赖与 Implementation Binding。 |
+| `lenso.system.v2` | 已连接拓扑：稳定对象身份、所有权、合约、Workload、Adapter 与关系。 |
+| Management Binding | 该拓扑的精确 Console 权限，以及受支持的目标自有管理路径。 |
 
-`lenso module install` 保留模块级入口点。 `Lenso服务
-install` stays the provider/process entrypoint. `lenso.system.json`解释
-这些部分如何形成一个系统。
+拓扑从已组合应用及其运行目标派生，不会扩大 App Composition，也不会选择生产
+目标。
 
-## 最小 Manifest
+## 混合拓扑
 
-```json
-{
-  "protocol": "lenso.system.v1",
-  "name": "support-platform",
-  "environments": ["local", "staging", "prod"],
-  "services": [
-    {
-      "name": "support-suite-provider",
-      "target": "operator",
-      "modules": ["support-ticket"],
-      "cwd": "services/support-suite-provider",
-      "manifest": "http://127.0.0.1:4110/lenso/service/v1/manifest",
-      "command": "pnpm start",
-      "lang": "ts",
-      "readyUrl": "http://127.0.0.1:4110/lenso/service/v1/status"
-    }
-  ],
-  "modules": [
-    {
-      "name": "support-ticket",
-      "installTo": "service:support-suite-provider",
-      "capabilities": ["support_ticket.tickets.write"],
-      "dependencies": ["auth"]
-    },
-    {
-      "name": "auth",
-      "installTo": "host",
-      "capabilities": ["auth"]
-    }
-  ]
-}
-```
+System v2 明确区分每一种对象：
 
-该图表示 `support-ticket` 模块由
-`support-suite-provider`服务，并且它依赖于主机拥有的`auth`
-能力。
+- **Host** 持有 Linked Module 与 Provider 运行时协调；
+- **Provider** 使用 `lenso.service.v1`，支持 Rust 或 TypeScript；
+- **Autonomous Service** 使用 Rust `lenso.service.v2`，持有自己的运行时与
+  Service Store；
+- **Module** 在 Linked 或 Service-backed 交付间保持业务身份；
+- **Workload** 命名 Service 的一个可执行部分；
+- 合约关系命名精确 Producer、Consumer、版本与 Tenancy 要求；
+- 管理 **Adapter** 只公开声明的目标自有 Operation。
 
-## CLI 流程
+选择 Service 类型前请阅读
+[Service Capability Tiers](/docs/zh/autonomous-services)。TypeScript does not
+provide Autonomous Service parity。
+
+## 使用公开生命周期
+
+### Compose（组合）
+
+生成可运行的 Support Desk 基础：
 
 ```sh
-lenso system init support-platform --env local --env staging --env prod
-lenso system add-service support-suite-provider \
-  --target operator \
-  --module support-ticket \
-  --cwd services/support-suite-provider \
-  --lang ts \
-  --command "pnpm start" \
-  --ready-url http://127.0.0.1:4110/lenso/service/v1/status \
-  --manifest http://127.0.0.1:4110/lenso/service/v1/manifest
-lenso system add-module support-ticket \
-  --to service:support-suite-provider \
-  --capability support_ticket.tickets.write \
-  --dependency auth
-lenso system add-module auth --to host --capability auth
-lenso system graph --system-file lenso.system.json
-lenso system plan --system-file lenso.system.json --check
-lenso system diff --system-file lenso.system.json --check
-lenso system apply --system-file lenso.system.json --dry-run
-lenso system doctor --system-file lenso.system.json
-lenso system release plan --env staging --output system-release-staging.json
-lenso system release check system-release-staging.json
-lenso system release apply system-release-staging.json
-lenso system release promote --from staging --to prod --output system-release-prod.json
-lenso system runbook generate system-release-staging.json --output system-runbook-staging.json
-lenso system runbook record system-runbook-staging.json
+lenso app compose ./support-desk --blueprint support-desk --apply
 ```
 
-`system plan` 报告图形问题并建议现有的较低级别命令，
-例如服务工作区注册或服务环境设置。
-`system diff` 将Manifest与主机本地 `.lenso` 状态进行比较。 `系统
-apply` writes only safe local files such as `.lenso/module-services.json` 和
-`.lenso/service-environments.json`;它不安装模块、部署
-Kubernetes 资源，或为您应用服务版本。
+Blueprint 包含 `auth`、`notification-worker` 与 `support-api`。Pack-backed
+Support Ticket 与 Story 拓扑由[产品级验收](/docs/zh/examples)覆盖；该 Runner
+会在启动前注册 Service-backed Provider。
 
-`system release` 增加了系统级发布序列。系统发布计划记录
-目标环境、受影响的服务、受影响的模块、漂移预检查、
-策略结果、回滚可用性和下一个命令。应用它只写
-`.lenso/system-releases.json`;服务发布计划和部署保持不变
-显式的低级命令。
+### Run locally（本地运行）
 
-`system runbook` 将系统发布计划转化为生成的操作步骤：
-发布策略检查、服务发布准备、部署证据以及
-释放录音。记录它只写`.lenso/system-runbooks.json`。
-Runbook JSON 是生成控制平面证据，而不是模块作者的东西
-手工维护。
+启动选定的本地 Workload 与持久 Local Control Adapter：
 
-## 控制台可见性
+```sh
+lenso system dev --system-file ./support-desk/lenso.app.json
+```
 
-Lenso Console读取系统平面的主机管理端点并显示它
-在服务页面上。操作人员可以查看系统Manifest是否丢失，
-准备好，或者需要注意，然后检查服务计数、模块计数、依赖关系
-除了生命周期、推出、发布之外的计数、环境通道和图形问题，
-Provider 调用、Runtime Story 和技术操作证据。
+### Connect（连接）
 
-服务页面还读取系统漂移端点。漂移告诉运营商
-是否安装了声明的模块，是否配置了声明的服务，
-环境通道存在，部署观察存在，并且发布
-记录存在。
+独立启动 Console Service。Support Desk 本地路径先把每个业务 Service 目标已签名的
+`{offer, receipt, baseUrl}` 提交到：
 
-版本序列视图读取应用的系统版本并显示最新的
-环境版本、策略状态、回滚可用性和下一个 CLI
-命令。
+```text
+POST /api/console/v1/enrollment-receipts
+```
 
-Runbook 视图读取记录的系统 Runbook 并显示活动 Runbook，
-当前步骤和下一个命令。
+再把精确 `lenso.system.v2` 拓扑、其 SHA-256 摘要与 Management Binding
+提交到：
 
-## Kubernetes 保持可选状态
+```text
+POST /api/console/v1/system/connect
+```
 
-当服务应该是时使用 `target: "kubernetes"` 或 `target: "operator"`
-通过生成的 Kubernetes Manifest或 Lenso Operator 交付。使用
-当服务在本地运行或在本地运行时为 `target: "local"` 或 `target: "external"`
-在其他地方管理。
+Console 保存连接前会校验活动 Enrollment、拓扑摘要、Management Binding 与
+已发布 Core Contract。本地 Enrollment Route 只接受 loopback 目标，不是远程
+生产自助路径。CLI 自有 `lenso-local-control-adapter` 以
+`workload-control:<system>` 绑定，不使用业务 Enrollment；其余每个拓扑 Service
+都必须具备 active signed Enrollment。
 
-这就是预期的形态：Lenso 在 Kubernetes 有帮助时拥抱 Kubernetes，但又相互关联
-模块和非 Kubernetes 服务仍然是一流的。
+### Status（状态）
+
+通过 Console 或以下 API 读取已连接图：
+
+```text
+GET /api/console/v1/system
+```
+
+System、Service、Module、Surface 与 Adapter Projection 报告
+`connected`、`unavailable`、`incompatible` 或 `unmanaged`，并给出直接原因。
+Workload Operational State 是独立维度。Local Control Adapter 不可用时，
+Workload Observation 为 `unknown`，变更会被拒绝且不排队、不回退。
+
+## 业务流量不进入 System Plane
+
+Module Surface 通过 Surface Gateway 调用生成客户端。Console Service 重新校验
+Console Actor、精确已连接 System、制品摘要、合约摘要与允许的 Operation ID，
+再调用声明的 Business API；浏览器不会获得目标凭据。
+
+Autonomous Service Data Plane 调用使用 direct HTTP/gRPC 或 Event Contracts。
+它们不经过 Console，已建立的 Service 本地执行也不依赖 System Plane 可用性。
+
+## Console 权限保持狭窄
+
+Console 可以连接精确拓扑、报告直接状态、加载符合条件的 Module Surface，并
+调用受支持的目标自有 Operation。它不会：
+
+- 创建、接管、删除、发布、部署、回滚或修复生产 Workload；
+- 选择生产目标；
+- 直接变更 Service Store；
+- 把 Service 或 Adapter 凭据交给浏览器；
+- 把拓扑状态合成为第二套应用总分。
+
+生产交付仍由 Repository、Platform 与 Operator 持有。System Plane 可以描述
+最终对象，但不会成为其运行时 Owner。
+
+认证、Surface 与 Workload Control 参见
+[Lenso Console](/docs/zh/runtime-console)；集成 Support Desk 验收参见
+[示例](/docs/zh/examples)。

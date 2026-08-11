@@ -1,79 +1,86 @@
 ---
 title: Module Console UI
-description: Ship module-owned Console pages as verified isolated web artifacts.
+description: Publish a receipt-bound console_ui_esm artifact for an exact Module Release.
 ---
 
-A Module may contribute Console navigation and pages, but executable UI never
-runs inside the Console Shell JavaScript realm. The manifest declares the
-surface; the same immutable Module Release binds its verified UI artifact.
+A Module can ship operator UI as an immutable `console_ui_esm` artifact. The UI
+belongs to the Module Release, not to the Console repository, and loads only
+after Console validates the connected System receipt and every artifact binding.
 
-## Declare an isolated surface
+## Contract shape
 
-```rust
-use lenso::{
-    ConsoleNavigation, ConsoleSurface, ConsoleSurfacePresentation,
-    ConsoleWorkspaceRef, ModuleManifest, CONSOLE_BRIDGE_PROTOCOL,
-};
+`ModuleManifest.console` contains `ConsoleSurface` declarations. Each source
+declaration owns its `name`, `label`, `route`, `presentation`, optional `icon`,
+required capabilities, and optional navigation. For executable UI,
+`ConsoleSurfacePresentation::Esm { entry }` names the ESM entry. This source
+shape does not carry an `area` field.
 
-pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("crm")
-        .capabilities(vec!["crm.contacts.read".to_owned()])
-        .console(vec![ConsoleSurface {
-            name: "contacts".to_owned(),
-            label: "Contacts".to_owned(),
-            route: "/crm/contacts".to_owned(),
-            presentation: ConsoleSurfacePresentation::Isolated {
-                entry: "contacts".to_owned(),
-                bridge_protocol: CONSOLE_BRIDGE_PROTOCOL.to_owned(),
-            },
-            icon: Some("briefcase".to_owned()),
-            required_capabilities: vec!["crm.contacts.read".to_owned()],
-            navigation: Some(ConsoleNavigation {
-                workspace: ConsoleWorkspaceRef {
-                    id: "crm".to_owned(),
-                    label: "CRM".to_owned(),
-                    icon: Some("briefcase".to_owned()),
-                },
-                group: None,
-                order: Some(10),
-            }),
-        }])
-        .build()
-}
-```
+The framework derives the artifact's generated
+`ConsoleModuleManifest.surfaces` list from those executable declarations. Each
+generated `ConsoleModuleSurface` uses `id`, `path`, `label`, the route-derived
+`ConsoleModuleSurface.area`, required capabilities, optional icon, and optional
+navigation. Do not copy generated presentation fields back into
+`ModuleManifest.console`.
 
-The Module Release must contain a `ConsoleUiArtifact` with format
-`isolated_web`, the exact artifact locator and SHA-256 digest, an entry mapping
-such as `{ name: "contacts", path: "index.html" }`,
-`lenso.console-bridge.v1`, requested permissions, and provenance. A release is
-invalid when an isolated surface has no matching artifact entry.
+`ModuleManifest.console_slots` and `ModuleManifest.console_contributions` are
+separate extension declarations. They are not context fields inside a
+`ConsoleSurface` and are not members of the generated
+`ConsoleModuleSurface`.
 
-Create a Module with this surface using:
+The same Module Release carries one `ConsoleUiArtifact` with:
 
-```sh
-lenso module create crm --with-console-ui
-lenso module dev --console-ui
-```
+- format `console_ui_esm`;
+- artifact locator and SHA-256 digest;
+- generated `lenso.console-module.v1` presentation manifest;
+- independent `hostApi` and `consoleUi` compatibility ranges;
+- named ESM entries and optional style assets, each digest-bound;
+- immutable provenance that agrees with the owning Module Release.
 
-## Runtime boundary
+Console rejects a missing entry, mismatched digest, incompatible protocol
+range, undeclared Surface, or artifact owned by a different Module Release.
 
-The Console Service downloads the complete selected artifact set only through a
-reviewed composition operation. It verifies every digest and records an atomic
-composition receipt. The Shell then loads each page in a sandboxed iframe and
-grants only the reviewed subset of requested Bridge operations for the exact
-Module Release and artifact digests.
+## Runtime API
 
-An artifact may use `@lenso/console-bridge` to exchange structured messages with
-the Shell. It cannot receive ambient credentials, import Shell internals, use
-same-origin storage, or call a managed Service directly.
+The entry imports `@lenso/console-module-api` for its framework-neutral manifest
+and typed host operations. React Surfaces use `@lenso/console-ui` for the
+adapter, Surface root, shared primitives, and typed StyleX slots. Console
+injects immutable slot context; the Module UI does not import Console internals.
 
-There is no `/console/extensions/*` registry, same-origin JavaScript bundle,
-`@lenso/runtime-console-api`, or separate Console package installation command.
-UI lifecycle follows ordinary `lenso module install|update|disable|remove` and
-`lenso console composition plan|apply` operations.
+Use the Host API for navigation, locale, current actor, System context, and
+same-origin Surface Gateway calls. Keep the Surface renderable for these four
+object states:
 
-## Missing UI evidence
+- `connected`: normal operations are available;
+- `unavailable`: show the server-provided reason and a retry affordance;
+- `incompatible`: name the contract or artifact mismatch;
+- `unmanaged`: explain that no Management Binding covers the object.
 
-If the manifest declares a surface but the selected artifact is absent,
-unverified, or lacks a grant, Console reports that composition gap. It does not
-silently load a package or execute an unreviewed fallback.
+## Business API calls
+
+Generate a client from the Module's committed OpenAPI contract. The Surface
+calls that client through the Surface Gateway; it never constructs a Service
+base URL or attaches Service credentials.
+
+Every request is constrained by the connected app's Surface Grant:
+
+- Console actor and optional tenant;
+- Module identity and Module Release digest;
+- UI artifact digest;
+- Business API contract digest;
+- exact allowed operation IDs.
+
+The gateway fails closed when any binding changes. Direct browser-to-Service
+traffic is outside the supported model.
+
+## Packaging loop
+
+1. Build the ESM bundle and generated presentation manifest.
+2. Hash the JavaScript and every style asset.
+3. Attach the artifact to the same immutable Module Release.
+4. Run the owner-local Module Release and Console artifact checks.
+5. Compose a new `lenso.app.json` revision that selects the exact release.
+6. Connect that exact topology and verify the Surface in a real browser.
+
+For operation design, continue with
+[Business APIs and Console Surfaces](/docs/admin-surfaces). For System binding
+and browser authority, read [Lenso Console](/docs/runtime-console).

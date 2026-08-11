@@ -1,6 +1,6 @@
 ---
 title: Agent Development
-description: Use Lenso skills, scaffolds, checks, and Lenso Console evidence to develop with coding agents.
+description: Use Lenso skills, scaffolds, checks, and Lenso Console status to develop with coding agents.
 ---
 
 Lenso is agent-ready because the workflow has rails: public skills, explicit
@@ -39,8 +39,8 @@ your agent's configured skills folder, then start with `lenso-start`.
 | Build an independently authoritative Service | `lenso-autonomous-service-authoring` | verify the current GA Support Manifest first |
 | Evolve a Contract | `lenso-contract-evolution` | inventory producers, Consumers, and committed artifacts |
 | Design a Durable Workflow | `lenso-durable-workflow` | define the immutable version and stable identities |
-| Extract a linked Module | `lenso-module-extraction` | run the current extraction-readiness command |
-| Diagnose an incident | `lenso-incident-recovery` | collect exact evidence before recovery action |
+| Extract a linked Module | `lenso-module-extraction` | run the current extraction check |
+| Diagnose an incident | `lenso-incident-recovery` | collect exact diagnostic records before recovery action |
 | Prepare or recover a release | `lenso-reviewed-release` | read the owning repository's release process |
 
 The public skill pack lives in the `skills/` directory of the Lenso repository.
@@ -52,10 +52,10 @@ The public skill pack lives in the `skills/` directory of the Lenso repository.
 3. Scaffold with the CLI instead of hand-building the shape.
 4. Implement one useful capability.
 5. Add one runnable check that fails if the capability is not wired.
-6. Open the configured Console Service URL and confirm the module evidence is visible.
-7. Report the command, check result, and Lenso Console evidence.
+6. Open the configured Console Service URL and confirm the Module status is visible.
+7. Report the command, check result, and Lenso Console status.
 
-For the public proof point, start from this prompt:
+For the public product slice, start from this prompt:
 
 ```text
 Build a support ticket module for a Lenso app.
@@ -95,24 +95,23 @@ This gives the agent enough boundaries to avoid inventing a platform.
 | Path | Minimum useful check |
 | --- | --- |
 | Host starter | `cargo check --bins` |
-| Capability pack | `lenso capability fit <pack> --repo-root .` plus Launchpad App Change Plan evidence |
-| Rust module | a manifest or smoke check plus the configured Console Service URL evidence |
-| Service-backed module | package smoke plus `lenso module release check <module-release.json>` |
+| Capability pack | `lenso capability fit <pack> --repo-root .` plus the resulting app composition |
+| Rust module | a manifest or smoke check plus the configured Console Service status |
+| Service-backed module | owning Service contract checks plus the composed app binding |
 | Contract/API work | the owning repository's generation and freshness checks |
 | Architecture-sensitive backend work | the owning repository's architecture check |
 
 The check should be small, local, and tied to the capability. A compile-only
 pass is not enough when the change is supposed to appear in Lenso Console.
 
-## Console evidence
+## Console status
 
-Use the configured Console Service URL as the final proof that the host sees the work:
+Use the configured Console Service URL to confirm that the connected System sees the work:
 
-- Modules shows the module and manifest status.
-- Data shows declared schema-admin surfaces.
-- Actions shows declared admin actions.
-- Runtime shows function runs and story evidence.
-- Remote routes show proxy evidence after traffic.
+- **Modules** shows the Module, manifest, and exact receipt-bound Surface state.
+- **Services** shows Provider, Workload, and Adapter connection details.
+- **Stories** shows correlated records contributed by the exact Story Module.
+- Workload operational state remains separate from connection state.
 
 ## Keep out
 
@@ -123,4 +122,4 @@ Use the configured Console Service URL as the final proof that the host sees the
 - Do not require cloning the framework monorepo when the public CLI, crate, npm
   package, or skill fits.
 - Do not treat agent-ready as a promise of autonomous deployment. The agent
-  still has to leave checks and operator evidence.
+  still has to leave checks and operator-visible status.

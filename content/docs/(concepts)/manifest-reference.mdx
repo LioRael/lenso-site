@@ -4,7 +4,7 @@ description: Understand the serializable ModuleManifest contract that every Lens
 ---
 
 `ModuleManifest` is the pure-data contract for a module. It describes what the
-host and Lenso Console can see: routes, admin surfaces, runtime functions,
+host and Lenso Console can see: Business API routes, runtime functions,
 runtime schedules, events, lifecycle work, Console surfaces, dependencies, and
 capabilities.
 
@@ -18,30 +18,32 @@ remains serializable in either topology.
 ```rust
 use lenso::{
     ConsoleSurface, ConsoleSurfacePresentation, ModuleHttpMethod,
-    ModuleHttpRoute, ModuleManifest, CONSOLE_BRIDGE_PROTOCOL,
+    ModuleHttpRoute, ModuleManifest, ModuleRequirement,
 };
 
 pub fn manifest() -> ModuleManifest {
-    ModuleManifest::builder("billing")
+    ModuleManifest::builder("acme/billing")
         .capabilities(vec![
             "billing.invoice.read".to_owned(),
             "billing.invoice.write".to_owned(),
         ])
-        .dependencies(vec!["auth".to_owned()])
+        .requires(vec![
+            ModuleRequirement::new("lenso/auth", "*").expect("valid requirement"),
+        ])
         .http_routes(vec![ModuleHttpRoute {
             method: ModuleHttpMethod::Get,
             path: "/v1/billing/invoices".to_owned(),
             capability: Some("billing.invoice.read".to_owned()),
             display_name: Some("List invoices".to_owned()),
             story_title: Some("Billing invoices".to_owned()),
+            operation: None,
         }])
         .console(vec![ConsoleSurface {
             name: "billing-invoices".to_owned(),
             label: "Invoices".to_owned(),
             route: "/billing/invoices".to_owned(),
-            presentation: ConsoleSurfacePresentation::Isolated {
+            presentation: ConsoleSurfacePresentation::Esm {
                 entry: "invoices".to_owned(),
-                bridge_protocol: CONSOLE_BRIDGE_PROTOCOL.to_owned(),
             },
             icon: Some("receipt".to_owned()),
             required_capabilities: vec!["billing.invoice.read".to_owned()],
@@ -55,27 +57,25 @@ pub fn manifest() -> ModuleManifest {
 
 | Field | Purpose |
 | --- | --- |
-| `module_id` | Canonical Module id, such as `lenso/auth` or `acme/billing`. The builder normalizes short first-party names. |
-| `dependencies` | Other modules that must be installed first. Use this for hard runtime assumptions such as `auth`. |
-| `capabilities` | Dot-separated permission names that routes, admin surfaces, runtime work, or Console pages can reference. |
+| `module_id` | Canonical fully qualified Module id, such as `lenso/auth` or `acme/billing`. |
+| `requires` | Other fully qualified Modules that must be installed first, with an explicit version requirement and optional required capabilities. |
+| `capabilities` | Dot-separated permission names that routes, runtime work, or Console pages can reference. |
 | `http_routes` | Module-owned HTTP route metadata. Linked Modules mount real Axum routes through bindings; Service-provided Modules retain the same declaration. |
-| `admin` | Schema-driven, declarative custom, or embedded custom operator surfaces. |
 | `runtime` | Runtime function and schedule declarations. The declaration is manifest data; handlers live in the loading source and scheduling stays host-owned. |
 | `events` | Event handler declarations. The host registers and invokes the backing handler through the source binding. |
 | `lifecycle` | Startup checks and activation jobs. The host validates and schedules these entries instead of giving modules arbitrary startup callbacks. |
-| `console` | Declarative or isolated Console surfaces. Executable UI is bound by digest in the same Module Release, never by a same-origin package export. |
+| `console` | Declarative or ESM Console surfaces. Executable UI is bound by digest in the same Module Release, never by a same-origin package export. |
 | `story_display` | Console story-display metadata for timeline and inspection surfaces. |
 
 ## Builder methods
 
 ```rust
-ModuleManifest::builder("billing")
-    .dependencies(vec!["auth".to_owned()])
+ModuleManifest::builder("acme/billing")
+    .requires(vec![
+        ModuleRequirement::new("lenso/auth", "*").expect("valid requirement"),
+    ])
     .capabilities(vec!["billing.invoice.read".to_owned()])
     .http_routes(vec![/* ModuleHttpRoute */])
-    .admin(/* AdminSchema */)
-    .declarative_admin(/* AdminDeclarativeSurface */)
-    .embedded_admin(/* AdminEmbeddedSurface */)
     .runtime(/* RuntimeSurface */)
     .events(/* EventSurface */)
     .lifecycle(/* LifecycleSurface */)
@@ -83,10 +83,6 @@ ModuleManifest::builder("billing")
     .story_display(vec![/* StoryDisplayDescriptor */])
     .build();
 ```
-
-Use `admin`, `declarative_admin`, and `embedded_admin` as alternatives. A module
-has one admin surface in its manifest; it can still expose multiple Console
-surfaces through `console`.
 
 ## Capability naming
 
@@ -101,13 +97,13 @@ Good examples:
 ```text
 billing.invoice.read
 billing.invoice.write
-support.ticket.assign
+support.tickets.assign
 auth.session.revoke
 ```
 
 Avoid names such as `BillingRead`, `billing/read`, or `read_invoice`. Manifest
 lints warn when a capability name is not dot-separated lowercase, and they also
-warn when routes or admin permissions reference capabilities that the manifest
+warn when routes or Console permissions reference capabilities that the manifest
 does not declare.
 
 ## Route metadata
@@ -121,6 +117,7 @@ ModuleHttpRoute {
     capability: Some("billing.invoice.write".to_owned()),
     display_name: Some("Void invoice".to_owned()),
     story_title: Some("Invoice voided".to_owned()),
+    operation: None,
 }
 ```
 
@@ -160,9 +157,6 @@ groups them into categories:
 | `module` | Missing module name. |
 | `capability` | Bad naming or referenced-but-undeclared capability. |
 | `routes` | Duplicate method/path, missing display metadata, or missing remote route capability. |
-| `admin.schema` | Empty schema or missing read capability. |
-| `admin.declarative` | Empty pages, missing query values, or invalid fallback schema references. |
-| `admin.embedded` | Non-HTTPS entry URL, missing origin allowlist, or invalid fallback permissions. |
 | `runtime` | Missing function names, duplicate functions, bad queue names, or invalid retry policy. |
 | `runtime.schedule` | Missing schedule names, invalid cron expressions, or schedules that reference unknown functions. |
 | `events` | Missing event names or duplicate handler names. |
@@ -177,7 +171,7 @@ debt unless the page explicitly says the warning is acceptable for a local spike
 Change the manifest whenever the host or Console needs new metadata:
 
 - a new public route or route capability;
-- a new data-admin entity;
+- a new Business API operation or operation capability;
 - a new module-owned Console page;
 - a new runtime function, schedule, or event handler;
 - a lifecycle startup check or activation job;

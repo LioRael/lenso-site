@@ -1,346 +1,186 @@
 ---
 title: CLI Reference
-description: Common lenso CLI commands for Launchpad apps, hosts, modules, services, system graphs, doctor flows, and Console packages.
+description: Current public commands for composing a Lenso app, running it locally, connecting Console, and reading status.
 ---
 
-The `lenso` CLI is the fastest way to create a Launchpad app, create a host,
-scaffold modules, install module descriptors, manage service providers, describe
-service systems, compose capability packs, refresh hosted Console assets, and
-diagnose service issues. The published `0.2.13` line also exposes the bounded M6
-GA support surface.
+The `lenso` CLI owns application composition, local System realization, Module
+and Service scaffolding, and independent Console installation. The public app
+lifecycle is **Compose → Run locally → Connect → Status**.
 
 ## Install
 
+Install either package that exposes the `lenso` command:
+
 ```sh
-npm install -g @lenso/cli
-# or
 cargo install lenso-cli
-```
+# or
+npm install -g @lenso/cli
 
-Check the installed command:
-
-```sh
 lenso --version
 lenso --help
 ```
 
-## Launchpad workflow
+## Compose
 
-| Command                                                | Use it for                                                                    |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| `lenso app list`                                      | List built-in product blueprints and their supported addons.                  |
-| `lenso app inspect support-desk`                      | Show services, modules, dependencies, and addon choices for one blueprint.    |
-| `lenso app create support-desk --blueprint support-desk` | Create a generated support-desk app with host, TypeScript service, and Rust service. |
-| `lenso app compose ./acme-support --blueprint support-desk --addon support-sla --apply` | Compose a generated app from a blueprint and addons.                          |
-| `lenso app compose ./acme-support --blueprint support-desk --pack ./capabilities/support-sla --apply` | Compose a generated app from a blueprint and a local capability pack.          |
-| `lenso app compose --repo-root . --addon support-sla --addon customer-profile --write-plan` | Write a composition-aware App Change Plan for an existing app.                |
-| `lenso app compose --repo-root . --pack ./capabilities/support-sla --write-plan` | Write a Console-visible App Change Plan for a capability pack request.         |
-| `lenso app add support-sla`                           | Add a supported product addon to the current generated app.                   |
-| `lenso app plan --addon support-sla --write-plan`     | Write a reviewable App Change Plan before applying an addon.                  |
-| `lenso app upgrade --check`                           | Fail when generated app state has pending safe changes.                       |
-| `lenso app apply .lenso/app-change-plan.json --dry-run` | Preview the safe changes recorded in an App Change Plan.                      |
-| `lenso app apply .lenso/app-change-plan.json`         | Apply safe generated-state repairs or supported addon changes from a plan.    |
-| `lenso dev status`                                    | Read `.lenso/launchpad.json` and show generated services, modules, and next command. |
-| `lenso dev doctor --write-state`                      | Check local app files, workspace services, commands, optional live readiness, and write `.lenso/dev-doctor.json`. |
-| `lenso dev doctor --live --write-state`               | Also probe declared service ready URLs before writing the doctor state.       |
-| `lenso app verify --write-proof`                      | Check generated app state and write `.lenso/app-proof.json` for Console and agents. |
-| `lenso app diff`                                      | Fail when Launchpad, workspace, system, or doctor state drift is present.     |
-| `lenso app repair --dry-run`                          | Preview safe generated-state repairs without touching existing service source files. |
-| `lenso app repair`                                    | Apply safe generated-state repairs for missing control-plane entries.         |
-| `lenso app next`                                      | Print the next useful app lifecycle command.                                  |
-| `lenso app explain`                                   | Explain generated-state, module, and service actions.                         |
-| `lenso dev up`                                        | Start workspace services, installed service processes, then the host.         |
-| `lenso dev stop`                                      | Show how to stop the foreground dev process.                                  |
-| `lenso agent context`                                 | Print Launchpad, system, workspace, and boundary context for coding agents.   |
-| `lenso agent context --output AGENT_CONTEXT.md`        | Write the same context to a file.                                             |
-| `lenso agent task "Add SLA fields"`                   | Print agent context with a concrete task appended.                            |
-| `lenso agent task --from-app-plan "Add SLA fields"`   | Include App Change Plan and composition context in agent handoff.             |
-| `lenso agent task --for-capability support-sla "Add escalation"` | Include capability-pack scope in agent handoff.                               |
-
-Typical Launchpad loop:
+Inspect and materialize a product blueprint:
 
 ```sh
 lenso app list
 lenso app inspect support-desk
-lenso app compose ./acme-support --blueprint support-desk --addon support-sla --apply
-cd acme-support
-lenso app next
-lenso app explain
-lenso dev status
-lenso dev doctor --write-state
-lenso app verify --write-proof
-lenso app diff
-lenso agent task --from-app-plan "Add SLA fields"
-lenso dev up
+lenso app compose ./support-desk --blueprint support-desk --apply
 ```
 
-Launchpad writes generated control-plane state. Module contracts still live in
-linked modules or service manifests; service processes still own their language,
-storage, and deployment packaging.
-Use `lenso app repair --dry-run` when App Proof reports generated-state drift.
-Run `lenso app repair` only for safe generated control-plane repairs; it does
-not overwrite existing service source files.
-Use `lenso app plan --write-plan` when you want the same generated-state repair
-surface as a Console-visible plan before applying changes.
-For blueprint and addon semantics, read
-[Product Blueprints](/docs/product-blueprints).
+`--apply` is the atomic write flag for the generated `lenso.app.json`; it is
+not a separate application-management phase. The bare Support Desk blueprint
+selects `auth`, `notification-worker`, and `support-api`.
 
-## Capability packs
-
-| Command | Use it for |
-| --- | --- |
-| `lenso capability init support-sla --dir ./capabilities/support-sla --lang ts --for-blueprint support-desk` | Create a local capability pack with seed module and service manifests. |
-| `lenso capability check ./capabilities/support-sla` | Validate pack protocol, blueprint support, safe manifest paths, and duplicate declarations. |
-| `lenso capability inspect ./capabilities/support-sla` | Print pack metadata for tools and agents. |
-| `lenso capability library init` | Create `.lenso/lenso.capability-library.json`. |
-| `lenso capability library add ./capabilities/support-sla` | Add a local pack to the app's capability library. |
-| `lenso capability library list --json` | Print registered local packs. |
-| `lenso capability library check` | Validate every pack recorded in the local library. |
-| `lenso capability fit support-sla --repo-root .` | Check whether a pack fits the current Launchpad app. |
-| `lenso app compose ./acme-support --blueprint support-desk --pack ./capabilities/support-sla --apply` | Apply the pack to a generated app's Launchpad state. |
-| `lenso app compose ./acme-support --blueprint support-desk --pack support-sla --apply` | Resolve a pack by library name and apply it. |
-| `lenso agent task --for-capability support-sla "Add escalation"` | Create an agent handoff scoped to the pack. |
-
-Capability packs are local authoring metadata for reusable business slices. A
-pack can point at module and service manifests, but it does not install modules
-or run providers by itself. Use `lenso module install` for module capabilities
-and `lenso service install` or `lenso service dev` for provider lifecycle.
-The capability library is local discovery metadata; it is not a remote registry
-or trust boundary.
-
-## GA commands
-
-| Command | Use it for |
-| --- | --- |
-| `lenso ga support-check --manifest <file> --component <id@version> --state-version <n>` | Check an exact proposed component set against the reviewed support manifest. |
-| `lenso ga manifest-migrate --manifest <file> --source <file> --target-format <protocol> --dry-run` | Preview an identity-preserving Service or System manifest migration. |
-| `lenso ga service-upgrade --manifest <file> --input <file>` | Produce a migration-first multi-Workload Service upgrade plan. |
-| `lenso ga contract-retire --input <file> --output <file>` | Build a stale-safe Contract Retirement plan before approval. |
-| `lenso ga failure-evaluate --input <file>` | Evaluate one versioned Failure Scenario evidence input. |
-
-These commands evaluate and plan. They do not infer deployment or production
-authority from repository access. See [Single-Region GA](/docs/single-region-ga)
-for the supported component baseline and complete evidence gate.
-
-## Host commands
-
-| Command                                              | Use it for                                                      |
-| ---------------------------------------------------- | --------------------------------------------------------------- |
-| `lenso host init <dir>`                              | Create a generated Rust host application.                       |
-| `lenso host init <dir> --name <crate>`               | Override the generated Cargo crate name.                        |
-| `lenso host init <dir> --force`                      | Scaffold into a non-empty directory.                            |
-| `lenso console install`                              | Plan or apply an independent Lenso Console installation.        |
-| `lenso console upgrade`                              | Plan or apply an immutable Console Service Release upgrade.     |
-| `lenso console doctor`                               | Validate installation evidence and optional readiness.          |
-| `lenso console operator bootstrap --console-url <url> --identifier <email>` | Create the first password user and audited Console Operator grant. |
-| `lenso console operator bootstrap --user-id <id>`    | Grant the first Operator role to an existing Console Auth user. |
-| `lenso serve`                                        | Start local Postgres, run migrations, then run API and worker.  |
-| `lenso serve --separate-worker`                      | Run API and worker as separate local child processes.           |
-| `lenso serve --skip-db`                              | Do not start the template Postgres service.                     |
-| `lenso serve --skip-migrate`                         | Do not run migrations before starting services.                 |
-
-Typical host loop:
+The product acceptance uses a checked-in capability pack. Run this exact
+command from the `lenso-examples` repository root:
 
 ```sh
-lenso host init acme-platform
-cd acme-platform
-cp .env.example .env
-lenso serve
+lenso app compose ./support-desk \
+  --blueprint support-desk \
+  --pack ./fixtures/acceptance/support-desk/capability \
+  --implementation support-api=linked \
+  --implementation notification-worker=linked \
+  --implementation lenso/platform-story=linked \
+  --apply
 ```
 
-## Module scaffolding
+The pack contributes `support/tickets` Service delivery and
+`lenso/platform-story`. The implementation flags make the local bindings
+explicit. Because `support/tickets` is service-backed, the acceptance runner
+then uses `lenso service workspace init --force` and
+`lenso service workspace add support-ticket` with the Provider's
+`lenso.service.json`. Do not start this pack-backed composition without that
+workspace entry; use `pnpm acceptance:support-desk` for the supported complete
+path.
 
-| Command                                                                | Use it for                                                   |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `lenso module create billing`                                          | Create a linked Rust module inside the host.                 |
-| `lenso module create billing --with-console-ui`                        | Create a linked Module with an isolated Console UI artifact. |
-| `lenso module create billing --dry-run`                                | Preview generated files without writing them.                |
+## Run locally
 
-Useful `module create` options:
+For the bare blueprint foundation, validate the exact launch shape, start it,
+and clean up only resources owned by that run:
 
 ```sh
-lenso module create support \
-  --with-console-ui \
-  --area operations \
-  --label "Support Tickets" \
-  --route /support/tickets \
-  --capability support.ticket.read \
-  --icon Ticket
+lenso system dev --system-file ./support-desk/lenso.app.json --dry-run --json
+lenso system dev --system-file ./support-desk/lenso.app.json
+lenso system dev --system-file ./support-desk/lenso.app.json --cleanup
 ```
 
-## Service workspace
+The running System includes the persistent CLI-owned
+`lenso-local-control-adapter`, bound as `workload-control:<system>`.
 
-| Command                                                                                                               | Use it for                                                                    |
-| --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `lenso service create support-suite-provider --lang ts --output-dir services --port 4110`                             | Create a TypeScript service and register it in `lenso.workspace.json`.        |
-| `lenso service create audit-provider --lang rust --output-dir services --port 4130`                                   | Create a Rust service and register it in the same workspace.                  |
-| `lenso service workspace init`                                                                                        | Create an empty `lenso.workspace.json`.                                       |
-| `lenso service workspace add <name> --cwd <dir> --lang ts --command "pnpm start" --ready-url <url> --module <module>` | Register an existing service.                                                 |
-| `lenso service workspace list`                                                                                        | Show workspace services.                                                      |
-| `lenso service workspace check [name] --json`                                                                         | Check service cwd, manifest, and ready URL state.                             |
-| `lenso service workspace export --output .lenso/module-services.json`                                                 | Export workspace services as host service-start state.                        |
-| `lenso service verify [manifest-or-provider] --json`                                                                  | Run release-readiness checks for a local manifest or installed provider.      |
-| `lenso service verify ./lenso.service.json --env-file .env --json`                                                    | Include required/missing service env in the verification report.              |
-| `lenso service upgrade-plan <provider> <manifest-or-package> --json`                                                  | Preview service manifest changes before upgrade.                              |
-| `lenso service env add staging --service <provider> --target kubernetes --namespace <ns> --image <image>`             | Record a deployment environment for a service provider.                       |
-| `lenso service env add prod --service <provider> --target operator --namespace <ns> --image <image>`                  | Record an operator-managed production deployment environment.                 |
-| `lenso service env list --service <provider>`                                                                         | List deployment environments from `.lenso/service-environments.json`.         |
-| `lenso service env verify staging --service <provider>`                                                               | Check service install state and provider target environment fields.            |
-| `lenso service deploy export <provider> --env staging --target kubernetes --output-dir <dir>`                         | Generate reviewable Kubernetes manifests.                                     |
-| `lenso service deploy export <provider> --env staging --hpa --pdb --network-policy --output-dir <dir>`                | Include HPA, PDB, and NetworkPolicy fragments in the export.                  |
-| `lenso service deploy status <provider> --env staging --write-state`                                                  | Read Kubernetes rollout state and update `.lenso/service-deployments.json`.   |
-| `lenso service deploy wait <provider> --env staging --write-state`                                                    | Poll deployment state and append rollout history until the service is ready.  |
-| `lenso operator export-crd --output <dir>`                                                                            | Generate the Lenso Operator install bundle.                                   |
-| `lenso service deploy export <provider> --env staging --target operator --output-dir <dir>`                           | Generate a `LensoServiceProvider` custom resource for an operator-managed provider. |
-| `lenso service deploy status <provider> --env staging --source operator --write-state`                                | Read `LensoServiceProvider` status and update `.lenso/service-deployments.json`. |
-| `lenso service deploy wait <provider> --env staging --source operator --write-state`                                  | Poll operator-managed state and append rollout history until the service is ready. |
-| `lenso service release plan <provider> <manifest-or-package> --output <plan.json>`                                    | Create a reusable service release plan from installed and candidate manifests. |
-| `lenso service release plan <provider> <manifest-or-package> --env staging --output <plan.json>`                      | Create an environment-aware service release plan.                             |
-| `lenso service release check <plan.json> --fail-on breaking`                                                          | Recheck a release plan before handing it to an operator or CI job.            |
-| `lenso service policy check <plan.json> --fail-on breaking`                                                           | Run the built-in service release policy gate only.                            |
-| `lenso service release apply <plan.json>`                                                                             | Apply the candidate and record `.lenso/service-releases.json`.                |
-| `lenso service release apply <plan.json> --env staging`                                                               | Apply only if the plan matches the requested environment.                     |
-| `lenso service release promote <provider> --from staging --to prod --output <plan.json>`                              | Create a prod release plan from the latest staging release.                   |
-| `lenso service release rollback <provider> --env prod [--to <release-id>] --output <plan.json>`                       | Create an environment-specific rollback release plan.                         |
-| `lenso service deploy export <provider> --env prod --target operator --hpa --pdb --network-policy --output-dir <dir>` | Generate production operator-managed delivery files after promotion.          |
-| `lenso service dev`                                                                                                   | Start workspace services, installed service processes, then the host.         |
-| `lenso service dev --no-workspace`                                                                                    | Start only installed `.lenso/module-services.json` providers before the host. |
+## Connect
 
-The workspace file is local development control plane state. It does not replace
-`lenso service install` or `lenso module install`; those still write host-local
-provider and module install state. Workspace reads prefer `lenso.workspace.json`
-and fall back to `.lenso/services.json` for older local hosts.
+Console Service is installed and started independently. For the local
+Support Desk path, an authenticated operator first submits each business
+Service's signed exchange:
 
-## Service system
+```text
+POST /api/console/v1/enrollment-receipts
+body: {offer, receipt, baseUrl}
+permission: console.system.connect
+```
 
-| Command                                                                                                                | Use it for                                                       |
-| ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `lenso system init support-platform --env local --env staging --env prod`                                              | Create `lenso.system.json` for a whole product system.           |
-| `lenso system add-service support-suite-provider --target operator --module support-ticket --cwd services/support`     | Register a service provider and the modules it owns.             |
-| `lenso system add-module support-ticket --to service:support-suite-provider --capability support_ticket.tickets.write` | Register a module capability and its install target.             |
-| `lenso system add-module auth --to host --capability auth`                                                             | Register a host-owned linked or built-in capability in the graph. |
-| `lenso system graph --system-file lenso.system.json`                                                                   | Print the service/module dependency graph.                       |
-| `lenso system plan --system-file lenso.system.json --check`                                                            | Fail when the graph has missing modules or unresolved edges.      |
-| `lenso system diff --system-file lenso.system.json --check`                                                            | Compare the system manifest with host-local `.lenso` state.       |
-| `lenso system apply --system-file lenso.system.json --dry-run`                                                         | Preview safe host-local state writes.                             |
-| `lenso system doctor --system-file lenso.system.json`                                                                  | Show drift and the next operator command.                         |
-| `lenso system release plan --env staging --output system-release.json`                                                  | Create a system-level release plan.                               |
-| `lenso system release check system-release.json`                                                                        | Run system release policy checks.                                 |
-| `lenso system release apply system-release.json`                                                                        | Record an applied system release in host-local history.            |
-| `lenso system release promote --from staging --to prod --output system-release-prod.json`                               | Build a promotion plan from a prior system release.                |
-| `lenso system release rollback --env prod --output system-rollback.json`                                                | Build a rollback plan from system release history.                 |
-| `lenso system release history`                                                                                          | List applied system releases.                                     |
-| `lenso system runbook generate system-release.json --output system-runbook.json`                                        | Generate operator steps from a system release plan.                |
-| `lenso system runbook check system-runbook.json`                                                                         | Check a generated system runbook.                                  |
-| `lenso system runbook record system-runbook.json`                                                                        | Record a runbook in host-local history.                            |
-| `lenso system runbook history`                                                                                           | List recorded system runbooks.                                     |
-| `lenso system runbook doctor`                                                                                            | Diagnose system runbook state.                                     |
-| `lenso system plan --system-file lenso.system.json --json`                                                             | Emit the plan for automation.                                    |
+Then submit the exact `lenso.system.v2` topology, its SHA-256 digest, and its
+Management Binding:
 
-`lenso.system.json` sits above module and service install state. It explains
-how services, modules, environments, and capability dependencies form one
-system. It does not replace `lenso module install` or `lenso service install`.
-`system apply` only writes local service-start and service-environment state;
-module install, service release, and Kubernetes deployment stay explicit.
-`system release apply` only writes `.lenso/system-releases.json`; it does not
-run service release apply or deploy commands.
-`system runbook record` only writes `.lenso/system-runbooks.json`; runbooks are
-generated operator evidence, not module authoring files.
+```text
+POST /api/console/v1/system/connect
+```
 
-## Installing modules
+The local enrollment endpoint accepts loopback HTTP targets only. The
+CLI-owned Local Control Adapter does not use business enrollment; every other
+topology Service requires an active signed enrollment.
 
-| Command                                                             | Use it for                                                                        |
-| ------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `lenso module install auth`                                         | Enable a linked built-in module from its descriptor.                              |
-| `lenso module enable auth`                                          | Alias for installing/enabling a module capability.                                |
-| `lenso module disable auth`                                         | Alias for uninstalling/disabling a module capability.                             |
-| `lenso module install auth --profile redis-session-cache`           | Enable Redis-backed auth session lookup.                                          |
-| `lenso module release inspect <module-release.json>`                | Inspect a module release before installing it.                                    |
-| `lenso module release check <module-release.json> --base-url <url>` | Fail fast when a local module release is missing install inputs.                  |
-| `lenso module install <module-release.json> --base-url <url>`       | Install a business module from a release artifact.                                |
-| `lenso module install <ref> --dry-run`                              | Preview the Module Release, receipts, and selected Console UI artifact.            |
-| `lenso module install <ref> --run-install-commands`                 | Execute descriptor-declared install commands.                                     |
+## Status
 
-`module install` is the module-level entrypoint. Service releases resolve to a
-provider package or manifest; linked releases enable Rust code already available
-to the host. `service install` remains the provider/process entrypoint.
-When `lenso service install <service-name>` matches a service workspace entry,
-or when `lenso service install ./lenso.service.json` points at a local source
-manifest registered in that workspace, the CLI infers the runtime base URL from
-the workspace `readyUrl`; standalone local package artifacts still need
-`--base-url`.
+Read the connected System through Console or:
 
-`module install` writes host-local state. Depending on the source, it can update:
+```text
+GET /api/console/v1/system
+permission: console.system.read
+```
 
-- `.env`
-- `Cargo.toml`
-- `src/lib.rs`
-- `.lenso/module-installs.json`
-- `.lenso/module-services.json`
-- `.lenso/runtime-config-defaults.json`
+System, Service, Module, Surface, and Adapter projections report
+`connected`, `unavailable`, `incompatible`, or `unmanaged` with a direct
+reason. Workload operational state is separate and reports values such as
+`running`, `suspended`, or `unknown`. An unavailable Adapter produces
+`unknown` Workload observation and rejects mutation without queueing.
 
-Restart API and worker after installing or updating modules.
-
-## Update and uninstall
+## Module authoring
 
 ```sh
-lenso module update billing
-lenso module update billing --base-url https://example.com/lenso/module/v1
-lenso module uninstall billing
+lenso module create billing --with-console-ui --dry-run
+lenso module create billing --with-console-ui
+lenso module dev --console-ui
 ```
 
-`module update` reuses the recorded install receipt from
-`.lenso/module-installs.json`. Linked updates reapply the descriptor or
-built-in Module entry; independently running providers use `lenso service`
-lifecycle commands.
+The scaffold accepts an unqualified local slug such as `billing`. A product
+Module keeps its fully qualified business identity—`support/tickets` in the
+Support Desk acceptance—whether linked into a Host or delivered by a Service.
+Console UI is a receipt-bound `console_ui_esm` artifact in that Module Release.
+Business operations remain typed Business API operations, not a generic
+administration channel.
 
-Use `--source linked` only when a descriptor is missing a source field and you
-need to force the loading source:
+See [Module Authoring](/docs/module-authoring) and
+[Module Console UI](/docs/console-packages).
+
+## Provider workspace
+
+Create a Provider scaffold or register an existing local Provider:
 
 ```sh
-lenso module uninstall auth --source linked
+lenso service create support-api --lang ts --output-dir services --dry-run
+cd support-desk
+lenso service workspace init --workspace-file lenso.workspace.json --force
+lenso service workspace add support-ticket \
+  --cwd ../support-ticket-provider \
+  --lang ts \
+  --command "node src/server.ts" \
+  --ready-url http://127.0.0.1:4110/lenso/service/v1/status \
+  --module support-ticket \
+  --manifest lenso.service.json \
+  --workspace-file lenso.workspace.json
+lenso service workspace check --workspace-file lenso.workspace.json --json
 ```
 
-## Doctor
+Provider Services use `lenso.service.v1`, remain Host-owned, and support Rust
+and TypeScript. Autonomous Services use Rust `lenso.service.v2`, own their
+runtime and storage, and are described in
+[Service Capability Tiers](/docs/autonomous-services). TypeScript does not
+provide Autonomous Service parity.
+
+## Console operator bootstrap
+
+An installed Console has no default credentials. Bootstrap the first Operator
+from the external installation authority:
 
 ```sh
-lenso module doctor
-lenso module doctor billing
+lenso console operator bootstrap \
+  --console-root ../lenso-console \
+  --console-url http://127.0.0.1:3030 \
+  --identifier admin@example.com
 ```
 
-Doctor checks Linked Module composition and receipts. Use
-`lenso service doctor <provider> --json` for Service manifests, readiness,
-deployment observations, and stale process state.
+Interactive terminals prompt without echoing the password. Automation must use
+`--password-stdin` or a private regular file through `--password-file`.
 
-## Catalogs
+## Product acceptance
 
-Available Modules reads the built-in official catalog by default. For local
-discovery experiments, set `.env` `LENSO_MODULE_CATALOG_FILE=<path>` to point at
-a catalog JSON file. Catalog entries remain discovery data; `lenso module
-install <manifest-or-release>` is still the boundary that writes host-local
-state.
-
-## Marketplace compatibility
-
-The CLI also exposes:
+From the prepared `lenso-examples` checkout:
 
 ```sh
-lenso module marketplace install <manifest-url>
+pnpm acceptance:support-desk
 ```
 
-This uses the same install path as `lenso module install <manifest-url>`. Keep
-new automation on the direct install command unless you are specifically testing
-marketplace routing.
+This is the product-level black-box entrypoint. See [Examples](/docs/examples)
+for sibling checkout, PostgreSQL, and browser prerequisites.
 
-## Console composition
+## Ownership boundary
 
-Plan and apply the exact Console Service composition separately from Module
-installation:
-
-```sh
-lenso console composition plan --composition-file composition.json --output plan.json
-lenso console composition apply --plan-file plan.json --approved-plan-digest sha256:...
-```
-
-The apply command accepts only the exact approved plan digest and persists the
-new composition revision atomically. It does not install same-origin packages.
+- `lenso.app.json` is the exact application composition and lock.
+- `lenso system dev` owns only the local run and its Local Control Adapter.
+- Console connects and reports the exact topology; it does not create or
+  reconcile production objects.
+- Production delivery remains repository-, platform-, and operator-owned.

@@ -1,125 +1,83 @@
 ---
-title: Autonomous Services
-description: Understand the lenso.service.v2 boundary, Service-owned runtime, durable workflows, identity, and clusterless development.
+title: Service Capability Tiers
+description: Choose the current Provider or Autonomous Service tier without overstating language support.
 ---
 
-An Autonomous Service is the point where a business boundary owns its runtime,
-data, release, and operational evidence. It is not the default starting point
-for every module.
+Lenso keeps two out-of-process Service Capability Tiers distinct. They solve
+different ownership problems and use different runtime contracts.
 
-Lenso keeps three shapes distinct:
+## Service Capability Tiers
 
-| Shape | Choose it when | Runtime owner |
-| --- | --- | --- |
-| Linked module | The capability belongs to the app and shares its release cadence. | Host |
-| Service-backed module | A separate process provides modules while the host keeps queues, retries, policy, and evidence. | Host |
-| Autonomous Service | The boundary must own Workloads, Store, workflows, outbox, health, identity, and release evidence. | Service |
+| Tier | Contract | Runtime owner | Current languages | Choose it when |
+| --- | --- | --- | --- | --- |
+| Provider tier | `lenso.service.v1` | Host | Rust and TypeScript | A Service process provides Modules while the Host keeps policy, queues, retries, outbox dispatch, and Runtime Stories. |
+| Autonomous Service tier | `lenso.service.v2` | Service | Rust | A stable business boundary must own its Workloads, business runtime, service-owned storage, operations, and release cadence. |
 
-## The Service contract
+The tier describes Service responsibility; it does not replace Module identity.
+A Support Ticket Module can move from linked delivery to Provider delivery and,
+later, into an Autonomous Service without renaming its business contracts.
 
-`lenso.service.v2` describes one logical Service independently of how many
-processes it runs. A Service can declare:
+## Provider tier
 
-- API, Worker, Migration, and extension Workloads;
-- the Modules it owns;
-- one or more logical Service Stores;
-- tenancy mode and operating regions;
-- configuration, reliability, API, event, and dependency contracts.
+A Provider exports one or more Modules to a Host. The Host authenticates calls,
+applies capability policy, schedules runtime functions, owns retries and queues,
+dispatches outbox events, and records Runtime Stories. The Provider implements
+the declared Module operations without becoming a peer Host runtime.
 
-The Service identity stays stable when its Workload count or deployment topology
-changes. A Kubernetes Deployment is an adapter detail, not the business
-identity.
+Use Rust or `@lenso/service-kit` for this tier. The TypeScript kit emits and
+serves `lenso.service.v1` manifests, Module Releases, HTTP handlers, and the
+supported Provider transport surface.
 
-## Service-owned runtime
+Provider is usually the right first process boundary when one team needs a
+separate implementation but the application still owns coordination.
 
-The `lenso-autonomous-service` runtime validates the complete definition before
-startup, applies Service and Module migrations to the injected Store, runs
-Service-owned queues, and relays its transactional outbox. It does not boot
-through the Host or reinterpret a Provider v1 manifest.
+## Autonomous Service tier
 
-The boundary is intentionally strict:
+The Rust `lenso-autonomous-service` runtime validates `lenso.service.v2` and
+starts a Service-owned runtime graph. Current Rust framework capabilities
+include:
 
-- business routes and migrations still come from owned Modules;
-- workflow state, timers, attempts, Inbox, and Outbox stay in the Service Store;
-- health and local evidence remain available when the System Plane or Runtime
-  Console is unavailable;
-- deployment orchestration never participates in business request traffic.
+- generated direct HTTP/gRPC clients and servers from versioned contracts;
+- business events with Service-owned Inbox and transactional Outbox handling;
+- versioned durable workflows, timers, retries, child workflows, and
+  compensation;
+- Workload identity with SPIFFE production adapters and deterministic local
+  identities;
+- signed delegated context for actor, tenant, deadline, causation, and
+  idempotency propagation;
+- service-owned storage, migrations, health, operation records, and local Story
+  segments.
 
-## Durable workflows
+Business traffic goes directly between Services through declared contracts. It
+does not pass through Console or a Host Provider proxy. System Plane outage does
+not stop Service-local execution.
 
-Modules can declare versioned workflow definitions. Each instance pins the exact
-definition artifact and digest, so an upgrade cannot silently reinterpret work
-that is already running.
+## Language support is explicit
 
-Transitions preserve Story, causation, tenant, actor, deadline, and idempotency
-context. Retry timers are durable. Child workflows keep explicit parent links.
-Completed effects can declare compensation requests and completion events; the
-workflow remains `compensating` until the remote reversal is confirmed.
+**TypeScript does not provide Autonomous Service parity.**
 
-This is not a distributed transaction. Each Service commits its own business
-effect and durable message state locally.
+`@lenso/service-kit` currently supports the Provider tier only. It does not
+implement the `lenso.service.v2` runtime, Service Store, durable workflow
+runtime, Workload identity, delegated context verification, direct contract
+runtime, or Service-owned System Plane operations. Use Rust when those
+Autonomous Service capabilities are required.
 
-## Identity and evidence
+This is a support boundary, not a roadmap promise. Do not label a TypeScript
+Provider as Autonomous merely because it runs in a separate process.
 
-Production callers authenticate as stable `service:<service-id>` principals.
-The first supported production profile uses SPIFFE X.509-SVID mTLS with an
-audience-limited JWT-SVID. The local System Sandbox uses a deterministic
-development-only identity provider.
+## Move a boundary only for a concrete reason
 
-Each Service exposes an authenticated append-only Story Segment Feed. The feed
-uses an exact audience, tenant authorization, signed opaque cursors, and stable
-segment revisions. Collection is read-only: it cannot acknowledge, advance, or
-unblock workflow execution.
+Choose the Autonomous Service tier when at least one boundary is real:
 
-Lenso Console shows the federated story after the Story aggregator collects
-those segments. A delayed or unavailable Console does not change Service-local
-execution.
-
-## Develop without a cluster
-
-Use the System Sandbox for the shortest multi-Service proof:
-
-```sh
-lenso system dev \
-  --system-file lenso.system.json \
-  --sandbox-file lenso.sandbox.json
-```
-
-Validate the exact launch plan without allocating resources:
-
-```sh
-lenso system dev \
-  --system-file lenso.system.json \
-  --sandbox-file lenso.sandbox.json \
-  --dry-run --json
-```
-
-Run one declared failure scenario and let the sandbox clean up only the
-resources it owns:
-
-```sh
-lenso system dev \
-  --system-file lenso.system.json \
-  --sandbox-file lenso.sandbox.json \
-  --scenario api-crash --json
-```
-
-Kubernetes is an optional delivery adapter. It is not required for local
-service development or for the Service contract itself.
-
-## When to move a boundary
-
-Choose autonomy after the boundary has at least one concrete reason to exist:
-
-- independent ownership or release cadence;
+- independent team or release cadence;
 - isolated data authority;
 - a distinct trust boundary;
 - independently operated reliability or scaling;
-- a runtime that cannot reasonably live in the Rust host.
+- runtime behavior that must continue independently of the Host.
 
-If none applies, keep the capability linked. Explicit seams make a later move
-mechanical without paying the operational cost early.
+Otherwise keep the Module linked or use the Provider tier. Both preserve a
+clear later migration path without paying autonomous operational cost early.
 
-Continue with [Service System Plane](/docs/service-system-plane) for system
-composition or [Single-Region GA](/docs/single-region-ga) for the supported
-production envelope.
+Continue with [Service System Plane](/docs/service-system-plane) for mixed
+topology composition or [Examples](/docs/examples) for the Support Desk public
+lifecycle.

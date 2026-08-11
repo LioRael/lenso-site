@@ -11,8 +11,6 @@ export default defineMeta({
     "runtime-stories",
     "service-system-plane",
     "manifest-reference",
-    "api-clients",
     "contracts-and-checks",
-    "checks-and-release",
   ],
 });

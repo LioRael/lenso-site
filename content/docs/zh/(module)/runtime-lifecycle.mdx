@@ -9,12 +9,12 @@ Module Manifest 可以声明 Runtime Function、Schedule 与生命周期意图�
 ## Linked Module
 
 Linked Module 通过 Binding 注册 Function、Event Handler 与生命周期行为。Host
-Worker 拥有队列、重试、Dead Letter、Outbox 和 Runtime Story 证据。
+Worker 拥有队列、重试、Dead Letter、Outbox 与 Runtime Story Record。
 
 ## Service Provider
 
 独立 Service 通过自己的 Provider API 执行为其 Module 声明的 Operation。
-Service 拥有 Workload、Service Store 与终态执行证据；Host 仍拥有 Host 队列和
+Service 拥有 Workload、Service Store 与终态执行记录；Host 仍拥有 Host 队列和
 能力校验。两侧显式传递 correlation、actor、trace 和 operation identity。
 
 Service 不会直接 claim Host Outbox，也不会成为另一种 Module Source。
@@ -22,9 +22,6 @@ Service 不会直接 claim Host Outbox，也不会成为另一种 Module Source�
 ## 校验
 
 修改 Linked Runtime 行为后运行 Framework 的目标测试与 `just check`。修改
-Service Provider 后运行 Service 自有测试，并使用：
-
-```sh
-lenso service verify <provider> --json
-lenso service doctor <provider> --json
-```
+Provider Service 后运行 Service 自有合约测试；完整 Support Desk 路径使用
+`pnpm acceptance:support-desk`。Provider Tier 仍由 Host 持有，Autonomous
+Service Tier 则由 Rust Service 持有 Runtime 与 Store。
