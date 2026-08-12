@@ -82,9 +82,12 @@ Operation 名称应体现领域：`listTickets`、`createTicket`、`updateTicket
 `closeTicket` 描述 Support Ticket 生命周期。在已提交 OpenAPI 合约中定义
 Actor、Tenant、Deadline、Idempotency、Revision 与强类型错误行为。
 
-Linked 实现把 Route Contribution 接入 `LinkedBinding`。Provider 实现通过
-`lenso.service.v1` 导出同一 Module Contract。两种交付模式都不会改变 Module
-名称或 Operation ID。
+Linked 实现把 Route Contribution 接入 `LinkedBinding`。Provider 实现把同一
+Module 发布为精确 `lenso.module-release.v1` Release，并通过
+`/lenso/provider/v1` 上的 `lenso.provider.v1` 提供锁定 Runtime。兼容性
+`lenso.service.v1` Manifest 携带进程与打包 Metadata，不是 Runtime Module
+Discovery 或 Digest Authority。两种交付模式都不会改变 Module 名称或
+Operation ID。
 
 ## 最小垂直切片
 
@@ -93,7 +96,7 @@ Linked 实现把 Route Contribution 接入 `LinkedBinding`。Provider 实现通�
 3. 从已提交合约生成 Client。
 4. 通过公开 API 添加 Smoke Check。
 5. 需要 UI 时，绑定一个精确 Console Surface 与窄 Surface Grant。
-6. 组合新的 `lenso.app.json` 修订，并通过 `lenso system dev` 运行。
+6. 组合新的 `lenso.app.json` 修订，并通过 `lenso dev up` 启动。
 7. 连接 Console，检查 Module 的直接状态。
 
 ## 完成标准

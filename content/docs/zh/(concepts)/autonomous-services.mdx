@@ -10,7 +10,7 @@ Lenso 明确区分两个进程外 Service Capability Tiers。它们解决不同�
 
 | 层级 | 合约 | 运行时持有者 | 当前语言 | 适用场景 |
 | --- | --- | --- | --- | --- |
-| Provider tier | `lenso.service.v1` | Host | Rust 与 TypeScript | Service 进程提供 Module，Host 继续持有 Policy、Queue、Retry、Outbox 分发与 Runtime Story。 |
+| Provider tier | `lenso.service.v1` Metadata；`lenso.provider.v1` Runtime | Host | Rust 与 TypeScript | Service 进程提供精确 Module Release，Host 继续持有 Policy、Queue、Retry、Outbox 分发与 Runtime Story。 |
 | Autonomous Service tier | `lenso.service.v2` | Service | Rust | 稳定业务边界必须持有自己的 Workload、业务运行时、service-owned storage、运维与发布节奏。 |
 
 层级描述 Service 职责，不会替换 Module 身份。Support Ticket Module 可以从
@@ -24,9 +24,16 @@ Policy、调度 Runtime Function、持有 Retry 与 Queue、分发 Outbox events
 Runtime Story。Provider 实现声明的 Module Operation，但不会成为另一个 Host
 运行时。
 
-该层级支持 Rust 和 `@lenso/service-kit`。TypeScript Kit 生成并提供
-`lenso.service.v1` Manifest、Module Release、HTTP Handler 和受支持的 Provider
-Transport Surface。
+该层级支持 Rust 和 `@lenso/service-kit`。兼容性 `lenso.service.v1` Manifest
+描述 Service 打包与本地进程启动，不是 Runtime Module Discovery 或 Digest
+Authority。`/lenso/provider/v1` 上在线的 `lenso.provider.v1` Descriptor 标识一份
+精确 Service Release 及其导出的 `lenso.module-release.v1` Release，并提供锁定的
+Invocation、Recovery 与 Acknowledgement 边界。
+
+激活 Provider Export 前，Host 会校验 Service Release、Module Release、Manifest、
+Export 与 Contract Digest。生成的 TypeScript Service Kit 与当前 CLI Scaffold
+提供该精确 Provider Runtime，而 Queue、Retry、Effect 与 Runtime Story 仍由 Host
+持有。
 
 当团队需要独立实现进程，但应用仍持有协调职责时，Provider 通常是合适的第一
 进程边界。

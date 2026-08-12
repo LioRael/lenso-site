@@ -11,7 +11,8 @@ object.
 
 ```sh
 test -f ./support-desk/lenso.app.json
-lenso system dev --system-file ./support-desk/lenso.app.json --dry-run --json
+cd ./support-desk
+lenso system dev --system-file ./lenso.app.json --dry-run --json
 curl -sS http://127.0.0.1:3030/api/console/v1/system
 ```
 
@@ -23,10 +24,10 @@ The Console request also requires an authenticated actor with
 | Symptom | Check | Action |
 | --- | --- | --- |
 | `lenso.app.json` is missing | Compose output directory and source pack path | Run the compose command again from the directory that owns the pack. |
-| Local startup rejects the composition | `lenso system dev ... --dry-run --json` | Fix the reported digest, binding, workspace, or process declaration before starting. |
-| A business Service cannot enroll | Signed offer and receipt, allowlisted keys, and loopback `baseUrl` | Submit exactly `{offer, receipt, baseUrl}` to the enrollment endpoint. Remote self-service is not supported. |
-| Connect rejects a business Service | Active signed enrollment and advertised Core contract | Correct the Service identity or contract; do not bypass enrollment. |
-| Connect rejects the topology | Topology SHA-256 digest and Management Binding | Submit the exact `lenso.system.v2` document and matching binding. |
+| Connected local startup fails | The first failed stage from `lenso dev up --console-root ...` | Fix that Host, Provider, Store, Console, artifact, or connection stage before retrying. |
+| A business Service cannot enroll | Signed receipt in `.lenso/console-connect.json`, allowlisted keys, and loopback `baseUrl` | Correct the Service identity or contract; do not bypass signed enrollment. |
+| Connect rejects a business Service | Active signed enrollment and advertised Core contract | Reapply the exact bundle with `lenso console connect`; do not hand-edit its receipt. |
+| Connect rejects the topology | Topology SHA-256 digest and Management Binding in the bundle | Regenerate the bundle from the composed app; do not submit a different topology under the old digest. |
 | Local Control Adapter appears unenrolled | Adapter ID and binding | Use `lenso-local-control-adapter` with `workload-control:<system>`; this CLI-owned Adapter does not use business enrollment. |
 | A Module Surface is absent | Module Release, UI artifact, contract, and Surface Grant digests | Reconnect the exact app whose receipt binds all of those identities. |
 | Adapter connection is `unavailable` | Local Control Adapter process and target-owned status endpoint | Restart the local run. Workload observation remains `unknown`; mutation is not queued. |
@@ -56,54 +57,62 @@ Inspect `support-desk/lenso.app.json` rather than editing it by hand.
 
 ## Run locally
 
-Use dry run output to isolate composition and workspace failures without
-starting processes:
+Start the connected local path from the composed Host directory:
 
 ```sh
-lenso system dev --system-file ./support-desk/lenso.app.json --dry-run --json
+cd ./support-desk
+lenso dev up --console-root ../lenso-console
 ```
 
-Start only after that command succeeds:
+The command remains in the foreground and reports the exact Host, Provider,
+Store, Console, artifact, or connection stage that fails. Ctrl-C stops only
+processes started by that invocation.
+
+Use the System Sandbox dry run only when you need to isolate composition and
+Adapter validation from the connected Host, Provider, and Console path:
 
 ```sh
-lenso system dev --system-file ./support-desk/lenso.app.json
+lenso system dev --system-file ./lenso.app.json --dry-run --json
 ```
 
-If a previous run still owns the adapter socket or processes, use the bounded
-cleanup entrypoint:
+If a previous sandbox run still owns the Adapter socket or processes, use its
+bounded cleanup entrypoint:
 
 ```sh
-lenso system dev --system-file ./support-desk/lenso.app.json --cleanup
+lenso system dev --system-file ./lenso.app.json --cleanup
 ```
 
 Cleanup targets only resources recorded for that local run.
 
 ## Connect
 
-For every business Service in the local topology, submit the bilateral signed
-exchange first:
+`lenso dev up --console-root` writes and applies the exact local bundle before
+reporting the System ready. To retry a separately prepared bundle, use:
+
+```sh
+LENSO_CONSOLE_TOKEN='<operator-session-token>' \
+  lenso console connect \
+  --console-url http://127.0.0.1:3030 \
+  --bundle .lenso/console-connect.json
+```
+
+Use `--token-file` with a private regular file for non-interactive operation.
+Do not edit the bundle: regenerate it from the composed app when an identity,
+release, artifact, topology, or binding changes.
+
+The CLI submits each signed receipt to the underlying enrollment boundary and
+then applies the digest-bound System Connection:
 
 ```text
 POST /api/console/v1/enrollment-receipts
-body: {offer, receipt, baseUrl}
-permission: console.system.connect
-```
-
-Console validates both signatures using its server-only allowlist. In the
-current local slice, `baseUrl` must be loopback HTTP. Remote targets require a
-future mTLS and certificate-pinning seam; HTTPS and remote self-service are
-rejected here.
-
-Then connect:
-
-```text
 POST /api/console/v1/system/connect
 ```
 
-The request must carry the exact `lenso.system.v2` topology, its SHA-256 digest,
-and the Management Binding for the same System. Console also checks active
-enrollment and the advertised Core contract. There is no unsigned registry
-write that substitutes for this path.
+Console validates both signatures using its server-only allowlist. Local
+`baseUrl` values must be loopback HTTP. The System request must carry the exact
+`lenso.system.v2` topology, its SHA-256 digest, and the Management Binding for
+the same System. There is no unsigned registry write that substitutes for this
+path.
 
 ## Status
 

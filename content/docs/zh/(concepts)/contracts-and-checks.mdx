@@ -3,25 +3,27 @@ title: 合约与检查
 description: 了解由源码管理的合约，以及保障 Lenso 团队与 Agent 安全协作的本地检查。
 ---
 
-Lenso 已为代理做好了准备，因为重要的界面是明确且可检查的。这
-代理不必仅根据约定来推断系统。
+Lenso 的重要边界都有显式合约和可执行检查，因此团队与 Agent 不必只靠约定
+推断系统。
 
-如果您正在使用 API 而不是更改它，请从
-[API 参考](/docs/zh/api)。
+如果只是使用 API 而不是修改它，请从 [API 参考](/docs/zh/api)开始。
 
 ## 已提交的合约
 
-当前承诺的合约面故意较小：
+当前已提交的合约面刻意保持精简：
 
-|合约|消费者 |
+| 合约 | 使用方 |
 | --- | --- |
 | `contracts/openapi/app-api.v1.yaml` | API 客户端、SDK 生成、Lenso Console API 期望 |
-| `contracts/errors/error-response.v1.schema.json` |标准错误信封消费者|
+| `contracts/errors/error-response.v1.schema.json` | RFC 9457 Problem Details 消费方（`application/problem+json`） |
 | `contracts/services/lenso-service.v2.schema.json` | Service 与其提供的 Module 拓扑 |
 | `contracts/services/support-grpc.v1.proto` | Service 自有 gRPC API 示例 |
 
-Rust 路由注释和平台模式是来源。生成的工件
-已提交，以便下游用户可以依赖稳定的文件。
+Rust 路由注解和平台 Schema 是事实来源。生成产物会一并提交，让下游使用方
+可以依赖稳定文件。
+
+`ErrorResponse` 仍是已提交的 Schema 名称。HTTP 失败响应直接使用其顶层
+Problem Details 字段；客户端不应期待嵌套的 `error` Wrapper。
 
 ## 路由事实来源
 
@@ -63,40 +65,38 @@ pub async fn create_ticket(
 }
 ```
 
-如果操作员应该，路由仍然必须在模块 Manifest中声明
-查看路由元数据、Story标题和功能期望。
+如果希望运维人员看到路由元数据、Story 标题与 Capability 要求，仍需在
+Module Manifest 中声明该路由。
 
 ## 本地门禁
 
-使用证明变化界面的最小门：
+选择足以证明本次变更的最小门禁：
 
-|改变 |门 |
+| 变更 | 门禁 |
 | --- | --- |
 | Rust 代码 | `just check` |
-| OpenAPI 或生成的架构 | `just generated-check` |
-|模块边界或契约布局| `just arch-check` |
-|候选版本 | `just release-check` |
-|Lenso Console包工作| `lenso-console` 中的 `pnpm check` |
-|文档网站工作| `lenso-site` 中的 `pnpm types:check` 和 `pnpm build` |
+| OpenAPI 或生成的 Schema | `just generated-check` |
+| Module 边界或合约布局 | `just arch-check` |
+| 候选版本 | `just release-check` |
+| Lenso Console Package | 在 `lenso-console` 中运行 `pnpm check` |
+| 文档网站 | 在 `lenso-site` 中运行 `pnpm check` |
 
-对于公开发布，仅本地绿色是不够的。验证已发布的箱子，
-npm 包、GitHub Release 或用户实际会使用的工作流工件
-安装。
+对于公开发布，仅本地检查通过还不够。还应验证用户实际安装的 Crate、npm
+Package、GitHub Release 或 Workflow Artifact。
 
 ## 架构护栏
 
-`just arch-check` 保持模块架构的诚实性。它检查一些东西
-容易意外损坏的：
+`just arch-check` 用来守住 Module 架构中容易被意外破坏的边界：
 
 - 缺少提交的 OpenAPI 工件
 - 陈旧的生成合约工件
 - 缺少当前事件的事件有效负载合约
-- 模块源代码内的跨模块导入
-- DDD 文件夹漂移，例如 `api`、`application`、`domain` 或 `infrastructure`
-  模块板条箱内部
+- Module 源码内部的跨 Module Import
+- Module Crate 内出现 `api`、`application`、`domain` 或 `infrastructure`
+  等 DDD 目录漂移
 
-目标不是仪式。目标是赶在它之前赶上架构漂移
-变成了人们必须记住的框架。
+目标不是增加流程，而是在架构漂移演变成团队只能靠记忆维护的隐式规则前将其
+拦截。
 
 ## Agent 变更清单
 
@@ -119,18 +119,16 @@ Lenso Console:
 - story contains the business operation
 ```
 
-如果工作应该出现在Lenso Console中，则仅进行编译检查
-不够。
+如果变更应该出现在 Lenso Console 中，仅通过编译检查并不足够。
 
 ## 不要手动编辑生成的文件
 
-生成的合约是源代码控制的工件，但它们不是创作的
-手工。更改 Rust 路由注释、平台架构或原型源，然后
-再生：
+生成合约会纳入源码管理，但不应手工编写。请先修改 Rust 路由注解、平台
+Schema 或 Proto 源文件，再重新生成：
 
 ```sh
 just generate-contracts
 just generated-check
 ```
 
-将源更改和生成的差异一起提交。
+同时提交源文件变更与生成差异。

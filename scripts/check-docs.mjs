@@ -61,6 +61,8 @@ const retiredProductVocabulary = [
   ["retired change-plan vocabulary", /\bchange plan\b/gi],
   ["retired Plan/Apply lifecycle", /\bplan\s*\/\s*apply\b/gi],
   ["retired System v1 product model", /\blenso\.system(?:\.v1|\.json)\b/gi],
+  ["hidden compatibility app inspection entrypoint", /\blenso app (?:list|inspect)\b/gi],
+  ["retired Launchpad status entrypoint", /\blenso dev status\b/gi],
   [
     "retired System management entrypoint",
     /\blenso system (?:init|add-service|add-module|graph|plan|diff|apply|release|runbook|doctor)\b/gi,
@@ -295,6 +297,42 @@ assertOrdered("content/docs/zh/(concepts)/service-system-plane.mdx", [
 
 assertIncludes(
   [
+    "content/docs/index.mdx",
+    "content/docs/zh/index.mdx",
+    "content/docs/(host)/quickstart.mdx",
+    "content/docs/zh/(host)/quickstart.mdx",
+    "content/docs/(host)/product-blueprints.mdx",
+    "content/docs/zh/(host)/product-blueprints.mdx",
+    "content/docs/(host)/runtime-console.mdx",
+    "content/docs/zh/(host)/runtime-console.mdx",
+    "content/docs/(host)/cli-reference.mdx",
+    "content/docs/zh/(host)/cli-reference.mdx",
+    "content/docs/(host)/troubleshooting.mdx",
+    "content/docs/zh/(host)/troubleshooting.mdx",
+    "content/docs/(concepts)/service-system-plane.mdx",
+    "content/docs/zh/(concepts)/service-system-plane.mdx",
+  ],
+  "connected local entrypoint",
+  ["lenso dev up --console-root ../lenso-console"],
+);
+
+assertIncludes(
+  [
+    "content/docs/(host)/quickstart.mdx",
+    "content/docs/zh/(host)/quickstart.mdx",
+    "content/docs/(host)/runtime-console.mdx",
+    "content/docs/zh/(host)/runtime-console.mdx",
+    "content/docs/(host)/cli-reference.mdx",
+    "content/docs/zh/(host)/cli-reference.mdx",
+    "content/docs/(host)/troubleshooting.mdx",
+    "content/docs/zh/(host)/troubleshooting.mdx",
+  ],
+  "exact Console connection bundle",
+  [".lenso/console-connect.json", "lenso console connect"],
+);
+
+assertIncludes(
+  [
     "content/docs/(concepts)/autonomous-services.mdx",
     "content/docs/zh/(concepts)/autonomous-services.mdx",
   ],
@@ -312,6 +350,28 @@ assertIncludes(
     "delegated context",
     "service-owned storage",
     "TypeScript does not provide Autonomous Service parity",
+  ],
+);
+
+assertIncludes(
+  [
+    "content/docs/(host)/cli-reference.mdx",
+    "content/docs/zh/(host)/cli-reference.mdx",
+    "content/docs/(concepts)/autonomous-services.mdx",
+    "content/docs/zh/(concepts)/autonomous-services.mdx",
+    "content/docs/(concepts)/platform-concepts.mdx",
+    "content/docs/zh/(concepts)/platform-concepts.mdx",
+    "content/docs/(concepts)/service-system-plane.mdx",
+    "content/docs/zh/(concepts)/service-system-plane.mdx",
+    "content/docs/(module)/module-authoring.mdx",
+    "content/docs/zh/(module)/module-authoring.mdx",
+  ],
+  "Provider V1 delivery boundary",
+  [
+    "lenso.service.v1",
+    "lenso.module-release.v1",
+    "lenso.provider.v1",
+    "/lenso/provider/v1",
   ],
 );
 

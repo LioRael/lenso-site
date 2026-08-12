@@ -1,17 +1,19 @@
 ---
 title: Host Quickstart
-description: Compose a Support Desk app, run it locally, connect Console, and inspect exact status.
+description: Compose a Support Desk app, start its connected local environment, and inspect exact status.
 ---
 
 This quickstart follows the public Lenso lifecycle end to end. You will create
-one exact app composition, run it through the System Sandbox, connect it to an
-independent Console Service, and inspect direct object status.
+one exact app composition, start its Host and Provider workloads with an
+independent Console Service, connect the exact topology, and inspect direct
+object status.
 
 ## Prerequisites
 
 - Rust and Cargo
 - Node.js and pnpm for the Support Desk Provider
 - Docker for local Postgres
+- a checkout of `LioRael/lenso-console`
 - a terminal that can keep local processes running
 
 ## Install the CLI
@@ -50,37 +52,63 @@ System starts.
 ## 2. Run locally
 
 ```sh
-lenso system dev --system-file lenso.app.json --dry-run --json
-lenso system dev --system-file lenso.app.json
+lenso dev up --console-root ../lenso-console
 ```
 
-The second command starts the declared app and persistent Local Control Adapter.
-Keep it running. Use the explicit cleanup entrypoint when finished:
+The first run securely prompts for the local Console Operator password. For
+automation, pass `--operator-password-file` with a private regular file.
+
+This shipped command starts the generated Host and each auto-start entry in
+`lenso.workspace.json`, provisions and migrates the local Host and Console
+Stores, builds Console, configures or reuses the durable Operator, reconciles
+Module-owned UI artifacts, and connects the exact topology. It writes local
+connection material under `.lenso/`; credentials and signing material are not
+printed.
+
+Keep the command running. Press Ctrl-C to stop the Host, Console, and only the
+Services started by that invocation.
+
+`lenso system dev` remains the lower-level System Sandbox command:
 
 ```sh
+lenso system dev --system-file lenso.app.json --dry-run --json
+lenso system dev --system-file lenso.app.json
 lenso system dev --system-file lenso.app.json --cleanup
 ```
 
+The sandbox validates and runs its declared sandbox Workloads and Local Control
+Adapter. It does not replace the connected Host, Provider, and Console path
+above.
+
+The connected command is shipped for an already composed Host and an existing
+Console checkout. It does not by itself claim the broader from-empty-directory
+browser acceptance tracked by [Lenso issue #540](https://github.com/LioRael/lenso/issues/540).
+
 ## 3. Connect
 
-Install or run Console Service independently. Authenticate as a Console
-operator, submit each business Service target's signed
-`{offer, receipt, baseUrl}` to
-`POST /api/console/v1/enrollment-receipts`, then submit the app's exact
-`lenso.system.v2` topology and Management Binding to:
+With `--console-root`, `lenso dev up` creates loopback-only signed enrollment
+receipts, assembles `.lenso/console-connect.json`, and applies that exact bundle
+through the public connection entrypoint before reporting the System ready.
 
-```text
-POST /api/console/v1/system/connect
+For a separately prepared local bundle, use the same idempotent entrypoint:
+
+```sh
+LENSO_CONSOLE_TOKEN='<operator-session-token>' \
+  lenso console connect \
+  --console-url http://127.0.0.1:3030 \
+  --bundle .lenso/console-connect.json
 ```
 
-The enrollment endpoint accepts loopback targets in this local slice; it is not
-a remote production self-service path. The CLI-owned
+Use `--token-file` with a private regular file for non-interactive operation.
+The local enrollment path accepts loopback targets only; it is not a remote
+production self-service path. The CLI-owned
 `lenso-local-control-adapter` is bound as `workload-control:<system>` and does
 not use business enrollment; every other topology Service requires an active
-signed enrollment. The connection request requires the
-content digest of the supplied topology. Browser code
-never receives Service or Adapter credentials. Console stores the connection;
-it does not start, deploy, adopt, or repair the app.
+signed enrollment. The bundle binds those receipts, optional Console
+Composition effects, the exact `lenso.system.v2` topology, its content digest,
+and its Management Binding. Browser code never receives Service or Adapter
+credentials. Console stores the connection; it does not start, deploy, adopt,
+or repair the app.
 
 ## 4. Status
 
@@ -107,8 +135,11 @@ Service. Start with [Module Authoring](/docs/module-authoring), then expose a
 typed Business API and a receipt-bound Console Surface when the workflow needs
 operator UI.
 
-TypeScript `@lenso/service-kit` supports the Provider tier. Use Rust for the
-Autonomous Service tier. The exact distinction is documented in
+TypeScript `@lenso/service-kit` supports the Provider tier. Its
+`lenso.service.v1` manifest carries compatibility and local-process metadata;
+the exact Module Release is installed and invoked through the locked
+`lenso.provider.v1` runtime at `/lenso/provider/v1`. Use Rust for the Autonomous
+Service tier. The exact distinction is documented in
 [Service Capability Tiers](/docs/autonomous-services).
 
 ## Next

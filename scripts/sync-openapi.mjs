@@ -48,8 +48,8 @@ function frameworkRootFor(source) {
   return dirname(dirname(dirname(source)));
 }
 
-function sourceRevision(source) {
-  return execFileSync("git", ["-C", frameworkRootFor(source), "rev-parse", "HEAD"], {
+function sourceRevision(source, ref = "HEAD") {
+  return execFileSync("git", ["-C", frameworkRootFor(source), "rev-parse", ref], {
     encoding: "utf8",
   }).trim();
 }
@@ -102,8 +102,9 @@ function check() {
   }
 
   const offline = process.argv.includes(offlineCheckFlag);
-  if (offline && (option("--source") || process.env.LENSO_FRAMEWORK_ROOT)) {
-    throw new Error(`${offlineCheckFlag} cannot be combined with a framework source`);
+  const sourceRef = option("--source-ref") ?? process.env.LENSO_FRAMEWORK_REF;
+  if (offline && (option("--source") || process.env.LENSO_FRAMEWORK_ROOT || sourceRef)) {
+    throw new Error(`${offlineCheckFlag} cannot be combined with a framework source or ref`);
   }
   const source = sourceFromArguments({ discover: !offline });
   if (!source) {
@@ -119,10 +120,10 @@ function check() {
   }
   if (!existsSync(source)) throw new Error(`OpenAPI source does not exist: ${source}`);
   frameworkRootFor(source);
-  const detectedRevision = sourceRevision(source);
+  const detectedRevision = sourceRevision(source, sourceRef);
   if (detectedRevision !== metadata.revision) {
     throw new Error(
-      `framework HEAD ${detectedRevision} does not match recorded source revision ${metadata.revision}`,
+      `framework ${sourceRef ?? "HEAD"} ${detectedRevision} does not match recorded source revision ${metadata.revision}`,
     );
   }
   const sourceContent = readFileSync(source);
@@ -130,10 +131,11 @@ function check() {
   if (!committedContent.equals(canonical)) {
     throw new Error(`${metadata.revision}:${metadata.path} does not match the site API reference inputs`);
   }
-  if (!sourceContent.equals(committedContent)) {
+  if (!sourceRef && !sourceContent.equals(committedContent)) {
     throw new Error(`${source} has uncommitted changes relative to ${metadata.revision}`);
   }
-  if (digest(sourceContent) !== metadata.sha256) {
+  const checkedContent = sourceRef ? committedContent : sourceContent;
+  if (digest(checkedContent) !== metadata.sha256) {
     throw new Error(`${source} has drifted from the committed site API reference inputs`);
   }
   console.log(`OpenAPI inputs match ${metadata.repository}@${metadata.revision}:${metadata.path}.`);

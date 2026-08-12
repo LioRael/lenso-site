@@ -1,9 +1,14 @@
 ---
 import PageLayout from "blume/components/layout/PageLayout.astro";
+import type { Navigation } from "blume";
 import data from "blume:data";
 import HomePage from "../islands/HomePage";
 
 const { config } = data;
+const navigation: Navigation = {
+  ...data.navigation,
+  repoUrl: "https://github.com/LioRael/lenso",
+};
 const localeSwitch = [
   {
     code: "en",
@@ -27,7 +32,7 @@ const localeSwitch = [
 <PageLayout
   site={{ title: config.title, description: config.description }}
   logo={config.logo}
-  navigation={data.navigation}
+  navigation={navigation}
   favicon={config.favicon}
   fontCssVars={data.fontCssVars}
   themeMode={config.theme.mode}

@@ -89,9 +89,12 @@ actor, tenant, deadline, idempotency, revision, and typed error behavior in the
 committed OpenAPI contract.
 
 Linked implementations attach the route contribution to `LinkedBinding`.
-Provider implementations export the same Module contract over
-`lenso.service.v1`. Neither delivery mode changes the Module name or operation
-IDs.
+Provider implementations publish the same Module as an exact
+`lenso.module-release.v1` release and serve its locked runtime through
+`lenso.provider.v1` at `/lenso/provider/v1`. The compatibility
+`lenso.service.v1` manifest carries process and packaging metadata; it is not
+the runtime Module discovery or digest authority. Neither delivery mode changes
+the Module name or operation IDs.
 
 ## Minimal vertical slice
 
@@ -100,8 +103,7 @@ IDs.
 3. Generate the client from the committed contract.
 4. Add a smoke check through the public API.
 5. If UI is needed, bind one exact Console Surface and its narrow Surface Grant.
-6. Compose a new `lenso.app.json` revision and run it through
-   `lenso system dev`.
+6. Compose a new `lenso.app.json` revision and start it through `lenso dev up`.
 7. Connect Console and inspect the Module's direct state.
 
 ## Completion criteria

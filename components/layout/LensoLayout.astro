@@ -1,0 +1,13 @@
+---
+import RootLayout from "blume/components/layout/RootLayout.astro";
+import type { Navigation } from "blume";
+
+const navigation: Navigation = {
+  ...Astro.props.navigation,
+  repoUrl: "https://github.com/LioRael/lenso",
+};
+---
+
+<RootLayout {...Astro.props} navigation={navigation}>
+  <slot />
+</RootLayout>
