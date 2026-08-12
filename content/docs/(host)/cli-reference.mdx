@@ -1,6 +1,6 @@
 ---
 title: CLI Reference
-description: Current public commands for composing a Lenso app, running it locally, connecting Console, and reading status.
+description: Current public commands for composing a Lenso app, starting its connected local environment, and reading status.
 ---
 
 The `lenso` CLI owns application composition, local System realization, Module
@@ -22,17 +22,19 @@ lenso --help
 
 ## Compose
 
-Inspect and materialize a product blueprint:
+Materialize an exact product blueprint:
 
 ```sh
-lenso app list
-lenso app inspect support-desk
 lenso app compose ./support-desk --blueprint support-desk --apply
 ```
 
 `--apply` is the atomic write flag for the generated `lenso.app.json`; it is
 not a separate application-management phase. The bare Support Desk blueprint
 selects `auth`, `notification-worker`, and `support-api`.
+
+Blueprint browsing commands retained for compatibility are hidden from public
+help. Use the explicit `--blueprint` input with `lenso app compose` in current
+automation and documentation.
 
 The product acceptance uses a checked-in capability pack. Run this exact
 command from the `lenso-examples` repository root:
@@ -58,8 +60,27 @@ path.
 
 ## Run locally
 
-For the bare blueprint foundation, validate the exact launch shape, start it,
-and clean up only resources owned by that run:
+Start the generated Host, auto-start Provider Services, and a connected local
+Console from the composed Host directory:
+
+```sh
+cd ./support-desk
+lenso dev up --console-root ../lenso-console
+```
+
+The first run securely prompts for the local Operator password. Automation can
+use `--operator-password-file` with a private regular file. The command starts
+and migrates the Host and Console Stores, builds Console, configures or reuses
+the durable Operator, reconciles Module-owned artifacts, connects the exact
+topology, and waits in the foreground. Ctrl-C stops only processes started by
+that invocation.
+
+This is a shipped command for an already composed Host and existing Console
+checkout. The broader from-empty-directory browser acceptance remains tracked
+by [Lenso issue #540](https://github.com/LioRael/lenso/issues/540).
+
+Use `lenso system dev` only when you specifically need the lower-level System
+Sandbox and its Local Control Adapter:
 
 ```sh
 lenso system dev --system-file ./support-desk/lenso.app.json --dry-run --json
@@ -67,31 +88,33 @@ lenso system dev --system-file ./support-desk/lenso.app.json
 lenso system dev --system-file ./support-desk/lenso.app.json --cleanup
 ```
 
-The running System includes the persistent CLI-owned
-`lenso-local-control-adapter`, bound as `workload-control:<system>`.
+The sandbox does not start the composed Host or Console and does not connect
+Console. In App Composition mode it does start the selected service-backed
+Provider workloads, alongside the Local Control Adapter, inside the bounded
+sandbox run.
 
 ## Connect
 
-Console Service is installed and started independently. For the local
-Support Desk path, an authenticated operator first submits each business
-Service's signed exchange:
+`lenso dev up --console-root` creates the loopback-only signed enrollment
+receipts and `.lenso/console-connect.json`, then applies the bundle before it
+reports the local System ready.
 
-```text
-POST /api/console/v1/enrollment-receipts
-body: {offer, receipt, baseUrl}
-permission: console.system.connect
+For a separately prepared local bundle, the public idempotent connection
+entrypoint is:
+
+```sh
+LENSO_CONSOLE_TOKEN='<operator-session-token>' \
+  lenso console connect \
+  --console-url http://127.0.0.1:3030 \
+  --bundle .lenso/console-connect.json
 ```
 
-Then submit the exact `lenso.system.v2` topology, its SHA-256 digest, and its
-Management Binding:
-
-```text
-POST /api/console/v1/system/connect
-```
-
-The local enrollment endpoint accepts loopback HTTP targets only. The
-CLI-owned Local Control Adapter does not use business enrollment; every other
-topology Service requires an active signed enrollment.
+Use `--token-file` with a private regular file for non-interactive operation.
+The `lenso.console-connect.v1` bundle contains signed enrollment receipts, an
+optional exact Console Composition artifact effect, and the digest-bound
+System Connection request. The local enrollment path accepts loopback HTTP
+targets only. The CLI-owned Local Control Adapter does not use business
+enrollment; every other topology Service requires an active signed enrollment.
 
 ## Status
 
@@ -128,26 +151,49 @@ See [Module Authoring](/docs/module-authoring) and
 
 ## Provider workspace
 
-Create a Provider scaffold or register an existing local Provider:
+Create a TypeScript Provider scaffold from a Host checkout:
 
 ```sh
-lenso service create support-api --lang ts --output-dir services --dry-run
-cd support-desk
-lenso service workspace init --workspace-file lenso.workspace.json --force
-lenso service workspace add support-ticket \
-  --cwd ../support-ticket-provider \
-  --lang ts \
-  --command "node src/server.ts" \
-  --ready-url http://127.0.0.1:4110/lenso/service/v1/status \
-  --module support-ticket \
-  --manifest lenso.service.json \
-  --workspace-file lenso.workspace.json
+lenso service create billing-provider --lang ts --output-dir services --dry-run
+lenso service create billing-provider --lang ts --output-dir services
 lenso service workspace check --workspace-file lenso.workspace.json --json
 ```
 
-Provider Services use `lenso.service.v1`, remain Host-owned, and support Rust
-and TypeScript. Autonomous Services use Rust `lenso.service.v2`, own their
-runtime and storage, and are described in
+Unless `--no-workspace` is supplied, creation also registers the generated
+Service in `lenso.workspace.json`. The generated TypeScript project exposes the
+current exact Provider runtime:
+
+```sh
+cd services/billing-provider
+pnpm install
+pnpm check
+pnpm module:release > lenso.module-release.json
+pnpm start
+```
+
+In another terminal, install that exact Module Release into the Host runtime
+inputs using the Provider endpoint:
+
+```sh
+lenso module install \
+  ./services/billing-provider/lenso.module-release.json \
+  --base-url http://127.0.0.1:4100/lenso/provider/v1 \
+  --repo-root .
+```
+
+The three contracts have different responsibilities:
+
+- `lenso.service.v1` is compatibility metadata for Service packaging, local
+  process startup, and older discovery consumers.
+- `lenso.module-release.v1` is the exact Module install target and binds its
+  Manifest, delivery, contract, and optional Console artifact digests.
+- `lenso.provider.v1` at `/lenso/provider/v1` is the locked descriptor and
+  Host-to-Provider invocation, recovery, and acknowledgement boundary.
+
+The Host verifies the Service Release, Module Release, Manifest, export, and
+contract digests before activating a Provider export. Provider runtime remains
+Host-owned and supports Rust and TypeScript. Autonomous Services use Rust
+`lenso.service.v2`, own their runtime and storage, and are described in
 [Service Capability Tiers](/docs/autonomous-services). TypeScript does not
 provide Autonomous Service parity.
 
@@ -180,7 +226,10 @@ for sibling checkout, PostgreSQL, and browser prerequisites.
 ## Ownership boundary
 
 - `lenso.app.json` is the exact application composition and lock.
-- `lenso system dev` owns only the local run and its Local Control Adapter.
+- `lenso dev up` owns only its connected local-development processes and
+  connection records; Ctrl-C stops only processes that invocation started.
+- `lenso system dev` owns only its lower-level sandbox run and Local Control
+  Adapter.
 - Console connects and reports the exact topology; it does not create or
   reconcile production objects.
 - Production delivery remains repository-, platform-, and operator-owned.

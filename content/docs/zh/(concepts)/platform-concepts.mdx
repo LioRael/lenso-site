@@ -12,7 +12,7 @@ Lenso 是面向 Rust 业务系统、agent-ready 的模块化应用与微服务�
 | --- | --- | --- |
 | App Composition | `lenso.app.json` | 锁定应用修订、内容摘要、不可变 Module Release、依赖、Implementation Binding 与 Provenance。 |
 | Module | `lenso.module.v1` | 持有稳定业务身份、强类型 Business API、Event、运行时声明与可选 Console Surface。 |
-| Provider Service | `lenso.service.v1` | 由独立 Rust 或 TypeScript 进程提供 Module，运行时协调仍由 Host 持有。 |
+| Provider Service | `lenso.service.v1` Metadata 与 `lenso.provider.v1` Runtime | 由独立 Rust 或 TypeScript 进程提供精确 Module Release，运行时协调仍由 Host 持有。 |
 | Autonomous Service | `lenso.service.v2` | 使用 Rust 运行时持有自己的 Workload、Service Store、身份、Workflow 与运维。 |
 | System topology | `lenso.system.v2` | 命名混合拓扑中的精确 Host、Service、Module、Workload、合约与管理关系。 |
 | Console Service | Console API | 连接精确拓扑、加载回执绑定的 Surface，并报告直接对象状态。 |
@@ -26,9 +26,10 @@ Provider 时，不会改变业务身份或 Operation 名称。Autonomous Service
 开发者、运维人员与 Coding Agent 使用相同四步：
 
 1. **Compose（组合）**：从产品蓝图生成精确 `lenso.app.json`。
-2. **Run locally（本地运行）**：使用 `lenso system dev` 与 Local Control Adapter。
-3. **Connect（连接）**：把已签名本地 Service Enrollment、精确 `lenso.system.v2`
-   拓扑及其 Management Binding 提交到独立安装的 Console Service。
+2. **Run locally（本地运行）**：使用 `lenso dev up`；加入 `--console-root` 可让
+   现有 Console checkout 与 Host、Provider Service 一同启动。
+3. **Connect（连接）**：通过已连接本地命令生成的 Bundle 提交已签名本地 Service
+   Enrollment、精确 `lenso.system.v2` 拓扑及其 Management Binding。
 4. **Status（状态）**：直接读取每个 Service、Module、Surface、Adapter 与 Workload。
 
 生产发布和部署由外部交付系统持有。Console 不创建、接管、发布、部署或修复已
@@ -49,7 +50,9 @@ Runtime Function、Event、Lifecycle Work、依赖与 Console Surface。可执�
 Provider 与 Autonomous Service 是不同所有权层级，不能把任意进程外 Module
 都称为 Autonomous：
 
-- Provider `lenso.service.v1` 由 Host 持有，支持 Rust 与 TypeScript。
+- Provider 把兼容性与进程 Metadata 保存在 `lenso.service.v1`，安装精确
+  `lenso.module-release.v1` Release，并使用 `/lenso/provider/v1` 上由 Host 持有的
+  `lenso.provider.v1` Runtime；支持 Rust 与 TypeScript。
 - Autonomous Service `lenso.service.v2` 由 Service 持有，仅支持 Rust。
 
 当前 Rust Autonomous Service 能力包括 direct HTTP/gRPC、Event Contracts、

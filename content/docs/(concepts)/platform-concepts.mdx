@@ -13,7 +13,7 @@ each boundary explicit as the product grows.
 | --- | --- | --- |
 | App Composition | `lenso.app.json` | Locks the app revision, content digest, immutable Module Releases, dependencies, implementation bindings, and provenance. |
 | Module | `lenso.module.v1` | Owns a stable business identity, typed Business API, events, runtime declarations, and optional Console Surfaces. |
-| Provider Service | `lenso.service.v1` | Provides Modules from a separate Rust or TypeScript process while the Host owns runtime coordination. |
+| Provider Service | `lenso.service.v1` metadata and `lenso.provider.v1` runtime | Provides exact Module Releases from a separate Rust or TypeScript process while the Host owns runtime coordination. |
 | Autonomous Service | `lenso.service.v2` | Uses the Rust runtime to own its Workloads, Service Store, identity, workflows, and operations. |
 | System topology | `lenso.system.v2` | Names the exact Host, Services, Modules, Workloads, contracts, and management relationships in a mixed topology. |
 | Console Service | Console API | Connects the exact topology, loads receipt-bound Surfaces, and reports direct object status. |
@@ -28,9 +28,11 @@ runtime boundary while keeping its declared contracts explicit.
 The same four steps apply to developers, operators, and coding agents:
 
 1. **Compose** an exact `lenso.app.json` from a product blueprint.
-2. **Run locally** with `lenso system dev` and the Local Control Adapter.
-3. **Connect** signed local Service enrollment, the exact `lenso.system.v2` topology,
-   and its Management Binding to the separately installed Console Service.
+2. **Run locally** with `lenso dev up`; add `--console-root` to start an existing
+   Console checkout with the Host and Provider Services.
+3. **Connect** the signed local Service enrollment, exact `lenso.system.v2`
+   topology, and its Management Binding through the bundle produced by the
+   connected local command.
 4. **Status** each Service, Module, Surface, Adapter, and Workload directly.
 
 Production release and deployment stay with external delivery systems. Console
@@ -53,7 +55,10 @@ credentials nor direct Store access.
 Provider and Autonomous Service are different ownership levels, not two names
 for any out-of-process Module:
 
-- Provider `lenso.service.v1` is Host-owned and supports Rust and TypeScript.
+- Provider keeps compatibility/process metadata in `lenso.service.v1`, installs
+  exact `lenso.module-release.v1` releases, and uses the Host-owned
+  `lenso.provider.v1` runtime at `/lenso/provider/v1`. It supports Rust and
+  TypeScript.
 - Autonomous Service `lenso.service.v2` is Service-owned and Rust only.
 
 Current Rust Autonomous Service capabilities include direct HTTP/gRPC, Event

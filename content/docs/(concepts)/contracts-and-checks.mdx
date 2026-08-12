@@ -16,12 +16,16 @@ The current committed contract surface is intentionally small:
 | Contract | Consumer |
 | --- | --- |
 | `contracts/openapi/app-api.v1.yaml` | API clients, SDK generation, Lenso Console API expectations |
-| `contracts/errors/error-response.v1.schema.json` | standard error envelope consumers |
+| `contracts/errors/error-response.v1.schema.json` | RFC 9457 Problem Details consumers (`application/problem+json`) |
 | `contracts/services/lenso-service.v2.schema.json` | Service and provided-Module topology |
 | `contracts/services/support-grpc.v1.proto` | example Service-owned gRPC API |
 
 Rust route annotations and platform schemas are the source. Generated artifacts
 are committed so downstream users can depend on stable files.
+
+`ErrorResponse` remains the committed schema name. HTTP failures use its
+top-level Problem Details fields; clients should not expect a nested `error`
+wrapper.
 
 ## Route source of truth
 
@@ -77,7 +81,7 @@ Use the smallest gate that proves the changed surface:
 | module boundary or contract layout | `just arch-check` |
 | release candidate | `just release-check` |
 | Lenso Console package work | `pnpm check` in `lenso-console` |
-| docs site work | `pnpm types:check` and `pnpm build` in `lenso-site` |
+| docs site work | `pnpm check` in `lenso-site` |
 
 For a public release, local green is not enough. Verify the published crate,
 npm package, GitHub Release, or workflow artifact that users will actually

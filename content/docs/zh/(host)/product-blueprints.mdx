@@ -6,17 +6,15 @@ description: 为本地开发生成精确且具备产品形态的应用组合。
 产品蓝图是从产品想法到可运行 Lenso System 的最短路径。蓝图创建应用源码
 形态，以及选择 Module 的唯一 `lenso.app.json` 组合锁。
 
-## 检查可用蓝图
+## 使用持续维护的蓝图
 
-```sh
-lenso app list
-lenso app inspect support-desk
-```
+Support Desk 是持续维护的产品级基础。请直接按名称组合它，不要依赖仅供仓库
+开发使用的隐藏检查命令。蓝图本身只选择 `auth`、`notification-worker` 与
+`support-api`。
 
-Support Desk 是持续维护的产品级基础。蓝图本身只选择 `auth`、
-`notification-worker` 与 `support-api`。产品验收通过仓库内的 Capability Pack
-加入 Support Ticket 与 Story Module 选择；Runner 另外从 Console Checkout
-构建并协调精确 Console Surface Artifact。
+产品验收通过仓库内的 Capability Pack 加入 Support Ticket 与 Story Module
+选择。Runner 从 `lenso-examples` 中由 Module 持有的示例包构建精确的 Support
+Ticket Console Surface，再通过 Console 协调该 Artifact。
 
 ## Compose 基础
 
@@ -34,8 +32,9 @@ lenso app compose ./support-desk --blueprint support-desk --apply
 - Linked 或 Service-backed Implementation Binding；
 - Blueprint 与 Capability Pack Provenance。
 
-组合文件不是进程启动器、凭据文件或生产交付记录。`lenso system dev` 通过
-本地运行时和 Adapter 边界解释其中声明的 Binding。
+组合文件不是进程启动器、凭据文件或生产交付记录。`lenso dev up` 会为本地
+开发实现其中选择的 Host 与 Provider。更底层的 `lenso system dev` 仍是用于
+隔离 Topology 与 Adapter 检查的 System Sandbox。
 
 ## Compose 产品验收
 
@@ -63,16 +62,26 @@ Pack-backed 组合：
 pnpm acceptance:support-desk
 ```
 
-## 本地运行基础组合
+## 在本地运行并连接基础组合
 
 ```sh
 cd support-desk
+lenso dev up --console-root ../lenso-console
+```
+
+该命令在同一个前台 Session 中启动 Host、auto-start Provider Service 和现有
+Console Checkout，创建已签名的本地连接材料、协调 Module 自有 UI Artifact，
+并连接精确拓扑。Ctrl-C 只停止本次调用启动的进程。
+
+只有需要在已连接 Host、Provider 与 Console 路径之外单独校验或运行隔离的
+System Shape 时，才使用更底层的 Sandbox：
+
+```sh
 lenso system dev --system-file lenso.app.json --dry-run --json
 lenso system dev --system-file lenso.app.json
 ```
 
-Dry run 在不分配资源的情况下校验精确基础启动形态。正常运行只启动本地声明
-的进程。使用 `--cleanup` 停止该次运行持有的资源。
+使用 `--cleanup` 停止该次 Sandbox Run 持有的资源。
 
 ## 使用能力包扩展
 

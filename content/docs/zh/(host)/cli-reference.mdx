@@ -1,6 +1,6 @@
 ---
 title: CLI 参考
-description: 组合 Lenso 应用、本地运行、连接 Console 与读取状态的当前公开命令。
+description: 组合 Lenso 应用、启动已连接的本地环境与读取状态的当前公开命令。
 ---
 
 `lenso` CLI 负责应用组合、本地 System 物化、Module 与 Service 脚手架，以及
@@ -22,17 +22,18 @@ lenso --help
 
 ## Compose（组合）
 
-检查并生成产品蓝图：
+生成精确产品蓝图：
 
 ```sh
-lenso app list
-lenso app inspect support-desk
 lenso app compose ./support-desk --blueprint support-desk --apply
 ```
 
 `--apply` 是原子写入生成态 `lenso.app.json` 的 Flag，并非独立应用管理阶段。
 Bare Support Desk Blueprint 只选择 `auth`、`notification-worker` 与
 `support-api`。
+
+为兼容性保留的 Blueprint 浏览命令已从公开 Help 隐藏。当前自动化与文档应通过
+`lenso app compose` 的显式 `--blueprint` 输入选择 Blueprint。
 
 产品验收使用仓库内的 Capability Pack。请从 `lenso-examples` 仓库根目录运行
 以下精确命令：
@@ -57,8 +58,25 @@ Capability Pack 提供 `support/tickets` Service Delivery 与
 
 ## Run locally（本地运行）
 
-对于 Bare Blueprint 基础，校验精确启动形态、启动 System，并只清理该次运行
-持有的资源：
+从已组合 Host 目录启动生成的 Host、auto-start Provider Service 与已连接的
+本地 Console：
+
+```sh
+cd ./support-desk
+lenso dev up --console-root ../lenso-console
+```
+
+首次运行会安全提示输入本地 Operator 密码。自动化可通过
+`--operator-password-file` 使用私有普通文件。该命令启动并迁移 Host 与 Console
+Store，构建 Console，配置或复用持久 Operator，协调 Module-owned Artifact，
+连接精确拓扑，并保持前台运行。按 Ctrl-C 只停止本次调用启动的进程。
+
+该命令已经发布，适用于已经组合的 Host 与现有 Console checkout。更广泛的
+空目录浏览器验收仍由 [Lenso issue #540](https://github.com/LioRael/lenso/issues/540)
+跟踪。
+
+只有明确需要更底层 System Sandbox 与 Local Control Adapter 时，才使用
+`lenso system dev`：
 
 ```sh
 lenso system dev --system-file ./support-desk/lenso.app.json --dry-run --json
@@ -66,27 +84,28 @@ lenso system dev --system-file ./support-desk/lenso.app.json
 lenso system dev --system-file ./support-desk/lenso.app.json --cleanup
 ```
 
-运行中的 System 包含 CLI 自有的持久 `lenso-local-control-adapter`，其 Binding
-为 `workload-control:<system>`。
+Sandbox 不会启动已组合的 Host 或 Console，也不会连接 Console。在 App
+Composition 模式下，它会在限定范围的 Sandbox Run 中启动所选的 Service-backed
+Provider Workload 与 Local Control Adapter。
 
 ## Connect（连接）
 
-Console Service 独立安装并启动。Support Desk 本地路径中，已认证 Operator
-先提交每个业务 Service 的双边签名交换：
+`lenso dev up --console-root` 创建只限 loopback 的已签名 Enrollment Receipt
+与 `.lenso/console-connect.json`，并在报告本地 System ready 前应用该 Bundle。
 
-```text
-POST /api/console/v1/enrollment-receipts
-body: {offer, receipt, baseUrl}
-permission: console.system.connect
+如需应用单独准备的本地 Bundle，公开幂等连接入口是：
+
+```sh
+LENSO_CONSOLE_TOKEN='<operator-session-token>' \
+  lenso console connect \
+  --console-url http://127.0.0.1:3030 \
+  --bundle .lenso/console-connect.json
 ```
 
-然后提交精确 `lenso.system.v2` 拓扑、其 SHA-256 摘要与 Management Binding：
-
-```text
-POST /api/console/v1/system/connect
-```
-
-本地 Enrollment Endpoint 只接受 loopback HTTP Target。CLI 自有 Local Control
+非交互运行请通过 `--token-file` 使用私有普通文件。
+`lenso.console-connect.v1` Bundle 包含已签名 Enrollment Receipt、可选的精确
+Console Composition Artifact Effect，以及摘要绑定的 System Connection Request。
+本地 Enrollment Path 只接受 loopback HTTP Target。CLI 自有 Local Control
 Adapter 不使用业务 Enrollment；其余每个拓扑 Service 都需要 active signed
 Enrollment。
 
@@ -124,27 +143,49 @@ lenso module dev --console-ui
 
 ## Provider Workspace
 
-创建 Provider 脚手架，或注册现有本地 Provider：
+从 Host checkout 创建 TypeScript Provider 脚手架：
 
 ```sh
-lenso service create support-api --lang ts --output-dir services --dry-run
-cd support-desk
-lenso service workspace init --workspace-file lenso.workspace.json --force
-lenso service workspace add support-ticket \
-  --cwd ../support-ticket-provider \
-  --lang ts \
-  --command "node src/server.ts" \
-  --ready-url http://127.0.0.1:4110/lenso/service/v1/status \
-  --module support-ticket \
-  --manifest lenso.service.json \
-  --workspace-file lenso.workspace.json
+lenso service create billing-provider --lang ts --output-dir services --dry-run
+lenso service create billing-provider --lang ts --output-dir services
 lenso service workspace check --workspace-file lenso.workspace.json --json
 ```
 
-Provider Service 使用 `lenso.service.v1`，由 Host 持有，支持 Rust 与
+除非传入 `--no-workspace`，创建命令还会把生成的 Service 注册到
+`lenso.workspace.json`。生成的 TypeScript 项目公开当前精确 Provider Runtime：
+
+```sh
+cd services/billing-provider
+pnpm install
+pnpm check
+pnpm module:release > lenso.module-release.json
+pnpm start
+```
+
+在另一个终端中，通过 Provider Endpoint 把该精确 Module Release 安装到 Host
+Runtime Input：
+
+```sh
+lenso module install \
+  ./services/billing-provider/lenso.module-release.json \
+  --base-url http://127.0.0.1:4100/lenso/provider/v1 \
+  --repo-root .
+```
+
+三个合约的职责不同：
+
+- `lenso.service.v1` 是 Service 打包、本地进程启动与旧 Discovery Consumer 使用
+  的兼容性 Metadata。
+- `lenso.module-release.v1` 是精确 Module 安装目标，绑定 Manifest、Delivery、
+  Contract 与可选 Console Artifact Digest。
+- `/lenso/provider/v1` 上的 `lenso.provider.v1` 是锁定的 Descriptor，以及
+  Host-to-Provider Invocation、Recovery 与 Acknowledgement 边界。
+
+激活 Provider Export 前，Host 会校验 Service Release、Module Release、Manifest、
+Export 与 Contract Digest。Provider Runtime 仍由 Host 持有，支持 Rust 与
 TypeScript。Autonomous Service 使用 Rust `lenso.service.v2`，持有自己的运行时
 与存储；参见 [Service Capability Tiers](/docs/zh/autonomous-services)。
-TypeScript does not provide Autonomous Service parity。
+TypeScript 尚未提供 Autonomous Service 能力对等。
 
 ## Console Operator Bootstrap
 
@@ -174,6 +215,8 @@ pnpm acceptance:support-desk
 ## 所有权边界
 
 - `lenso.app.json` 是精确应用组合与锁。
-- `lenso system dev` 只持有本地运行与 Local Control Adapter。
+- `lenso dev up` 只持有本次已连接本地开发所启动的进程与连接记录；按 Ctrl-C
+  只停止本次调用启动的进程。
+- `lenso system dev` 只持有更底层的 Sandbox Run 与 Local Control Adapter。
 - Console 连接并报告精确拓扑；它不会创建或协调生产对象。
 - 生产交付仍由 Repository、Platform 与 Operator 持有。

@@ -26,7 +26,9 @@ Console 连接 System 时校验的精确图。
 System v2 明确区分每一种对象：
 
 - **Host** 持有 Linked Module 与 Provider 运行时协调；
-- **Provider** 使用 `lenso.service.v1`，支持 Rust 或 TypeScript；
+- **Provider** 把兼容性与进程 Metadata 保存在 `lenso.service.v1`，通过
+  `/lenso/provider/v1` 上的 `lenso.provider.v1` 提供精确
+  `lenso.module-release.v1` Release，并支持 Rust 或 TypeScript；
 - **Autonomous Service** 使用 Rust `lenso.service.v2`，持有自己的运行时与
   Service Store；
 - **Module** 在 Linked 或 Service-backed 交付间保持业务身份；
@@ -54,33 +56,36 @@ Support Ticket 与 Story 拓扑由[产品级验收](/docs/zh/examples)覆盖；�
 
 ### Run locally（本地运行）
 
-启动选定的本地 Workload 与持久 Local Control Adapter：
+启动已组合 Host 与 auto-start Provider Service。加入现有 Console checkout 可运行
+已连接本地路径：
 
 ```sh
-lenso system dev --system-file ./support-desk/lenso.app.json
+cd ./support-desk
+lenso dev up --console-root ../lenso-console
 ```
+
+更底层的 `lenso system dev` 是 System Sandbox；它不会启动已组合的 Host 或
+Console，也不会连接 Console。在 App Composition 模式下，它会在限定范围的
+Sandbox Run 中启动所选 Service-backed Provider Workload 与 Local Control
+Adapter。
 
 ### Connect（连接）
 
-独立启动 Console Service。Support Desk 本地路径先把每个业务 Service 目标已签名的
-`{offer, receipt, baseUrl}` 提交到：
+使用 `--console-root` 时，`lenso dev up` 创建只限 loopback 的已签名 Enrollment，
+组装 `.lenso/console-connect.json`，并在报告 System ready 前应用精确连接。如需
+应用单独准备的本地 Bundle，请使用：
 
-```text
-POST /api/console/v1/enrollment-receipts
+```sh
+LENSO_CONSOLE_TOKEN='<operator-session-token>' \
+  lenso console connect \
+  --console-url http://127.0.0.1:3030 \
+  --bundle .lenso/console-connect.json
 ```
 
-再把精确 `lenso.system.v2` 拓扑、其 SHA-256 摘要与 Management Binding
-提交到：
-
-```text
-POST /api/console/v1/system/connect
-```
-
-Console 保存连接前会校验活动 Enrollment、拓扑摘要、Management Binding 与
-已发布 Core Contract。本地 Enrollment Route 只接受 loopback 目标，不是远程
-生产自助路径。CLI 自有 `lenso-local-control-adapter` 以
-`workload-control:<system>` 绑定，不使用业务 Enrollment；其余每个拓扑 Service
-都必须具备 active signed Enrollment。
+Console 保存连接前会校验每个活动 Enrollment、拓扑摘要、Management Binding
+与已发布 Core Contract。本地 Path 只接受 loopback 目标，不是远程生产自助
+路径。Bundle 还可以携带精确 Console Composition Artifact Effect；Token 与签名
+材料不会输出，也不会存入 Bundle。
 
 ### Status（状态）
 

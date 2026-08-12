@@ -27,8 +27,9 @@ not widen the App Composition or select a production target.
 System v2 keeps each kind explicit:
 
 - a **Host** owns linked Modules and Provider runtime coordination;
-- a **Provider** uses `lenso.service.v1` and may be implemented in Rust or
-  TypeScript;
+- a **Provider** keeps compatibility/process metadata in `lenso.service.v1`,
+  serves exact `lenso.module-release.v1` releases through `lenso.provider.v1`
+  at `/lenso/provider/v1`, and may be implemented in Rust or TypeScript;
 - an **Autonomous Service** uses Rust `lenso.service.v2` and owns its runtime
   and Service Store;
 - a **Module** keeps its business identity across linked or service-backed
@@ -58,34 +59,37 @@ Provider before startup.
 
 ### Run locally
 
-Start the selected local Workloads and persistent Local Control Adapter:
+Start the composed Host and auto-start Provider Services. Add the existing
+Console checkout to run the connected local path:
 
 ```sh
-lenso system dev --system-file ./support-desk/lenso.app.json
+cd ./support-desk
+lenso dev up --console-root ../lenso-console
 ```
+
+The lower-level `lenso system dev` command is a System Sandbox. It does not
+start the composed Host or Console and does not connect Console; in App
+Composition mode it does start the selected service-backed Provider workloads
+and the Local Control Adapter inside the bounded sandbox run.
 
 ### Connect
 
-Start Console Service independently. For the local Support Desk path, submit
-each business Service target's signed `{offer, receipt, baseUrl}` to:
+With `--console-root`, `lenso dev up` creates loopback-only signed enrollments,
+assembles `.lenso/console-connect.json`, and applies the exact connection before
+reporting the System ready. For a separately prepared local bundle, use:
 
-```text
-POST /api/console/v1/enrollment-receipts
+```sh
+LENSO_CONSOLE_TOKEN='<operator-session-token>' \
+  lenso console connect \
+  --console-url http://127.0.0.1:3030 \
+  --bundle .lenso/console-connect.json
 ```
 
-Then submit the exact `lenso.system.v2` topology, its SHA-256 digest, and the
-Management Binding to:
-
-```text
-POST /api/console/v1/system/connect
-```
-
-Console checks the active enrollment, topology digest, Management Binding, and
-advertised Core contract before storing the connection. The local enrollment
-route accepts loopback targets only; it is not a remote production self-service
-path. The CLI-owned `lenso-local-control-adapter` is bound as
-`workload-control:<system>` and does not use business enrollment; every other
-topology Service requires an active signed enrollment.
+Console checks each active enrollment, topology digest, Management Binding,
+and advertised Core contract before storing the connection. The local path
+accepts loopback targets only; it is not a remote production self-service path.
+The bundle may also carry an exact Console Composition artifact effect. Tokens
+and signing material are never printed or stored in the bundle.
 
 ### Status
 

@@ -11,7 +11,33 @@ Console 职责刻意保持狭窄：连接、报告状态、加载精确 Module S
 目标持有的强类型操作。它不会创建、部署、接管、删除、发布、升级、回滚或
 协调生产 Workload。
 
-## Enrollment 本地目标
+## 连接本地目标
+
+从已经组合的 Host 目录启动完整的已连接本地路径：
+
+```sh
+cd ./support-desk
+lenso dev up --console-root ../lenso-console
+```
+
+该命令启动 Host、auto-start Provider Service 与 Console，创建仅限 loopback 的
+已签名 Enrollment Material，协调 Module 自有 UI Artifact，并在报告 System
+Ready 前连接精确拓扑。
+
+对于单独准备的 Connection Bundle，使用同一个公开且幂等的入口：
+
+```sh
+LENSO_CONSOLE_TOKEN='<operator-session-token>' \
+  lenso console connect \
+  --console-url http://127.0.0.1:3030 \
+  --bundle .lenso/console-connect.json
+```
+
+非交互操作请通过 `--token-file` 使用权限受限的普通文件。Bundle 绑定已签名的
+Enrollment Receipt、可选的精确 Console Composition Artifact Effect，以及由
+Digest 绑定的 System Connection Request。
+
+## 底层 Enrollment Contract
 
 Support Desk 本地验收把已签名的双边交换提交到：
 
@@ -29,7 +55,7 @@ Body 只包含 `{offer, receipt, baseUrl}`，Route 要求
 该 Endpoint 不是远程或生产自助 Enrollment。远程生产目标仍需要经过批准的
 mTLS 与证书固定 Transport Seam。
 
-## 连接 System
+## 底层 System Connection
 
 公开连接边界是：
 

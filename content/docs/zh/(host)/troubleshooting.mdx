@@ -10,7 +10,8 @@ description: 诊断当前 Compose、Run locally、Connect 与 Status 生命周�
 
 ```sh
 test -f ./support-desk/lenso.app.json
-lenso system dev --system-file ./support-desk/lenso.app.json --dry-run --json
+cd ./support-desk
+lenso system dev --system-file ./lenso.app.json --dry-run --json
 curl -sS http://127.0.0.1:3030/api/console/v1/system
 ```
 
@@ -21,10 +22,10 @@ Console 请求还需要具备 `console.system.read` 的已认证 Actor。
 | 症状 | 检查 | 处理 |
 | --- | --- | --- |
 | 缺少 `lenso.app.json` | Compose 输出目录与 Source Pack 路径 | 从持有该 Pack 的目录重新运行 Compose 命令。 |
-| 本地启动拒绝组合 | `lenso system dev ... --dry-run --json` | 启动前修复报告中的摘要、Binding、Workspace 或进程声明。 |
-| 业务 Service 无法 Enrollment | 已签名 Offer 与 Receipt、Allowlist Key、loopback `baseUrl` | 向 Enrollment Endpoint 精确提交 `{offer, receipt, baseUrl}`；不支持远程自助。 |
-| Connect 拒绝业务 Service | Active Signed Enrollment 与发布的 Core Contract | 修正 Service 身份或合约；不得绕过 Enrollment。 |
-| Connect 拒绝拓扑 | 拓扑 SHA-256 摘要与 Management Binding | 提交精确 `lenso.system.v2` 文档及匹配 Binding。 |
+| 已连接本地启动失败 | `lenso dev up --console-root ...` 报告的第一个失败阶段 | 修复对应的 Host、Provider、Store、Console、Artifact 或 Connection 阶段后再重试。 |
+| 业务 Service 无法 Enrollment | `.lenso/console-connect.json` 中的 Signed Receipt、Allowlist Key 与 loopback `baseUrl` | 修正 Service 身份或合约；不得绕过 Signed Enrollment。 |
+| Connect 拒绝业务 Service | Active Signed Enrollment 与发布的 Core Contract | 使用 `lenso console connect` 重新应用精确 Bundle；不要手工编辑 Receipt。 |
+| Connect 拒绝拓扑 | Bundle 中的 Topology SHA-256 Digest 与 Management Binding | 从已组合应用重新生成 Bundle；不要在旧 Digest 下提交另一份拓扑。 |
 | Local Control Adapter 看似未 Enrollment | Adapter ID 与 Binding | 使用 `lenso-local-control-adapter` 和 `workload-control:<system>`；该 CLI 自有 Adapter 不使用业务 Enrollment。 |
 | 缺少 Module Surface | Module Release、UI Artifact、Contract 与 Surface Grant 摘要 | 重新连接回执已绑定所有身份的精确应用。 |
 | Adapter Connection 为 `unavailable` | Local Control Adapter 进程与 Target-owned Status Endpoint | 重启本地运行；Workload Observation 保持 `unknown`，变更不会排队。 |
@@ -52,49 +53,59 @@ Source Pack 使用相对路径时，当前目录会影响 CLI 解析结果。`--
 
 ## Run locally（本地运行）
 
-先用 Dry Run Output 隔离组合与 Workspace 错误，不启动进程：
+从已组合 Host 目录启动已连接本地路径：
 
 ```sh
-lenso system dev --system-file ./support-desk/lenso.app.json --dry-run --json
+cd ./support-desk
+lenso dev up --console-root ../lenso-console
 ```
 
-成功后再启动：
+该命令保持在前台，并报告失败的精确 Host、Provider、Store、Console、Artifact
+或 Connection 阶段。Ctrl-C 只停止本次调用启动的进程。
+
+只有需要把 Composition 与 Adapter 校验和已连接 Host、Provider、Console 路径
+隔离时，才使用 System Sandbox Dry Run：
 
 ```sh
-lenso system dev --system-file ./support-desk/lenso.app.json
+lenso system dev --system-file ./lenso.app.json --dry-run --json
 ```
 
-若上一次运行仍持有 Adapter Socket 或进程，使用限定范围的 Cleanup 入口：
+若上一次 Sandbox Run 仍持有 Adapter Socket 或进程，使用其限定范围的 Cleanup
+入口：
 
 ```sh
-lenso system dev --system-file ./support-desk/lenso.app.json --cleanup
+lenso system dev --system-file ./lenso.app.json --cleanup
 ```
 
 Cleanup 只针对该次本地运行记录的资源。
 
 ## Connect（连接）
 
-先为本地拓扑中的每个业务 Service 提交双边签名交换：
+`lenso dev up --console-root` 会在报告 System Ready 前写入并应用精确的本地
+Bundle。重新应用单独准备的 Bundle 时，使用：
+
+```sh
+LENSO_CONSOLE_TOKEN='<operator-session-token>' \
+  lenso console connect \
+  --console-url http://127.0.0.1:3030 \
+  --bundle .lenso/console-connect.json
+```
+
+非交互操作请通过 `--token-file` 使用权限受限的普通文件。不要编辑 Bundle；
+Identity、Release、Artifact、Topology 或 Binding 变化时，应从已组合应用重新生成。
+
+CLI 先把每份 Signed Receipt 提交到底层 Enrollment Boundary，再应用由 Digest
+绑定的 System Connection：
 
 ```text
 POST /api/console/v1/enrollment-receipts
-body: {offer, receipt, baseUrl}
-permission: console.system.connect
-```
-
-Console 使用 Server-only Allowlist 校验双方签名。当前本地切片中，`baseUrl`
-必须是 loopback HTTP。远程 Target 需要未来的 mTLS 与 Certificate Pinning；
-这里拒绝 HTTPS 与远程自助。
-
-然后连接：
-
-```text
 POST /api/console/v1/system/connect
 ```
 
-请求必须包含精确 `lenso.system.v2` 拓扑、其 SHA-256 摘要，以及同一 System 的
-Management Binding。Console 还会校验 Active Enrollment 与已发布 Core
-Contract；不存在可以替代该路径的无签名 Registry Write。
+Console 使用 Server-only Allowlist 校验双方签名。本地 `baseUrl` 必须是
+loopback HTTP。System Request 必须包含精确 `lenso.system.v2` 拓扑、其 SHA-256
+摘要，以及同一 System 的 Management Binding；不存在可以替代该路径的无签名
+Registry Write。
 
 ## Status（状态）
 

@@ -1,17 +1,17 @@
 ---
 title: Host 快速开始
-description: 组合 Support Desk、在本地运行、连接 Console，并检查精确状态。
+description: 组合 Support Desk、启动已连接的本地环境，并检查精确状态。
 ---
 
-本快速开始完整使用公开 Lenso 生命周期：创建唯一的应用组合，通过 System
-Sandbox 在本地运行，把它连接到独立 Console Service，然后检查每个对象的
-直接状态。
+本快速开始完整使用公开 Lenso 生命周期：创建唯一应用组合，在本地启动 Host、
+Provider Service 与独立 Console，再连接精确拓扑并检查每个对象的直接状态。
 
 ## 前置条件
 
 - Rust 与 Cargo
 - Support Desk Provider 使用的 Node.js 与 pnpm
 - 用于本地 Postgres 的 Docker
+- `LioRael/lenso-console` checkout
 - 能持续运行本地进程的终端
 
 ## 安装 CLI
@@ -48,33 +48,56 @@ Module Release 选择、已解析依赖、Implementation Binding 与 Provenance 
 ## 2. Run locally（本地运行）
 
 ```sh
-lenso system dev --system-file lenso.app.json --dry-run --json
-lenso system dev --system-file lenso.app.json
+lenso dev up --console-root ../lenso-console
 ```
 
-第二条命令启动声明的应用和持久 Local Control Adapter。完成后使用明确的
-清理入口：
+首次运行会安全提示输入本地 Console Operator 密码。自动化场景可通过
+`--operator-password-file` 传入私有普通文件。
+
+该命令已经发布：它会启动生成的 Host 与 `lenso.workspace.json` 中每个
+auto-start Entry，准备并迁移本地 Host 与 Console Store，构建 Console，配置或
+复用持久 Operator，协调 Module-owned UI Artifact，并连接精确拓扑。它把本地
+连接材料写入 `.lenso/`；凭据与签名材料不会输出。
+
+保持命令运行。按 Ctrl-C 只停止本次调用启动的 Host、Console 与 Service。
+
+`lenso system dev` 仍是更底层的 System Sandbox 命令：
 
 ```sh
+lenso system dev --system-file lenso.app.json --dry-run --json
+lenso system dev --system-file lenso.app.json
 lenso system dev --system-file lenso.app.json --cleanup
 ```
 
+Sandbox 校验并运行其声明的 Sandbox Workload 与 Local Control Adapter，不能
+替代上面的 Host、Provider 与 Console 已连接路径。
+
+已连接命令面向已经组合的 Host 与现有 Console checkout。它本身不宣称已经
+完成 [Lenso issue #540](https://github.com/LioRael/lenso/issues/540) 跟踪的更广泛
+空目录浏览器验收。
+
 ## 3. Connect（连接）
 
-独立安装或运行 Console Service。以 Console Operator 身份认证后，先把每个
-业务 Service 目标已签名的 `{offer, receipt, baseUrl}` 提交到
-`POST /api/console/v1/enrollment-receipts`，再把应用的精确
-`lenso.system.v2` 拓扑和 Management Binding 提交到：
+使用 `--console-root` 时，`lenso dev up` 会创建只限 loopback 的已签名
+Enrollment Receipt，组装 `.lenso/console-connect.json`，并通过公开连接入口
+应用该精确 Bundle，最后才报告 System ready。
 
-```text
-POST /api/console/v1/system/connect
+如需应用单独准备的本地 Bundle，请使用同一个幂等入口：
+
+```sh
+LENSO_CONSOLE_TOKEN='<operator-session-token>' \
+  lenso console connect \
+  --console-url http://127.0.0.1:3030 \
+  --bundle .lenso/console-connect.json
 ```
 
-当前本地切片的 Enrollment Endpoint 只接受 loopback 目标，不是远程生产自助
-路径。CLI 自有 `lenso-local-control-adapter` 以 `workload-control:<system>`
-绑定，不使用业务 Enrollment；其余每个拓扑 Service 都必须具备 active signed
-Enrollment。连接请求必须携带所提交拓扑的内容摘要。浏览器代码不会获得 Service 或 Adapter
-凭据。Console 只存储连接，不启动、部署、接管或修复应用。
+非交互运行请通过 `--token-file` 使用私有普通文件。本地 Enrollment Path 只接受
+loopback 目标，不是远程生产自助路径。CLI 自有
+`lenso-local-control-adapter` 以 `workload-control:<system>` 绑定，不使用业务
+Enrollment；其余每个拓扑 Service 都必须具备 active signed Enrollment。Bundle
+绑定这些 Receipt、可选 Console Composition Effect、精确 `lenso.system.v2`
+拓扑及其内容摘要与 Management Binding。浏览器代码不会获得 Service 或
+Adapter 凭据。Console 只存储连接，不启动、部署、接管或修复应用。
 
 ## 4. Status（状态）
 
@@ -98,8 +121,10 @@ Console 返回异步 Operation Record，并轮询 Adapter 直到终态。Adapter
 [Module 开发](/docs/zh/module-authoring)，再根据运维流程的需要，公开强类型
 Business API 与回执绑定的 Console Surface。
 
-TypeScript `@lenso/service-kit` 支持 Provider tier。Autonomous Service tier
-使用 Rust。准确边界参见
+TypeScript `@lenso/service-kit` 支持 Provider tier。其 `lenso.service.v1`
+Manifest 携带兼容性与本地进程 Metadata；精确 Module Release 通过
+`/lenso/provider/v1` 上锁定的 `lenso.provider.v1` Runtime 安装和调用。
+Autonomous Service tier 使用 Rust。准确边界参见
 [Service Capability Tiers](/docs/zh/autonomous-services)。
 
 ## 下一步

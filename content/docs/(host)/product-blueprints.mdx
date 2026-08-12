@@ -7,18 +7,17 @@ Product Blueprints are the shortest path from a product idea to a runnable
 Lenso System. A blueprint creates the app source shape and the single
 `lenso.app.json` composition lock that selects its Modules.
 
-## Inspect available blueprints
+## Use the maintained blueprint
 
-```sh
-lenso app list
-lenso app inspect support-desk
-```
+The Support Desk blueprint is the maintained product-level foundation. Compose
+it by name rather than depending on the hidden inspection commands used for
+repository development. By itself it selects `auth`, `notification-worker`,
+and `support-api`.
 
-The Support Desk blueprint is the maintained product-level foundation. By
-itself it selects `auth`, `notification-worker`, and `support-api`. The product
-acceptance adds the Support Ticket and Story Module selections through its
-checked-in capability pack. Its runner separately builds and reconciles the
-exact Console Surface artifacts from the Console checkout.
+The product acceptance adds the Support Ticket and Story Module selections
+through its checked-in capability pack. Its runner builds the exact Support
+Ticket Console Surface from the Module-owned example package in
+`lenso-examples`, then reconciles that artifact through Console.
 
 ## Compose the foundation
 
@@ -37,8 +36,9 @@ Composition writes `support-desk/lenso.app.json`. The file records:
 - blueprint and capability-pack provenance.
 
 The composition file is not a process launcher, credential file, or production
-delivery record. `lenso system dev` interprets its declared bindings through the
-local runtime and Adapter boundaries.
+delivery record. `lenso dev up` realizes its Host and Provider selections for
+local development. The lower-level `lenso system dev` command remains a System
+Sandbox for isolated topology and Adapter checks.
 
 ## Compose the product acceptance
 
@@ -66,17 +66,27 @@ composition without that workspace entry:
 pnpm acceptance:support-desk
 ```
 
-## Run the foundation locally
+## Run and connect the foundation locally
 
 ```sh
 cd support-desk
+lenso dev up --console-root ../lenso-console
+```
+
+This starts the Host, auto-start Provider Services, and existing Console
+checkout in one foreground-bound session. It creates the signed local
+connection material, reconciles Module-owned UI artifacts, and connects the
+exact topology. Ctrl-C stops only processes started by that invocation.
+
+Use the lower-level sandbox only when you need to validate or run its isolated
+System shape without the connected Host, Provider, and Console path:
+
+```sh
 lenso system dev --system-file lenso.app.json --dry-run --json
 lenso system dev --system-file lenso.app.json
 ```
 
-The dry run validates the exact foundation launch shape without allocating
-resources. The normal run starts only the locally declared processes. Use
-`--cleanup` to stop resources owned by that run.
+Use `--cleanup` to stop resources owned by that sandbox run.
 
 ## Extend with a capability pack
 

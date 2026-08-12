@@ -12,7 +12,35 @@ Module Surfaces, and invoke typed target-owned operations. It does not create,
 deploy, adopt, delete, release, upgrade, roll back, or reconcile production
 workloads.
 
-## Enroll the local target
+## Connect the local target
+
+From an already composed Host directory, start the complete connected local
+path:
+
+```sh
+cd ./support-desk
+lenso dev up --console-root ../lenso-console
+```
+
+The command starts the Host, auto-start Provider Services, and Console; creates
+loopback-only signed enrollment material; reconciles Module-owned UI artifacts;
+and connects the exact topology before reporting the System ready.
+
+For a separately prepared connection bundle, use the same public idempotent
+entrypoint:
+
+```sh
+LENSO_CONSOLE_TOKEN='<operator-session-token>' \
+  lenso console connect \
+  --console-url http://127.0.0.1:3030 \
+  --bundle .lenso/console-connect.json
+```
+
+Use `--token-file` with a private regular file for non-interactive operation.
+The bundle binds signed enrollment receipts, an optional exact Console
+Composition artifact effect, and the digest-bound System Connection request.
+
+## Underlying enrollment contract
 
 The Support Desk local acceptance submits its signed bilateral exchange to:
 
@@ -32,7 +60,7 @@ This endpoint is not remote or production self-service enrollment. A remote
 production target still requires the approved mTLS and certificate-pinning
 transport seam.
 
-## Connect a System
+## Underlying System connection
 
 The public connection boundary is:
 

@@ -15,21 +15,21 @@ const heroDemoFrames = [
     ],
   },
   {
-    command: 'lenso system dev --system-file lenso.app.json',
+    command: 'lenso dev up --console-root ../lenso-console',
     items: [
       { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'support-desk/', trail: true },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'support-api · running' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'notification-worker · running' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'lenso-local-control-adapter · running' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'Host · running' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'Console · ready' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'exact topology · connected' },
     ],
   },
   {
     command: 'GET /api/console/v1/system',
     items: [
       { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'support-desk/', trail: true },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'support-api · connected' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'auth · connected' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'lenso-local-control-adapter · connected' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'Services · connected' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'Modules · connected' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'Control Adapters · connected' },
     ],
   },
 ];
@@ -45,15 +45,15 @@ const lifecycleSteps = [
   {
     index: '2',
     title: 'Run locally',
-    tag: 'system dev',
-    text: 'Run the app through lenso system dev with its declared processes and Local Control Adapter—no cluster required.',
-    links: [{ label: 'System Sandbox', icon: '/lenso-assets/runtime-starter-models.svg' }],
+    tag: 'dev up',
+    text: 'Run lenso dev up with --console-root to start the Host, auto-start Services, and the independent Console in one foreground-bound local session.',
+    links: [{ label: 'Connected local path', icon: '/lenso-assets/runtime-starter-models.svg' }],
   },
   {
     index: '3',
     title: 'Connect',
-    tag: 'system connection',
-    text: 'Submit signed local Service enrollment, then the exact topology and Management Binding. Console observes the app; it does not deploy or adopt it.',
+    tag: 'dev up',
+    text: 'The same command creates signed loopback enrollment material, reconciles Module-owned UI artifacts, and connects the exact topology. Console does not deploy or adopt the app.',
     links: [{ label: 'Console', icon: '/lenso-assets/runtime-console-card.svg' }],
   },
   {
@@ -73,13 +73,13 @@ const lifecyclePanels = [
   },
   {
     folder: '$',
-    file: 'lenso system dev',
-    lines: ['{', '"systemId": "support-desk"', '"adapter": "lenso-local-control-adapter"', '"state": "running"'],
+    file: 'lenso dev up --console-root ../lenso-console',
+    lines: ['Lenso local System is ready', 'Host: http://127.0.0.1:…', 'Console: http://127.0.0.1:…', 'System: support-desk'],
   },
   {
-    folder: 'POST',
-    file: '/api/console/v1/system/connect',
-    lines: ['{', '"systemId": "support-desk"', '"topologyDigest": "sha256:…"', '"managementBinding": { … }'],
+    folder: 'dev up',
+    file: 'connected local path',
+    lines: ['signed enrollment material', 'Console Stores migrated', 'Module UI artifacts reconciled', 'exact topology connected'],
   },
   {
     folder: 'GET',
@@ -90,7 +90,7 @@ const lifecyclePanels = [
 
 const runtimeCards = [
   {
-    title: 'Generated app',
+    title: 'App Composition',
     text: 'One content-bound selection of Module Releases, dependencies, and implementation bindings.',
     icon: '/lenso-assets/runtime-starter-manifest.svg',
   },
@@ -117,37 +117,44 @@ const runtimeCards = [
 ];
 
 const runtimeChannels = [
-  'App Composition',
-  'System Connection',
-  'Service Status',
-  'Workload Status',
-  'Console Surfaces',
+  'System ID',
+  'Topology Digest',
+  'Connection Status',
+  'Services',
+  'Modules',
+  'Workloads',
+  'Control Adapters',
+  'Management Binding',
+  'Module Surfaces',
   'Surface Grants',
-  'Module Manifests',
-  'Runtime Stories',
-  'Service Contracts',
-  'Agent Tasks',
 ];
 
-const channelRows = [
-  [
-    { label: 'Product Blueprints', icon: '/lenso-assets/brand-api.svg', iconWidth: 23 },
-    { label: 'Console', icon: '/lenso-assets/runtime-console-card.svg' },
-    { label: 'App Composition', icon: '/lenso-assets/feature-contract.svg' },
-    { label: 'System Status', icon: '/lenso-assets/feature-console.svg' },
-  ],
-  [
-    { label: 'Capability Packs', icon: '/lenso-assets/runtime-starter-manifest.svg' },
-    { label: 'Service System', icon: '/lenso-assets/runtime-starter-models.svg' },
-    { label: 'Module Contracts', icon: '/lenso-assets/feature-contract.svg' },
-  ],
-  [
-    { label: 'Business APIs', icon: '/lenso-assets/brand-api.svg' },
-    { label: 'Surface Grants', icon: '/lenso-assets/feature-contract.svg' },
-    { label: 'Runtime Stories', icon: '/lenso-assets/runtime-starter-models.svg' },
-    { label: 'Agent Skills', icon: '/lenso-assets/runtime-starter-manifest.svg' },
-    { label: 'Workload Control', icon: '/lenso-assets/feature-console.svg' },
-  ],
+const channelGroups = [
+  {
+    label: 'Authoring inputs',
+    items: [
+      { label: 'Product Blueprints', icon: '/lenso-assets/brand-api.svg', iconWidth: 23 },
+      { label: 'Capability Packs', icon: '/lenso-assets/runtime-starter-manifest.svg' },
+      { label: 'Agent Skills', icon: '/lenso-assets/runtime-starter-manifest.svg' },
+    ],
+  },
+  {
+    label: 'Owner-local contracts',
+    items: [
+      { label: 'Module Contracts', icon: '/lenso-assets/feature-contract.svg' },
+      { label: 'Business APIs', icon: '/lenso-assets/brand-api.svg' },
+      { label: 'Service Contracts', icon: '/lenso-assets/runtime-starter-models.svg' },
+    ],
+  },
+  {
+    label: 'Connected runtime',
+    items: [
+      { label: 'Services', icon: '/lenso-assets/runtime-starter-models.svg' },
+      { label: 'Modules', icon: '/lenso-assets/feature-contract.svg' },
+      { label: 'Workloads', icon: '/lenso-assets/feature-console.svg' },
+      { label: 'Control Adapters', icon: '/lenso-assets/runtime-console-card.svg' },
+    ],
+  },
 ];
 
 const statusRows = [
@@ -176,7 +183,7 @@ const agentRows = [
 const featureCards = [
   {
     title: 'Product blueprints',
-    text: 'Begin with a working business-system shape instead of an empty host and a list of infrastructure choices.',
+    text: 'Materialize the initial exact App Composition, then remain only as informational provenance.',
     icon: '/lenso-assets/feature-contract.svg',
   },
   {
@@ -191,7 +198,7 @@ const featureCards = [
   },
   {
     title: 'Capability packs',
-    text: 'Carry reusable business slices across modules, services, documentation, and bounded agent handoffs.',
+    text: 'Materialize reusable business slices into the App Composition instead of becoming parallel runtime state.',
     icon: '/lenso-assets/feature-human.svg',
   },
   {
@@ -390,8 +397,13 @@ function LifecyclePanel({
             {panel.folder}
           </span>
         </div>
-        <div className="flex h-9 items-center gap-2 rounded-md bg-[var(--site-surface-muted)] py-2.5 pl-6 pr-3">
-          <span className="text-[13px] leading-4 text-[var(--site-ink)]">{panel.file}</span>
+        <div className="flex h-9 min-w-0 items-center gap-2 rounded-md bg-[var(--site-surface-muted)] py-2.5 pl-6 pr-3">
+          <span
+            className="min-w-0 truncate text-[13px] leading-4 text-[var(--site-ink)]"
+            title={panel.file}
+          >
+            {panel.file}
+          </span>
         </div>
       </div>
       <div className="absolute left-3 right-3 top-[104px] z-10 h-[142px] overflow-hidden rounded-md border border-[var(--site-border-muted)]">
@@ -426,7 +438,7 @@ function LifecycleSection() {
     <section className="mx-auto max-w-[1392px] py-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none">
       <div data-lifecycle>
         <SectionIntro
-          copy="Materialize one app composition, run it through the public local entrypoint, connect its exact topology to Console, and read direct object status."
+          copy="Materialize one app composition, run and connect it through the public local entrypoint, then read direct object status in Console."
           title="Compose, Run locally, Connect, Status"
         />
 
@@ -496,8 +508,8 @@ function RuntimePrimitiveSection() {
   return (
     <section className="mx-auto min-h-[588px] max-w-[1392px] pt-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:min-h-[664px] max-[900px]:min-h-[1132px] max-[560px]:!min-h-0 max-[560px]:pt-16">
       <SectionIntro
-        copy="App Composer, module manifests, service contracts, Console, and agent workflows all read the same explicit system model."
-        title="One system model across app, module, service, and agent"
+        copy="Blueprints and Capability Packs materialize one exact App Composition; Agent Skills guide the bounded authoring path. Console then projects the connected System's services, modules, adapters, workloads, and Surfaces."
+        title="From authoring inputs to a connected System"
       />
 
       <div className="mt-[72px] max-[560px]:mt-10" data-scroll-reveal>
@@ -511,10 +523,11 @@ function RuntimePrimitiveSection() {
         <div className="mt-3 grid grid-cols-[minmax(0,1fr)_340px] gap-4 max-[1000px]:grid-cols-1">
           <div className="relative flex min-h-[268px] flex-col rounded-xl border border-transparent p-5">
             <p className="font-mono text-sm font-medium uppercase leading-5 text-[var(--site-ink)]">
-              Runtime
+              Explicit product model
             </p>
             <p className="mt-1 text-sm leading-5 text-[var(--site-muted)]">
-              The generated product shape teams actually run.
+              The materialized app and owner-local contracts keep composition, APIs, and
+              Console Surfaces explicit.
             </p>
             <div className="mt-4 grid gap-4">
               <RuntimeCard large card={runtimeCards[0]} />
@@ -622,8 +635,9 @@ function ConsoleShowcaseSection() {
           Console reports the connected System
         </h2>
         <p className="max-w-[566px] text-lg leading-7 text-[var(--site-muted)]">
-          Inspect the exact topology, load receipt-bound Module Surfaces, read direct object
-          status, and invoke only supported local workload operations.
+          The images below are illustrative mock views, not current product captures. The
+          shipped Console reads exact topology, Module-owned Surfaces, direct object status,
+          and supported local Workload operations.
         </p>
       </div>
 
@@ -653,7 +667,7 @@ function ConsoleShowcaseSection() {
             href="/docs/runtime-stories"
           >
             <Image
-              alt="Runtime Stories execution graph showing a request fan-out across functions, events, and services"
+              alt="Illustrative mock Runtime Stories graph with example requests, functions, events, and services"
               className="block h-auto w-full"
               height={1200}
               loading="lazy"
@@ -662,7 +676,8 @@ function ConsoleShowcaseSection() {
             />
           </Link>
           <p className="mt-3 text-sm leading-5 text-[var(--site-muted)]">
-            Runtime Stories — follow one business flow across requests, functions, events, and services.
+            Illustrative Runtime Stories mock — use the shipped Story workbench to inspect
+            correlated runtime records.
           </p>
         </div>
 
@@ -673,7 +688,7 @@ function ConsoleShowcaseSection() {
             href="/docs/runtime-console"
           >
             <Image
-              alt="Runtime Overview showing queue pressure, recent activity, failures, and dead letters"
+              alt="Illustrative mock operations overview with example queue pressure, failures, activity, and dead letters"
               className="block h-auto w-full"
               height={1200}
               loading="lazy"
@@ -682,7 +697,8 @@ function ConsoleShowcaseSection() {
             />
           </Link>
           <p className="mt-3 text-sm leading-5 text-[var(--site-muted)]">
-            Runtime Overview — inspect queue pressure, failures, activity, and operator attention.
+            Illustrative operations mock — queue pressure, failures, and dead-letter signals
+            are example data, not a live Console capture.
           </p>
         </div>
       </div>
@@ -789,25 +805,30 @@ function AgentTable() {
 
 function ChannelCloud() {
   return (
-    <div className="relative mb-6 flex h-[261px] flex-col justify-center gap-3 overflow-hidden rounded-r-sm border-y border-r border-[var(--site-border)] text-sm leading-5 text-[var(--site-ink)] max-[560px]:h-40">
-      {channelRows.map((row) => (
-        <div className="flex justify-center gap-3" key={row.map((item) => item.label).join('-')}>
-          {row.map((item) => (
-            <span
-              className="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-[var(--site-surface)] px-3 shadow-[var(--site-shadow-control)]"
-              key={item.label}
-            >
-              <Image
-                alt=""
-                className="h-[18px] shrink-0"
-                height={18}
-                loading="eager"
-                src={item.icon}
-                width={item.iconWidth ?? 18}
-              />
-              {item.label}
-            </span>
-          ))}
+    <div className="relative mb-6 flex h-[261px] flex-col justify-center gap-2 overflow-hidden rounded-r-sm border-y border-r border-[var(--site-border)] text-sm leading-5 text-[var(--site-ink)] max-[560px]:h-40 max-[560px]:gap-1">
+      {channelGroups.map((group) => (
+        <div key={group.label}>
+          <p className="mb-1 text-center font-mono text-[10px] uppercase leading-3 text-[var(--site-muted)]">
+            {group.label}
+          </p>
+          <div className="flex justify-center gap-3">
+            {group.items.map((item) => (
+              <span
+                className="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg bg-[var(--site-surface)] px-3 shadow-[var(--site-shadow-control)] max-[560px]:h-7 max-[560px]:px-2 max-[560px]:text-xs"
+                key={item.label}
+              >
+                <Image
+                  alt=""
+                  className="h-[18px] shrink-0"
+                  height={18}
+                  loading="eager"
+                  src={item.icon}
+                  width={item.iconWidth ?? 18}
+                />
+                {item.label}
+              </span>
+            ))}
+          </div>
         </div>
       ))}
       <div
@@ -836,7 +857,7 @@ function FeatureCard({ card }: { card: { icon: string; title: string; text: stri
 
 function CtaSection() {
   return (
-    <section className="mx-auto h-[361px] max-w-[1392px] pt-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:h-[224px] max-[900px]:!h-[240px] max-[900px]:pb-0 max-[900px]:pt-[88px] max-[560px]:!h-[248px]">
+    <section className="mx-auto h-[361px] max-w-[1392px] pt-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:h-[224px] max-[900px]:!h-[240px] max-[900px]:pb-0 max-[900px]:pt-[88px] max-[560px]:!h-auto max-[560px]:pb-16 max-[560px]:pt-16">
       <div
         className="flex min-h-14 items-start justify-between gap-8 max-[760px]:flex-col"
         data-scroll-reveal
@@ -844,12 +865,21 @@ function CtaSection() {
         <h2 className="max-w-[540px] text-[40px] font-normal leading-[48px] text-[var(--site-ink)] max-[560px]:text-[32px] max-[560px]:leading-[38px]">
           Compose, Run locally, Connect, Status.
         </h2>
-        <Link
-          className="mt-1 inline-flex h-12 w-[121px] items-center justify-center rounded-full bg-[var(--site-ink)] px-3 text-base font-medium leading-6 text-[var(--site-inverse)]"
-          href="/docs/quickstart"
-        >
-          Start building
-        </Link>
+        <div className="mt-1 flex flex-wrap gap-3">
+          <Link
+            className="inline-flex h-12 w-[121px] items-center justify-center rounded-full bg-[var(--site-ink)] px-3 text-base font-medium leading-6 text-[var(--site-inverse)]"
+            href="/docs/quickstart"
+          >
+            Start building
+          </Link>
+          <Link
+            aria-label="Install Lenso agent skills"
+            className="inline-flex h-12 items-center justify-center rounded-full border border-[var(--site-border)] px-5 text-base font-medium leading-6 text-[var(--site-ink)] max-[560px]:px-3"
+            href="/docs/agent-development"
+          >
+            Install skills
+          </Link>
+        </div>
       </div>
     </section>
   );
@@ -868,8 +898,8 @@ function Footer() {
               {heading}
             </h2>
             <ul className="mt-3.5 text-sm leading-5 text-[var(--site-subtle)]">
-              {items.map(([label, href], index) => (
-                <li className="h-7" key={`${heading}-${label}-${index}`}>
+              {items.map(([label, href]) => (
+                <li className="h-7" key={`${heading}-${href}`}>
                   <Link className="-ml-0.5 inline-flex h-6 items-center gap-1.5 px-0.5 hover:text-[var(--site-ink)]" href={href}>
                     {label}
                     {newLabels.has(label) ? (
@@ -903,7 +933,7 @@ export default function HomePage() {
   return (
     <>
       <SiteScrollEffects />
-      <main className="site-home bg-[var(--site-bg)] text-[var(--site-ink)]">
+      <div className="site-home bg-[var(--site-bg)] text-[var(--site-ink)]">
         <Hero />
         <LifecycleSection />
         <RuntimePrimitiveSection />
@@ -911,7 +941,7 @@ export default function HomePage() {
         <SystemsSection />
         <CtaSection />
         <Footer />
-      </main>
+      </div>
     </>
   );
 }

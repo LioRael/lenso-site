@@ -14,7 +14,7 @@ export default defineConfig({
   },
   github: {
     owner: "LioRael",
-    repo: "lenso",
+    repo: "lenso-site",
     branch: "main",
   },
   lastModified: true,

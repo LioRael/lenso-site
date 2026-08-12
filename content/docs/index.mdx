@@ -27,23 +27,27 @@ hand. The Support Ticket and Story product seam is the pack-backed
 
 ## Run locally
 
-Start the declared System and Local Control Adapter through the public CLI:
+Start the generated Host, auto-start Provider Services, and a connected local
+Console through the public CLI:
 
 ```sh
 cd support-desk
-lenso system dev --system-file lenso.app.json
+lenso dev up --console-root ../lenso-console
 ```
 
-Local development does not require Kubernetes. Production release and
-deployment remain owned by external delivery systems, not Console.
+The command creates loopback-only signed enrollment material, reconciles
+Module-owned UI artifacts, and connects the exact topology before it reports
+the System ready. Local development does not require Kubernetes. Production
+release and deployment remain owned by external delivery systems, not Console.
 
 ## Connect
 
-Run Console Service independently, submit the signed local Service Enrollment Receipt,
-then submit the exact topology and Management Binding to its authenticated
-Connect System API. Console records the
-connection and auto-composes receipt-bound `console_ui_esm` Module Surfaces. It
-does not create, deploy, adopt, delete, release, or repair workloads.
+`lenso dev up --console-root` writes `.lenso/console-connect.json` and applies
+that exact bundle through the authenticated Console connection boundary. The
+bundle contains signed local Service enrollments, the topology digest,
+Management Binding, and optional Console artifact effect. Console records the
+connection and loads receipt-bound `console_ui_esm` Module Surfaces. It does
+not create, deploy, adopt, delete, release, or repair workloads.
 
 Continue with [Lenso Console](/docs/runtime-console) for the server-side
 connection boundary and browser flow.
@@ -63,6 +67,7 @@ state is separate. An unavailable control Adapter leaves Workload observation
   <Card title="Product Blueprints" href="/docs/product-blueprints" description="Materialize a product-shaped lenso.app.json and understand its locked selections." />
   <Card title="Module Authoring" href="/docs/module-authoring" description="Build linked business capabilities with explicit Business APIs and Console Surfaces." />
   <Card title="Service Capability Tiers" href="/docs/autonomous-services" description="Choose the exact Provider or Autonomous Service capability tier and supported language." />
+  <Card title="Agent Development" href="/docs/agent-development" description="Install the Lenso skills and run a bounded, checkable agent workflow." />
   <Card title="Examples" href="/docs/examples" description="Run the Support Desk product acceptance through public entrypoints." />
   <Card title="API Reference" href="/docs/api" description="Browse the API reference synchronized from the framework contract source." />
 </CardGroup>

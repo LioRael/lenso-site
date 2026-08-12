@@ -25,21 +25,25 @@ Story 产品链由 Pack-backed [Support Desk 验收](/docs/zh/examples)覆盖。
 
 ## Run locally（本地运行）
 
-通过公开 CLI 启动声明的 System 和 Local Control Adapter：
+通过公开 CLI 启动生成的 Host、auto-start Provider Service 与已连接的本地
+Console：
 
 ```sh
 cd support-desk
-lenso system dev --system-file lenso.app.json
+lenso dev up --console-root ../lenso-console
 ```
 
-本地开发不需要 Kubernetes。生产发布和部署由外部交付系统持有，
-不属于 Console 权限。
+该命令会创建仅限 loopback 的已签名 Enrollment Material、协调 Module 自有
+UI Artifact，并在报告 System Ready 前连接精确拓扑。本地开发不需要
+Kubernetes。生产发布和部署由外部交付系统持有，不属于 Console 权限。
 
 ## Connect（连接）
 
-独立运行 Console Service，提交已签名的本地 Service Enrollment Receipt，然后通过
-经过认证的 Connect System API 提交精确拓扑与 Management Binding。Console 记录连接，并自动组合与回执绑定的
-`console_ui_esm` Module Surface。它不会创建、部署、接管、删除、发布或修复
+`lenso dev up --console-root` 写入 `.lenso/console-connect.json`，再通过经过
+认证的 Console Connection Boundary 应用该精确 Bundle。Bundle 包含已签名的
+本地 Service Enrollment、Topology Digest、Management Binding，以及可选的
+Console Artifact Effect。Console 记录连接并加载与回执绑定的
+`console_ui_esm` Module Surface；它不会创建、部署、接管、删除、发布或修复
 Workload。
 
 服务端连接边界和浏览器流程请继续阅读
@@ -60,6 +64,7 @@ Adapter Projection 显示 `connected`、`unavailable`、`incompatible` 或
   <Card title="产品蓝图" href="/docs/zh/product-blueprints" description="生成具备产品形态的 lenso.app.json，并理解其中锁定的选择。" />
   <Card title="Module 开发" href="/docs/zh/module-authoring" description="使用明确的 Business API 与 Console Surface 构建 Linked 业务能力。" />
   <Card title="Service Capability Tiers" href="/docs/zh/autonomous-services" description="选择准确的 Provider 或 Autonomous Service 能力层级与支持语言。" />
+  <Card title="Agent 开发" href="/docs/zh/agent-development" description="安装 Lenso Skills，并运行范围明确、可检查的 Agent 工作流。" />
   <Card title="示例" href="/docs/zh/examples" description="通过公开入口运行 Support Desk 产品级验收。" />
   <Card title="API 参考" href="/docs/zh/api" description="浏览从 framework 权威合约源同步的 API 参考。" />
 </CardGroup>
