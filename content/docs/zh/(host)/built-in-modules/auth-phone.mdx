@@ -1,0 +1,26 @@
+---
+title: auth-phone
+description: 添加手机 OTP 和手机密码认证。
+---
+
+`auth-phone` 把手机登录接入 `auth` 的用户与会话模型，并依赖
+`auth-password`：
+
+```sh
+lenso module install auth
+lenso module install auth-password
+lenso module install auth-phone
+```
+
+模块提供 OTP 开始、OTP 验证、设置手机密码和手机密码登录四个路由。
+OTP 长度、有效期、重发冷却、尝试次数和单 IP 请求限制可以通过
+`auth-phone.otp` runtime config group 调整。
+
+非本地环境必须通过模块本地配置提供 OTP secret，否则 OTP 开始和验证会
+拒绝执行：
+
+```sh
+LENSO_MODULE_AUTH_PHONE__OTP_SECRET=<secret>
+```
+
+把生成的验证码发送到短信渠道仍由安装它的应用负责。

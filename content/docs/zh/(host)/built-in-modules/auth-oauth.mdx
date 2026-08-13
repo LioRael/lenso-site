@@ -1,0 +1,17 @@
+---
+title: auth-oauth
+description: 安装第一方 OAuth 登录模块共用的基础能力。
+---
+
+`auth-oauth` 负责共享 OAuth 身份、连接状态和 Provider 检查界面。它依赖
+`auth`，通常作为具体 Provider 的依赖被安装：
+
+```sh
+lenso module install auth
+lenso module install auth-oauth
+```
+
+产品路由通常不直接调用它。需要完整登录流程时，继续安装
+[`auth-github`](/docs/zh/built-in-modules/auth-github) 或
+[`auth-google`](/docs/zh/built-in-modules/auth-google)，CLI 会解析它们声明的
+依赖关系。

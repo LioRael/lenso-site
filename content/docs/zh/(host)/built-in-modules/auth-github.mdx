@@ -1,0 +1,20 @@
+---
+title: auth-github
+description: 添加基于共享 auth 锚点的 GitHub OAuth 登录。
+---
+
+`auth-github` 依赖 `auth` 和 `auth-oauth`：
+
+```sh
+lenso module install auth
+lenso module install auth-oauth
+lenso module install auth-github
+```
+
+登录流程使用 `GET /v1/auth/github/start` 和
+`GET /v1/auth/github/callback`。通过 `auth-github` 的模块本地配置提供
+`client_id`、`client_secret` 和可选的 `redirect_uri`。
+
+模块默认使用 GitHub 标准 authorization、token 和 API 端点，以及
+`read:user user:email` scope。重启后，应在 Console 检查依赖链，并用 GitHub
+OAuth App 中登记的 callback URL 完成一次真实浏览器登录。

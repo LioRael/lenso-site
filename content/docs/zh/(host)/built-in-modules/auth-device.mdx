@@ -1,11 +1,10 @@
 ---
 title: auth-device
-draft: true
-description: 记录设备 ID 并将设备策略附加到身份验证会话。
+description: 记录设备并把设备策略关联到认证会话。
 ---
 
-登录时安装 `auth-device` 应记录并重用设备 ID。这取决于
-在`auth`上。
+当登录需要记录并复用设备 id 时安装 `auth-device`。它依赖 `auth`；如果
+登录入口使用密码，再同时安装 `auth-password`。
 
 ```sh
 lenso module install auth
@@ -15,18 +14,6 @@ cargo run --bin migrate
 lenso serve
 ```
 
-密码注册和登录接受`device_id`。 When present, the device
-策略记录设备并将其附加到创建的会话：
-
-```sh
-curl -sS -X POST http://127.0.0.1:3000/v1/auth/password/login \
-  -H 'content-type: application/json' \
-  -d '{"identifier":"ada@example.com","password":"correct horse battery staple","device_id":"macbook-1"}' | jq .
-```
-
-重启后，验证：
-
-- 模块页面列出了 `auth-device`。
-- 数据包括设备感知登录后的设备记录。
-- 当 `device_id` 为时，身份验证会话与设备策略数据关联
-  提供。
+密码注册和登录请求可以携带 `device_id`。提供该字段后，设备策略会记录
+设备并把它关联到创建的会话。授权 Operator 可以通过受
+`auth_device.devices.read` 保护的设备读取界面检查记录。

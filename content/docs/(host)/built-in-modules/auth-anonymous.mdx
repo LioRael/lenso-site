@@ -1,6 +1,5 @@
 ---
 title: auth-anonymous
-draft: true
 description: Add anonymous guest sessions that can later upgrade to normal credentials.
 ---
 
@@ -29,8 +28,8 @@ The response includes `user_id`, `session_id`, `token`, `expires_at`, and
 
 After restart, verify:
 
-- the configured Console Service URL lists `auth-anonymous` in module metadata.
-- Runtime evidence shows the anonymous login HTTP route after a request.
+- the connected Console lists `auth-anonymous` in Module metadata.
+- runtime observation shows the anonymous login HTTP route after a request.
 - The auth Users table shows the user as anonymous until a real credential is linked.
 
 ## Manual Rust composition

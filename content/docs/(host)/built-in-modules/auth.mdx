@@ -1,11 +1,10 @@
 ---
 title: auth
-draft: true
-description: Install durable users, sessions, and the auth Console surface.
+description: Install the host-owned authentication anchor for users, identities, and sessions.
 ---
 
-Install `auth` when the host needs durable users and sessions for application
-login, Lenso Console access, or both.
+Install `auth` when the Host needs durable users and sessions for application
+login. It is the anchor required by every other official auth method.
 
 From a generated host:
 
@@ -15,14 +14,13 @@ cargo run --bin migrate
 lenso serve
 ```
 
-The CLI updates host composition, dependencies, local install receipts, and the
-Lenso Console extension registry. Restart the API and worker after installing
-or updating modules.
+The CLI updates Host composition, dependencies, and local install receipts.
+Restart the API and worker after installing or updating modules.
 
 ## User model
 
-`auth.users` is the shared authentication anchor. Business routes and Runtime
-Console both resolve to the same `ActorContext::User { user_id, scopes }`.
+`auth.users` is the shared authentication anchor. Authenticated business routes
+resolve to `ActorContext::User { user_id, scopes }`.
 
 Keep product profile data in your own tables and key it by the auth user id:
 
@@ -39,11 +37,9 @@ Do not add name, avatar, plan, tenant, or organization fields to `auth.users`.
 Those belong to the product module. If your product needs different account ids,
 store a mapping from the account row to `auth_user_id`.
 
-After restart, verify:
-
-- the configured Console Service URL lists `auth` under Modules.
-- Data shows Auth users and sessions.
-- Actions include session revoke and user enable or disable actions.
+After restart, use the connected Console's Modules view to verify that `auth`
+is loaded. Its Console surface exposes users, sessions, session revocation, and
+user enable or disable operations to an authorized operator.
 
 ## Console identities are separate
 

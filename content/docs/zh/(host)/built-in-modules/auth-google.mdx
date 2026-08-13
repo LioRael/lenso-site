@@ -1,0 +1,20 @@
+---
+title: auth-google
+description: 添加基于共享 auth 锚点的 Google OAuth 和 OIDC 登录。
+---
+
+`auth-google` 依赖 `auth` 和 `auth-oauth`：
+
+```sh
+lenso module install auth
+lenso module install auth-oauth
+lenso module install auth-google
+```
+
+登录流程使用 `GET /v1/auth/google/start` 和
+`GET /v1/auth/google/callback`。通过 `auth-google` 的模块本地配置提供
+`client_id`、`client_secret` 和可选的 `redirect_uri`。
+
+模块默认使用 Google 标准 authorization、token 和 user-info 端点，以及
+`openid profile email` scope。重启后，应在 Console 检查依赖链，并用
+Google Cloud 中登记的 callback URL 完成一次真实浏览器登录。

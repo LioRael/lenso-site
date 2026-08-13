@@ -1,31 +1,54 @@
 ---
-title: Built-in Modules
-draft: true
-description: Understand Lenso's first-party and platform-owned modules.
+title: Official Linked Modules
+description: Choose and install the official linked modules known to the Lenso CLI.
 ---
 
-Generated hosts start with `LENSO_COMPOSITION_PROFILE=core` and no real auth
-module. Use local development tokens while building the first app surface, then
-install auth modules when the app needs real sessions, password login, or device
-policy.
+Lenso does not automatically bundle application modules into every product.
+Instead, the CLI knows a maintained set of official **linked modules** that a
+Host can install by name. Linked means the Rust module is compiled into and
+started with the Host; it is not a separately operated Provider Service.
 
-If you are authoring a module that consumes the authenticated actor instead of
-installing auth itself, read
-[Auth and Capabilities](/docs/auth-capabilities).
+Use `LENSO_COMPOSITION_PROFILE=core` for a product Host that selects modules
+explicitly. The `demo` profile loads the first-party authentication set for
+local examples, but production applications should declare what they need.
 
-## Module map
+## Available modules
 
 | Module | Kind | Install | What it owns |
 | --- | --- | --- | --- |
-| [`auth`](/docs/built-in-modules/auth) | first-party linked module | `lenso module install auth` | auth users, sessions, session revoke, dev session route, auth Console pages |
-| [`auth-anonymous`](/docs/built-in-modules/auth-anonymous) | first-party provider module | `lenso module install auth-anonymous` | anonymous session route, anonymous identity marker, account-upgrade link seam |
-| [`auth-password`](/docs/built-in-modules/auth-password) | first-party provider module | `lenso module install auth-password` | password registration and login routes, password credential storage, token strategy config |
-| [`auth-oidc`](/docs/built-in-modules/auth-oidc) | first-party provider module | `lenso module install auth-oidc` | OIDC discovery, authorize/token endpoints, Lenso Console login handoff |
-| [`auth-device`](/docs/built-in-modules/auth-device) | first-party policy module | `lenso module install auth-device` | device records and session device policy |
-| [`platform-story`](/docs/built-in-modules/platform-story) | platform-owned system module | included by the platform composition | Lenso Console story routes, story display metadata, Stories Console surface |
+| [`auth`](/docs/built-in-modules/auth) | authentication anchor | `lenso module install auth` | users, identities, sessions, actor resolution |
+| [`auth-anonymous`](/docs/built-in-modules/auth-anonymous) | auth method | `lenso module install auth-anonymous` | guest sessions and later identity linking |
+| [`auth-password`](/docs/built-in-modules/auth-password) | auth method | `lenso module install auth-password` | identifier/password credentials and login |
+| [`auth-phone`](/docs/built-in-modules/auth-phone) | auth method | `lenso module install auth-phone` | phone OTP and phone-password login |
+| [`auth-oauth`](/docs/built-in-modules/auth-oauth) | auth substrate | `lenso module install auth-oauth` | shared OAuth identities and connection state |
+| [`auth-github`](/docs/built-in-modules/auth-github) | auth method | `lenso module install auth-github` | GitHub OAuth login |
+| [`auth-google`](/docs/built-in-modules/auth-google) | auth method | `lenso module install auth-google` | Google OAuth/OIDC login |
+| [`auth-oidc`](/docs/built-in-modules/auth-oidc) | identity provider | `lenso module install auth-oidc` | OIDC discovery, authorization, and token endpoints |
+| [`auth-device`](/docs/built-in-modules/auth-device) | auth policy | `lenso module install auth-device` | device records associated with auth sessions |
+| [`organization`](/docs/built-in-modules/organization) | business infrastructure | `lenso module install organization` | organizations, roles, memberships, invitations |
+| [`audit-log`](/docs/built-in-modules/audit-log) | business infrastructure | `lenso module install audit-log` | append-only, module-owned audit events |
 
-`auth`, `auth-anonymous`, and `auth-password` are also exposed through
-`lenso::host::builtins`.
-`auth-oidc` and `auth-device` are installed through CLI descriptors.
-`platform-story` is not a business module. It is Lenso-owned runtime
-observability infrastructure.
+The CLI resolves these names to exact linked install descriptors, including
+dependencies and Cargo packages. `auth`, `auth-password`, and several other
+auth modules also have helpers under `lenso::host::builtins`; modules maintained
+in independent repositories expose their own `linked_module()` helper.
+
+`lenso/platform-story` is not in this list. It is a composition-selected
+Module owned by the application or Console integration that supplies it, not a
+Framework-bundled application module.
+
+## Install and verify
+
+Install dependencies first, then restart the Host so migrations, routes, and
+Module metadata are loaded:
+
+```sh
+lenso module install auth
+lenso module install auth-password
+cargo run --bin migrate
+lenso serve
+```
+
+Use the connected Console's Modules view to confirm the resolved dependency and
+runtime state. For module authors consuming the authenticated actor, see
+[Auth and Capabilities](/docs/auth-capabilities).

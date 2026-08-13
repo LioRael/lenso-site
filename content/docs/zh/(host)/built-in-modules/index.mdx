@@ -1,31 +1,51 @@
 ---
-title: 内置模块
-draft: true
-description: 了解Lenso的第一方和平台拥有的模块。
+title: 官方链接模块
+description: 选择并安装 Lenso CLI 已知的官方链接模块。
 ---
 
-生成的主机以 `LENSO_COMPOSITION_PROFILE=core` 开头，没有真正的身份验证
-模块。在构建第一个应用程序界面时使用本地开发令牌，然后
-当应用程序需要真实会话、密码登录或设备时安装身份验证模块
-政策。
+Lenso 不会自动把应用模块捆绑进每一个产品。CLI 维护了一组可以按名称
+安装的官方**链接模块**。链接模块会作为 Rust 依赖编译进 Host，并随 Host
+启动；它不是独立运行的 Provider Service。
 
-如果您正在编写一个使用经过身份验证的参与者而不是
-安装 auth 本身，阅读
-[授权和功能](/docs/zh/auth-capabilities)。
+产品 Host 应使用 `LENSO_COMPOSITION_PROFILE=core` 并显式选择模块。
+`demo` profile 会为本地示例加载第一方认证模块，但生产应用应明确声明
+自己的组成。
 
-## 模块图
+## 可用模块
 
-|模块|类型 |安装 |它拥有什么 |
+| 模块 | 类型 | 安装 | 负责的能力 |
 | --- | --- | --- | --- |
-| [`auth`](/docs/zh/built-in-modules/auth) |第一方链接模块 | `lenso module install auth` |身份验证用户、会话、会话撤销、开发会话路由、身份验证控制台页面 |
-| [`auth-anonymous`](/docs/zh/built-in-modules/auth-anonymous) | 第一方 Provider 模块 | `lenso module install auth-anonymous` | 匿名会话路由、匿名身份标记、账户升级关联接口 |
-| [`auth-password`](/docs/zh/built-in-modules/auth-password) |第一方Provider模块 | `lenso module install auth-password` |密码注册和登录路由、密码凭证存储、令牌策略配置 |
-| [`auth-oidc`](/docs/zh/built-in-modules/auth-oidc) |第一方Provider模块 | `lenso module install auth-oidc` | OIDC 发现、授权/令牌端点、Lenso Console登录切换 |
-| [`auth-device`](/docs/zh/built-in-modules/auth-device) |第一方政策模块| `lenso module install auth-device` |设备记录和会话设备策略|
-| [`platform-story`](/docs/zh/built-in-modules/platform-story) |平台自有系统模块|包含的平台构成|Lenso Console Story路由、Story显示元数据、Story Console界面 |
+| [`auth`](/docs/zh/built-in-modules/auth) | 认证锚点 | `lenso module install auth` | 用户、身份、会话和 Actor 解析 |
+| [`auth-anonymous`](/docs/zh/built-in-modules/auth-anonymous) | 认证方式 | `lenso module install auth-anonymous` | 匿名会话以及后续身份绑定 |
+| [`auth-password`](/docs/zh/built-in-modules/auth-password) | 认证方式 | `lenso module install auth-password` | 标识符/密码凭据和登录 |
+| [`auth-phone`](/docs/zh/built-in-modules/auth-phone) | 认证方式 | `lenso module install auth-phone` | 手机 OTP 和手机密码登录 |
+| [`auth-oauth`](/docs/zh/built-in-modules/auth-oauth) | 认证基础模块 | `lenso module install auth-oauth` | 共享 OAuth 身份和连接状态 |
+| [`auth-github`](/docs/zh/built-in-modules/auth-github) | 认证方式 | `lenso module install auth-github` | GitHub OAuth 登录 |
+| [`auth-google`](/docs/zh/built-in-modules/auth-google) | 认证方式 | `lenso module install auth-google` | Google OAuth/OIDC 登录 |
+| [`auth-oidc`](/docs/zh/built-in-modules/auth-oidc) | 身份提供方 | `lenso module install auth-oidc` | OIDC 发现、授权和令牌端点 |
+| [`auth-device`](/docs/zh/built-in-modules/auth-device) | 认证策略 | `lenso module install auth-device` | 与认证会话关联的设备记录 |
+| [`organization`](/docs/zh/built-in-modules/organization) | 业务基础能力 | `lenso module install organization` | 组织、角色、成员关系和邀请 |
+| [`audit-log`](/docs/zh/built-in-modules/audit-log) | 业务基础能力 | `lenso module install audit-log` | 仅追加的模块审计事件 |
 
-`auth`、`auth-anonymous` 和 `auth-password` 也通过
-`lenso::host::builtins`。
-`auth-oidc` 和 `auth-device` 通过 CLI 描述符安装。
-`platform-story`不是业务模块。这是Lenso拥有的运行时
-可观测性基础设施。
+CLI 会把这些名称解析为精确的链接安装描述符，其中包含依赖关系和 Cargo
+包信息。`auth`、`auth-password` 等认证模块也通过
+`lenso::host::builtins` 提供 helper；独立仓库维护的模块则公开自己的
+`linked_module()` helper。
+
+`lenso/platform-story` 不属于这个列表。它是由应用或 Console 集成的
+composition 选择并提供的 Module，不是 Framework 自动捆绑的应用模块。
+
+## 安装与验证
+
+先安装依赖，再重启 Host，让 migration、路由和 Module 元数据生效：
+
+```sh
+lenso module install auth
+lenso module install auth-password
+cargo run --bin migrate
+lenso serve
+```
+
+在已连接 Console 的 Modules 页面确认依赖解析和运行状态。如果你编写的
+模块只需要消费认证后的 Actor，请继续阅读
+[认证与 Capability](/docs/zh/auth-capabilities)。
