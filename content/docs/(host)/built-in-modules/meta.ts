@@ -1,7 +1,8 @@
-{
-  "title": "Official linked modules",
-  "defaultOpen": false,
-  "pages": [
+import { defineMeta } from "blume";
+
+export default defineMeta({
+  title: "Official Linked Modules",
+  pages: [
     "index",
     "auth",
     "auth-anonymous",
@@ -13,6 +14,6 @@
     "auth-oidc",
     "auth-device",
     "organization",
-    "audit-log"
-  ]
-}
+    "audit-log",
+  ],
+});
