@@ -1,76 +1,40 @@
 ---
 title: auth-oidc
-draft: true
-description: Let Lenso Console use the host's auth sessions through OIDC.
+description: Expose the Host as an OpenID Connect provider backed by auth sessions.
 ---
 
-Install `auth-oidc` when production Lenso Console users should sign in with
-the host's real auth flow instead of development bearer tokens. It depends on
-`auth` and reuses the same `auth.users` rows as application login.
-
-Password login is the current first-party way to create the user session that
-starts the OIDC flow. `auth-oidc` does not create a separate Console user store;
-it turns an existing auth session into Console tokens.
+Install `auth-oidc` when another application needs to authenticate through the
+Host's existing users and sessions. It depends on `auth`.
 
 ```sh
 lenso module install auth
-lenso module install auth-password
 lenso module install auth-oidc
 cargo run --bin migrate
 lenso serve
 ```
 
-## Production config
+The module contributes these endpoints:
 
-`auth-oidc` uses module-local boot config:
+- `/.well-known/openid-configuration`
+- `/.well-known/jwks.json`
+- `/oauth/authorize`
+- `/oauth/token`
+
+It is installed but disabled until complete module-local configuration is
+provided:
 
 ```sh
-APP_ENV=production
-LENSO_COMPOSITION_PROFILE=core
-
 LENSO_MODULE_AUTH_OIDC__ENABLED=true
 LENSO_MODULE_AUTH_OIDC__ISSUER=https://app.example.com
-LENSO_MODULE_AUTH_OIDC__CONSOLE_REDIRECT_URIS='["https://app.example.com/oidc/callback"]'
+LENSO_MODULE_AUTH_OIDC__CONSOLE_REDIRECT_URIS='["https://client.example.com/oidc/callback"]'
 LENSO_MODULE_AUTH_OIDC__JWKS='{"keys":[...]}'
 LENSO_MODULE_AUTH_OIDC__ID_TOKEN_PRIVATE_KEY_PEM="$OIDC_SIGNING_KEY_PEM"
 ```
 
-`console_client_id` defaults to `lenso-console`. The redirect URI must match the
-hosted Console callback path exactly: `/oidc/callback`.
+The client id defaults to `lenso-console`. Every redirect URI must match an
+allowed URI exactly and must not contain a fragment. Keep the private signing
+key in the Host's secret store; publish only its matching public key through
+JWKS.
 
-Keep `id_token_private_key_pem` in your secret store. `jwks` is the public key
-set matching that signing key.
-
-## Grant Console access
-
-The OIDC access token resolves to the same auth user id as the application
-session. Grant Console scopes through `auth.console_admin_user_scopes`:
-
-```json
-{
-  "usr_admin": ["console.admin", "runtime.stories.read", "auth.users.read"]
-}
-```
-
-`console.admin` lets the user enter admin HTTP endpoints. Runtime story pages
-also require `runtime.stories.read`; other module pages check their own
-capability strings.
-
-For an independently installed Console, initialize its first Operator through
-the external installation authority:
-
-```sh
-lenso console operator bootstrap \
-  --console-url https://console.example.com \
-  --identifier admin@example.com
-```
-
-Restart the Console API and Worker after bootstrapping. Existing identities may
-instead be selected with `--user-id`; later Operators are managed through the
-Console's identity Module.
-
-## Browser token boundary
-
-Do not ship a browser Console bundle with `VITE_API_AUTH_TOKEN` or a service
-bearer token baked into it. In production, the configured Console Service URL should rely on password
-login, OIDC callback storage, and the per-user scopes above.
+The independent Lenso Console Service owns its own operator identities. Adding
+`auth-oidc` to a business Host does not grant a business user Console access.

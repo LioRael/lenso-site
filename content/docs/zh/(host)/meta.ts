@@ -9,6 +9,7 @@ export default defineMeta({
     "quickstart",
     "product-blueprints",
     "cli-reference",
+    "built-in-modules",
     "runtime-console",
     "troubleshooting",
   ],

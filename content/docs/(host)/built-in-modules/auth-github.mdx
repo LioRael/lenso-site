@@ -1,0 +1,27 @@
+---
+title: auth-github
+description: Add GitHub OAuth login backed by the shared auth anchor.
+---
+
+`auth-github` depends on `auth` and `auth-oauth`. Install the complete chain:
+
+```sh
+lenso module install auth
+lenso module install auth-oauth
+lenso module install auth-github
+cargo run --bin migrate
+lenso serve
+```
+
+The login flow uses:
+
+- `GET /v1/auth/github/start`
+- `GET /v1/auth/github/callback`
+
+Provide `client_id` and `client_secret` through module-local config for
+`auth-github`; `redirect_uri` is optional. The provider defaults to GitHub's
+standard authorization, token, and API endpoints with scope
+`read:user user:email`.
+
+After restart, verify the module dependency chain in Console and complete a
+browser login against the callback URL registered in the GitHub OAuth app.

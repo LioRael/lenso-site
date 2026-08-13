@@ -1,0 +1,27 @@
+---
+title: auth-google
+description: Add Google OAuth and OpenID Connect login backed by the shared auth anchor.
+---
+
+`auth-google` depends on `auth` and `auth-oauth`. Install the complete chain:
+
+```sh
+lenso module install auth
+lenso module install auth-oauth
+lenso module install auth-google
+cargo run --bin migrate
+lenso serve
+```
+
+The login flow uses:
+
+- `GET /v1/auth/google/start`
+- `GET /v1/auth/google/callback`
+
+Provide `client_id` and `client_secret` through module-local config for
+`auth-google`; `redirect_uri` is optional. The provider defaults to Google's
+standard authorization, token, and user-info endpoints with scope
+`openid profile email`.
+
+After restart, verify the module dependency chain in Console and complete a
+browser login against the callback URL registered in Google Cloud.

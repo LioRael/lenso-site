@@ -1,0 +1,22 @@
+---
+title: audit-log
+description: 添加仅追加、由业务模块写入的审计事件。
+---
+
+`audit-log` 是可安装的业务基础模块。它不同于 runtime observation、
+telemetry、Provider 调用历史和平台执行日志。
+
+```sh
+lenso module install audit-log
+```
+
+模块提供：
+
+- `audit_log.events` 中的仅追加事件存储；
+- Actor、scope、resource、outcome、severity、reason、metadata 和 runtime
+  correlation 字段；
+- 供应用模块调用的链接 Rust 写入 API；
+- 由 `audit_log.events.read` 保护的读取界面。
+
+它不依赖 `organization`。任何模块都可以用通用的 `scope_module`、
+`scope_type` 和 `scope_id` 表达自己的业务范围。

@@ -1,13 +1,18 @@
 {
-  "title": "Built-in Modules",
+  "title": "Official linked modules",
   "defaultOpen": false,
   "pages": [
     "index",
     "auth",
     "auth-anonymous",
     "auth-password",
+    "auth-phone",
+    "auth-oauth",
+    "auth-github",
+    "auth-google",
     "auth-oidc",
     "auth-device",
-    "platform-story"
+    "organization",
+    "audit-log"
   ]
 }
