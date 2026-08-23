@@ -1,0 +1,64 @@
+---
+title: Quickstart
+description: Build the portable core, install the Lenso CLI, and understand the executable workflow.
+---
+
+Lenso is available today as released core crates and extracted runtime/tooling
+repositories. Authoring commands are exposed through the single `lenso`
+executable; `lenso-authoring` remains an implementation library.
+
+## Prerequisites
+
+- Rust stable with Cargo
+- Git
+- Bun only when the selected Plan uses `lenso.bun-child-process@1`
+
+## 1. Verify the portable core
+
+```sh
+git clone https://github.com/LioRael/lenso.git
+cd lenso
+cargo fmt --all -- --check
+cargo xtask check-core-repository-boundary
+cargo check --locked --workspace --all-targets
+cargo test --locked --workspace
+```
+
+These gates prove the Plan, Kernel, and Kernel-owned conformance surface. CI
+also compile-checks the portable core for `wasm32-unknown-unknown` and
+`wasm32-wasip2`.
+
+## 2. Install the Lenso CLI
+
+```sh
+cargo install lenso-cli --locked
+lenso --help
+```
+
+The executable exposes the current `add`, `check`, `resolve`, and `run`
+surface. It is early-access tooling; it does not discover Modules or mutate a
+running App.
+
+## 3. Follow the project lifecycle
+
+```sh
+lenso check --project lenso.json \
+  --execution-class lenso.native-rust@1
+lenso resolve --project lenso.json \
+  --execution-class lenso.native-rust@1 \
+  --output .lenso/resolved-plan.json
+lenso run \
+  --plan .lenso/resolved-plan.json --root .
+```
+
+`check` validates project inputs and generated contracts. `resolve` produces
+canonical immutable bytes. `run` loads those same bytes, assembles the selected
+Driver and Adapters, and translates Ctrl-C into cooperative shutdown.
+
+:::warning
+There is not yet a stable one-command end-user starter. Do not use the
+legacy `lenso app compose`, `lenso system dev`, or Console lifecycle from the
+v0.3 docs as if it were a current workflow.
+:::
+
+Next, learn what belongs in [Project and Plan](/docs/project-and-plan).

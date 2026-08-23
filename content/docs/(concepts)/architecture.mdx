@@ -1,0 +1,52 @@
+---
+title: Core architecture
+description: The stable seams between composition, portable Kernel mechanisms, host scheduling, and Module execution.
+---
+
+## Four ownership layers
+
+### App Composition
+
+Authoring-time intent: Instances, package inputs, configuration, execution
+classes, placement, and explicit Capability bindings. Authoring tools resolve
+this into one complete Plan before boot.
+
+### Portable Kernel
+
+A host-neutral state machine for graph validation, staged activation, readiness,
+typed invocation, scopes, cancellation, supervision, shutdown, and bounded
+diagnostics. It depends on no Tokio, OS, network, filesystem, database, or
+product API.
+
+### Runtime Driver
+
+The host implementation of scheduling, monotonic time, wakeups, cancellation
+lanes, joins, and shutdown translation. Tokio, browser JavaScript, and WASIp2
+are Driver profiles rather than Kernel branches.
+
+### Execution Adapter
+
+The owner of Module generation and endpoint mechanics: native factories, Bun
+child processes, future host-supported sources, isolation, framing, and
+Adapter-specific failure classification.
+
+## The deletion test
+
+A concern belongs in the Kernel only when deleting the Kernel would force every
+Runner and Adapter to reimplement it. HTTP, PostgreSQL, Auth, secrets,
+OpenTelemetry, UI, and product workflows fail that test: removing their selected
+Modules removes their complexity.
+
+## Dependency direction
+
+```text
+product Modules / authoring / examples
+                 ↓
+Drivers and Execution Adapters
+                 ↓
+portable protocols and core Interfaces
+                 ↓
+App Plan + Kernel
+```
+
+Core never depends back on a concrete Driver, Adapter, Module, CLI, or example.

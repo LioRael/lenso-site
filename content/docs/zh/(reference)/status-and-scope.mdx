@@ -1,0 +1,33 @@
+---
+title: 状态与范围
+description: Lenso 当前实现了什么、架构证明了什么，以及刻意延后的内容。
+---
+
+## 已实现并发布
+
+- 不可变 App Plan 数据与规范校验；
+- 可移植单所有者 Kernel 生命周期与调用语义；
+- 确定性 Kernel conformance fixtures；
+- Native Tokio Runner 与 Native Execution Adapter；
+- Browser JavaScript 与 WASIp2 Driver Profile；
+- Bun 子进程 Request 与 Stream 执行；
+- Rust 与 TypeScript 的可移植 Descriptor codegen；
+- 可选 Auth 与 OpenTelemetry Interface/Module；
+- Target-owned Web UI 组合证据。
+
+## Early-access 或集成中
+
+- Authoring 命令统一由 `lenso` 可执行文件提供，`lenso-authoring` 仅保留为库；
+- 所有者仓库通过有版本的 core package 消费，并继续加固跨仓库 release set；
+- 示例与 Starter 体验还没有统一成一条稳定产品路径。
+
+## 明确没有承诺
+
+Lenso 当前没有定义运行时 discovery、hot graph mutation、rolling upgrade、
+distributed placement、automatic replica、control plane、敌对浏览器代码隔离或独立
+Console 产品。架构保留未来可能使用的接缝，不等于功能已实现。
+
+:::warning
+不要根据保留词汇或迁移笔记推断 v0.3 功能等价。Service、Provider、System
+Plane、Console、Story 与 Plugin 都不是当前架构的同级 runtime type。
+:::

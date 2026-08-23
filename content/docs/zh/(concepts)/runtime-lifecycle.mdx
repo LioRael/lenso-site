@@ -1,0 +1,22 @@
+---
+title: 运行时生命周期
+description: Resolved App 如何经过校验、分阶段激活、就绪、监督与关闭。
+---
+
+<Steps>
+  <Step title="校验">Kernel 在激活前拒绝非法图、缺失绑定、无效 placement 和不支持的 execution class。</Step>
+  <Step title="准备">Execution Adapter 为每个 Module Instance 创建 generation，但 App 尚未 ready。</Step>
+  <Step title="激活">Provider 按依赖顺序激活；整个分阶段 App 要么全部成功，要么全部失败。</Step>
+  <Step title="打开就绪门">只有所有必需 Instance 都 active 后，唯一 App Ready Gate 才会打开。</Step>
+  <Step title="运行与监督">调用和受管工作属于特定 Instance generation 及其取消 scope。</Step>
+  <Step title="关闭">Driver 转换宿主关闭，Kernel 协作式取消，Adapter 释放 generation 所有资源。</Step>
+</Steps>
+
+如果所选 Adapter 支持重建 generation，稳定 consumer handle 可以跨 provider
+restart 保留。它仍指向不可变 Plan 选择的 provider；restart 并不等于 rebinding。
+
+## Execution Lane
+
+Native 并行通过 Plan 声明的 Execution Lane 复制单所有者 Kernel。每个 Module
+Instance 只有一个 Lane owner。系统正确性不依赖 work stealing、运行时 Instance
+迁移或共享可变 Module 状态。

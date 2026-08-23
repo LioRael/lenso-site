@@ -1,5 +1,5 @@
 import { defineMeta } from "blume";
 
 export default defineMeta({
-  pages: ["index", "(host)", "(module)", "(concepts)", "(agent)"],
+  pages: ["index", "(start)", "(concepts)", "(guides)", "(reference)"],
 });

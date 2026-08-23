@@ -1,0 +1,37 @@
+---
+title: Module 开发
+description: 先设计可移植 Capability，再实现拥有该行为的最小 Module 并完成组合。
+---
+
+## 1. 命名深层角色
+
+从 consumer 需要的行为开始，而不是从包或传输开始。优先设计
+`acme.orders@1` 这样具有聚焦 Operation 的 Capability，避免通用 RPC、Repository
+或 Administration Interface。
+
+## 2. 编写 Descriptor
+
+可移植 Descriptor 定义 Operation 形态、领域值、错误与版本标识。
+`lenso-contract-codegen` 从同一份已验证 IR 生成 Rust 与 TypeScript bindings；
+生成制品漂移会导致构建失败。
+
+## 3. 实现 Module entrypoint
+
+产品规则、状态和授权留在 Module 内。Entrypoint 声明 provided/required
+Capabilities，并公开 Execution Adapter 能理解的 factory。v1 Native Rust Module
+采用静态链接，Bun Module 使用 Bun 子进程 Adapter。
+
+## 4. 显式组合
+
+把包和 Module Instance 添加到 `lenso.json`，再把每个 requirement 绑定到有名的
+provider Instance。运行 `check`，审查 diff 与普通包锁变化，然后 resolve 新 Plan。
+
+## 5. 在 Interface 上验证行为
+
+测试生成 client/provider 合约与公开 Capability 结果。实现 Driver 或 Adapter 时
+使用 `lenso-runtime-conformance`，不要用所有者本地 mock 声称 Kernel 语义成立。
+
+:::tip
+Persistence、Auth、Secrets、Telemetry、HTTP 与 UI 都是组合能力。只有 App
+选择时才加入，绝不要藏在环境式 Kernel service locator 后面。
+:::

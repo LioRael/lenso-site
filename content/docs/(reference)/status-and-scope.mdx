@@ -1,0 +1,37 @@
+---
+title: Status and scope
+description: What Lenso implements now, what the architecture proves, and what remains deliberately deferred.
+---
+
+## Implemented and released
+
+- immutable App Plan data and canonical validation;
+- portable single-owner Kernel lifecycle and invocation semantics;
+- deterministic Kernel conformance fixtures;
+- native Tokio Runner and native Execution Adapter;
+- browser JavaScript and WASIp2 Driver profiles;
+- Bun child-process request and stream execution;
+- portable Descriptor code generation for Rust and TypeScript;
+- optional Auth and OpenTelemetry Interfaces/Modules; and
+- target-owned Web UI composition evidence.
+
+## Early-access or integration work
+
+- authoring commands are exposed through the `lenso` executable, while
+  `lenso-authoring` remains a library;
+- owner repositories are consumed through versioned core packages and continue
+  to harden their cross-repository release set; and
+- examples and starter ergonomics are not yet a single stable product path.
+
+## Deliberately not promised
+
+Lenso does not currently define runtime discovery, hot graph mutation, rolling
+upgrades, distributed placement, automatic replicas, a control plane, hostile
+browser-code isolation, or an independent Console product. The architecture
+preserves seams that may support future work; that is not implementation proof.
+
+:::warning
+Do not infer v0.3 feature parity from retained vocabulary or migration notes.
+Service, Provider, System Plane, Console, Story, and Plugin are not peer runtime
+types in the current architecture.
+:::

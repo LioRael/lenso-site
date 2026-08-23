@@ -1,93 +1,95 @@
 ---
-title: Start Here
-description: Compose a Lenso app, run it locally, connect Console, and read exact System status.
+title: Introduction
+description: Understand what Lenso is, why it uses an explicit App Plan, and where its runtime boundaries are drawn.
 ---
 
-Lenso is an agent-ready modular application and microservice framework for Rust
-business systems. Start with one explicit app composition. Keep business
-capabilities as linked Modules or Provider-backed Modules, then move a stable
-boundary to an Autonomous Service only when it needs independent ownership.
+Lenso is a local-first, language-independent runtime for modular applications.
+It turns an application's Modules, Capability bindings, execution choices, and
+policies into an immutable **Resolved App Plan**, then runs that plan through a
+small portable Kernel.
 
-The public developer lifecycle has four steps.
+The central idea is simple: decide the application before boot, keep runtime
+semantics explicit, and leave environment-specific work at the host boundary.
 
-## Compose
+## Why Lenso exists
 
-Materialize one exact `lenso.app.json` from a product blueprint:
+Modular systems often become difficult to reason about because composition,
+runtime scheduling, transport, infrastructure, and product behavior collapse
+into the same layer. The result is usually implicit dependency discovery,
+environment-specific lifecycle behavior, and configuration that cannot be
+validated until the application is already running.
 
-```sh
-lenso app compose ./support-desk --blueprint support-desk --apply
+Lenso separates those concerns:
+
+- **Composition** selects Modules, binds Capabilities, and produces the Plan.
+- **The Kernel** validates and executes the Plan with portable lifecycle rules.
+- **Runtime Drivers** provide scheduling, clocks, cancellation, and shutdown.
+- **Execution Adapters** connect the Kernel to concrete Module implementations.
+- **Modules** own product behavior behind typed Capability Interfaces.
+
+This separation makes application structure inspectable before execution and
+keeps host-specific mechanisms out of the portable core.
+
+## The runtime model
+
+```mermaid
+flowchart TD
+  C[App Composition] --> A[Authoring and package tools]
+  A --> P[Resolved App Plan]
+  P --> K[Portable Kernel]
+  D[Runtime Driver] --> K
+  K --> E[Execution Adapters]
+  E --> M[Module Instances]
+  M --> Q[Capabilities: request, stream, event]
 ```
 
-The bare blueprint selects `auth`, `notification-worker`, and `support-api`.
-The resulting file binds the app revision, artifact digests, dependency
-selections, and linked or service-backed Module implementations. Treat it as
-the application composition and lock; do not copy process commands into it by
-hand. The Support Ticket and Story product seam is the pack-backed
-[Support Desk acceptance](/docs/examples).
+The Plan is the complete execution input. It records Module identities,
+Capability bindings, execution classes, connections, policies, and the data
+needed to admit the application. Once resolved, the Plan is immutable; the
+Kernel does not discover or rewrite the graph while booting.
 
-## Run locally
+The Kernel owns graph validation, staged lifecycle, readiness, invocation,
+cancellation, supervision, and bounded diagnostics. It does **not** own network,
+filesystem, database, process, Auth, telemetry, Console, or business semantics.
 
-Start the generated Host, auto-start Provider Services, and a connected local
-Console through the public CLI:
+## Core concepts
 
-```sh
-cd support-desk
-lenso dev up --console-root ../lenso-console
-```
+| Concept | Responsibility |
+| --- | --- |
+| **App Composition** | Declares the application and selects compatible implementations. |
+| **Resolved App Plan** | Provides the canonical, immutable input accepted by the runtime. |
+| **Capability** | Defines a versioned Interface with request, stream, or event Operations. |
+| **Module** | Implements product behavior and declares the Capabilities it provides or requires. |
+| **Kernel** | Owns portable admission, lifecycle, invocation, cancellation, and diagnostics. |
+| **Runtime Driver** | Supplies host scheduling, time, task joining, cancellation, and shutdown. |
+| **Execution Adapter** | Runs a Module implementation in a concrete environment or transport. |
 
-The command creates loopback-only signed enrollment material, reconciles
-Module-owned UI artifacts, and connects the exact topology before it reports
-the System ready. Local development does not require Kubernetes. Production
-release and deployment remain owned by external delivery systems, not Console.
+## Portable does not mean environment-free
 
-## Connect
+The same Kernel semantics can be compiled for native, browser JavaScript, and
+WASIp2 host profiles. Each profile still needs a Driver and compatible
+Execution Adapters. Portability means the Kernel does not absorb those host
+mechanisms; it does not imply that every Module runs unchanged in every
+environment.
 
-`lenso dev up --console-root` writes `.lenso/console-connect.json` and applies
-that exact bundle through the authenticated Console connection boundary. The
-bundle contains signed local Service enrollments, the topology digest,
-Management Binding, and optional Console artifact effect. Console records the
-connection and loads receipt-bound `console_ui_esm` Module Surfaces. It does
-not create, deploy, adopt, delete, release, or repair workloads.
+## Current implementation boundary
 
-Continue with [Lenso Console](/docs/runtime-console) for the server-side
-connection boundary and browser flow.
+- `lenso-app-plan` owns the serializable execution input.
+- `lenso-kernel` owns portable runtime semantics and deterministic conformance.
+- `lenso-runtime-conformance` owns product-neutral runtime proofs.
+- Drivers, Execution Adapters, protocols, optional Modules, authoring, and
+  examples live in separate owner repositories.
+- Runtime discovery, hot graph mutation, distributed placement, automatic
+  replicas, and an independent Console product are not current runtime promises.
 
-## Status
+See [Status and scope](/docs/status-and-scope) for the precise implemented,
+early-access, and deliberately deferred boundaries.
 
-Read the connected System in Console. System, Service, Module, Surface, and
-Adapter projections report one of `connected`, `unavailable`, `incompatible`,
-or `unmanaged`, with a direct reason when action is needed. Workload operational
-state is separate. An unavailable control Adapter leaves Workload observation
-`unknown` and rejects mutation without queueing or fallback.
-
-## Choose a build path
+## Where to go next
 
 <CardGroup>
-  <Card title="Host Quickstart" href="/docs/quickstart" description="Compose and run one local app through the supported public lifecycle." />
-  <Card title="Product Blueprints" href="/docs/product-blueprints" description="Materialize a product-shaped lenso.app.json and understand its locked selections." />
-  <Card title="Module Authoring" href="/docs/module-authoring" description="Build linked business capabilities with explicit Business APIs and Console Surfaces." />
-  <Card title="Service Capability Tiers" href="/docs/autonomous-services" description="Choose the exact Provider or Autonomous Service capability tier and supported language." />
-  <Card title="Agent Development" href="/docs/agent-development" description="Install the Lenso skills and run a bounded, checkable agent workflow." />
-  <Card title="Examples" href="/docs/examples" description="Run the Support Desk product acceptance through public entrypoints." />
-  <Card title="API Reference" href="/docs/api" description="Browse the API reference synchronized from the framework contract source." />
+  <Card title="Quickstart" href="/docs/quickstart" description="Build the portable core, inspect the authoring CLI, and follow a Plan from project input to execution." />
+  <Card title="Core architecture" href="/docs/architecture" description="Study the ownership boundaries between composition, Kernel, Driver, and Adapter." />
+  <Card title="Modules and Capabilities" href="/docs/modules-and-capabilities" description="Learn how product behavior is packaged behind deep, versioned Interfaces." />
+  <Card title="Module authoring" href="/docs/module-authoring" description="Design a Capability, implement a Module, and bind it explicitly." />
 </CardGroup>
-
-## Core boundaries
-
-- **Modules keep business identity.** Delivery may be linked or provided by a
-  Service without renaming the capability.
-- **Business APIs stay typed.** Module Surfaces call declared operations with a
-  generated client and an exact Surface Grant.
-- **Console is a System Plane.** It reports current state and invokes supported
-  target-owned operations; it is not a deployment plane.
-- **Rust owns both service tiers.** TypeScript currently supports Provider
-  authoring only. See [Service Capability Tiers](/docs/autonomous-services).
-- **Split only stable boundaries.** Autonomous Services own their runtime,
-  storage, identity, and operations; they are not the default starting point.
-
-## Install
-
-- Rust Module and Host declarations use the current `lenso` facade.
-- `@lenso/cli` and `lenso-cli` both expose the `lenso` command.
-- `@lenso/service-kit` authors TypeScript Provider services.
-- Lenso Console is installed independently with `lenso console install`.

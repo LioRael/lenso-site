@@ -1,0 +1,24 @@
+---
+title: Runtime lifecycle
+description: How a resolved App moves through validation, staged activation, readiness, supervision, and shutdown.
+---
+
+<Steps>
+  <Step title="Validate">The Kernel rejects malformed graphs, missing bindings, invalid placement, and unsupported execution classes before activation.</Step>
+  <Step title="Prepare">Execution Adapters create one generation for each selected Module Instance without exposing the App as ready.</Step>
+  <Step title="Activate">Providers activate in dependency order. Activation is all-or-nothing for the staged App.</Step>
+  <Step title="Open readiness">The single App Ready Gate opens only after every required Instance is active.</Step>
+  <Step title="Run and supervise">Invocations and managed work belong to an Instance generation and its cancellation scope.</Step>
+  <Step title="Shut down">The Driver translates host shutdown, the Kernel cancels cooperatively, and Adapters release generation-owned resources.</Step>
+</Steps>
+
+Stable consumer handles can survive a provider restart when the selected
+Adapter supports generation recreation. They still refer to the provider chosen
+by the immutable Plan; restart is not rebinding.
+
+## Execution Lanes
+
+Native parallelism scales by replicating the single-owner Kernel across
+Plan-declared Execution Lanes. A Module Instance has one lane owner. Correctness does
+not require work stealing, runtime Instance migration, or shared mutable Module
+state for correctness.
