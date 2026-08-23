@@ -43,6 +43,11 @@ match decode_auth_response(response)? {
 类型化 Domain Error 是 `invalid`、`expired`、`revoked` 和 `unsupported`。
 传输失败、Deadline 和 Provider 不可用仍属于 Runtime Failure。
 
+完整的 HTTP Endpoint 流程，包括 `lenso-http-auth` helper、应用自有的
+`UserActor` / `AdminActor` extractor、`401` Problem Details、`WWW-Authenticate`、
+activate 阶段创建 client 和状态码映射，见
+[Web Capabilities](/docs/zh/web-capabilities/)。
+
 ## 在目标 Rust Module 中授权
 
 先定义目标真正需要的 Actor 类型，再验证 Issuer、Ed25519 Proof、Audience 与

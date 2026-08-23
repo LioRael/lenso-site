@@ -44,6 +44,11 @@ The typed Domain Errors are `invalid`, `expired`, `revoked`, and `unsupported`.
 Transport failures, deadlines, and unavailable providers remain Runtime
 Failures.
 
+For a complete HTTP Endpoint flow, including the `lenso-http-auth` helper,
+application-owned `UserActor` / `AdminActor` extractors, `401` Problem Details,
+`WWW-Authenticate`, activation-time clients, and status mapping, see
+[Web Capabilities](/docs/web-capabilities/#authenticate-an-inbound-request).
+
 ## Authorize in the target Rust Module
 
 Define the actor type the target actually needs, then verify issuer, Ed25519
