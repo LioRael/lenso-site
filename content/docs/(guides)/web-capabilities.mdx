@@ -28,7 +28,7 @@ route table:
 
 ```rust title="src/http.rs"
 use lenso_capability_http_endpoint::{
-    http_endpoint, HandleRequest, HandleResponse, HandleResponseHeadersItem,
+    endpoint, HandleRequest, HandleResponse, HandleResponseHeadersItem,
     EndpointHandleInvocationError,
 };
 use lenso_kernel::InvocationContext;
@@ -36,7 +36,9 @@ use lenso_kernel::InvocationContext;
 #[derive(Clone, Debug, Default)]
 struct OrdersHttp;
 
+#[endpoint]
 impl OrdersHttp {
+    #[post("orders.create", "/orders")]
     async fn create(
         &self,
         _context: InvocationContext,
@@ -52,13 +54,12 @@ impl OrdersHttp {
         })
     }
 }
-
-http_endpoint! {
-    impl OrdersHttp {
-        "orders.create" => ("POST", "/orders") => create,
-    }
-}
 ```
+
+`#[endpoint]` collects the handlers in one `impl`. Use `#[get]`, `#[post]`,
+`#[put]`, `#[patch]`, `#[delete]`, `#[head]`, or `#[options]`; each attribute
+declares a stable route ID followed by its path. The `http_endpoint!` static
+table remains available for generated code and existing Modules.
 
 The endpoint owns HTTP-shaped business behavior. Web Ingress owns listener and
 protocol mechanics, route matching, path parameters, size and concurrency

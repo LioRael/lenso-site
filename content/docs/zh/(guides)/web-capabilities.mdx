@@ -25,7 +25,7 @@ Contribution Module 负责组合页面和生成的浏览器 client，并不拥�
 
 ```rust title="src/http.rs"
 use lenso_capability_http_endpoint::{
-    http_endpoint, HandleRequest, HandleResponse, HandleResponseHeadersItem,
+    endpoint, HandleRequest, HandleResponse, HandleResponseHeadersItem,
     EndpointHandleInvocationError,
 };
 use lenso_kernel::InvocationContext;
@@ -33,7 +33,9 @@ use lenso_kernel::InvocationContext;
 #[derive(Clone, Debug, Default)]
 struct OrdersHttp;
 
+#[endpoint]
 impl OrdersHttp {
+    #[post("orders.create", "/orders")]
     async fn create(
         &self,
         _context: InvocationContext,
@@ -49,13 +51,12 @@ impl OrdersHttp {
         })
     }
 }
-
-http_endpoint! {
-    impl OrdersHttp {
-        "orders.create" => ("POST", "/orders") => create,
-    }
-}
 ```
+
+`#[endpoint]` 汇总同一个 `impl` 中的 handler。可使用 `#[get]`、`#[post]`、
+`#[put]`、`#[patch]`、`#[delete]`、`#[head]` 与 `#[options]`；每个属性依次声明
+稳定 route ID 和 path。旧的 `http_endpoint!` 静态表仍可用于生成代码或兼容已有
+Module。
 
 Endpoint 拥有 HTTP 形态的业务行为。Web Ingress 拥有 listener 与协议机制、route
 匹配、path parameter、大小与并发限制、deadline、断连 cancel、request ID 以及
