@@ -1,0 +1,118 @@
+---
+title: Module composition
+description: Select Module Instances, declare their Capability surfaces, and bind every dependency before boot.
+---
+
+A Module is a replaceable unit of product behavior. A package contains its
+implementation; a Module Instance selects that package for one App and supplies
+its non-secret configuration. Capabilities are its typed boundaries, and
+bindings decide which provider serves each requirement.
+
+## Read one composition
+
+This excerpt composes an orders endpoint, an allowlisted Secrets provider, and
+Web Ingress. Exact package revisions and contract artifact paths are normally
+added with `lenso add`; they are omitted here so the dependency graph stays
+visible.
+
+```json title="lenso.json (composition excerpt)"
+{
+  "composition": {
+    "modules": [
+      {
+        "key": "orders",
+        "package": "example.orders",
+        "configuration": {},
+        "provides": [{
+          "capability_id": "lenso.http.endpoint@1",
+          "descriptor_version": "1.0.1",
+          "operations": ["describe", "handle"]
+        }],
+        "requires": [{
+          "capability_id": "lenso.secrets@1",
+          "descriptor_version": "1.0.0",
+          "cardinality": "one"
+        }]
+      },
+      {
+        "key": "secrets",
+        "package": "lenso.secrets.env",
+        "configuration": {
+          "references": { "database/url": "APP_DATABASE_URL" }
+        },
+        "provides": [{
+          "capability_id": "lenso.secrets@1",
+          "descriptor_version": "1.0.0",
+          "operations": ["resolve"]
+        }]
+      },
+      {
+        "key": "web",
+        "package": "lenso.web-ingress",
+        "configuration": { "bind_address": "0.0.0.0:8080" },
+        "requires": [{
+          "capability_id": "lenso.http.endpoint@1",
+          "descriptor_version": "1.0.1",
+          "cardinality": "many"
+        }]
+      }
+    ],
+    "bindings": [
+      {
+        "consumer": "orders",
+        "capability_id": "lenso.secrets@1",
+        "descriptor_version": "1.0.0",
+        "provider": "secrets"
+      },
+      {
+        "consumer": "web",
+        "capability_id": "lenso.http.endpoint@1",
+        "descriptor_version": "1.0.1",
+        "provider": "orders"
+      }
+    ]
+  }
+}
+```
+
+`one` must resolve to exactly one provider, `optional` to zero or one, and
+`many` to a deterministic provider list. A Module cannot query a global
+registry for an undeclared dependency.
+
+## Put policy in the right place
+
+| Concern | Owner |
+| --- | --- |
+| Business rules, migrations, and transactions | Owning Module |
+| Interface types and Domain Errors | Capability owner |
+| Provider selection and request admission | App Composition |
+| Scheduling, deadlines, cancellation, shutdown | Runtime Driver and Kernel |
+| HTTP, process, browser, or host failure mechanics | Execution Adapter or protocol Module |
+
+Configuration is ordinary reviewable Plan data. Store only logical secret
+references there, never secret values. Use a configuration JSON Schema when
+invalid configuration can be detected before resolution.
+
+## Lifecycle and replacement
+
+The runtime prepares all selected Instances, activates them only after
+dependencies are ready, then deactivates them in dependency-safe order. Put
+resource verification in `prepare`, start acceptance of new work in `activate`,
+and stop it in `deactivate`.
+
+The useful design test is deletion: removing a product concern should remove
+its Module and bindings without changing the Kernel. Replacing a Provider
+should be a new composition and Resolved App Plan, not runtime discovery.
+
+## Authoring checklist
+
+1. Define the Module's product responsibility in one sentence.
+2. Declare every provided and required Capability with an exact Descriptor version.
+3. Choose `one`, `optional`, or `many` for each requirement.
+4. Bind every required provider explicitly and set bounded admission where needed.
+5. Keep secrets as references and owned state behind the Module boundary.
+6. Run `lenso check`, then `lenso resolve --output resolved-app-plan.json`.
+
+Continue with [Rust Module authoring](/docs/module-authoring),
+[Bun Module authoring](/docs/bun-module-authoring), or the concrete
+[Web Capabilities](/docs/web-capabilities) composition.

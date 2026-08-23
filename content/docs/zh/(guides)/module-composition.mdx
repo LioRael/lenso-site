@@ -1,0 +1,113 @@
+---
+title: Module 组合
+description: 在启动前选择 Module Instance、声明 Capability 表面并绑定全部依赖。
+---
+
+Module 是可替换的产品行为单元。package 保存实现；Module Instance 在一个
+App 中选择该 package，并提供非秘密配置。Capability 是它的类型化边界，binding
+决定每项 requirement 由哪个 provider 服务。
+
+## 读懂一份组合
+
+下面的片段组合了订单 HTTP Endpoint、白名单 Secrets provider 和 Web Ingress。
+精确 package revision 与 contract artifact 路径通常由 `lenso add` 写入；这里省略
+这些字段，以便直接看清依赖图。
+
+```json title="lenso.json（composition 片段）"
+{
+  "composition": {
+    "modules": [
+      {
+        "key": "orders",
+        "package": "example.orders",
+        "configuration": {},
+        "provides": [{
+          "capability_id": "lenso.http.endpoint@1",
+          "descriptor_version": "1.0.1",
+          "operations": ["describe", "handle"]
+        }],
+        "requires": [{
+          "capability_id": "lenso.secrets@1",
+          "descriptor_version": "1.0.0",
+          "cardinality": "one"
+        }]
+      },
+      {
+        "key": "secrets",
+        "package": "lenso.secrets.env",
+        "configuration": {
+          "references": { "database/url": "APP_DATABASE_URL" }
+        },
+        "provides": [{
+          "capability_id": "lenso.secrets@1",
+          "descriptor_version": "1.0.0",
+          "operations": ["resolve"]
+        }]
+      },
+      {
+        "key": "web",
+        "package": "lenso.web-ingress",
+        "configuration": { "bind_address": "0.0.0.0:8080" },
+        "requires": [{
+          "capability_id": "lenso.http.endpoint@1",
+          "descriptor_version": "1.0.1",
+          "cardinality": "many"
+        }]
+      }
+    ],
+    "bindings": [
+      {
+        "consumer": "orders",
+        "capability_id": "lenso.secrets@1",
+        "descriptor_version": "1.0.0",
+        "provider": "secrets"
+      },
+      {
+        "consumer": "web",
+        "capability_id": "lenso.http.endpoint@1",
+        "descriptor_version": "1.0.1",
+        "provider": "orders"
+      }
+    ]
+  }
+}
+```
+
+`one` 必须恰好解析到一个 provider，`optional` 是零或一个，`many` 是确定顺序
+的 provider 列表。Module 不能从全局 registry 查询未声明的依赖。
+
+## 把策略放到正确的位置
+
+| 关注点 | 所有者 |
+| --- | --- |
+| 业务规则、migration、transaction | 所属 Module |
+| 接口类型与 Domain Error | Capability owner |
+| Provider 选择与 request admission | App Composition |
+| 调度、deadline、cancel、shutdown | Runtime Driver 与 Kernel |
+| HTTP、进程、浏览器或 host failure 机制 | Execution Adapter 或协议 Module |
+
+configuration 是可审查的普通 Plan 数据。这里只保存逻辑 secret reference，绝不
+保存 secret value。能在 resolve 前发现的配置错误应使用 configuration JSON Schema。
+
+## 生命周期与替换
+
+运行时先 prepare 所有选中的 Instance，只在依赖 ready 后 activate，并按依赖安全
+顺序 deactivate。资源验证放在 `prepare`，开始接收新工作放在 `activate`，停止接收
+放在 `deactivate`。
+
+有用的设计检验是删除：移除一个产品关注点时，应只删除它的 Module 与 binding，
+不修改 Kernel。替换 Provider 应产生新的 Composition 与 Resolved App Plan，而不是
+依赖运行时发现。
+
+## 编写检查表
+
+1. 用一句话写清 Module 的产品职责。
+2. 为每个 provided / required Capability 指定精确 Descriptor version。
+3. 为 requirement 选择 `one`、`optional` 或 `many`。
+4. 显式绑定每个 provider，并按需设置有界 admission。
+5. secret 只保留 reference，所属状态留在 Module 边界内。
+6. 运行 `lenso check`，再运行 `lenso resolve --output resolved-app-plan.json`。
+
+接下来可阅读 [Rust Module 编写](/docs/zh/module-authoring)、
+[Bun Module 编写](/docs/zh/bun-module-authoring) 或具体的
+[Web Capabilities](/docs/zh/web-capabilities) 组合。

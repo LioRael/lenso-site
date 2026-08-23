@@ -14,6 +14,9 @@ UI 代码是可信 App 代码，不是隔离边界。安装或替换 UI 是可�
 与 Plan 变更。独立跨 App Console 是未来的另一种 App 形态，不是每个目标中自动
 存在的 runtime type。
 
+这套浏览器侧拓扑与后端 HTTP 分开。已实现的 Endpoint、Ingress、Client、Egress
+contract 及其配置见 [Web Capabilities](/docs/zh/web-capabilities)。
+
 ## Auth
 
 Ingress Adapter 把协议特定输入转换为 Credential Evidence，并调用普通 Auth
