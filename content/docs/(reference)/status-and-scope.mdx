@@ -1,37 +1,57 @@
 ---
-title: Status and scope
-description: What Lenso implements now, what the architecture proves, and what remains deliberately deferred.
+title: Implementation status
+description: A source-backed matrix of what runs now, what needs manual integration, and what has not been implemented.
 ---
 
-## Implemented and released
+This page separates runtime behavior from packaging and ergonomics. “Source
+implemented” does not imply that a starter, high-level SDK, or registry package
+already exists.
 
-- immutable App Plan data and canonical validation;
-- portable single-owner Kernel lifecycle and invocation semantics;
-- deterministic Kernel conformance fixtures;
-- native Tokio Runner and native Execution Adapter;
-- browser JavaScript and WASIp2 Driver profiles;
-- Bun child-process request and stream execution;
-- portable Descriptor code generation for Rust and TypeScript;
-- optional Auth and OpenTelemetry Interfaces/Modules; and
-- target-owned Web UI composition evidence.
+## Core and authoring
 
-## Early-access or integration work
+| Area | Works now | Current limitation |
+| --- | --- | --- |
+| App Plan | canonical validation, explicit Modules, bindings, execution classes, lanes, admission policy | no runtime discovery or graph mutation |
+| Kernel | Request, Stream, Event, lifecycle, deadlines, cancellation, diagnostics, deterministic conformance | owns no HTTP, database, Auth, process, or product policy |
+| Contract tooling | JSON Descriptor to Rust and TypeScript, drift check, compatibility lint, portable value runtime | schemas and generated artifacts must be committed by the Capability owner |
+| `lenso` authoring | `add`, `check`, `resolve`, and `run`; Cargo, Bun, npm, and OCI package inputs | no single stable starter that creates a complete production App |
 
-- authoring commands are exposed through the `lenso` executable, while
-  `lenso-authoring` remains a library;
-- owner repositories are consumed through versioned core packages and continue
-  to harden their cross-repository release set; and
-- examples and starter ergonomics are not yet a single stable product path.
+## Runtime implementations
 
-## Deliberately not promised
+| Path | Request | Stream | Event | How it runs today |
+| --- | --- | --- | --- | --- |
+| Native Rust | implemented | implemented | implemented | statically register `NativeModuleFactory` values in the App binary |
+| Bun / TypeScript | implemented | implemented | implemented | `lenso run` starts Bun entrypoints through `lenso.bun-process@1`; production wire is JSON-RPC over loopback HTTP |
+| Browser JavaScript Driver | scheduler/lifecycle smoke evidence | Kernel semantics apply | Kernel semantics apply | host profile; not hostile-code isolation |
+| WASIp2 Driver | scheduler/lifecycle smoke evidence | Kernel semantics apply | Kernel semantics apply | host profile; component packaging is not a starter workflow yet |
 
-Lenso does not currently define runtime discovery, hot graph mutation, rolling
+The Bun path is not an experimental fallback. It has bounded frames and queues,
+handshake/session checks, deadline and cancellation propagation, typed
+domain/runtime outcomes, process cleanup, and cross-runtime fixtures. Its main
+ergonomic gap is a published high-level `@lenso/bun` Provider server SDK; the
+Adapter and protocol already exist.
+
+## Optional Capabilities and Modules
+
+| Component | Implemented source | Packaging / usage boundary |
+| --- | --- | --- |
+| Auth | `lenso.auth@1`, Rust assertion SDK, PostgreSQL API Token Provider, revocation | API Token Module crate is intentionally private; Bun public verifier helper is missing |
+| Secrets | `lenso.secrets@1` and allowlisted environment Provider | registry publication is parked; production cloud Providers are not included |
+| OpenTelemetry | removable native Module plus Rust/Bun trace propagation fixtures | tracing is optional Composition, never Kernel behavior |
+| Web UI | explicit Shell, Browser Adapter, and UI Contribution roles with target-owned composition evidence | not a general remote-code sandbox or independent Console product |
+
+Read [Auth Module](/docs/auth-module) for the exact implemented provider and
+missing-provider list. Read [Bun Module authoring](/docs/bun-module-authoring)
+for the current executable path rather than inferring support from repository
+names.
+
+## Not implemented
+
+Lenso does not currently provide runtime discovery, hot graph mutation, rolling
 upgrades, distributed placement, automatic replicas, a control plane, hostile
-browser-code isolation, or an independent Console product. The architecture
-preserves seams that may support future work; that is not implementation proof.
+browser-code isolation, an independent Console product, OAuth/password Auth
+Providers, or a production cloud Secrets Provider.
 
-:::warning
-Do not infer v0.3 feature parity from retained vocabulary or migration notes.
-Service, Provider, System Plane, Console, Story, and Plugin are not peer runtime
-types in the current architecture.
-:::
+Retained vocabulary and architecture seams are not feature evidence. A feature
+belongs in the tables above only when an owner repository contains the behavior
+and a validation path.

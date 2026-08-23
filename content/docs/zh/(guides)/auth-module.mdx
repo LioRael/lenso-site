@@ -1,0 +1,223 @@
+---
+title: Auth Module
+description: 认证 Adapter 选出的凭据，传递签名 ActorAssertion，并在目标 Module 内完成授权。
+---
+
+Auth 是普通的、显式绑定的 Capability，不是 Kernel 里的环境中间件。当前契约是
+`lenso.auth@1`，只有一个 `authenticate` Request Operation。
+
+```text
+Ingress Adapter -> CredentialEvidence -> Auth Module
+               <- absent | signed ActorAssertion | Domain Error
+Target Module  <- verified, audience-limited assertion
+```
+
+## 认证选出的凭据
+
+HTTP Adapter 可以选择 Bearer Token，但 Header 与 Cookie 不进入 Auth 契约。
+调用绑定的 Capability 时只传协议无关的 Evidence：
+
+```rust
+use lenso_auth_sdk::{
+    AuthOutcome, CredentialEvidence, authenticate_request, decode_auth_response,
+};
+use lenso_capability_auth::{Auth, AUTHENTICATE_OPERATION};
+
+let response = app
+    .invoke::<Auth>(
+        "api-ingress",
+        AUTHENTICATE_OPERATION,
+        authenticate_request(Some(CredentialEvidence::new("bearer", token))),
+    )
+    .await??;
+
+match decode_auth_response(response)? {
+    AuthOutcome::Absent => { /* 保持匿名或拒绝请求 */ }
+    AuthOutcome::Authenticated(assertion) => {
+        // 只挂到这次需要授权的下游 Invocation。
+        let context = assertion.attach(app.invocation_context(None, cancellation))?;
+    }
+}
+```
+
+类型化 Domain Error 是 `invalid`、`expired`、`revoked` 和 `unsupported`。
+传输失败、Deadline 和 Provider 不可用仍属于 Runtime Failure。
+
+## 在目标 Rust Module 中授权
+
+先定义目标真正需要的 Actor 类型，再验证 Issuer、Ed25519 Proof、Audience 与
+有效期，最后做类型投影：
+
+```rust
+use lenso_auth_sdk::{
+    ActorAssertion, ActorAssertionVerifier, ActorProjectionError, FixedClock,
+    TypedActor,
+};
+
+#[derive(Debug, Eq, PartialEq)]
+struct OrdersActor { user_id: String }
+
+impl TypedActor for OrdersActor {
+    fn from_assertion(
+        assertion: &ActorAssertion,
+    ) -> Result<Self, ActorProjectionError> {
+        if assertion.actor_kind() != "user" {
+            return Err(ActorProjectionError::UnexpectedActorKind {
+                expected: "user".into(),
+                actual: assertion.actor_kind().into(),
+            });
+        }
+        Ok(Self { user_id: assertion.subject().into() })
+    }
+}
+
+let verifier = ActorAssertionVerifier::from_public_key_base64(
+    "auth.api-token",
+    configured_public_key,
+)?;
+let actor = verifier.project_context::<OrdersActor>(
+    &context,
+    "orders.api@1",
+    "read",
+    &FixedClock::new(now),
+)?;
+```
+
+期望的 Audience 必须准确等于 `orders.api@1:read`。目标只接收公开验证密钥，
+绝不能拿到 Auth Signing Key。
+
+## 签发与撤销 API Token
+
+第一个具体 Provider 是 PostgreSQL API Token Module。Schema 初始化和 Token
+操作属于显式 Operator Workflow，不是 App 启动时的隐式副作用：
+
+```rust
+use std::collections::BTreeMap;
+use lenso_auth_api_token_module::{ApiTokenAuthOperator, IssueApiToken};
+use time::{Duration, OffsetDateTime};
+
+ApiTokenAuthOperator::setup(database_url, "auth_api").await?;
+let operator = ApiTokenAuthOperator::connect(database_url, "auth_api").await?;
+let issued = operator.issue(token_pepper, IssueApiToken {
+    subject: "user-123".into(),
+    actor_kind: "user".into(),
+    assurance: "api-token".into(),
+    audience: vec!["orders.api@1:read".into()],
+    claims: BTreeMap::new(),
+    expires_at: OffsetDateTime::now_utc() + Duration::days(30),
+}).await?;
+
+let token = issued.expose_secret(); // 只展示一次；Debug 会脱敏
+operator.revoke_session(issued.session_id()).await?;
+```
+
+数据库只保存带 Key 的 Token Digest，并在每次认证时检查持久化的 Token / Session
+撤销状态。
+
+## 自己实现 Auth Provider
+
+实现生成的 `AuthProvider::authenticate` Trait，并通过 `AuthEndpoint` 暴露。
+Provider 必须：
+
+1. 只接受自己明确支持的 Scheme；
+2. 没有选出 Evidence 时返回 `absent`；
+3. 把凭据结果映射到四种类型化 Domain Error；
+4. 只为准确的 Capability / Operation Audience 签发短期 Assertion；
+5. 私有保存 Credential Store、撤销状态与 Signing Material。
+
+OAuth、密码、Cookie 和 Organization/RBAC 目前都不是 `lenso.auth@1` 的已实现
+能力。它们应成为同一 Capability 后面的独立 Ingress 或 Provider Module，而不是
+新的 Kernel 行为。
+
+## Bun 目标 Module
+
+Bun Adapter 会原样传递密封的 Invocation Extension。Bun 目标在使用 `subject`
+或 Claims 之前，必须执行相同的 Issuer、Ed25519 Proof、Audience 与时间检查：
+
+```ts
+type WireExtension = {
+  key: string;
+  value: number[];
+  issuer?: string;
+  audience?: string[];
+  proof?: string;
+  sealed?: boolean;
+};
+type ActorAssertion = {
+  actor_kind: string;
+  assurance: string;
+  audience: string[];
+  claims?: Record<string, unknown>;
+  expires_at: string;
+  issued_at: string;
+  issuer: string;
+  parent_provenance?: string;
+  proof: string;
+  subject: string;
+};
+
+const base64url = (value: string) => new Uint8Array(Buffer.from(value, "base64url"));
+
+async function bindActor(
+  extensions: WireExtension[] | undefined,
+  publicKey: string,
+  issuer: string,
+  capabilityId: string,
+  operation: string,
+  now = new Date(),
+): Promise<ActorAssertion> {
+  const audience = `${capabilityId}:${operation}`;
+  const extension = extensions?.find((value) => value.key === "lenso.auth.actor-assertion");
+  if (!extension?.sealed || extension.issuer !== issuer
+    || !extension.audience?.includes(audience) || !extension.proof
+    || extension.value.length === 0) {
+    throw new Error("actor assertion is not target-bound");
+  }
+  const assertion = JSON.parse(
+    new TextDecoder().decode(new Uint8Array(extension.value)),
+  ) as ActorAssertion;
+  const issuedAt = Date.parse(assertion.issued_at);
+  const expiresAt = Date.parse(assertion.expires_at);
+  if (assertion.issuer !== issuer || assertion.proof !== extension.proof
+    || JSON.stringify(assertion.audience) !== JSON.stringify(extension.audience)
+    || !assertion.audience.includes(audience) || assertion.subject.length === 0
+    || assertion.actor_kind.length === 0 || assertion.assurance.length === 0
+    || !Number.isFinite(issuedAt) || !Number.isFinite(expiresAt)
+    || issuedAt >= expiresAt || now.getTime() < issuedAt || now.getTime() >= expiresAt) {
+    throw new Error("actor assertion is invalid");
+  }
+  const payload = JSON.stringify({
+    actor_kind: assertion.actor_kind,
+    assurance: assertion.assurance,
+    audience: assertion.audience,
+    claims: assertion.claims ?? null,
+    expires_at: assertion.expires_at,
+    issued_at: assertion.issued_at,
+    issuer: assertion.issuer,
+    parent_provenance: assertion.parent_provenance ?? null,
+    subject: assertion.subject,
+  });
+  const key = await crypto.subtle.importKey(
+    "raw", base64url(publicKey), { name: "Ed25519" }, false, ["verify"],
+  );
+  const valid = await crypto.subtle.verify(
+    "Ed25519", key, base64url(assertion.proof), new TextEncoder().encode(payload),
+  );
+  if (!valid) throw new Error("actor assertion proof is invalid");
+  return assertion;
+}
+```
+
+目前还没有发布 Bun Auth Helper，因此应集中维护并测试这段逻辑；不能只把
+`extensions[].value` 解成 JSON 就信任。
+当前 [Rust SDK](https://github.com/LioRael/lenso-auth-module/blob/main/crates/lenso-auth-sdk/src/lib.rs)
+是语义来源，Bun Helper 必须得到相同验证结果后才能成为公开 Package。
+
+## 当前可用性
+
+| 组件 | 源码状态 | Package 状态 |
+| --- | --- | --- |
+| `lenso-capability-auth` | 已生成 `lenso.auth@1` 契约 | 可发布 Crate |
+| `lenso-auth-sdk` | Assertion 签发、验证、收窄和类型投影 | 可发布 Crate |
+| API Token Auth Module | PostgreSQL Provider、Operator Workflow、撤销 | 源码已实现；Crate 暂时保持私有 |
+| Bun Auth Helper | 密封 Extension 已能跨 Adapter | 公开验证器 Package 尚未实现 |

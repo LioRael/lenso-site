@@ -3,5 +3,12 @@ import { defineMeta } from "blume";
 export default defineMeta({
   title: "Build",
   order: 3,
-  pages: ["module-authoring", "execution-adapters", "web-and-observability"],
+  pages: [
+    "capability-authoring",
+    "module-authoring",
+    "bun-module-authoring",
+    "auth-module",
+    "execution-adapters",
+    "web-and-observability",
+  ],
 });

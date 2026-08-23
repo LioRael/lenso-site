@@ -29,6 +29,7 @@ An Adapter owns:
 | Bun child-process Adapter and cross-runtime fixtures | `LioRael/lenso-bun-adapter` |
 | Descriptor code generation and portable value conformance | `LioRael/lenso-protocols` |
 
-The Bun Adapter uses JSON-RPC over HTTP for request dispatch and an explicit
-bidirectional stream seam. Those are Adapter/wire choices, not Capability or
-Kernel semantics.
+The Bun Adapter uses JSON-RPC over HTTP in production and implements Request,
+bidirectional Stream, and volatile Event dispatch. Those are Adapter/wire
+choices, not Capability or Kernel semantics. See [Bun Module authoring](/docs/bun-module-authoring)
+for an executable entrypoint.
