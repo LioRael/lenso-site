@@ -1,92 +1,71 @@
 ---
-title: 介绍
-description: 了解 Lenso 是什么、为什么使用显式 App Plan，以及运行时边界如何划分。
+title: 从 Lenso 开始
+description: 使用显式 Capability、可移除 Module 与不可变 Resolved App Plan 构建并运行模块化应用。
 ---
 
-Lenso 是一个面向模块化应用的本地优先、语言无关运行时。它把应用的 Module、
-Capability 绑定、执行选择与策略解析成不可变的 **Resolved App Plan**，再由一个
-小型可移植 Kernel 执行该 Plan。
+Lenso 是一个 local-first、语言无关的模块化应用运行时。你在 boot 前描述完整 App——锁定
+package、keyed Module Instance、typed Capability binding、configuration 与 execution choice——
+再让 portable Kernel 执行一份不可变 **Resolved App Plan**。
 
-核心思想很直接：在启动前决定应用结构，让运行时语义保持显式，并把环境相关
-工作留在宿主边界。
+它带来的实际价值是可控：依赖在启动前可审查，产品行为保持可移除，host mechanics 不会泄漏
+进业务模型。
 
-## 为什么需要 Lenso
-
-模块化系统经常难以推理，是因为组合、运行时调度、传输、基础设施和产品行为
-被挤在同一层。最终往往形成隐式依赖发现、随环境变化的生命周期，以及必须等
-应用运行后才能校验的配置。
-
-Lenso 将这些责任分开：
-
-- **Composition** 选择 Module、绑定 Capability，并生成 Plan。
-- **Kernel** 使用可移植的生命周期规则校验并执行 Plan。
-- **Runtime Driver** 提供调度、时钟、取消与关闭。
-- **Execution Adapter** 把 Kernel 连接到具体的 Module 实现。
-- **Module** 通过类型化 Capability Interface 持有产品行为。
-
-这种拆分让应用结构在执行前即可检查，同时避免宿主机制进入可移植核心。
-
-## 运行时模型
-
-```mermaid
-flowchart TD
-  C[App Composition] --> A[Authoring 与包管理工具]
-  A --> P[Resolved App Plan]
-  P --> K[可移植 Kernel]
-  D[Runtime Driver] --> K
-  K --> E[Execution Adapter]
-  E --> M[Module Instance]
-  M --> Q[Capability: request / stream / event]
-```
-
-Plan 是完整的执行输入。它记录 Module 身份、Capability 绑定、Execution Class、
-连接、策略，以及应用准入所需的数据。Plan 解析完成后保持不可变；Kernel 不会
-在启动期间发现或改写运行图。
-
-Kernel 持有图校验、分阶段生命周期、就绪门、调用、取消、监督和有界诊断；
-它不持有网络、文件系统、数据库、进程、Auth、遥测、Console 或业务语义。
-
-## 核心概念
-
-| 概念 | 职责 |
-| --- | --- |
-| **App Composition** | 声明应用并选择兼容实现。 |
-| **Resolved App Plan** | 提供运行时接受的规范化、不可变输入。 |
-| **Capability** | 定义带版本的 Interface，以及 request、stream 或 event Operation。 |
-| **Module** | 实现产品行为，并声明它提供或依赖的 Capability。 |
-| **Kernel** | 持有可移植的准入、生命周期、调用、取消和诊断。 |
-| **Runtime Driver** | 提供宿主调度、时间、任务 join、取消和关闭。 |
-| **Execution Adapter** | 在具体环境或传输机制中运行 Module 实现。 |
-
-## 可移植不等于没有环境差异
-
-相同的 Kernel 语义可以编译到 Native、浏览器 JavaScript 与 WASIp2 宿主配置。
-每个配置仍然需要 Driver 与兼容的 Execution Adapter。可移植表示 Kernel 不会
-吸收这些宿主机制，并不表示每个 Module 都能在所有环境中原样运行。
-
-## 当前实现边界
-
-- `lenso-app-plan` 持有可序列化执行输入。
-- `lenso-kernel` 持有可移植运行时语义与确定性 conformance。
-- `lenso-runtime-conformance` 持有产品无关的运行时验证。
-- Driver、Execution Adapter、协议、可选 Module、Authoring 与示例分别位于
-  独立的所有者仓库。
-- 运行时 discovery、hot graph mutation、distributed placement、自动副本与
-  独立 Console 产品都不是当前运行时承诺。
-
-在[状态与范围](/docs/zh/status-and-scope)中查看已实现、Early-access 与刻意延后
-边界的准确说明。
-
-## 下一步
+## 选择最短可用入口
 
 <CardGroup>
-  <Card title="快速开始" href="/docs/zh/quickstart" description="安装 CLI，创建强类型 Bun Module，并启动正式 Adapter 开发循环。" />
-  <Card title="Agent Skills" href="/docs/zh/agent-skills" description="安装六个公开工作流，把工作路由到正确所有者，并要求可验证的完成证据。" />
-  <Card title="核心架构" href="/docs/zh/architecture" description="理解 Composition、Kernel、Driver 与 Adapter 的所有权边界。" />
-  <Card title="编写 Capability" href="/docs/zh/capability-authoring" description="定义 Request、Stream 与 Event 契约，并生成两种语言的绑定。" />
-  <Card title="Rust Module" href="/docs/zh/module-authoring" description="实现生成的 Provider，并注册原生 Factory。" />
-  <Card title="Bun Module" href="/docs/zh/bun-module-authoring" description="生成完整类型化项目，并通过 Fresh Plan 与热重载持续开发。" />
-  <Card title="Web Capabilities" href="/docs/zh/web-capabilities" description="发布 HTTP endpoint，并调用受策略约束的上游服务。" />
-  <Card title="Auth Module" href="/docs/zh/auth-module" description="认证 Evidence、传递 Assertion，并在目标边界授权。" />
-  <Card title="持久化与 Secret" href="/docs/zh/postgres-kit" description="持有 PostgreSQL schema，并在不把值泄漏进 Plan 的前提下解析 secret reference。" />
+  <Card title="运行一个 Module" href="/docs/zh/quickstart" description="生成 typed Bun Module，经正式 Adapter 启动，并运行可重复检查。" />
+  <Card title="构建产品功能" href="/docs/zh/build-a-feature" description="让一个垂直切片经过 owner、contract、实现、Composition、行为与移除。" />
+  <Card title="与 Agent 协作" href="/docs/zh/agent-skills" description="连接文档 MCP、安装 Lenso Skills，并给 Coding Agent 一个可检查结果。" />
+  <Card title="选择其他路径" href="/docs/zh/choose-a-path" description="无需先读完全部文档，直接路由 Capability、Rust、Bun、Web、Auth、持久化、runtime 或诊断工作。" />
 </CardGroup>
+
+## 60 秒模型
+
+```mermaid
+flowchart LR
+  A[App Composition] --> P[Resolved App Plan]
+  P --> K[Portable Kernel]
+  D[Runtime Driver] --> K
+  K --> E[Execution Adapter]
+  E --> M[Module Instances]
+  M --> C[Typed Capabilities]
+```
+
+| 部分 | Owner |
+| --- | --- |
+| **App Composition** | Package、Instance、configuration、binding、execution 与 placement 选择 |
+| **Resolved App Plan** | Boot 接受的 canonical immutable bytes |
+| **Kernel** | Graph validation、lifecycle、invocation、cancellation、readiness、supervision、diagnostics |
+| **Runtime Driver** | Scheduling、monotonic time、task join、cancellation lane、host shutdown |
+| **Execution Adapter** | Module generation、endpoint、process/wire、isolation、host failure mechanics |
+| **Module** | 产品事实、policy、状态含义、外部 resource 与 managed work |
+| **Capability** | Module 之间版本化的 Request、Stream 或 Event 角色 Interface |
+
+Kernel 启动时不会发现 package、改写 binding、安装 provider 或变更图。变更 project，解析新
+Plan，审查它，再 restart。
+
+## 当前可用范围
+
+- Portable Kernel 实现 Request、Stream、Event、staged lifecycle、deadline、cancellation、
+  diagnostics 与 deterministic conformance。
+- Native Rust Module 通过静态注册 factory 支持当前完整交互表面。
+- 公共 Bun SDK 提供 typed Request Provider，以及带生成式开发循环的正式子进程 Adapter。
+- Capability tooling 从一份 Descriptor 与 JSON Schema source 生成并提交 Rust/TypeScript binding。
+- 可选仓库提供 Web、Auth、secret、PostgreSQL lifecycle、OpenTelemetry 与 target-owned Web UI
+  building block。
+
+Lenso 当前不承诺 runtime discovery、hot graph mutation、distributed placement、automatic
+replica、hostile-code isolation 或独立 Console 产品。不要根据仓库名或保留 Interface 推断，
+先读[实现状态](/docs/zh/status-and-scope)。
+
+## 如何阅读文档
+
+1. **从这里开始**：选择可运行路径，并定义完成。
+2. **构建**：端到端实现一个分支。
+3. **运行与诊断**：验证行为并分类失败。
+4. **概念**：仅在任务需要时补充稳定心智模型。
+5. **参考**：路由 owner、当前支持范围与规范性决策。
+
+Coding Agent 可以在任意页面 URL 后添加 `.md` 读取 raw Markdown。站点还发布
+`https://lenso.dev/llms.txt`、`https://lenso.dev/agent-readability.json`，以及
+`https://lenso.dev/mcp` 上的只读 MCP server。

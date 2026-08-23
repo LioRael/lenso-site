@@ -1,0 +1,92 @@
+---
+title: Troubleshooting
+description: Classify Lenso failures by authoring, Plan, Kernel, Driver, Adapter, or Module ownership before changing code.
+---
+
+Start with the first failing boundary. Later errors are often consequences.
+
+## Fast triage
+
+| Symptom | Likely seam | First check |
+| --- | --- | --- |
+| Package, lock, manifest, or generated file rejected | Authoring | Inspect the declared package input, ordinary package-manager lock, and contract freshness output. |
+| Missing, ambiguous, duplicate, or incompatible provider | App Composition | Inspect the requirement cardinality, explicit provider keys, versions, and endpoint Operations. |
+| Unsupported execution class or entrypoint | Composition / Adapter | Compare the Plan with the selected host's registered Adapter and package entrypoint. |
+| Activation cycle, readiness stall, or invalid graph | Kernel / Module lifecycle | Inspect diagnostics by activation stage and the exact dependency edge. |
+| Child exits, handshake fails, frame is rejected, or deadline becomes transport failure | Execution Adapter | Inspect process/wire diagnostics, bounds, session identity, cancellation, and cleanup. |
+| Typed `ok: false` result | Module / Capability | Treat it as a Domain Error; preserve its stable code instead of converting it to a generic runtime failure. |
+| Timeout, cancellation, provider unavailable, or endpoint disappeared | Kernel / Driver / Adapter | Preserve the runtime classification and trace the responsible scope or generation. |
+| Restart duplicates work or retains stale state | Module lifecycle / Adapter | Verify a fresh generation and that deactivate joins or releases every owned resource. |
+
+## 1. Reproduce from exact inputs
+
+Record the project path, package locks, selected execution class, Plan digest or
+file, host binary, command, and smallest request that fails. Resolve a fresh
+Plan only when you are testing changed authoring inputs; otherwise rerun the
+already approved bytes.
+
+## 2. Check authoring before boot
+
+Run the project's normal check and resolve scripts. For a Bun scaffold:
+
+```sh
+bun run typecheck
+bun run check
+bun run resolve
+```
+
+Read the first diagnostic in full. Fix the declared package, contract,
+configuration, endpoint, binding, or execution choice rather than adding
+runtime discovery to compensate for an incomplete Plan.
+
+## 3. Separate Domain Errors from Runtime Failures
+
+A Domain Error is a valid business outcome declared by a Capability, such as
+`ticket_not_open`. A Runtime Failure means the requested operation could not be
+executed reliably: provider unavailable, timeout, cancellation, protocol
+violation, crashed process, or invalid generation.
+
+Keep the distinction through HTTP and UI mappings. Retrying a Domain Error is
+usually wrong; hiding a Runtime Failure as a business rejection makes outages
+look like policy.
+
+## 4. Locate lifecycle stage
+
+| Stage | Questions |
+| --- | --- |
+| Prepare | Were configuration and reversible resources validated before exposure? |
+| Activate | Were dependencies resolved from the declared bindings? Did generation-owned work start once? |
+| Ready | Did external ingress wait for the App Ready Gate? Which Instance is not ready? |
+| Invoke | Which Capability, Operation, scope, deadline, and generation handled the call? |
+| Deactivate | Were tasks cancelled and joined, endpoints withdrawn, and resources released? |
+
+Use [Runtime lifecycle](/runtime-lifecycle) for ordering rules. Report the
+Instance key and stage, not only the Module package name; the same package may
+have several differently configured Instances.
+
+## 5. Narrow host mechanics
+
+When native succeeds and Bun fails, or one Driver profile differs from another,
+hold the Capability request and expected outcome constant. Then inspect only
+the Driver or Adapter seam: scheduling/time/cancel/join for Drivers;
+generation/endpoint/process/wire/bounds/cleanup for Adapters.
+
+Do not move the business rule into the Adapter to make the test pass. The
+Adapter should make the same Module contract executable in its environment.
+
+## Common recovery actions
+
+- **Generated bindings stale:** regenerate through the Capability owner's
+  documented command, inspect the diff, then run the freshness gate.
+- **Binding fails:** name the required provider key explicitly; do not fall back
+  to global discovery or package-name guessing.
+- **Bun watcher stays alive after an error:** fix the reported type, contract,
+  or startup issue and save again; the development loop intentionally keeps
+  watching and creates a fresh Plan/generation.
+- **Unknown support level:** check [Implementation status](/status-and-scope)
+  and the selected package's public exports before implementing around a
+  fixture-only seam.
+
+Escalate with exact inputs, the first diagnostic, lifecycle stage, owner seam,
+and the smallest reproduction. That bundle is enough for another person or
+agent to continue without rediscovering the failure.

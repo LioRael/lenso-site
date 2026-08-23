@@ -1,0 +1,106 @@
+---
+title: 端到端构建一个功能
+description: 从 owner 与 Capability 设计，经 Module 实现、Composition、运行证据直到移除，交付一个完整产品切片。
+---
+
+产品行为使用这条工作流；框架机制则应进入对应 runtime 接缝。这是 Lenso 最短的完整路径，
+只为当前实现分支打开链接的深层指南。
+
+## 1. 定义一个 tracer slice
+
+描述用户或另一个 Module 最先能观察到的行为，并包含一个真实 Domain Error。例如：
+
+```text
+结果：客服可以把未关闭工单分配给可用同事。
+成功：工单记录 assignee，并返回新 revision。
+Domain Error：ticket_not_open。
+```
+
+写一张 Module card：
+
+| 决策 | 问题 |
+| --- | --- |
+| Owned facts | 删除该 Module 时，哪些状态与规则一起消失？ |
+| Provided roles | Consumer 可以调用哪些 Capability Operation？ |
+| Required roles | 哪些外部事实或 effect 必须成为显式依赖？ |
+| Lifecycle | 哪些内容需要 prepare、activate、stop 与 recover？ |
+| Final authority | 最终授权决策在哪里做？ |
+| Evidence | 哪些成功、失败、清理与移除路径必须运行？ |
+
+删除该 Module 能删除卡片上的全部事实、规则与 managed work 时，切片才准备完成。
+
+## 2. 只定义跨 Module 契约
+
+没有其他 Module 需要这个角色时跳过。否则创建或演进一个稳定
+`namespace.name@major` Capability，包含 Operation、JSON Schema 与显式 Domain Error。
+交互语义决定使用 Request、Stream 还是 Event，编程语言不决定。
+
+按照[编写 Capability](/docs/zh/capability-authoring)执行。本步完成条件：
+
+- Descriptor 与 Schema 包含完整 portable contract；
+- Rust 与 TypeScript 输出可确定性重生成；
+- 未生成的 Descriptor 变更会让 freshness check 失败；
+- Domain Error 与 runtime/transport failure 分离；
+- 版本变化被明确分类为 patch、minor 或新 major。
+
+## 3. 实现一个新的 Module generation
+
+选择实现分支：
+
+- [编写 Rust Module](/docs/zh/module-authoring)：静态注册 native factory，并使用当前完整交互表面。
+- [编写 Bun Module](/docs/zh/bun-module-authoring)：typed TypeScript Request Provider 经 Bun 子进程 Adapter 运行。
+
+两条分支都需要解析并校验配置、从 lifecycle context 一次性解析依赖、暴露生成的
+Provider Interface，并在 deactivate 时释放 generation-owned work。私有存储与 policy
+留在 Module 边界内。
+
+Restart 会创建 fresh generation，且不泄漏 task、resource、endpoint 或共享 mutable
+state 时，实现才完成。
+
+## 4. 组合精确图
+
+在 `lenso.json` 中选择已锁定 package input，声明 keyed Module Instance，记录非 secret
+配置或 `secret_ref`，选择受支持 execution class，并把每个 requirement 显式绑定到
+provider key。
+
+按照[Module 组合](/docs/zh/module-composition)执行，然后运行项目 script 或明确的 CLI 等价命令：
+
+```sh
+lenso check --project lenso.json --execution-class <supported-class>
+lenso resolve --project lenso.json \
+  --execution-class <supported-class> \
+  --output .lenso/resolved-plan.json
+```
+
+Package lock、entrypoint、configuration Schema、contract、endpoint、cardinality、binding 与
+execution class 都在 boot 前通过，且第二次 resolve 生成相同的已批准 Plan bytes 时，
+Composition 才完成。
+
+## 5. 运行已批准 Plan
+
+使用目标 host 的正式 Runner。Bun scaffold 通过 `lenso module dev --bun` 包装这条路径；
+native App 在 binary 中注册 factory，并通过所选 Driver 与 Adapter 运行 resolved Plan。
+
+进程启动不等于产品证据。执行最小真实 consumer-to-provider 或 host-boundary 调用，保留可复现
+请求、结果与 diagnostics。
+
+## 6. 证明失败边界
+
+至少保留：
+
+| 证据 | 预期 owner |
+| --- | --- |
+| 一个有用成功 | 目标 Module |
+| 一个预期业务拒绝 | Capability Domain Error |
+| 错误配置或缺少 binding | Authoring 或 activation rejection |
+| Provider crash、timeout 或 endpoint unavailable | Adapter 或 Kernel Runtime Failure |
+| Stop 与 restart | Fresh generation；无泄漏 work |
+
+使用[验证](/docs/zh/verification)记录可重复证据；失败出现在错误接缝时进入[故障处理](/docs/zh/troubleshooting)。
+
+## 7. 证明移除
+
+从聚焦的测试 Composition 中移除可选 Module Instance 及 binding，再次 resolve。剩余 App
+应继续有效，或只因你预期的显式 missing requirement 失败。
+
+实现证据与移除证据都可以重复时，功能才完成。术语正确的架构图本身不是完成。

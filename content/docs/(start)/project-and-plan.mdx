@@ -10,6 +10,29 @@ Lenso uses two different documents for two different owners.
 | `lenso.json` | Authoring tools and the App repository | Reviewable Modules, packages, contracts, profiles, configuration, and bindings |
 | Resolved App Plan | `lenso-app-plan` | Canonical, complete, immutable input consumed at boot |
 
+Use `lenso.json` to make choices and the Resolved App Plan to approve execution.
+Never edit generated Plan bytes as a substitute for changing the project.
+
+## Working loop
+
+```sh
+# 1. Validate authored and locked inputs
+lenso check --project lenso.json --execution-class <supported-class>
+
+# 2. Materialize canonical bytes
+lenso resolve --project lenso.json \
+  --execution-class <supported-class> \
+  --output .lenso/resolved-plan.json
+
+# 3. Review the project and Plan diffs, then use the target host's Runner
+lenso run --plan .lenso/resolved-plan.json --root .
+```
+
+Use the run command only when the installed CLI and selected host expose it for
+your execution class. Bun Module projects normally use `lenso module dev --bun`
+for the check-resolve-run watcher; native Apps own their factory registration
+and Runner binary.
+
 ## What the project declares
 
 - keyed Module Instances and entrypoints;
@@ -32,3 +55,20 @@ serialization makes the approved Plan byte-stable.
 After boot, the Kernel cannot install packages, discover providers, rebind a
 consumer, change placement, or rewrite configuration. Any such change requires
 a new resolve and App restart.
+
+## Review before boot
+
+Check every changed value against its owner:
+
+| Plan fact | Review against |
+| --- | --- |
+| Package identity and revision | Cargo/Bun/npm lock or immutable OCI digest |
+| Instance key and entrypoint | Selected Module package |
+| Capability and Operations | Descriptor and generated endpoint table |
+| Requirement cardinality and providers | App Composition bindings |
+| Configuration and secret references | Module configuration Schema; no resolved secret values |
+| Execution class and lane | Host Driver and registered Execution Adapter |
+
+Resolve twice from unchanged inputs and compare the files when determinism is
+in doubt. Review is complete when the bytes contain every intended choice and
+no ambient discovery is required at boot.

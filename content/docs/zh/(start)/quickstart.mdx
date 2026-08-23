@@ -1,58 +1,99 @@
 ---
 title: 快速开始
-description: 安装 Lenso CLI，创建强类型 Bun Module，并启动正式 Adapter 开发循环。
+description: 生成 typed Bun Module 项目，检查 contract 与 Plan input，运行可重复检查，并启动正式 Adapter 循环。
 ---
 
-当前最快的 Lenso 可执行路径是生成一个 Bun Module 项目。它与原生 Rust 使用
-相同的 Capability Descriptor、不可变 Resolved App Plan 和可移植 Kernel
-Contract，同时把进程与 Wire 机制留在独立的 Execution Adapter 中。
+这是进入当前 Lenso 最短的公开可执行路径。大约十分钟后，你会拥有 typed Request
+Capability、Bun Provider、显式 `lenso.json`、canonical Plan 输出，以及一个通过正式 Bun
+Execution Adapter 运行的 Module。
+
+:::note
+Starter 是完整 Module authoring project，不是整个生产应用、部署环境或 UI 的 generator。
+:::
 
 ## 前置条件
 
-- Bun 1.2.21 或更高版本
-- npm 版 CLI 需要 Node.js 18 或更高版本；也可以使用 Rust stable 与 Cargo
+- Bun 1.2.21 或更高
+- 使用 npm CLI 时需要 Node.js 18 或更高；也可以使用 Rust stable 与 Cargo
 
-## 1. 安装 Lenso CLI
+创建文件前确认工具：
+
+```sh
+bun --version
+node --version
+```
+
+## 1. 安装 CLI
+
+选择一种安装路径：
 
 ```sh
 npm install -g @lenso/cli
 lenso --version
 ```
 
-npm Package 内含对应平台的 `lenso` 可执行文件。Rust 用户也可以从 crates.io
-安装同一个 CLI：
+或通过 Cargo 安装相同 binary：
 
 ```sh
 cargo install lenso-cli --locked
+lenso --version
 ```
 
-## 2. 创建 Bun Module
+`lenso --version` 成功退出时，本步完成。若 `PATH` 中已有旧 binary，先用
+`command -v lenso` 定位，再诊断项目。
+
+## 2. 生成 typed Module 项目
 
 ```sh
 lenso module create greeting --runtime bun
 cd greeting
 ```
 
-该命令生成完整项目：Capability Descriptor 与 Schema、已提交的 Rust / TypeScript
-Binding、类型化 Provider、`lenso.json`、Bun Workspace Manifest 和 `bun.lock`。
-安装与类型检查成功后才会原子发布新目录，因此失败的创建不会留下半成品。
+命令会在 staging 目录生成项目、安装依赖、type-check 生成绑定，再原子发布目录；已有目标
+永远不会被替换。
 
-## 3. 启动开发循环
+检查重要文件：
 
-```sh
-lenso module dev --bun
+```text
+greeting/
+├── lenso.json
+├── package.json
+├── bun.lock
+├── contracts/greeting/
+│   ├── capability.json
+│   ├── schemas/
+│   └── generated/
+└── modules/greeting/
+    ├── package.json
+    └── src/index.ts
 ```
 
-CLI 会校验项目，解析一份新的不可变 Plan，再通过正式 Bun Execution Adapter
-启动 Module。源码与项目文件变化时，旧 Child Process 会被干净停止，并解析新的
-Generation。类型、Contract 或启动失败不会终止 Watcher；修改并再次保存即可
-恢复。Ctrl-C 会执行协作式关闭。
+| 路径 | Authority |
+| --- | --- |
+| `contracts/greeting/capability.json` | Capability identity 与 Operation |
+| `contracts/greeting/schemas/` | Portable request、response 与 Domain Error shape |
+| `contracts/greeting/generated/` | 派生 Rust/TypeScript binding；提交它们，修改 source 而非生成物 |
+| `modules/greeting/src/index.ts` | 实现生成 Provider 的产品行为 |
+| `lenso.json` | 可审查 package、Instance、endpoint、contract 与 execution input |
+| `bun.lock` | 普通 package-manager lock state |
 
-修改 `modules/greeting/src/index.ts` 即可改变生成的 Provider。Module 使用
-`@lenso/bun-module`；应用代码不需要实现 JSON-RPC 握手、Framing、取消或进程
-Lifecycle。
+## 3. 做一次 typed 变更
 
-## 4. 执行可重复检查
+打开 `modules/greeting/src/index.ts`。生成 Provider 默认返回输入，只修改 response value：
+
+```ts title="modules/greeting/src/index.ts"
+async execute(_context, request) {
+  return {
+    ok: true,
+    value: { output: `Hello, ${request.input}!` },
+  };
+}
+```
+
+生成的 `Provider` type 是 contract boundary。字段拼错或结果 shape 错误应在下一次 type check
+中失败，而不是运行时成为 wire error。
+
+## 4. 运行可重复 gate
 
 ```sh
 bun run typecheck
@@ -60,32 +101,43 @@ bun run check
 bun run resolve
 ```
 
-`check` 校验项目输入、Package Lock、Endpoint 与生成 Contract；`resolve` 写出
-规范化 Plan 字节。运行中的 Kernel 读取这份准确 Plan，不会发现 Module、安装
-Package 或修改 Graph。
+三个命令证明不同内容：
 
-:::note
-这是一套完整的 Bun Module 编写与开发 Starter，不是整个生产 App 或部署环境的
-生成器。原生 Rust Module 仍通过静态链接进入 App，并在 App Binary 中注册
-`NativeModuleFactory`。
-:::
+| 命令 | 完成条件 |
+| --- | --- |
+| `typecheck` | Module code 实现生成的 TypeScript surface。 |
+| `check` | Package、lock、entrypoint、contract freshness、endpoint 与 execution class 有效。 |
+| `resolve` | Project 在 `.lenso/` 下生成 canonical immutable Plan bytes。 |
 
-继续阅读[编写 Bun Module](/docs/zh/bun-module-authoring)，查看项目结构、Provider
-API、CLI 选项与当前仅开放 Request 的 SDK 边界。语言无关的组合模型见
-[项目与 Plan](/docs/zh/project-and-plan)。
+文件首次出现时用 `git diff --no-index /dev/null .lenso/resolved-plan.json` 检查；正常工作流
+跟踪它后使用普通 diff。确认 package、Instance key、entrypoint、Capability、Operation 与
+`lenso.bun-process@1` execution class 和刚检查的 project 一致。
 
-## 验证可移植核心
-
-Framework Contributor 可以独立于 Bun Host 路径执行核心仓库门禁：
+## 5. 启动 Adapter 开发循环
 
 ```sh
-git clone https://github.com/LioRael/lenso.git
-cd lenso
-cargo fmt --all -- --check
-cargo xtask check-core-repository-boundary
-cargo check --locked --workspace --all-targets
-cargo test --locked --workspace
+lenso module dev --bun
 ```
 
-CI 还会为 `wasm32-unknown-unknown` 和 `wasm32-wasip2` 编译检查可移植核心；
-这些 Host Profile 不会自动获得 Bun Child-process Adapter。
+命令会检查 project、解析 fresh Plan，并通过正式 Bun child-process Adapter 启动生成的
+Provider。保持运行，编辑 `src/index.ts` 并保存。有效变更会干净停止旧 generation 并启动新
+generation；type、contract 或 startup failure 会保留 watcher，便于直接修复。按 Ctrl-C
+验证 cooperative shutdown。
+
+Plan 与 Adapter 启动时没有 authoring/activation diagnostic，且进程保持前台运行时，循环
+准备完成。这证明 authoring-to-runtime 路径；产品验收仍需要真实 consumer request，下一步见
+[构建一个功能](/docs/zh/build-a-feature)。
+
+## 失败时
+
+- **Scaffold 在发布前失败：**修复报告的 Bun、package 或 type 错误并重跑；目标不应包含
+  partial project。
+- **`check` 报告生成文件过期：**修改 Descriptor/Schema source 并重生成，不直接编辑
+  `generated/`。
+- **Bun 中使用不支持的 Stream/Event：**公共 Bun SDK 当前只暴露 Request Provider。
+  使用 native Rust，或通过 owner Adapter workflow 演进已发布 SDK。
+- **Watcher 报告 startup failure：**保持运行，修复第一个 diagnostic，再保存。见
+  [故障处理](/docs/zh/troubleshooting)。
+
+下一步使用[选择你的路径](/docs/zh/choose-a-path)添加真实 consumer、Rust Module、Web edge、Auth、
+持久化或其他显式依赖。

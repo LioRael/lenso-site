@@ -1,62 +1,105 @@
 ---
 title: Quickstart
-description: Install the Lenso CLI, scaffold a typed Bun Module, and run its production Adapter development loop.
+description: Generate a typed Bun Module project, inspect its contract and Plan inputs, run repeatable checks, and start the production Adapter loop.
 ---
 
-The fastest executable Lenso path is a generated Bun Module project. It uses
-the same Capability Descriptor, immutable Resolved App Plan, and portable
-Kernel contracts as native Rust, while keeping process and wire mechanics in a
-separate Execution Adapter.
+This is the shortest public executable path into current Lenso. In about ten
+minutes you will have a typed Request Capability, a Bun Provider, an explicit
+`lenso.json`, canonical Plan output, and a Module running through the production
+Bun Execution Adapter.
+
+:::note
+The starter is a complete Module authoring project, not a generator for an
+entire production application, deployment environment, or UI.
+:::
 
 ## Prerequisites
 
 - Bun 1.2.21 or newer
-- Node.js 18 or newer for the npm-distributed CLI, or Rust stable with Cargo
+- Node.js 18 or newer for the npm CLI, or Rust stable with Cargo
 
-## 1. Install the Lenso CLI
+Confirm the tools before creating files:
+
+```sh
+bun --version
+node --version
+```
+
+## 1. Install the CLI
+
+Choose one installation path:
 
 ```sh
 npm install -g @lenso/cli
 lenso --version
 ```
 
-The npm package contains the platform-specific `lenso` binary. Rust users can
-install the same CLI from crates.io instead:
+Or install the same binary with Cargo:
 
 ```sh
 cargo install lenso-cli --locked
+lenso --version
 ```
 
-## 2. Create a Bun Module
+This step is complete when `lenso --version` exits successfully. If an older
+binary is already on `PATH`, use `command -v lenso` to identify it before
+debugging the project.
+
+## 2. Generate a typed Module project
 
 ```sh
 lenso module create greeting --runtime bun
 cd greeting
 ```
 
-The command generates a complete project: a Capability Descriptor and schemas,
-checked-in Rust and TypeScript bindings, a typed Provider, `lenso.json`, Bun
-workspace manifests, and `bun.lock`. It runs installation and type checking
-before atomically publishing the new directory, so a failed scaffold does not
-leave a partial project.
+The command stages the project, installs dependencies, type-checks generated
+bindings, and publishes the directory atomically. It never replaces an
+existing target.
 
-## 3. Run the development loop
+Inspect the important files:
 
-```sh
-lenso module dev --bun
+```text
+greeting/
+├── lenso.json
+├── package.json
+├── bun.lock
+├── contracts/greeting/
+│   ├── capability.json
+│   ├── schemas/
+│   └── generated/
+└── modules/greeting/
+    ├── package.json
+    └── src/index.ts
 ```
 
-The CLI validates the project, resolves a fresh immutable Plan, and starts the
-Module through the production Bun Execution Adapter. Source and project changes
-cleanly stop the old child and resolve a new generation. Type, contract, and
-startup failures keep the watcher alive; fix the file and save again. Ctrl-C
-performs cooperative shutdown.
+| Path | Authority |
+| --- | --- |
+| `contracts/greeting/capability.json` | Capability identity and Operations |
+| `contracts/greeting/schemas/` | Portable request, response, and Domain Error shapes |
+| `contracts/greeting/generated/` | Derived Rust and TypeScript bindings; commit them, edit the source instead |
+| `modules/greeting/src/index.ts` | Product behavior implementing the generated Provider |
+| `lenso.json` | Reviewable package, Instance, endpoint, contract, and execution input |
+| `bun.lock` | Ordinary package-manager lock state |
 
-Edit `modules/greeting/src/index.ts` to change the generated Provider. The
-Module uses `@lenso/bun-module`; application code never implements the
-JSON-RPC handshake, framing, cancellation, or process lifecycle.
+## 3. Make one typed change
 
-## 4. Run the repeatable checks
+Open `modules/greeting/src/index.ts`. The generated Provider returns its input.
+Change only the response value:
+
+```ts title="modules/greeting/src/index.ts"
+async execute(_context, request) {
+  return {
+    ok: true,
+    value: { output: `Hello, ${request.input}!` },
+  };
+}
+```
+
+The generated `Provider` type is the contract boundary. A misspelled field or
+wrong result shape should fail the next type check rather than becoming a wire
+error at runtime.
+
+## 4. Run the repeatable gates
 
 ```sh
 bun run typecheck
@@ -64,36 +107,47 @@ bun run check
 bun run resolve
 ```
 
-`check` validates project inputs, package locks, endpoints, and generated
-contracts. `resolve` writes canonical Plan bytes. The running Kernel loads that
-exact Plan; it does not discover Modules, install packages, or mutate the graph.
+These commands prove different things:
 
-:::note
-This is a complete Bun Module authoring and development starter, not a generator
-for an entire production application or deployment environment. Native Rust
-Modules remain statically linked and register `NativeModuleFactory` values in
-their App binary.
-:::
+| Command | Completion criterion |
+| --- | --- |
+| `typecheck` | Module code implements the generated TypeScript surface. |
+| `check` | Packages, locks, entrypoint, contract freshness, endpoints, and execution class are valid. |
+| `resolve` | The project materializes canonical immutable Plan bytes under `.lenso/`. |
 
-Continue with [Bun Module authoring](/docs/bun-module-authoring) for the project
-layout, Provider API, CLI options, and current Request-only SDK boundary. Read
-[Project and Plan](/docs/project-and-plan) for the language-independent
-composition model.
+Inspect `git diff --no-index /dev/null .lenso/resolved-plan.json` when the file
+is new, or the normal diff once it is tracked by your workflow. Confirm the
+package, Instance key, entrypoint, Capability, Operation, and
+`lenso.bun-process@1` execution class match the project you just inspected.
 
-## Verify the portable core
-
-Framework contributors can run the core repository gates independently of the
-Bun host path:
+## 5. Start the Adapter development loop
 
 ```sh
-git clone https://github.com/LioRael/lenso.git
-cd lenso
-cargo fmt --all -- --check
-cargo xtask check-core-repository-boundary
-cargo check --locked --workspace --all-targets
-cargo test --locked --workspace
+lenso module dev --bun
 ```
 
-CI also compile-checks the portable core for `wasm32-unknown-unknown` and
-`wasm32-wasip2`. Those host profiles do not automatically gain the Bun
-child-process Adapter.
+The command checks the project, resolves a fresh Plan, and starts the generated
+Provider through the production Bun child-process Adapter. Keep it running,
+edit `src/index.ts`, and save. A valid change stops the old generation cleanly
+and starts a new one; a type, contract, or startup failure leaves the watcher
+alive so you can fix it. Press Ctrl-C to exercise cooperative shutdown.
+
+The loop is ready when the Plan and Adapter start without an authoring or
+activation diagnostic and the process remains in the foreground. This proves
+the authoring-to-runtime path; product acceptance still requires a real
+consumer request, which you add in [Build a feature](/build-a-feature).
+
+## If something fails
+
+- **Scaffold fails before publishing:** fix the reported Bun, package, or type
+  error and rerun; the target should not contain a partial project.
+- **`check` reports stale generated files:** change the Descriptor/Schema
+  source and regenerate rather than editing `generated/` directly.
+- **Unsupported Stream or Event in Bun code:** the public Bun SDK currently
+  exposes Request Providers only. Use native Rust or extend the published SDK
+  through its owning Adapter workflow.
+- **Watcher reports startup failure:** keep it running, fix the first
+  diagnostic, and save again. See [Troubleshooting](/troubleshooting).
+
+Next, use [Choose your path](/choose-a-path) to add a real consumer, Rust
+Module, Web edge, Auth, persistence, or another explicit dependency.

@@ -1,0 +1,90 @@
+---
+title: Verify a change
+description: Prove a Lenso change at its owning seam with repeatable checks, runtime behavior, lifecycle evidence, and an honest delivery record.
+---
+
+Verification starts from the owner of the change. Run the narrow gate while
+developing, then expand only across seams the change actually crosses.
+
+## Evidence ladder
+
+| Change owner | Minimum evidence |
+| --- | --- |
+| Capability | Descriptor validation, generated-file freshness, Rust and TypeScript compilation, compatibility result |
+| Module | Package checks, success, one Domain Error, one operational failure, activate/deactivate cleanup, removal proof |
+| App Composition | Package locks, project check, deterministic Plan resolve, reviewed project and Plan diffs |
+| Runtime Driver | Scheduler/clock/cancel/join/shutdown conformance for the affected profile |
+| Execution Adapter | Generation, endpoint, wire/process, cancellation, bounds, cleanup, and host-failure proof |
+| Kernel | Core boundary check, complete workspace checks/tests, portable target compilation, deterministic conformance |
+| Documentation | Link/content validation, production build, agent artifacts, published-route checks, browser smoke test |
+
+## Repeatable project checks
+
+Prefer the scripts committed by the selected project. A generated Bun Module
+uses:
+
+```sh
+bun run typecheck
+bun run check
+bun run resolve
+```
+
+The resolved file is evidence only after you inspect its diff and confirm it
+matches the package locks, Instances, entrypoints, contracts, bindings, and
+execution class you intended.
+
+Framework core contributors use the public repository gates:
+
+```sh
+cargo fmt --all -- --check
+cargo xtask check-core-repository-boundary
+cargo clippy --locked --workspace --all-targets -- -D warnings
+cargo check --locked --workspace --all-targets
+cargo test --locked --workspace
+```
+
+Concrete Driver, Adapter, Module, and example repositories own their additional
+target-specific checks. A dependency on core does not transfer their evidence
+into the core repository.
+
+## Behavior record
+
+For each changed path, retain a small reproducible record:
+
+```text
+Setup: exact package/lock and Plan inputs
+Action: command or consumer request
+Success: observed value and owning Module
+Domain Error: expected typed rejection
+Runtime failure: startup/timeout/crash/unavailable classification
+Lifecycle: stop, cleanup, restart, and leaked-resource result
+Removal: Composition result after deleting the optional Module
+```
+
+Keep secrets, tokens, and private environment values out of the record. Refer
+to secret names or `secret_ref` values, not resolved values.
+
+## Review Plan determinism
+
+Resolve twice from unchanged inputs and compare the outputs. A difference means
+the authoring inputs or resolver are not deterministic enough to approve.
+
+```sh
+lenso resolve --project lenso.json \
+  --execution-class <supported-class> \
+  --output .lenso/plan-a.json
+lenso resolve --project lenso.json \
+  --execution-class <supported-class> \
+  --output .lenso/plan-b.json
+cmp .lenso/plan-a.json .lenso/plan-b.json
+```
+
+Use the project's normal output path after this focused check. The Kernel must
+execute the exact reviewed Plan bytes; boot is not a second resolution phase.
+
+## Delivery record
+
+When delivery was requested, report the commit, remote branch, pull request,
+checks, review/merge state, and the exact SHA verified remotely. Separate
+implemented behavior from pending publication or deployment. “Tests pass” is
+not evidence that a package, PR, or production endpoint exists.

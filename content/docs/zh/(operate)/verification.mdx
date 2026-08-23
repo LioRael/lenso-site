@@ -1,0 +1,83 @@
+---
+title: 验证变更
+description: 在变更所属接缝证明可重复检查、运行行为、生命周期与真实交付状态。
+---
+
+验证从变更 owner 开始。开发时运行最窄 gate，只在变更实际跨越的接缝上扩大范围。
+
+## 证据阶梯
+
+| 变更 owner | 最小证据 |
+| --- | --- |
+| Capability | Descriptor 校验、生成文件 freshness、Rust/TypeScript 编译、兼容性结论 |
+| Module | Package 检查、成功、一个 Domain Error、一个 operational failure、activate/deactivate 清理、移除证明 |
+| App Composition | Package lock、project check、确定性 Plan resolve、project 与 Plan diff 审查 |
+| Runtime Driver | 受影响 profile 的 scheduler/clock/cancel/join/shutdown conformance |
+| Execution Adapter | Generation、endpoint、wire/process、cancellation、bounds、cleanup 与 host-failure 证明 |
+| Kernel | Core boundary check、完整 workspace check/test、portable target 编译、确定性 conformance |
+| 文档 | Link/content 校验、production build、agent artifact、published-route 检查、browser smoke test |
+
+## 可重复项目检查
+
+优先使用所选项目提交的 script。生成的 Bun Module 使用：
+
+```sh
+bun run typecheck
+bun run check
+bun run resolve
+```
+
+只有审查 resolved file diff，并确认其 package lock、Instance、entrypoint、contract、binding
+与 execution class 符合意图后，它才是证据。
+
+Framework core contributor 使用公共仓库 gate：
+
+```sh
+cargo fmt --all -- --check
+cargo xtask check-core-repository-boundary
+cargo clippy --locked --workspace --all-targets -- -D warnings
+cargo check --locked --workspace --all-targets
+cargo test --locked --workspace
+```
+
+具体 Driver、Adapter、Module 与 example 仓库拥有自己的 target-specific check。依赖 core
+不会把它们的证据所有权转移给 core 仓库。
+
+## 行为记录
+
+每条变更路径保留一份小型可复现记录：
+
+```text
+Setup：精确 package/lock 与 Plan input
+Action：命令或 consumer request
+Success：观察值与 owning Module
+Domain Error：预期 typed rejection
+Runtime failure：startup/timeout/crash/unavailable 分类
+Lifecycle：stop、cleanup、restart 与 resource leak 结果
+Removal：删除可选 Module 后的 Composition 结果
+```
+
+记录中不放 secret、token 或私有环境值。只引用 secret name 或 `secret_ref`，不引用解析值。
+
+## 审查 Plan 确定性
+
+在不改变输入时 resolve 两次并比较输出。存在差异说明 authoring input 或 resolver 还不足以批准。
+
+```sh
+lenso resolve --project lenso.json \
+  --execution-class <supported-class> \
+  --output .lenso/plan-a.json
+lenso resolve --project lenso.json \
+  --execution-class <supported-class> \
+  --output .lenso/plan-b.json
+cmp .lenso/plan-a.json .lenso/plan-b.json
+```
+
+聚焦检查完成后使用项目的正常输出路径。Kernel 必须执行经过审查的精确 Plan bytes；boot
+不是第二次 resolution 阶段。
+
+## 交付记录
+
+若请求包含交付，报告 commit、remote branch、PR、check、review/merge state 与远端核验的
+精确 SHA。把已实现行为与待发布/待部署状态分开。“测试通过”不能证明 package、PR 或生产
+endpoint 已存在。

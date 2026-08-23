@@ -1,0 +1,58 @@
+---
+title: 选择你的路径
+description: 按 Lenso 任务选择最短可用工作流、正确仓库，以及可检查的完成条件。
+---
+
+从你要实现的结果出发。开始构建之前，不需要按顺序读完全部架构文档。
+
+## 任务地图
+
+| 你想要…… | 从这里开始 | 完成条件 |
+| --- | --- | --- |
+| 看到一个 Module 实际运行 | [快速开始](/docs/zh/quickstart) | 生成的 Bun Provider 通过正式 Adapter 启动，三个可重复检查全部通过。 |
+| 把产品想法做成一个可移除切片 | [构建一个功能](/docs/zh/build-a-feature) | 一条 consumer-to-provider 路径证明成功、真实失败、生命周期清理与移除。 |
+| 定义多个 Module 共享的角色 | [编写 Capability](/docs/zh/capability-authoring) | Descriptor、Schema、生成绑定、兼容性结论与 freshness gate 一致。 |
+| 用 Rust 实现产品行为 | [编写 Rust Module](/docs/zh/module-authoring) | 实现生成的 Provider、注册 factory，并完成一次真实调用。 |
+| 用 TypeScript 实现产品行为 | [编写 Bun Module](/docs/zh/bun-module-authoring) | typed Provider 从新解析的 Plan 经 `lenso.bun-process@1` 运行。 |
+| 选择 Instance 并连接依赖 | [Module 组合](/docs/zh/module-composition) | 每项 requirement 都有一个有效显式 binding，审查后的 Plan 可逐字节重复解析。 |
+| 发布或调用 HTTP | [Web Capabilities](/docs/zh/web-capabilities) | Endpoint 或 Client 被显式绑定，transport、Domain Error 与 runtime failure 保持分离。 |
+| 添加身份、secret、数据或遥测 | [Web UI、Auth 与可观测性](/docs/zh/web-and-observability) | 该关注点是可移除的 Composition，并有自己的生命周期与证据。 |
+| 诊断项目或运行时失败 | [故障处理](/docs/zh/troubleshooting) | 修改代码前，先把失败定位到 authoring、Plan、Kernel、Driver、Adapter 或 Module 接缝。 |
+| 让 Coding Agent 完成变更 | [Agent 配置](/docs/zh/agent-skills) | 一个主工作流、一个 owner 与可观察的完成证据已经明确。 |
+
+## 选择实现路径
+
+| 路径 | 适用场景 | 当前边界 |
+| --- | --- | --- |
+| **Bun Module** | 需要最快的独立 typed authoring loop。 | 公共 SDK 暴露 Request Provider；高层 Stream 与 Event 表面仍然关闭。 |
+| **Native Rust Module** | 需要全部交互类型或静态链接 host。 | App binary 注册 `NativeModuleFactory`；目前没有独立的公共 App generator。 |
+| **Capability package** | 多个 Module 需要一个稳定角色 Interface。 | Capability 拥有 Descriptor 与生成绑定，不拥有 provider policy 或 Composition cardinality。 |
+| **Runtime extension** | Host 缺少调度、进程、endpoint、wire 或 isolation 机制。 | 即使需要新 Adapter 才能运行，产品行为仍属于 Module。 |
+
+不要仅凭仓库名称推断支持范围，先读[实现状态](/docs/zh/status-and-scope)。保留的
+Interface 或 conformance fixture 不等于已经存在成熟 starter。
+
+## 使用事实来源
+
+命令或类型名很重要时，按以下顺序核验：
+
+1. 已安装命令的 `--help`，或所选 package 的 public export；
+2. 项目的 manifest、lock、Capability Descriptor 与生成文件；
+3. 当前任务指南；
+4. [实现状态](/docs/zh/status-and-scope)中的跨仓库支持范围；
+5. 规范性架构问题对应的 ADR。
+
+这样，可执行环境负责不会过期的事实；文档负责环境无法表达的工作流、owner 与失败边界。
+
+## 开始前
+
+先写下四行：
+
+```text
+结果：这次变更后，谁可以完成什么？
+Owner：哪个 Module、Capability、Composition 或 runtime 接缝拥有它？
+约束：语言、host、兼容性、安全与交付限制。
+证据：成功、真实失败、生命周期、移除与交付证据。
+```
+
+若仍有两个 owner 都合理，使用 `lenso-start` Skill 路由；owner 已明确时，直接进入对应任务页。

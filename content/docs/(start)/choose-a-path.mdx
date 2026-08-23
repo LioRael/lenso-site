@@ -1,0 +1,62 @@
+---
+title: Choose your path
+description: Route a Lenso task to the shortest useful workflow, the right repository, and a checkable finish line.
+---
+
+Start from the outcome you need. You do not need to read the architecture in
+order before building.
+
+## Task map
+
+| You want to… | Start here | You are done when… |
+| --- | --- | --- |
+| See a Module run | [Quickstart](/quickstart) | A generated Bun Provider starts through the production Adapter and all three repeatable checks pass. |
+| Turn a product idea into one removable slice | [Build a feature](/build-a-feature) | One consumer-to-provider path proves success, an honest failure, lifecycle cleanup, and removal. |
+| Define a role shared by Modules | [Capability authoring](/capability-authoring) | The Descriptor, Schemas, generated bindings, compatibility decision, and freshness gate agree. |
+| Implement product behavior in Rust | [Rust Module authoring](/module-authoring) | The generated Provider is implemented, its factory is registered, and a real invocation succeeds. |
+| Implement product behavior in TypeScript | [Bun Module authoring](/bun-module-authoring) | The typed Provider runs through `lenso.bun-process@1` from a freshly resolved Plan. |
+| Select Instances and wire dependencies | [Module composition](/module-composition) | Every requirement has one valid explicit binding and the reviewed Plan resolves byte-for-byte. |
+| Publish or call HTTP | [Web Capabilities](/web-capabilities) | The Endpoint or Client is explicitly bound and transport, Domain Error, and runtime failures remain distinct. |
+| Add identity, secrets, data, or telemetry | [Web UI, Auth, and observability](/web-and-observability) | The concern is removable Composition, with its own lifecycle and proof. |
+| Diagnose a failing project or runtime | [Troubleshooting](/troubleshooting) | The failure is classified at the authoring, Plan, Kernel, Driver, Adapter, or Module seam before code changes. |
+| Ask a coding agent to make the change | [Agent setup](/agent-skills) | One primary workflow, one owner, and observable completion evidence are explicit. |
+
+## Choose the implementation path
+
+| Path | Choose it when | Current boundary |
+| --- | --- | --- |
+| **Bun Module** | You want the fastest standalone typed authoring loop. | Public SDK exposes Request Providers; Stream and Event remain closed at the high-level surface. |
+| **Native Rust Module** | You need all interaction kinds or a statically linked host. | The App binary registers `NativeModuleFactory` values; there is no standalone public App generator. |
+| **Capability package** | Several Modules need one stable role Interface. | The Capability owns the Descriptor and generated bindings, not provider policy or Composition cardinality. |
+| **Runtime extension** | The host lacks scheduling, process, endpoint, wire, or isolation mechanics. | Product behavior remains a Module even when a new Adapter is required to run it. |
+
+Read [Implementation status](/status-and-scope) before choosing from a
+repository name alone. A retained Interface or conformance fixture is not a
+promise of a polished starter.
+
+## Use the source of truth
+
+When a command or type name matters, check it in this order:
+
+1. the installed command's `--help` or the selected package's public exports;
+2. the project's manifest, lock, Capability Descriptor, and generated files;
+3. this task guide;
+4. [Implementation status](/status-and-scope) for cross-repository support; and
+5. the relevant ADR for a normative architecture decision.
+
+This keeps an executable environment authoritative while the docs explain the
+workflow, ownership, and failure boundaries that the environment cannot.
+
+## Before you start
+
+Write down four lines:
+
+```text
+Outcome: who can do what after this change?
+Owner: which Module, Capability, Composition, or runtime seam owns it?
+Constraints: language, host, compatibility, security, and delivery limits.
+Proof: success, honest failure, lifecycle, removal, and delivery evidence.
+```
+
+If two owners still fit, use the `lenso-start` skill to route the work. If the
+owner is already clear, go directly to the matching task page.

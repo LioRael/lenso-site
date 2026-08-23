@@ -1,0 +1,79 @@
+---
+title: 故障处理
+description: 修改代码前，把 Lenso 失败分类到 authoring、Plan、Kernel、Driver、Adapter 或 Module owner。
+---
+
+从第一个失败边界开始。后面的错误通常只是结果。
+
+## 快速分类
+
+| 症状 | 可能接缝 | 首个检查 |
+| --- | --- | --- |
+| Package、lock、manifest 或生成文件被拒绝 | Authoring | 检查声明的 package input、普通 package-manager lock 与 contract freshness 输出。 |
+| Provider 缺失、歧义、重复或不兼容 | App Composition | 检查 requirement cardinality、显式 provider key、版本与 endpoint Operation。 |
+| 不支持 execution class 或 entrypoint | Composition / Adapter | 比较 Plan、所选 host 注册的 Adapter 与 package entrypoint。 |
+| Activation cycle、readiness stall 或 invalid graph | Kernel / Module lifecycle | 按 activation stage 与精确 dependency edge 检查 diagnostic。 |
+| Child exit、handshake failure、frame rejection 或 deadline 变为 transport failure | Execution Adapter | 检查 process/wire diagnostic、bounds、session identity、cancellation 与 cleanup。 |
+| Typed `ok: false` 结果 | Module / Capability | 把它当作 Domain Error；保留稳定 code，不转换成通用 runtime failure。 |
+| Timeout、cancellation、provider unavailable 或 endpoint 消失 | Kernel / Driver / Adapter | 保留 runtime 分类，并追踪对应 scope 或 generation。 |
+| Restart 重复工作或保留旧状态 | Module lifecycle / Adapter | 核验 fresh generation，以及 deactivate 是否 join/release 每个 owned resource。 |
+
+## 1. 从精确输入复现
+
+记录 project path、package lock、所选 execution class、Plan digest/file、host binary、命令与
+最小失败 request。只在测试已改变 authoring input 时解析新 Plan；否则重跑已批准的 bytes。
+
+## 2. Boot 前先检查 authoring
+
+运行项目正常 check/resolve script。Bun scaffold 使用：
+
+```sh
+bun run typecheck
+bun run check
+bun run resolve
+```
+
+完整阅读第一个 diagnostic。修复声明的 package、contract、configuration、endpoint、binding
+或 execution choice，而不是加入 runtime discovery 去补偿不完整 Plan。
+
+## 3. 区分 Domain Error 与 Runtime Failure
+
+Domain Error 是 Capability 声明的有效业务结果，例如 `ticket_not_open`。Runtime Failure
+表示无法可靠执行请求：provider unavailable、timeout、cancellation、protocol violation、
+process crash 或 invalid generation。
+
+HTTP 与 UI mapping 也要保留这一区别。重试 Domain Error 通常错误；把 Runtime Failure
+隐藏成业务拒绝，会让 outage 看起来像 policy。
+
+## 4. 定位 lifecycle stage
+
+| Stage | 问题 |
+| --- | --- |
+| Prepare | 配置与 reversible resource 是否在暴露前完成校验？ |
+| Activate | 是否从声明 binding 解析依赖？Generation-owned work 是否只启动一次？ |
+| Ready | 外部 ingress 是否等待 App Ready Gate？哪个 Instance 未就绪？ |
+| Invoke | 哪个 Capability、Operation、scope、deadline 与 generation 处理调用？ |
+| Deactivate | Task 是否 cancel/join，endpoint 是否撤回，resource 是否释放？ |
+
+顺序规则见[运行时生命周期](/docs/zh/runtime-lifecycle)。报告 Instance key 与 stage，而不只是 Module
+package 名；同一个 package 可以有多个不同配置 Instance。
+
+## 5. 缩小 host mechanics
+
+Native 成功但 Bun 失败，或不同 Driver profile 结果不同时，保持 Capability request 与预期
+结果不变，只检查 Driver/Adapter 接缝：Driver 看 scheduling/time/cancel/join；Adapter 看
+generation/endpoint/process/wire/bounds/cleanup。
+
+不要为了通过测试把业务规则移到 Adapter。Adapter 的任务是在环境中执行相同 Module contract。
+
+## 常见恢复动作
+
+- **生成绑定过期：**使用 Capability owner 文档中的命令重生成，审查 diff，再运行 freshness gate。
+- **Binding 失败：**明确指定所需 provider key；不要回退到全局 discovery 或 package-name 猜测。
+- **Bun watcher 在错误后仍运行：**修复报告的 type、contract 或 startup 问题并保存；开发循环会
+  继续 watch，并创建 fresh Plan/generation。
+- **支持范围未知：**实现 fixture-only 接缝前，先检查[实现状态](/docs/zh/status-and-scope)与所选 package
+  public export。
+
+Escalate 时带上精确输入、第一个 diagnostic、lifecycle stage、owner seam 与最小复现。这样，
+其他人或 agent 可以直接继续，不必重新发现失败。

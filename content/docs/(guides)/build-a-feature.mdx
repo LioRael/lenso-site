@@ -1,0 +1,119 @@
+---
+title: Build a feature end to end
+description: Deliver one product slice from ownership and Capability design through Module implementation, Composition, runtime proof, and removal.
+---
+
+Use this workflow when the goal is product behavior rather than a framework
+mechanism. It is the shortest complete path through Lenso; open the linked deep
+guides only for the branch you are implementing.
+
+## 1. Define one tracer slice
+
+State the first behavior a user or another Module can observe. Include one
+honest Domain Error. For example:
+
+```text
+Outcome: a support agent assigns an open ticket to an available teammate.
+Success: the ticket records the assignee and returns its new revision.
+Domain Error: ticket_not_open.
+```
+
+Write a Module card:
+
+| Decision | Question |
+| --- | --- |
+| Owned facts | Which state and rules disappear with this Module? |
+| Provided roles | Which Capability Operations may consumers invoke? |
+| Required roles | Which external facts or effects must be explicit dependencies? |
+| Lifecycle | What is prepared, activated, stopped, and recovered? |
+| Final authority | Where is authorization decided? |
+| Evidence | Which success, failure, cleanup, and removal paths must run? |
+
+The slice is ready when deleting the Module would delete every fact, rule, and
+piece of managed work on the card.
+
+## 2. Define only the cross-Module contract
+
+Skip this step when no other Module needs the role. Otherwise create or evolve
+one Capability with a stable `namespace.name@major` identity, Operations, JSON
+Schemas, and explicit Domain Errors. Choose Request, Stream, or Event from the
+interaction semantics rather than the programming language.
+
+Follow [Capability authoring](/capability-authoring). This step is complete when:
+
+- Descriptor and Schemas contain the whole portable contract;
+- Rust and TypeScript outputs regenerate deterministically;
+- the freshness check fails after an ungenerated Descriptor change;
+- Domain Errors are distinct from runtime or transport failures; and
+- the version change is classified as patch, minor, or a new major.
+
+## 3. Implement one Module generation
+
+Choose the implementation branch:
+
+- [Rust Module authoring](/module-authoring) for a statically registered native
+  factory and the full current interaction surface.
+- [Bun Module authoring](/bun-module-authoring) for a typed TypeScript Request
+  Provider running through the Bun child-process Adapter.
+
+In either branch, decode and validate configuration, resolve dependencies once
+from lifecycle context, expose the generated Provider Interface, and release
+generation-owned work during deactivation. Private storage and policy remain
+behind the Module boundary.
+
+Implementation is complete when a restart creates a fresh generation with no
+leaked task, resource, endpoint, or shared mutable state.
+
+## 4. Compose the exact graph
+
+In `lenso.json`, select locked package inputs, declare keyed Module Instances,
+record non-secret configuration or `secret_ref` values, choose supported
+execution classes, and bind every requirement to explicit provider keys.
+
+Follow [Module composition](/module-composition). Then run the project scripts
+or their explicit CLI equivalents:
+
+```sh
+lenso check --project lenso.json --execution-class <supported-class>
+lenso resolve --project lenso.json \
+  --execution-class <supported-class> \
+  --output .lenso/resolved-plan.json
+```
+
+Composition is complete when package locks, entrypoints, configuration Schemas,
+contracts, endpoints, cardinality, bindings, and execution classes all pass
+before boot—and a second resolve produces the same approved Plan bytes.
+
+## 5. Run the approved Plan
+
+Use the target host's documented Runner. The Bun scaffold wraps this in
+`lenso module dev --bun`; a native App registers factories in its binary and
+runs the resolved Plan through its selected Driver and Adapter.
+
+Do not treat process startup as product proof. Exercise the smallest real
+consumer-to-provider or host-boundary call and retain the request, outcome, and
+diagnostics needed to reproduce it.
+
+## 6. Prove the failure boundaries
+
+At minimum, capture:
+
+| Proof | Expected ownership |
+| --- | --- |
+| One useful success | Target Module |
+| One expected business rejection | Capability Domain Error |
+| Malformed configuration or missing binding | Authoring or activation rejection |
+| Provider crash, timeout, or unavailable endpoint | Adapter or Kernel Runtime Failure |
+| Stop and restart | Fresh generation; no leaked work |
+
+Use [Verification](/verification) for a reusable evidence record and
+[Troubleshooting](/troubleshooting) when a failure appears at the wrong seam.
+
+## 7. Prove removal
+
+Remove the optional Module Instance and its bindings from a focused test
+Composition, then resolve again. The remaining App should stay valid or fail
+with the exact explicit missing requirement you intended.
+
+The feature is done only when implementation evidence and removal evidence are
+both reproducible. A vocabulary-correct diagram is not completion.

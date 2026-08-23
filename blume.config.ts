@@ -37,10 +37,19 @@ export default defineConfig({
     provider: "orama",
   },
   ai: {
-    llmsTxt: true,
-    mcp: {
-      enabled: false,
+    llmsTxt: {
+      enabled: true,
+      openapi: true,
     },
+    openInChat: ["claude", "chatgpt", "cursor"],
+    mcp: {
+      enabled: true,
+      route: "/mcp",
+      name: "Lenso Documentation",
+      instructions:
+        "Use the task-oriented Start, Build, and Operate pages first. Treat Implementation status as the authority for current support, and use Concepts or Reference only when the task crosses that boundary. Answer in the reader's language and cite the pages used.",
+    },
+    webmcp: true,
   },
   markdown: {
     imageZoom: true,
@@ -56,6 +65,12 @@ export default defineConfig({
     },
   },
   seo: {
+    agentReadability: true,
+    contentSignals: {
+      search: true,
+      aiInput: true,
+      aiTrain: true,
+    },
     og: { enabled: true },
     rss: { enabled: false },
     sitemap: true,
@@ -63,7 +78,8 @@ export default defineConfig({
     structuredData: true,
   },
   deployment: {
-    output: "static",
+    output: "server",
+    adapter: "cloudflare",
     site: "https://lenso.dev",
   },
   basePath: "/docs",

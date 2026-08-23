@@ -2,8 +2,9 @@ import { defineMeta } from "blume";
 
 export default defineMeta({
   title: "构建",
-  order: 3,
+  order: 2,
   pages: [
+    "build-a-feature",
     "capability-authoring",
     "module-composition",
     "module-authoring",

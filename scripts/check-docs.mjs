@@ -10,12 +10,14 @@ const failures = [];
 const requiredCurrentPages = [
   "index.mdx",
   "(start)/quickstart.mdx",
+  "(start)/choose-a-path.mdx",
   "(start)/agent-skills.mdx",
   "(start)/project-and-plan.mdx",
   "(concepts)/architecture.mdx",
   "(concepts)/modules-and-capabilities.mdx",
   "(concepts)/runtime-lifecycle.mdx",
   "(guides)/capability-authoring.mdx",
+  "(guides)/build-a-feature.mdx",
   "(guides)/module-composition.mdx",
   "(guides)/module-authoring.mdx",
   "(guides)/bun-module-authoring.mdx",
@@ -25,6 +27,8 @@ const requiredCurrentPages = [
   "(guides)/postgres-kit.mdx",
   "(guides)/execution-adapters.mdx",
   "(guides)/web-and-observability.mdx",
+  "(operate)/verification.mdx",
+  "(operate)/troubleshooting.mdx",
   "(reference)/repository-map.mdx",
   "(reference)/status-and-scope.mdx",
   "(reference)/architecture-decisions.mdx",
@@ -45,9 +49,25 @@ for (const page of requiredCurrentPages) {
 }
 
 const config = read("blume.config.ts");
-for (const retiredMarker of ["versions:", "openapi:", 'path: "/api"']) {
+for (const retiredMarker of ["versions:", 'path: "/api"']) {
   if (config.includes(retiredMarker)) {
     failures.push(`blume.config.ts: retired configuration ${JSON.stringify(retiredMarker)}`);
+  }
+}
+if (/^  openapi:/mu.test(config)) {
+  failures.push("blume.config.ts: retired top-level OpenAPI configuration");
+}
+
+for (const marker of [
+  'output: "server"',
+  'adapter: "cloudflare"',
+  'openInChat: ["claude", "chatgpt", "cursor"]',
+  "agentReadability: true",
+  "webmcp: true",
+  'route: "/mcp"',
+]) {
+  if (!config.includes(marker)) {
+    failures.push(`blume.config.ts: missing agent configuration ${JSON.stringify(marker)}`);
   }
 }
 
@@ -69,6 +89,18 @@ for (const file of currentFiles) {
   }
 }
 
+const chinesePages = currentFiles.filter(
+  (file) => file.endsWith(".mdx") && relative(docsRoot, file).startsWith("zh/"),
+);
+for (const file of chinesePages) {
+  const text = readFileSync(file, "utf8");
+  for (const expression of [/\]\(\/docs\/(?!zh(?:\/|\)))/gu, /href="\/docs\/(?!zh(?:\/|"))/gu]) {
+    if (expression.test(text)) {
+      failures.push(`${relative(root, file)}: internal link leaves the Chinese locale`);
+    }
+  }
+}
+
 const invariantFiles = [
   "content/docs/index.mdx",
   "content/docs/(concepts)/architecture.mdx",
@@ -77,6 +109,22 @@ const invariantFiles = [
 for (const marker of ["Resolved App Plan", "Runtime Driver", "Execution Adapter"]) {
   if (!invariantFiles.some((file) => read(file).includes(marker))) {
     failures.push(`current docs: missing canonical marker ${JSON.stringify(marker)}`);
+  }
+}
+
+for (const [file, markers] of [
+  ["content/docs/(start)/choose-a-path.mdx", ["Task map", "Use the source of truth"]],
+  ["content/docs/(guides)/build-a-feature.mdx", ["tracer slice", "Prove removal"]],
+  ["content/docs/(operate)/verification.mdx", ["Evidence ladder", "Delivery record"]],
+  ["content/docs/(operate)/troubleshooting.mdx", ["Fast triage", "Domain Errors"]],
+  ["content/docs/zh/(start)/choose-a-path.mdx", ["任务地图", "使用事实来源"]],
+  ["content/docs/zh/(guides)/build-a-feature.mdx", ["tracer slice", "证明移除"]],
+  ["content/docs/zh/(operate)/verification.mdx", ["证据阶梯", "交付记录"]],
+  ["content/docs/zh/(operate)/troubleshooting.mdx", ["快速分类", "Domain Error"]],
+]) {
+  const text = read(file);
+  for (const marker of markers) {
+    if (!text.includes(marker)) failures.push(`${file}: missing task marker ${JSON.stringify(marker)}`);
   }
 }
 

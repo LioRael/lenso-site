@@ -10,6 +10,30 @@ and stop only when the requested behavior is observable.
 The skills guide development work. They are not runtime plugins, do not add an
 Agent Module to an App, and do not grant an agent production authority.
 
+## Connect the documentation
+
+Connect the read-only Lenso documentation MCP server so an agent can search the
+task guides, retrieve clean Markdown, and inspect navigation without scraping
+HTML:
+
+```sh
+# Codex
+codex mcp add lenso-docs --url https://lenso.dev/mcp
+
+# Claude Code
+claude mcp add --transport http lenso-docs https://lenso.dev/mcp
+```
+
+Cursor and VS Code install links are available from the **Connect to MCP** menu
+on every documentation page. Agents that cannot use MCP can start from
+`https://lenso.dev/llms.txt`, fetch the smaller page index first, then load only
+the relevant `.md` pages. `llms-full.txt` is a last resort when a client cannot
+retrieve pages incrementally.
+
+The MCP server and Markdown files provide current product knowledge. The
+skills below provide the execution process. Use both: documentation tells the
+agent what exists; a skill tells it how to finish one class of change.
+
 ## Install the catalog
 
 Inspect the catalog before installing it:
@@ -96,6 +120,19 @@ the test Composition, and report the exact checks and artifact paths.
 The second prompt is intentionally more specific. It gives the agent an
 authority boundary and a completion criterion without inventing current API
 names that should come from the selected package source.
+
+<Prompt
+  description="Copy a complete Lenso implementation request."
+  actions={["copy", "cursor"]}
+>
+  Use the Lenso documentation MCP server and $lenso-start to route this request.
+  Outcome: [who can do what]. Authority: [repository, existing package,
+  Capability, and App Composition if known]. Constraints: [language, host,
+  compatibility, security, and delivery limits]. Completion: prove one useful
+  success, one honest Domain Error, one runtime or startup failure, lifecycle
+  cleanup, optional Module removal, and the requested delivery state. Verify
+  every command and public type against the installed environment before use.
+</Prompt>
 
 ## Worked flow: support-ticket assignment
 

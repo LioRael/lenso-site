@@ -1,100 +1,79 @@
 ---
-title: Introduction
-description: Understand what Lenso is, why it uses an explicit App Plan, and where its runtime boundaries are drawn.
+title: Start with Lenso
+description: Build and run modular applications from explicit Capabilities, removable Modules, and an immutable Resolved App Plan.
 ---
 
 Lenso is a local-first, language-independent runtime for modular applications.
-It turns an application's Modules, Capability bindings, execution choices, and
-policies into an immutable **Resolved App Plan**, then runs that plan through a
-small portable Kernel.
+You describe the App before boot—locked packages, keyed Module Instances,
+typed Capability bindings, configuration, and execution choices—then run one
+immutable **Resolved App Plan** through a portable Kernel.
 
-The central idea is simple: decide the application before boot, keep runtime
-semantics explicit, and leave environment-specific work at the host boundary.
+The practical payoff is control: dependencies are inspectable before startup,
+product behavior stays removable, and host mechanics do not leak into the
+business model.
 
-## Why Lenso exists
-
-Modular systems often become difficult to reason about because composition,
-runtime scheduling, transport, infrastructure, and product behavior collapse
-into the same layer. The result is usually implicit dependency discovery,
-environment-specific lifecycle behavior, and configuration that cannot be
-validated until the application is already running.
-
-Lenso separates those concerns:
-
-- **Composition** selects Modules, binds Capabilities, and produces the Plan.
-- **The Kernel** validates and executes the Plan with portable lifecycle rules.
-- **Runtime Drivers** provide scheduling, clocks, cancellation, and shutdown.
-- **Execution Adapters** connect the Kernel to concrete Module implementations.
-- **Modules** own product behavior behind typed Capability Interfaces.
-
-This separation makes application structure inspectable before execution and
-keeps host-specific mechanisms out of the portable core.
-
-## The runtime model
-
-```mermaid
-flowchart TD
-  C[App Composition] --> A[Authoring and package tools]
-  A --> P[Resolved App Plan]
-  P --> K[Portable Kernel]
-  D[Runtime Driver] --> K
-  K --> E[Execution Adapters]
-  E --> M[Module Instances]
-  M --> Q[Capabilities: request, stream, event]
-```
-
-The Plan is the complete execution input. It records Module identities,
-Capability bindings, execution classes, connections, policies, and the data
-needed to admit the application. Once resolved, the Plan is immutable; the
-Kernel does not discover or rewrite the graph while booting.
-
-The Kernel owns graph validation, staged lifecycle, readiness, invocation,
-cancellation, supervision, and bounded diagnostics. It does **not** own network,
-filesystem, database, process, Auth, telemetry, Console, or business semantics.
-
-## Core concepts
-
-| Concept | Responsibility |
-| --- | --- |
-| **App Composition** | Declares the application and selects compatible implementations. |
-| **Resolved App Plan** | Provides the canonical, immutable input accepted by the runtime. |
-| **Capability** | Defines a versioned Interface with request, stream, or event Operations. |
-| **Module** | Implements product behavior and declares the Capabilities it provides or requires. |
-| **Kernel** | Owns portable admission, lifecycle, invocation, cancellation, and diagnostics. |
-| **Runtime Driver** | Supplies host scheduling, time, task joining, cancellation, and shutdown. |
-| **Execution Adapter** | Runs a Module implementation in a concrete environment or transport. |
-
-## Portable does not mean environment-free
-
-The same Kernel semantics can be compiled for native, browser JavaScript, and
-WASIp2 host profiles. Each profile still needs a Driver and compatible
-Execution Adapters. Portability means the Kernel does not absorb those host
-mechanisms; it does not imply that every Module runs unchanged in every
-environment.
-
-## Current implementation boundary
-
-- `lenso-app-plan` owns the serializable execution input.
-- `lenso-kernel` owns portable runtime semantics and deterministic conformance.
-- `lenso-runtime-conformance` owns product-neutral runtime proofs.
-- Drivers, Execution Adapters, protocols, optional Modules, authoring, and
-  examples live in separate owner repositories.
-- Runtime discovery, hot graph mutation, distributed placement, automatic
-  replicas, and an independent Console product are not current runtime promises.
-
-See [Status and scope](/docs/status-and-scope) for the precise implemented,
-early-access, and deliberately deferred boundaries.
-
-## Where to go next
+## Pick the shortest useful start
 
 <CardGroup>
-  <Card title="Quickstart" href="/docs/quickstart" description="Install the CLI, scaffold a typed Bun Module, and run its production Adapter development loop." />
-  <Card title="Agent skills" href="/docs/agent-skills" description="Install the six public workflows, route work to the right owner, and ask for verifiable completion evidence." />
-  <Card title="Core architecture" href="/docs/architecture" description="Study the ownership boundaries between composition, Kernel, Driver, and Adapter." />
-  <Card title="Capability authoring" href="/docs/capability-authoring" description="Define Request, Stream, and Event contracts and generate both language bindings." />
-  <Card title="Rust Modules" href="/docs/module-authoring" description="Implement a generated Provider and register its native factory." />
-  <Card title="Bun Modules" href="/docs/bun-module-authoring" description="Generate a complete typed project and develop it with fresh Plans and hot reload." />
-  <Card title="Web Capabilities" href="/docs/web-capabilities" description="Publish HTTP endpoints and call policy-bounded upstream services." />
-  <Card title="Auth Module" href="/docs/auth-module" description="Authenticate evidence, propagate assertions, and authorize at the target." />
-  <Card title="Persistence and secrets" href="/docs/postgres-kit" description="Own a PostgreSQL schema and resolve secret references without leaking them into the Plan." />
+  <Card title="Run a Module" href="/quickstart" description="Generate a typed Bun Module, start it through the production Adapter, and run the repeatable checks." />
+  <Card title="Build a product feature" href="/build-a-feature" description="Follow one vertical slice through ownership, contract, implementation, Composition, behavior, and removal." />
+  <Card title="Work with an agent" href="/agent-skills" description="Connect the docs MCP server, install the Lenso skills, and give a coding agent a checkable outcome." />
+  <Card title="Choose another path" href="/choose-a-path" description="Route Capability, Rust, Bun, Web, Auth, persistence, runtime, or debugging work without reading everything first." />
 </CardGroup>
+
+## The model in 60 seconds
+
+```mermaid
+flowchart LR
+  A[App Composition] --> P[Resolved App Plan]
+  P --> K[Portable Kernel]
+  D[Runtime Driver] --> K
+  K --> E[Execution Adapter]
+  E --> M[Module Instances]
+  M --> C[Typed Capabilities]
+```
+
+| Part | Owns |
+| --- | --- |
+| **App Composition** | Package, Instance, configuration, binding, execution, and placement choices |
+| **Resolved App Plan** | Canonical immutable bytes accepted at boot |
+| **Kernel** | Graph validation, lifecycle, invocation, cancellation, readiness, supervision, diagnostics |
+| **Runtime Driver** | Scheduling, monotonic time, task joining, cancellation lanes, host shutdown |
+| **Execution Adapter** | Module generation, endpoint, process/wire, isolation, host failure mechanics |
+| **Module** | Product facts, policy, state meaning, external resources, and managed work |
+| **Capability** | A versioned Request, Stream, or Event role Interface between Modules |
+
+The Kernel does not discover packages, rewrite bindings, install providers, or
+mutate the graph while starting. Change the project, resolve a new Plan, review
+it, and restart.
+
+## What works today
+
+- The portable Kernel implements Request, Stream, Event, staged lifecycle,
+  deadlines, cancellation, diagnostics, and deterministic conformance.
+- Native Rust Modules support the complete current interaction surface through
+  statically registered factories.
+- The public Bun SDK provides a typed Request Provider and a production
+  child-process Adapter with a generated development loop.
+- Capability tooling generates committed Rust and TypeScript bindings from one
+  Descriptor and JSON Schema source.
+- Optional repositories provide Web, Auth, secrets, PostgreSQL lifecycle,
+  OpenTelemetry, and target-owned Web UI building blocks.
+
+Lenso does not currently promise runtime discovery, hot graph mutation,
+distributed placement, automatic replicas, hostile-code isolation, or a
+standalone Console product. Read [Implementation status](/status-and-scope)
+before planning around a repository name or retained Interface.
+
+## How to read these docs
+
+1. **Start here** pages choose a runnable path and define completion.
+2. **Build** pages implement one branch end to end.
+3. **Operate** pages verify behavior and classify failures.
+4. **Concepts** explain stable mental models only when the task needs them.
+5. **Reference** routes ownership, current support, and normative decisions.
+
+For coding agents, every page is available as raw Markdown by appending `.md`.
+The site also publishes `https://lenso.dev/llms.txt`,
+`https://lenso.dev/agent-readability.json`, and a read-only MCP server at
+`https://lenso.dev/mcp`.

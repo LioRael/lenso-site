@@ -10,6 +10,28 @@ Lenso 为两个不同所有者使用两份不同文档。
 | `lenso.json` | Authoring 工具与 App 仓库 | 可审查的 Module、包、合约、Profile、配置与绑定 |
 | Resolved App Plan | `lenso-app-plan` | 启动时消费的规范、完整、不可变输入 |
 
+使用 `lenso.json` 做选择，使用 Resolved App Plan 批准执行。不要直接编辑生成的 Plan bytes
+代替 project 变更。
+
+## 工作循环
+
+```sh
+# 1. 校验 authored 与 locked input
+lenso check --project lenso.json --execution-class <supported-class>
+
+# 2. 生成 canonical bytes
+lenso resolve --project lenso.json \
+  --execution-class <supported-class> \
+  --output .lenso/resolved-plan.json
+
+# 3. 审查 project 与 Plan diff，再使用目标 host 的 Runner
+lenso run --plan .lenso/resolved-plan.json --root .
+```
+
+只有已安装 CLI 与所选 host 为该 execution class 暴露 run command 时才直接使用。Bun
+Module project 通常用 `lenso module dev --bun` 执行 check-resolve-run watcher；native App
+拥有自己的 factory registration 与 Runner binary。
+
 ## 项目声明什么
 
 - 有键的 Module Instance 与 entrypoint；
@@ -30,3 +52,19 @@ provider 基数与所有显式绑定。规范序列化使通过审查的 Plan �
 
 启动后，Kernel 不能安装包、发现 provider、重绑 consumer、改变 placement
 或重写配置。任何此类变更都需要重新 resolve 并重启 App。
+
+## Boot 前审查
+
+把每个变更值与 owner 对照：
+
+| Plan fact | 审查来源 |
+| --- | --- |
+| Package identity 与 revision | Cargo/Bun/npm lock 或 immutable OCI digest |
+| Instance key 与 entrypoint | 所选 Module package |
+| Capability 与 Operation | Descriptor 与生成 endpoint table |
+| Requirement cardinality 与 provider | App Composition binding |
+| Configuration 与 secret reference | Module configuration Schema；不包含解析后的 secret value |
+| Execution class 与 lane | Host Driver 与已注册 Execution Adapter |
+
+若确定性存疑，从不变输入 resolve 两次并比较文件。Bytes 包含全部预期选择，且 boot 不需要
+ambient discovery 时，审查完成。
