@@ -3,8 +3,8 @@ title: 实现状态
 description: 基于当前源码列出现在能运行的内容、需要手动集成的内容，以及尚未实现的内容。
 ---
 
-本页把运行时行为、Package 状态与开发体验分开。“源码已实现”不代表 Starter、
-高层 SDK 或 Registry Package 已经存在。
+本页把运行时行为、Package 状态与开发体验分开。“源码已实现”不代表每一种
+Interaction 或完整生产 App 都已有高层 Starter。
 
 ## 核心与 Authoring
 
@@ -13,21 +13,22 @@ description: 基于当前源码列出现在能运行的内容、需要手动集�
 | App Plan | 规范校验、显式 Module / Binding / Execution Class / Lane / Admission Policy | 没有 Runtime Discovery 或 Graph Mutation |
 | Kernel | Request、Stream、Event、Lifecycle、Deadline、取消、诊断与确定性 Conformance | 不持有 HTTP、数据库、Auth、进程或产品策略 |
 | 契约工具 | JSON Descriptor 生成 Rust / TypeScript、漂移检查、兼容性 Lint、可移植值 Runtime | Capability Owner 必须提交 Schema 与生成物 |
-| `lenso` Authoring | `add`、`check`、`resolve`、`run`；Cargo、Bun、npm、OCI 包输入 | 还没有一条命令创建完整生产 App 的稳定 Starter |
+| `lenso` Authoring | `add`、`check`、`resolve`、`run`；类型化 Bun Scaffold 与 Watch-mode Development；Cargo、Bun、npm、OCI 包输入 | Bun Starter 创建 Module 项目，不创建完整生产 App |
 
 ## 运行时实现
 
 | 路径 | Request | Stream | Event | 当前运行方式 |
 | --- | --- | --- | --- | --- |
 | 原生 Rust | 已实现 | 已实现 | 已实现 | 在 App Binary 中静态注册 `NativeModuleFactory` |
-| Bun / TypeScript | 已实现 | 已实现 | 已实现 | `lenso run` 通过 `lenso.bun-process@1` 启动 Bun Entrypoint；正式 Wire 是 Loopback HTTP 上的 JSON-RPC |
+| Bun / TypeScript | 公开类型化 SDK | 仅 Adapter Conformance | 仅 Adapter Conformance | `lenso module dev --bun` 与 `lenso run` 通过 `lenso.bun-process@1` 启动 Entrypoint；正式 Wire 是 Loopback HTTP 上的 JSON-RPC |
 | Browser JavaScript Driver | 有 Scheduler / Lifecycle Smoke Evidence | 使用 Kernel 语义 | 使用 Kernel 语义 | Host Profile；不提供敌对代码隔离 |
 | WASIp2 Driver | 有 Scheduler / Lifecycle Smoke Evidence | 使用 Kernel 语义 | 使用 Kernel 语义 | Host Profile；Component Packaging 还不是 Starter Workflow |
 
 Bun 路径不是实验性后备方案。它已有有界 Frame 与 Queue、Handshake / Session
 检查、Deadline 与取消传递、类型化 Domain / Runtime Outcome、进程清理和跨运行时
-Fixture。主要体验缺口是尚未发布高层 `@lenso/bun` Provider Server SDK；Adapter
-与协议本身已经存在。
+Fixture。公开的 `@lenso/bun-module` Package 持有 Module 侧 Server，CLI 可以生成
+完整类型化项目并启动 Fresh-plan 开发循环。0.1 版本开放 Request Provider；虽然
+底层 Adapter 已有 Stream 与 Event Conformance，公开 SDK 仍对两者 Fail-closed。
 
 ## 可选 Capability 与 Module
 

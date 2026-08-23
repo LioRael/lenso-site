@@ -6,6 +6,11 @@ description: Define Request, Stream, and Event contracts, generate Rust and Type
 A Capability is the contract between a consumer and a provider. Author it once;
 both Rust and Bun Modules use the generated bindings.
 
+For a new Request Capability and Bun Provider, `lenso module create NAME
+--runtime bun` generates the Descriptor, schemas, both bindings, and the typed
+Provider together. Use the manual flow below when defining a custom contract or
+evolving an existing Capability.
+
 ## Create a request Capability
 
 This descriptor declares one `greet` Operation:
@@ -48,7 +53,9 @@ lenso-contract-codegen generate \
   contract/greeting/generated/bindings.ts
 ```
 
-Generated TypeScript imports `@lenso/contract-runtime`:
+Generated TypeScript imports `@lenso/contract-runtime`. A Bun Module scaffold
+installs it through `@lenso/bun-module`; a standalone contract package can add
+it directly:
 
 ```sh
 bun add @lenso/contract-runtime

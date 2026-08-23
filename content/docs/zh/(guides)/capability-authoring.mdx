@@ -6,6 +6,10 @@ description: 定义 Request、Stream 与 Event 契约，生成 Rust 和 TypeScri
 Capability 是 Consumer 与 Provider 之间的契约。只定义一次，Rust 与 Bun
 Module 都使用同一份 Descriptor 生成的绑定。
 
+新建 Request Capability 与 Bun Provider 时，`lenso module create NAME
+--runtime bun` 会一起生成 Descriptor、Schema、两份 Binding 和类型化 Provider。
+定义自有 Contract 或演进已有 Capability 时，再使用下面的手工流程。
+
 ## 创建 Request Capability
 
 下面的 Descriptor 定义了一个 `greet` Operation：
@@ -47,7 +51,8 @@ lenso-contract-codegen generate \
   contract/greeting/generated/bindings.ts
 ```
 
-生成的 TypeScript 会直接引用 `@lenso/contract-runtime`：
+生成的 TypeScript 会直接引用 `@lenso/contract-runtime`。Bun Module Scaffold
+会通过 `@lenso/bun-module` 安装它；独立 Contract Package 可以直接添加：
 
 ```sh
 bun add @lenso/contract-runtime

@@ -59,6 +59,8 @@ for (const file of currentFiles) {
     ["retired public lifecycle", /Compose, Run locally, Connect, (?:and )?Status/g],
     ["retired runtime model", /agent-ready Rust modular applications and microservices/g],
     ["retired current API link", /href="\/docs\/(?:zh\/)?api"/g],
+    ["retired hand-written Bun server", /implements the selected production JSON-RPC wire without importing Rust/g],
+    ["retired missing Bun server SDK claim", /(?:stable high-level `@lenso\/bun`|尚未发布高层 `@lenso\/bun`)/g],
   ]) {
     if (expression.test(text)) failures.push(`${relative(root, file)}: ${label}`);
   }
@@ -75,6 +77,26 @@ const invariantFiles = [
 for (const marker of ["Resolved App Plan", "Runtime Driver", "Execution Adapter"]) {
   if (!invariantFiles.some((file) => read(file).includes(marker))) {
     failures.push(`current docs: missing canonical marker ${JSON.stringify(marker)}`);
+  }
+}
+
+for (const [file, markers] of [
+  ["content/docs/(guides)/bun-module-authoring.mdx", [
+    "lenso module create greeting --runtime bun",
+    "lenso module dev --bun",
+    "@lenso/bun-module",
+  ]],
+  ["content/docs/zh/(guides)/bun-module-authoring.mdx", [
+    "lenso module create greeting --runtime bun",
+    "lenso module dev --bun",
+    "@lenso/bun-module",
+  ]],
+]) {
+  const text = read(file);
+  for (const marker of markers) {
+    if (!text.includes(marker)) {
+      failures.push(`${file}: missing current Bun marker ${JSON.stringify(marker)}`);
+    }
   }
 }
 

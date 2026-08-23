@@ -30,4 +30,6 @@ Adapter 持有：
 
 Bun Adapter 在正式路径使用 JSON-RPC over HTTP，并实现 Request、双向 Stream
 与易失性 Event Dispatch。这些是 Adapter / Wire 选择，不是 Capability 或 Kernel
-语义。可运行 Entrypoint 见[编写 Bun Module](/docs/zh/bun-module-authoring)。
+语义。Module Author 使用公开的 `@lenso/bun-module` Server 与
+`lenso module dev --bun`，不自行实现 Handshake 或 Process Protocol。完整
+Scaffold 与开发路径见[编写 Bun Module](/docs/zh/bun-module-authoring)。
