@@ -1,19 +1,89 @@
 ---
 title: Quickstart
-description: Build the portable core, install the Lenso CLI, and understand the executable workflow.
+description: Install the Lenso CLI, scaffold a typed Bun Module, and run its production Adapter development loop.
 ---
 
-Lenso is available today as released core crates and extracted runtime/tooling
-repositories. Authoring commands are exposed through the single `lenso`
-executable; `lenso-authoring` remains an implementation library.
+The fastest executable Lenso path is a generated Bun Module project. It uses
+the same Capability Descriptor, immutable Resolved App Plan, and portable
+Kernel contracts as native Rust, while keeping process and wire mechanics in a
+separate Execution Adapter.
 
 ## Prerequisites
 
-- Rust stable with Cargo
-- Git
-- Bun only when the selected Plan uses `lenso.bun-process@1`
+- Bun 1.2.21 or newer
+- Node.js 18 or newer for the npm-distributed CLI, or Rust stable with Cargo
 
-## 1. Verify the portable core
+## 1. Install the Lenso CLI
+
+```sh
+npm install -g @lenso/cli
+lenso --version
+```
+
+The npm package contains the platform-specific `lenso` binary. Rust users can
+install the same CLI from crates.io instead:
+
+```sh
+cargo install lenso-cli --locked
+```
+
+## 2. Create a Bun Module
+
+```sh
+lenso module create greeting --runtime bun
+cd greeting
+```
+
+The command generates a complete project: a Capability Descriptor and schemas,
+checked-in Rust and TypeScript bindings, a typed Provider, `lenso.json`, Bun
+workspace manifests, and `bun.lock`. It runs installation and type checking
+before atomically publishing the new directory, so a failed scaffold does not
+leave a partial project.
+
+## 3. Run the development loop
+
+```sh
+lenso module dev --bun
+```
+
+The CLI validates the project, resolves a fresh immutable Plan, and starts the
+Module through the production Bun Execution Adapter. Source and project changes
+cleanly stop the old child and resolve a new generation. Type, contract, and
+startup failures keep the watcher alive; fix the file and save again. Ctrl-C
+performs cooperative shutdown.
+
+Edit `modules/greeting/src/index.ts` to change the generated Provider. The
+Module uses `@lenso/bun-module`; application code never implements the
+JSON-RPC handshake, framing, cancellation, or process lifecycle.
+
+## 4. Run the repeatable checks
+
+```sh
+bun run typecheck
+bun run check
+bun run resolve
+```
+
+`check` validates project inputs, package locks, endpoints, and generated
+contracts. `resolve` writes canonical Plan bytes. The running Kernel loads that
+exact Plan; it does not discover Modules, install packages, or mutate the graph.
+
+:::note
+This is a complete Bun Module authoring and development starter, not a generator
+for an entire production application or deployment environment. Native Rust
+Modules remain statically linked and register `NativeModuleFactory` values in
+their App binary.
+:::
+
+Continue with [Bun Module authoring](/docs/bun-module-authoring) for the project
+layout, Provider API, CLI options, and current Request-only SDK boundary. Read
+[Project and Plan](/docs/project-and-plan) for the language-independent
+composition model.
+
+## Verify the portable core
+
+Framework contributors can run the core repository gates independently of the
+Bun host path:
 
 ```sh
 git clone https://github.com/LioRael/lenso.git
@@ -24,46 +94,6 @@ cargo check --locked --workspace --all-targets
 cargo test --locked --workspace
 ```
 
-These gates prove the Plan, Kernel, and Kernel-owned conformance surface. CI
-also compile-checks the portable core for `wasm32-unknown-unknown` and
-`wasm32-wasip2`.
-
-## 2. Install the Lenso CLI
-
-```sh
-cargo install lenso-cli --locked
-lenso --help
-```
-
-The executable exposes the current `add`, `check`, `resolve`, and `run`
-surface. It is early-access tooling; it does not discover Modules or mutate a
-running App.
-
-## 3. Follow the project lifecycle
-
-```sh
-lenso check --project lenso.json \
-  --execution-class lenso.bun-process@1
-lenso resolve --project lenso.json \
-  --execution-class lenso.bun-process@1 \
-  --output .lenso/resolved-plan.json
-lenso run \
-  --plan .lenso/resolved-plan.json --root .
-```
-
-`check` validates project inputs and generated contracts. `resolve` produces
-canonical immutable bytes. `run` loads those same bytes, assembles the selected
-Driver and Adapters, and translates Ctrl-C into cooperative shutdown.
-
-This directly runnable path uses Bun. Native Rust Modules are statically linked:
-their App binary must register `NativeModuleFactory` values before starting the
-Plan. See [Rust Module authoring](/docs/module-authoring) and
-[Bun Module authoring](/docs/bun-module-authoring) for both complete paths.
-
-:::warning
-There is not yet a stable one-command end-user starter. Do not use the
-legacy `lenso app compose`, `lenso system dev`, or Console lifecycle from the
-v0.3 docs as if it were a current workflow.
-:::
-
-Next, learn what belongs in [Project and Plan](/docs/project-and-plan).
+CI also compile-checks the portable core for `wasm32-unknown-unknown` and
+`wasm32-wasip2`. Those host profiles do not automatically gain the Bun
+child-process Adapter.

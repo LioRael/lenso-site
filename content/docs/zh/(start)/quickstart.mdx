@@ -1,18 +1,82 @@
 ---
 title: 快速开始
-description: 构建可移植核心，安装 Lenso CLI，并理解可执行工作流。
+description: 安装 Lenso CLI，创建强类型 Bun Module，并启动正式 Adapter 开发循环。
 ---
 
-Lenso 当前以已发布的核心 crates 和拆分后的 runtime/tooling 仓库提供。Authoring
-命令统一由 `lenso` 可执行文件提供；`lenso-authoring` 仅保留为实现库。
+当前最快的 Lenso 可执行路径是生成一个 Bun Module 项目。它与原生 Rust 使用
+相同的 Capability Descriptor、不可变 Resolved App Plan 和可移植 Kernel
+Contract，同时把进程与 Wire 机制留在独立的 Execution Adapter 中。
 
 ## 前置条件
 
-- Rust stable 与 Cargo
-- Git
-- 仅当 Plan 选择 `lenso.bun-process@1` 时需要 Bun
+- Bun 1.2.21 或更高版本
+- npm 版 CLI 需要 Node.js 18 或更高版本；也可以使用 Rust stable 与 Cargo
 
-## 1. 验证可移植核心
+## 1. 安装 Lenso CLI
+
+```sh
+npm install -g @lenso/cli
+lenso --version
+```
+
+npm Package 内含对应平台的 `lenso` 可执行文件。Rust 用户也可以从 crates.io
+安装同一个 CLI：
+
+```sh
+cargo install lenso-cli --locked
+```
+
+## 2. 创建 Bun Module
+
+```sh
+lenso module create greeting --runtime bun
+cd greeting
+```
+
+该命令生成完整项目：Capability Descriptor 与 Schema、已提交的 Rust / TypeScript
+Binding、类型化 Provider、`lenso.json`、Bun Workspace Manifest 和 `bun.lock`。
+安装与类型检查成功后才会原子发布新目录，因此失败的创建不会留下半成品。
+
+## 3. 启动开发循环
+
+```sh
+lenso module dev --bun
+```
+
+CLI 会校验项目，解析一份新的不可变 Plan，再通过正式 Bun Execution Adapter
+启动 Module。源码与项目文件变化时，旧 Child Process 会被干净停止，并解析新的
+Generation。类型、Contract 或启动失败不会终止 Watcher；修改并再次保存即可
+恢复。Ctrl-C 会执行协作式关闭。
+
+修改 `modules/greeting/src/index.ts` 即可改变生成的 Provider。Module 使用
+`@lenso/bun-module`；应用代码不需要实现 JSON-RPC 握手、Framing、取消或进程
+Lifecycle。
+
+## 4. 执行可重复检查
+
+```sh
+bun run typecheck
+bun run check
+bun run resolve
+```
+
+`check` 校验项目输入、Package Lock、Endpoint 与生成 Contract；`resolve` 写出
+规范化 Plan 字节。运行中的 Kernel 读取这份准确 Plan，不会发现 Module、安装
+Package 或修改 Graph。
+
+:::note
+这是一套完整的 Bun Module 编写与开发 Starter，不是整个生产 App 或部署环境的
+生成器。原生 Rust Module 仍通过静态链接进入 App，并在 App Binary 中注册
+`NativeModuleFactory`。
+:::
+
+继续阅读[编写 Bun Module](/docs/zh/bun-module-authoring)，查看项目结构、Provider
+API、CLI 选项与当前仅开放 Request 的 SDK 边界。语言无关的组合模型见
+[项目与 Plan](/docs/zh/project-and-plan)。
+
+## 验证可移植核心
+
+Framework Contributor 可以独立于 Bun Host 路径执行核心仓库门禁：
 
 ```sh
 git clone https://github.com/LioRael/lenso.git
@@ -23,42 +87,5 @@ cargo check --locked --workspace --all-targets
 cargo test --locked --workspace
 ```
 
-这些门禁验证 Plan、Kernel 与 Kernel 所有的 conformance 表面。CI 还会为
-`wasm32-unknown-unknown` 和 `wasm32-wasip2` 编译检查可移植核心。
-
-## 2. 安装 Lenso CLI
-
-```sh
-cargo install lenso-cli --locked
-lenso --help
-```
-
-该可执行文件提供当前的 `add`、`check`、`resolve` 与 `run` 表面。这仍是
-Early-access 工具，不会在运行时发现 Module 或修改正在执行的 App。
-
-## 3. 执行项目生命周期
-
-```sh
-lenso check --project lenso.json \
-  --execution-class lenso.bun-process@1
-lenso resolve --project lenso.json \
-  --execution-class lenso.bun-process@1 \
-  --output .lenso/resolved-plan.json
-lenso run \
-  --plan .lenso/resolved-plan.json --root .
-```
-
-`check` 校验项目输入和生成合约；`resolve` 生成规范化、不可变的字节；
-`run` 读取同一份字节，组装 Driver 和 Adapter，并把 Ctrl-C 转换为协作式关闭。
-
-这条可直接运行的路径使用 Bun。原生 Rust Module 通过静态链接进入 App；App
-Binary 必须先注册 `NativeModuleFactory` 再启动 Plan。两条完整路径分别见
-[编写 Rust Module](/docs/zh/module-authoring)与
-[编写 Bun Module](/docs/zh/bun-module-authoring)。
-
-:::warning
-目前还没有稳定的一键终端用户 Starter。不要把旧文档中的
-`lenso app compose`、`lenso system dev` 或 Console 生命周期当成当前流程。
-:::
-
-下一步阅读[项目与 Plan](/docs/zh/project-and-plan)。
+CI 还会为 `wasm32-unknown-unknown` 和 `wasm32-wasip2` 编译检查可移植核心；
+这些 Host Profile 不会自动获得 Bun Child-process Adapter。
