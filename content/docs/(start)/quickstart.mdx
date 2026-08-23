@@ -11,7 +11,7 @@ executable; `lenso-authoring` remains an implementation library.
 
 - Rust stable with Cargo
 - Git
-- Bun only when the selected Plan uses `lenso.bun-child-process@1`
+- Bun only when the selected Plan uses `lenso.bun-process@1`
 
 ## 1. Verify the portable core
 
@@ -43,9 +43,9 @@ running App.
 
 ```sh
 lenso check --project lenso.json \
-  --execution-class lenso.native-rust@1
+  --execution-class lenso.bun-process@1
 lenso resolve --project lenso.json \
-  --execution-class lenso.native-rust@1 \
+  --execution-class lenso.bun-process@1 \
   --output .lenso/resolved-plan.json
 lenso run \
   --plan .lenso/resolved-plan.json --root .
@@ -54,6 +54,11 @@ lenso run \
 `check` validates project inputs and generated contracts. `resolve` produces
 canonical immutable bytes. `run` loads those same bytes, assembles the selected
 Driver and Adapters, and translates Ctrl-C into cooperative shutdown.
+
+This directly runnable path uses Bun. Native Rust Modules are statically linked:
+their App binary must register `NativeModuleFactory` values before starting the
+Plan. See [Rust Module authoring](/docs/module-authoring) and
+[Bun Module authoring](/docs/bun-module-authoring) for both complete paths.
 
 :::warning
 There is not yet a stable one-command end-user starter. Do not use the

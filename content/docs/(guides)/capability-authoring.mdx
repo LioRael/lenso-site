@@ -1,0 +1,121 @@
+---
+title: Capability authoring
+description: Define Request, Stream, and Event contracts, generate Rust and TypeScript bindings, and keep them fresh.
+---
+
+A Capability is the contract between a consumer and a provider. Author it once;
+both Rust and Bun Modules use the generated bindings.
+
+## Create a request Capability
+
+This descriptor declares one `greet` Operation:
+
+```json title="contract/greeting/capability.json"
+{
+  "id": "example.greeting@1",
+  "version": "1.0.0",
+  "portable": true,
+  "cross_lane_transfer": true,
+  "operations": [{
+    "name": "greet",
+    "interaction": "request",
+    "request_schema": "schemas/greet-request.schema.json",
+    "response_schema": "schemas/greet-response.schema.json",
+    "domain_error_schema": "schemas/greet-error.schema.json"
+  }]
+}
+```
+
+The three referenced files are ordinary JSON Schema. Keep expected business
+failures in the Domain Error schema rather than returning strings from runtime
+exceptions:
+
+```json title="contract/greeting/schemas/greet-error.schema.json"
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "string",
+  "enum": ["empty_name"]
+}
+```
+
+Install the generator and write both bindings:
+
+```sh
+cargo install lenso-contract-codegen --locked
+lenso-contract-codegen generate \
+  contract/greeting/capability.json \
+  contract/greeting/src/generated.rs \
+  contract/greeting/generated/bindings.ts
+```
+
+Generated TypeScript imports `@lenso/contract-runtime`:
+
+```sh
+bun add @lenso/contract-runtime
+```
+
+CI should reject generated drift and incompatible revisions:
+
+```sh
+lenso-contract-codegen check \
+  contract/greeting/capability.json \
+  contract/greeting/src/generated.rs \
+  contract/greeting/generated/bindings.ts
+
+lenso-contract-codegen lint old/capability.json contract/greeting/capability.json
+```
+
+## Choose the interaction shape
+
+| Shape | Descriptor value | Use it for | Current semantics |
+| --- | --- | --- | --- |
+| Request | `"request"` | commands and queries with one terminal result | bounded queue, concurrency, deadline, cancellation |
+| Stream | `"stream"` | bidirectional conversations | bounded messages, independent half-close, explicit terminal result |
+| Event | `"event"` | volatile fan-out | per-subscriber bounded admission and partial outcomes; no persistence or redelivery |
+
+For Stream and Event, only the `interaction` value changes. The generator emits
+the matching Rust and TypeScript Provider/Client types.
+
+## Configure capacity in Composition
+
+Capacity is App policy, not part of the portable Descriptor. A provider can set
+request admission and Event mailbox bounds; a binding can override them:
+
+```json title="lenso.json (excerpt)"
+{
+  "provides": [{
+    "capability_id": "example.greeting@1",
+    "descriptor_version": "1.0.0",
+    "operations": ["greet"],
+    "operation_kinds": {},
+    "admission": { "queue_capacity": 64, "max_concurrency": 16 },
+    "operation_admissions": {},
+    "event_capacity": 128
+  }]
+}
+```
+
+`event_capacity` matters only for Event Operations. A full queue rejects
+admission; it does not silently become a durable Outbox.
+
+## Register the contract with the project
+
+`lenso check` compares the declared endpoint with the Descriptor and checks that
+both generated files are fresh:
+
+```json title="lenso.json (excerpt)"
+{
+  "contracts": [{
+    "capability_id": "example.greeting@1",
+    "descriptor_version": "1.0.0",
+    "descriptor": "contract/greeting/capability.json",
+    "rust": "contract/greeting/src/generated.rs",
+    "typescript": "contract/greeting/generated/bindings.ts"
+  }]
+}
+```
+
+See the complete, maintained fixtures for
+[Request](https://github.com/LioRael/lenso-cli/tree/main/crates/lenso-authoring/tests/fixtures/contracts/greeting),
+[Stream](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/stream),
+and [Event](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/event).

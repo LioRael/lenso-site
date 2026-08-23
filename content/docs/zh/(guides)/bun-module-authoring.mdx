@@ -1,0 +1,215 @@
+---
+title: 编写 Bun Module
+description: 通过正式 JSON-RPC Execution Adapter 实现并运行 Bun Request Provider。
+---
+
+Bun 是官方 Module 执行路径。Bun 包与 Rust 使用相同的 Capability Descriptor
+和生成类型；`lenso.bun-process@1` Execution Adapter 负责进程启动、握手、
+Deadline、取消与 Wire Failure。
+
+## 项目结构
+
+```text
+contract/greeting/
+  capability.json
+  schemas/
+  generated/bindings.ts
+module/
+  package.json
+  src/module.ts
+lenso.json
+package.json
+bun.lock
+```
+
+根 Package 依赖本地 Module，Module 依赖生成物所需的 Runtime：
+
+```json title="module/package.json"
+{
+  "name": "example-greeter-bun",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@lenso/contract-runtime": "^0.1.0"
+  }
+}
+```
+
+## 实现 Request Provider
+
+当前公开 npm 包提供契约类型与 Codec，尚未提供高层进程 Server。下面这份完整
+的最小 Entrypoint 直接实现正式 JSON-RPC Wire，不需要导入 Rust：
+
+```ts title="module/src/module.ts"
+import {
+  CAPABILITY_ID,
+  DESCRIPTOR_VERSION,
+  decodeGreetRequest,
+  encodeGreetError,
+  encodeGreetResponse,
+} from "../../contract/greeting/generated/bindings.ts";
+
+type Endpoint = {
+  capability_id: string;
+  descriptor_version: string;
+  operations: string[];
+};
+type WireRequest = {
+  request_id: number;
+  capability_id: string;
+  operation: string;
+  session?: string;
+  payload: unknown;
+};
+
+const argv = Bun.argv.slice(2);
+const arg = (name: string, fallback: string) => {
+  const index = argv.indexOf(name);
+  return index < 0 ? fallback : (argv[index + 1] ?? fallback);
+};
+
+const maxBytes = Number(arg("--lenso-max-frame-bytes", "65536"));
+const expected = JSON.parse(arg("--lenso-endpoints-json", "[]")) as Endpoint[];
+let session: string | undefined;
+
+const outcome = (request: WireRequest) => {
+  if (request.session !== session) {
+    return { kind: "runtime", failure: { kind: "protocol_violation" } };
+  }
+  if (request.capability_id !== CAPABILITY_ID || request.operation !== "greet") {
+    return {
+      kind: "runtime",
+      failure: { kind: "unknown_operation", operation: request.operation },
+    };
+  }
+  try {
+    const input = decodeGreetRequest(JSON.stringify(request.payload));
+    if (input.name.trim().length === 0) {
+      return { kind: "domain", value: JSON.parse(encodeGreetError("empty_name")) };
+    }
+    return {
+      kind: "success",
+      value: JSON.parse(encodeGreetResponse({ message: `Hello from Bun, ${input.name}!` })),
+    };
+  } catch (error) {
+    return {
+      kind: "runtime",
+      failure: { kind: "protocol_violation", detail: String(error) },
+    };
+  }
+};
+
+const server = Bun.serve({
+  hostname: "127.0.0.1",
+  port: Number(arg("--lenso-port", "0")),
+  async fetch(request) {
+    if (request.method !== "POST") return new Response("method not allowed", { status: 405 });
+    const body = await request.text();
+    if (new TextEncoder().encode(body).byteLength > maxBytes) {
+      return new Response("request too large", { status: 413 });
+    }
+    const rpc = JSON.parse(body) as {
+      id: number;
+      method: string;
+      params: unknown | [unknown];
+    };
+    const params = Array.isArray(rpc.params) ? rpc.params[0] : rpc.params;
+
+    if (rpc.method === "lenso.handshake") {
+      const offered = params as {
+        protocol_version: number;
+        value_profile: string;
+        max_frame_bytes: number;
+        endpoints: Endpoint[];
+      };
+      const accepted = offered.protocol_version === 1
+        && offered.value_profile === "lenso-json-value-v1"
+        && offered.max_frame_bytes === maxBytes
+        && JSON.stringify(offered.endpoints) === JSON.stringify(expected)
+        && expected.some((value) => value.capability_id === CAPABILITY_ID
+          && value.descriptor_version === DESCRIPTOR_VERSION
+          && JSON.stringify(value.operations) === JSON.stringify(["greet"]));
+      session = accepted ? crypto.randomUUID() : undefined;
+      return Response.json({ jsonrpc: "2.0", id: rpc.id, result: {
+        ...offered, accepted, session,
+      }});
+    }
+    if (rpc.method === "lenso.request" && session) {
+      return Response.json({ jsonrpc: "2.0", id: rpc.id, result: outcome(params as WireRequest) });
+    }
+    if (rpc.method === "lenso.cancel") {
+      return Response.json({ jsonrpc: "2.0", id: rpc.id, result: true });
+    }
+    if (rpc.method === "lenso.shutdown") {
+      const response = Response.json({ jsonrpc: "2.0", id: rpc.id, result: true });
+      server.stop();
+      return response;
+    }
+    return Response.json({ jsonrpc: "2.0", id: rpc.id, result: {
+      kind: "runtime", failure: { kind: "protocol_violation" },
+    }});
+  },
+});
+
+console.log(`LENSO_READY ${server.port}`);
+```
+
+这个小例子适合快速 Request Operation。长耗时工作还要跟踪活跃 Request ID、
+响应 `lenso.cancel`、限制并发、拒绝重复 ID，并核对 Shutdown Session。持续维护的
+[Conformance fixture](https://github.com/LioRael/lenso-bun-adapter/blob/main/fixtures/bun/request-provider.ts)
+包含这些机制。
+
+## 添加、解析并运行
+
+先创建一份显式 Authoring Document：
+
+```json title="lenso.json"
+{
+  "schema_version": 1,
+  "composition": {
+    "modules": [],
+    "bindings": [],
+    "execution_lanes": [{ "id": "main" }]
+  },
+  "packages": {},
+  "contracts": [],
+  "profiles": {}
+}
+```
+
+生成契约后添加 Package，再刷新普通 Bun Lockfile。`lenso add` 会先更新
+`lenso.json` 与选中的 Package Manifest，然后由 `bun install` 解析：
+
+```sh
+lenso add --project lenso.json \
+  --key greeter \
+  --package example.greeter.bun \
+  --package-name example-greeter-bun \
+  --source bun \
+  --version file:./module \
+  --locked-revision module \
+  --entrypoint module/src/module.ts \
+  --manifest package.json \
+  --lockfile bun.lock
+bun install --lockfile-only --ignore-scripts
+```
+
+把[编写 Capability](/docs/zh/capability-authoring)中的 `provides` 与
+`contracts` 条目加入 `lenso.json`，再使用准确的 Bun Execution Class：
+
+```sh
+lenso check --project lenso.json --execution-class lenso.bun-process@1
+lenso resolve --project lenso.json \
+  --execution-class lenso.bun-process@1 \
+  --output .lenso/resolved-plan.json
+lenso run --plan .lenso/resolved-plan.json --root . --bun bun
+```
+
+## Stream 与 Event 支持
+
+Bun Adapter 已实现 Request、双向 Stream 和易失性 Event Operation，跨运行时
+测试也覆盖了它们；但稳定的高层 `@lenso/bun` Server SDK 尚未发布。在便利层
+完成前，请从持续维护的
+[Stream Provider](https://github.com/LioRael/lenso-bun-adapter/blob/main/fixtures/bun/stream-provider.ts)
+或 [Event Provider](https://github.com/LioRael/lenso-bun-adapter/blob/main/fixtures/bun/event-provider-core.ts)
+开始，不要自行猜测 Wire Shape。

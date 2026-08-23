@@ -1,33 +1,52 @@
 ---
-title: 状态与范围
-description: Lenso 当前实现了什么、架构证明了什么，以及刻意延后的内容。
+title: 实现状态
+description: 基于当前源码列出现在能运行的内容、需要手动集成的内容，以及尚未实现的内容。
 ---
 
-## 已实现并发布
+本页把运行时行为、Package 状态与开发体验分开。“源码已实现”不代表 Starter、
+高层 SDK 或 Registry Package 已经存在。
 
-- 不可变 App Plan 数据与规范校验；
-- 可移植单所有者 Kernel 生命周期与调用语义；
-- 确定性 Kernel conformance fixtures；
-- Native Tokio Runner 与 Native Execution Adapter；
-- Browser JavaScript 与 WASIp2 Driver Profile；
-- Bun 子进程 Request 与 Stream 执行；
-- Rust 与 TypeScript 的可移植 Descriptor codegen；
-- 可选 Auth 与 OpenTelemetry Interface/Module；
-- Target-owned Web UI 组合证据。
+## 核心与 Authoring
 
-## Early-access 或集成中
+| 领域 | 现在可用 | 当前限制 |
+| --- | --- | --- |
+| App Plan | 规范校验、显式 Module / Binding / Execution Class / Lane / Admission Policy | 没有 Runtime Discovery 或 Graph Mutation |
+| Kernel | Request、Stream、Event、Lifecycle、Deadline、取消、诊断与确定性 Conformance | 不持有 HTTP、数据库、Auth、进程或产品策略 |
+| 契约工具 | JSON Descriptor 生成 Rust / TypeScript、漂移检查、兼容性 Lint、可移植值 Runtime | Capability Owner 必须提交 Schema 与生成物 |
+| `lenso` Authoring | `add`、`check`、`resolve`、`run`；Cargo、Bun、npm、OCI 包输入 | 还没有一条命令创建完整生产 App 的稳定 Starter |
 
-- Authoring 命令统一由 `lenso` 可执行文件提供，`lenso-authoring` 仅保留为库；
-- 所有者仓库通过有版本的 core package 消费，并继续加固跨仓库 release set；
-- 示例与 Starter 体验还没有统一成一条稳定产品路径。
+## 运行时实现
 
-## 明确没有承诺
+| 路径 | Request | Stream | Event | 当前运行方式 |
+| --- | --- | --- | --- | --- |
+| 原生 Rust | 已实现 | 已实现 | 已实现 | 在 App Binary 中静态注册 `NativeModuleFactory` |
+| Bun / TypeScript | 已实现 | 已实现 | 已实现 | `lenso run` 通过 `lenso.bun-process@1` 启动 Bun Entrypoint；正式 Wire 是 Loopback HTTP 上的 JSON-RPC |
+| Browser JavaScript Driver | 有 Scheduler / Lifecycle Smoke Evidence | 使用 Kernel 语义 | 使用 Kernel 语义 | Host Profile；不提供敌对代码隔离 |
+| WASIp2 Driver | 有 Scheduler / Lifecycle Smoke Evidence | 使用 Kernel 语义 | 使用 Kernel 语义 | Host Profile；Component Packaging 还不是 Starter Workflow |
 
-Lenso 当前没有定义运行时 discovery、hot graph mutation、rolling upgrade、
-distributed placement、automatic replica、control plane、敌对浏览器代码隔离或独立
-Console 产品。架构保留未来可能使用的接缝，不等于功能已实现。
+Bun 路径不是实验性后备方案。它已有有界 Frame 与 Queue、Handshake / Session
+检查、Deadline 与取消传递、类型化 Domain / Runtime Outcome、进程清理和跨运行时
+Fixture。主要体验缺口是尚未发布高层 `@lenso/bun` Provider Server SDK；Adapter
+与协议本身已经存在。
 
-:::warning
-不要根据保留词汇或迁移笔记推断 v0.3 功能等价。Service、Provider、System
-Plane、Console、Story 与 Plugin 都不是当前架构的同级 runtime type。
-:::
+## 可选 Capability 与 Module
+
+| 组件 | 已实现源码 | Package / 使用边界 |
+| --- | --- | --- |
+| Auth | `lenso.auth@1`、Rust Assertion SDK、PostgreSQL API Token Provider、撤销 | API Token Module Crate 暂时保持私有；缺少 Bun 公开验证器 Helper |
+| Secrets | `lenso.secrets@1` 与 Allowlist Environment Provider | Registry 发布暂停；不含生产 Cloud Provider |
+| OpenTelemetry | 可移除的 Native Module，以及 Rust / Bun Trace Propagation Fixture | Tracing 是可选 Composition，不是 Kernel 行为 |
+| Web UI | 显式 Shell、Browser Adapter 与 UI Contribution Role，已有 Target-owned Composition Evidence | 不是通用远程代码 Sandbox，也不是独立 Console 产品 |
+
+[Auth Module](/docs/zh/auth-module)列出了准确的已实现 Provider 与缺失项；
+[编写 Bun Module](/docs/zh/bun-module-authoring)给出当前可执行路径，不需要从仓库名
+猜测支持程度。
+
+## 尚未实现
+
+Lenso 当前不提供 Runtime Discovery、Hot Graph Mutation、Rolling Upgrade、
+Distributed Placement、Automatic Replica、Control Plane、敌对浏览器代码隔离、
+独立 Console 产品、OAuth / Password Auth Provider 或生产 Cloud Secrets Provider。
+
+保留的术语与架构接缝不是功能证据。只有 Owner Repository 中存在行为与验证路径，
+才会进入上面的已实现表格。

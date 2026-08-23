@@ -28,5 +28,6 @@ Adapter 持有：
 | Bun 子进程 Adapter 与跨运行时 fixtures | `LioRael/lenso-bun-adapter` |
 | Descriptor codegen 与可移植 value conformance | `LioRael/lenso-protocols` |
 
-Bun Adapter 为 Request dispatch 选择 JSON-RPC over HTTP，并提供显式双向 Stream
-接缝。这些是 Adapter/wire 选择，不是 Capability 或 Kernel 语义。
+Bun Adapter 在正式路径使用 JSON-RPC over HTTP，并实现 Request、双向 Stream
+与易失性 Event Dispatch。这些是 Adapter / Wire 选择，不是 Capability 或 Kernel
+语义。可运行 Entrypoint 见[编写 Bun Module](/docs/zh/bun-module-authoring)。

@@ -1,37 +1,120 @@
 ---
-title: Module 开发
-description: 先设计可移植 Capability，再实现拥有该行为的最小 Module 并完成组合。
+title: 编写 Rust Module
+description: 实现生成的 Capability Provider，并注册静态链接的原生 Module Factory。
 ---
 
-## 1. 命名深层角色
+原生 Rust Module 实现生成的 Provider Trait，并向 `lenso-native-adapter`
+注册 Factory。它们通过静态链接进入 App；运行时不会在启动时扫描 Cargo 包。
 
-从 consumer 需要的行为开始，而不是从包或传输开始。优先设计
-`acme.orders@1` 这样具有聚焦 Operation 的 Capability，避免通用 RPC、Repository
-或 Administration Interface。
+## 实现生成的 Provider
 
-## 2. 编写 Descriptor
+假设 [编写 Capability](/docs/zh/capability-authoring) 中的
+`example.greeting@1` 已生成 `GreetingProvider`、`GreetingEndpoint` 以及请求、
+响应和错误类型：
 
-可移植 Descriptor 定义 Operation 形态、领域值、错误与版本标识。
-`lenso-contract-codegen` 从同一份已验证 IR 生成 Rust 与 TypeScript bindings；
-生成制品漂移会导致构建失败。
+```rust title="src/lib.rs"
+use futures::future;
+use lenso_kernel::{InvocationContext, NativeRequestFuture};
 
-## 3. 实现 Module entrypoint
+use crate::generated::{
+    GreetError, GreetRequest, GreetResponse, Greeting, GreetingProvider,
+};
 
-产品规则、状态和授权留在 Module 内。Entrypoint 声明 provided/required
-Capabilities，并公开 Execution Adapter 能理解的 factory。v1 Native Rust Module
-采用静态链接，Bun Module 使用 Bun 子进程 Adapter。
+#[derive(Debug)]
+pub struct Greeter;
 
-## 4. 显式组合
+impl GreetingProvider for Greeter {
+    fn greet(
+        &self,
+        _context: InvocationContext,
+        request: GreetRequest,
+    ) -> NativeRequestFuture<Greeting> {
+        let result = if request.name.trim().is_empty() {
+            Err(GreetError::EmptyName)
+        } else {
+            Ok(GreetResponse {
+                message: format!("Hello, {}!", request.name),
+            })
+        };
+        Box::pin(future::ready(Ok(result)))
+    }
+}
+```
 
-把包和 Module Instance 添加到 `lenso.json`，再把每个 requirement 绑定到有名的
-provider Instance。运行 `check`，审查 diff 与普通包锁变化，然后 resolve 新 Plan。
+外层 `Result` 表示 `RuntimeFailure`，内层 `Result` 才是生成的 Domain Result。
+像 `empty_name` 这样的校验失败应留在内层。
 
-## 5. 在 Interface 上验证行为
+## 导出 Module Factory
 
-测试生成 client/provider 合约与公开 Capability 结果。实现 Driver 或 Adapter 时
-使用 `lenso-runtime-conformance`，不要用所有者本地 mock 声称 Kernel 语义成立。
+Factory Identity 必须与 Resolved App Plan 选中的包一致：
 
-:::tip
-Persistence、Auth、Secrets、Telemetry、HTTP 与 UI 都是组合能力。只有 App
-选择时才加入，绝不要藏在环境式 Kernel service locator 后面。
+```rust title="src/lib.rs"
+use std::rc::Rc;
+use lenso_kernel::{NativeRequestEndpoint, RuntimeFailure};
+use lenso_native_adapter::{
+    NativeModuleFactory, NativeModuleFactoryContext, NativeModuleInstance,
+};
+
+use crate::generated::GreetingEndpoint;
+
+#[derive(Debug)]
+pub struct GreeterFactory;
+
+impl NativeModuleFactory for GreeterFactory {
+    fn package_id(&self) -> &'static str { "example.greeter" }
+    fn package_version(&self) -> &'static str { env!("CARGO_PKG_VERSION") }
+
+    fn instantiate(
+        &self,
+        _context: NativeModuleFactoryContext<'_>,
+    ) -> Result<NativeModuleInstance, RuntimeFailure> {
+        let endpoint = Rc::new(GreetingEndpoint::new(Greeter))
+            as Rc<dyn NativeRequestEndpoint>;
+        Ok(NativeModuleInstance::new(vec![endpoint]))
+    }
+}
+```
+
+## 在 App Binary 中注册
+
+```rust
+use lenso_native_adapter::NativeModuleRegistry;
+
+let native = NativeModuleRegistry::new()
+    .with_factory(example_greeter::GreeterFactory);
+```
+
+组装 Kernel 与 `TokioDriver` 时，把该 Registry 作为原生 Execution Adapter
+传入。相同 Package Identity 注册两个 Factory 会报错；漏掉 Plan 选中的 Factory
+会得到 `MissingModuleFactory`。
+
+:::warning
+`lenso check` 和 `lenso resolve` 可以校验原生包，但通用 CLI 无法动态链接任意
+Rust Factory。原生 App Binary 必须像上面一样静态注册 Factory。`lenso run`
+可以直接执行 Bun Entrypoint；原生自动链接尚未实现。
 :::
+
+## 使用依赖的 Capability
+
+生成的 Client 只能解析 Composition 中显式绑定的依赖：
+
+```rust
+use crate::generated::{GreetRequest, GreetingClient};
+use lenso_kernel::{ModuleDependencies, RuntimeFailure};
+
+fn client(dependencies: &ModuleDependencies) -> Result<GreetingClient, RuntimeFailure> {
+    GreetingClient::from_dependencies(dependencies)
+}
+
+async fn call(client: &GreetingClient) {
+    let response = client.greet(GreetRequest { name: "Ada".into() }).await;
+    // 在这里分别处理 Domain Failure 与 Runtime Failure。
+    println!("{response:?}");
+}
+```
+
+生成的 Stream / Event Endpoint 分别使用
+`NativeModuleInstance::with_stream_endpoints`、`with_event_endpoints` 或
+`with_all_endpoints`。持续维护的
+[Request 生成物 fixture](https://github.com/LioRael/lenso-cli/blob/main/crates/lenso-authoring/tests/fixtures/contracts/greeting/src/generated.rs)
+给出了准确的 Provider、Endpoint 与 Client 签名。

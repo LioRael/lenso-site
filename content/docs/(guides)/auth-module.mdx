@@ -1,0 +1,227 @@
+---
+title: Auth Module
+description: Authenticate adapter-selected credentials, propagate a signed ActorAssertion, and authorize inside the target Module.
+---
+
+Auth is an ordinary bound Capability, not ambient Kernel middleware. The current
+contract is `lenso.auth@1` with one `authenticate` Request Operation.
+
+```text
+Ingress Adapter -> CredentialEvidence -> Auth Module
+               <- absent | signed ActorAssertion | Domain Error
+Target Module  <- verified, audience-limited assertion
+```
+
+## Authenticate selected evidence
+
+An HTTP Adapter may select a bearer token, but headers and cookies do not enter
+the Auth contract. Invoke the bound Capability with protocol-neutral evidence:
+
+```rust
+use lenso_auth_sdk::{
+    AuthOutcome, CredentialEvidence, authenticate_request, decode_auth_response,
+};
+use lenso_capability_auth::{Auth, AUTHENTICATE_OPERATION};
+
+let response = app
+    .invoke::<Auth>(
+        "api-ingress",
+        AUTHENTICATE_OPERATION,
+        authenticate_request(Some(CredentialEvidence::new("bearer", token))),
+    )
+    .await??;
+
+match decode_auth_response(response)? {
+    AuthOutcome::Absent => { /* continue anonymously or reject */ }
+    AuthOutcome::Authenticated(assertion) => {
+        // Attach it only to the downstream invocation being authorized.
+        let context = assertion.attach(app.invocation_context(None, cancellation))?;
+    }
+}
+```
+
+The typed Domain Errors are `invalid`, `expired`, `revoked`, and `unsupported`.
+Transport failures, deadlines, and unavailable providers remain Runtime
+Failures.
+
+## Authorize in the target Rust Module
+
+Define the actor type the target actually needs, then verify issuer, Ed25519
+proof, audience, and validity before projection:
+
+```rust
+use lenso_auth_sdk::{
+    ActorAssertion, ActorAssertionVerifier, ActorProjectionError, FixedClock,
+    TypedActor,
+};
+
+#[derive(Debug, Eq, PartialEq)]
+struct OrdersActor { user_id: String }
+
+impl TypedActor for OrdersActor {
+    fn from_assertion(
+        assertion: &ActorAssertion,
+    ) -> Result<Self, ActorProjectionError> {
+        if assertion.actor_kind() != "user" {
+            return Err(ActorProjectionError::UnexpectedActorKind {
+                expected: "user".into(),
+                actual: assertion.actor_kind().into(),
+            });
+        }
+        Ok(Self { user_id: assertion.subject().into() })
+    }
+}
+
+let verifier = ActorAssertionVerifier::from_public_key_base64(
+    "auth.api-token",
+    configured_public_key,
+)?;
+let actor = verifier.project_context::<OrdersActor>(
+    &context,
+    "orders.api@1",
+    "read",
+    &FixedClock::new(now),
+)?;
+```
+
+The expected audience is exactly `orders.api@1:read`. A target receives the
+public verification key, never the Auth signing key.
+
+## Issue and revoke API tokens
+
+The first concrete Provider is the PostgreSQL-backed API Token Module. Schema
+setup and token operations are explicit operator work, not App boot side
+effects:
+
+```rust
+use std::collections::BTreeMap;
+use lenso_auth_api_token_module::{ApiTokenAuthOperator, IssueApiToken};
+use time::{Duration, OffsetDateTime};
+
+ApiTokenAuthOperator::setup(database_url, "auth_api").await?;
+let operator = ApiTokenAuthOperator::connect(database_url, "auth_api").await?;
+let issued = operator.issue(token_pepper, IssueApiToken {
+    subject: "user-123".into(),
+    actor_kind: "user".into(),
+    assurance: "api-token".into(),
+    audience: vec!["orders.api@1:read".into()],
+    claims: BTreeMap::new(),
+    expires_at: OffsetDateTime::now_utc() + Duration::days(30),
+}).await?;
+
+let token = issued.expose_secret(); // show once; Debug redacts it
+operator.revoke_session(issued.session_id()).await?;
+```
+
+The database stores only a keyed token digest and checks durable token/session
+revocation on every authentication.
+
+## Implement another Auth Provider
+
+Implement the generated `AuthProvider::authenticate` trait and expose it through
+`AuthEndpoint`. A provider must:
+
+1. accept only schemes it explicitly supports;
+2. return `absent` when no evidence was selected;
+3. map credential outcomes to the four typed Domain Errors;
+4. issue a short-lived assertion for exact Capability/Operation audiences; and
+5. keep credential stores, revocation, and signing material private.
+
+OAuth, password, cookie, and Organization/RBAC behavior are not currently
+implemented by `lenso.auth@1`. They should be separate ingress or Provider
+Modules behind this same Capability, not new Kernel behavior.
+
+## Bun target Modules
+
+The Bun Adapter transports sealed invocation extensions unchanged. A Bun target
+must perform the same issuer, Ed25519 proof, audience, and time checks before it
+uses `subject` or claims. The essential target-side check is:
+
+```ts
+type WireExtension = {
+  key: string;
+  value: number[];
+  issuer?: string;
+  audience?: string[];
+  proof?: string;
+  sealed?: boolean;
+};
+type ActorAssertion = {
+  actor_kind: string;
+  assurance: string;
+  audience: string[];
+  claims?: Record<string, unknown>;
+  expires_at: string;
+  issued_at: string;
+  issuer: string;
+  parent_provenance?: string;
+  proof: string;
+  subject: string;
+};
+
+const base64url = (value: string) => new Uint8Array(Buffer.from(value, "base64url"));
+
+async function bindActor(
+  extensions: WireExtension[] | undefined,
+  publicKey: string,
+  issuer: string,
+  capabilityId: string,
+  operation: string,
+  now = new Date(),
+): Promise<ActorAssertion> {
+  const audience = `${capabilityId}:${operation}`;
+  const extension = extensions?.find((value) => value.key === "lenso.auth.actor-assertion");
+  if (!extension?.sealed || extension.issuer !== issuer
+    || !extension.audience?.includes(audience) || !extension.proof
+    || extension.value.length === 0) {
+    throw new Error("actor assertion is not target-bound");
+  }
+  const assertion = JSON.parse(
+    new TextDecoder().decode(new Uint8Array(extension.value)),
+  ) as ActorAssertion;
+  const issuedAt = Date.parse(assertion.issued_at);
+  const expiresAt = Date.parse(assertion.expires_at);
+  if (assertion.issuer !== issuer || assertion.proof !== extension.proof
+    || JSON.stringify(assertion.audience) !== JSON.stringify(extension.audience)
+    || !assertion.audience.includes(audience) || assertion.subject.length === 0
+    || assertion.actor_kind.length === 0 || assertion.assurance.length === 0
+    || !Number.isFinite(issuedAt) || !Number.isFinite(expiresAt)
+    || issuedAt >= expiresAt || now.getTime() < issuedAt || now.getTime() >= expiresAt) {
+    throw new Error("actor assertion is invalid");
+  }
+  const payload = JSON.stringify({
+    actor_kind: assertion.actor_kind,
+    assurance: assertion.assurance,
+    audience: assertion.audience,
+    claims: assertion.claims ?? null,
+    expires_at: assertion.expires_at,
+    issued_at: assertion.issued_at,
+    issuer: assertion.issuer,
+    parent_provenance: assertion.parent_provenance ?? null,
+    subject: assertion.subject,
+  });
+  const key = await crypto.subtle.importKey(
+    "raw", base64url(publicKey), { name: "Ed25519" }, false, ["verify"],
+  );
+  const valid = await crypto.subtle.verify(
+    "Ed25519", key, base64url(assertion.proof), new TextEncoder().encode(payload),
+  );
+  if (!valid) throw new Error("actor assertion proof is invalid");
+  return assertion;
+}
+```
+
+There is not yet a published Bun Auth helper, so keep this logic centralized and
+tested; do not trust `extensions[].value` by decoding JSON alone. The current
+[Rust SDK](https://github.com/LioRael/lenso-auth-module/blob/main/crates/lenso-auth-sdk/src/lib.rs)
+is the semantic source, and the Bun helper must produce the same verification
+result before becoming a public package.
+
+## Current availability
+
+| Component | Source status | Package status |
+| --- | --- | --- |
+| `lenso-capability-auth` | generated `lenso.auth@1` contract | publishable crate |
+| `lenso-auth-sdk` | assertion issue, verify, attenuation, typed projection | publishable crate |
+| API Token Auth Module | PostgreSQL provider, operator workflow, revocation | source implemented; crate intentionally private for now |
+| Bun Auth helper | sealed extensions cross the Adapter | public verifier package not implemented |

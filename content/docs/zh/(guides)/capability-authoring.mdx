@@ -1,0 +1,119 @@
+---
+title: 编写 Capability
+description: 定义 Request、Stream 与 Event 契约，生成 Rust 和 TypeScript 绑定，并检查生成物是否同步。
+---
+
+Capability 是 Consumer 与 Provider 之间的契约。只定义一次，Rust 与 Bun
+Module 都使用同一份 Descriptor 生成的绑定。
+
+## 创建 Request Capability
+
+下面的 Descriptor 定义了一个 `greet` Operation：
+
+```json title="contract/greeting/capability.json"
+{
+  "id": "example.greeting@1",
+  "version": "1.0.0",
+  "portable": true,
+  "cross_lane_transfer": true,
+  "operations": [{
+    "name": "greet",
+    "interaction": "request",
+    "request_schema": "schemas/greet-request.schema.json",
+    "response_schema": "schemas/greet-response.schema.json",
+    "domain_error_schema": "schemas/greet-error.schema.json"
+  }]
+}
+```
+
+引用的三个文件都是普通 JSON Schema。可预期的业务失败应进入 Domain
+Error Schema，不要把运行时异常字符串当作业务结果：
+
+```json title="contract/greeting/schemas/greet-error.schema.json"
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "string",
+  "enum": ["empty_name"]
+}
+```
+
+安装生成器，同时生成 Rust 与 TypeScript 绑定：
+
+```sh
+cargo install lenso-contract-codegen --locked
+lenso-contract-codegen generate \
+  contract/greeting/capability.json \
+  contract/greeting/src/generated.rs \
+  contract/greeting/generated/bindings.ts
+```
+
+生成的 TypeScript 会直接引用 `@lenso/contract-runtime`：
+
+```sh
+bun add @lenso/contract-runtime
+```
+
+CI 应拒绝生成物漂移和不兼容变更：
+
+```sh
+lenso-contract-codegen check \
+  contract/greeting/capability.json \
+  contract/greeting/src/generated.rs \
+  contract/greeting/generated/bindings.ts
+
+lenso-contract-codegen lint old/capability.json contract/greeting/capability.json
+```
+
+## 选择交互形态
+
+| 形态 | Descriptor 值 | 适用场景 | 当前语义 |
+| --- | --- | --- | --- |
+| Request | `"request"` | 只有一个最终结果的命令或查询 | 有界队列、并发上限、Deadline、取消 |
+| Stream | `"stream"` | 双向会话 | 有界消息、两侧独立 half-close、显式最终结果 |
+| Event | `"event"` | 易失性 fan-out | 每个订阅者独立有界准入和部分结果；不保证持久化或重投 |
+
+Stream 与 Event 只需改变 `interaction`。生成器会输出对应的 Rust 和
+TypeScript Provider / Client 类型。
+
+## 在 Composition 中设置容量
+
+容量是 App 策略，不属于可移植 Descriptor。Provider 可以设置 Request
+准入与 Event Mailbox 上限，Binding 还可以覆盖它们：
+
+```json title="lenso.json（节选）"
+{
+  "provides": [{
+    "capability_id": "example.greeting@1",
+    "descriptor_version": "1.0.0",
+    "operations": ["greet"],
+    "operation_kinds": {},
+    "admission": { "queue_capacity": 64, "max_concurrency": 16 },
+    "operation_admissions": {},
+    "event_capacity": 128
+  }]
+}
+```
+
+`event_capacity` 只作用于 Event Operation。队列满时会拒绝准入，不会悄悄
+变成带持久化和重投的 Outbox。
+
+## 把契约加入项目
+
+`lenso check` 会核对 Endpoint 声明与 Descriptor，并检查两份生成物是否最新：
+
+```json title="lenso.json（节选）"
+{
+  "contracts": [{
+    "capability_id": "example.greeting@1",
+    "descriptor_version": "1.0.0",
+    "descriptor": "contract/greeting/capability.json",
+    "rust": "contract/greeting/src/generated.rs",
+    "typescript": "contract/greeting/generated/bindings.ts"
+  }]
+}
+```
+
+可直接参考持续维护的完整 fixture：
+[Request](https://github.com/LioRael/lenso-cli/tree/main/crates/lenso-authoring/tests/fixtures/contracts/greeting)、
+[Stream](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/stream)
+和 [Event](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/event)。
