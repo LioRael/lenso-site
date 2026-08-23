@@ -9,8 +9,8 @@
     "check:docs:upstream": "node scripts/check-docs.mjs && blume validate",
     "check:published": "node scripts/check-published-output.mjs",
     "worker:build": "blume build",
-    "deploy": "pnpm build && wrangler deploy --config dist/server/wrangler.json",
-    "deploy:dry-run": "pnpm build && wrangler deploy --config dist/server/wrangler.json --dry-run",
+    "deploy": "pnpm build && wrangler deploy",
+    "deploy:dry-run": "pnpm build && wrangler deploy --dry-run",
     "dev": "blume dev",
     "preview": "blume preview",
     "start": "blume preview"
@@ -23,7 +23,6 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@astrojs/cloudflare": "14.1.4",
     "typescript": "7.0.2",
     "wrangler": "^4.125.0"
   },

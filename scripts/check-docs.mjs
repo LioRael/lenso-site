@@ -59,15 +59,18 @@ if (/^  openapi:/mu.test(config)) {
 }
 
 for (const marker of [
-  'output: "server"',
-  'adapter: "cloudflare"',
+  'output: "static"',
   'openInChat: ["claude", "chatgpt", "cursor"]',
   "agentReadability: true",
-  "webmcp: true",
-  'route: "/mcp"',
 ]) {
   if (!config.includes(marker)) {
     failures.push(`blume.config.ts: missing agent configuration ${JSON.stringify(marker)}`);
+  }
+}
+
+for (const marker of ["webmcp:", "mcp:", 'route: "/mcp"']) {
+  if (config.includes(marker)) {
+    failures.push(`blume.config.ts: Lenso does not publish MCP configuration ${JSON.stringify(marker)}`);
   }
 }
 

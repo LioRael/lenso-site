@@ -42,14 +42,6 @@ export default defineConfig({
       openapi: true,
     },
     openInChat: ["claude", "chatgpt", "cursor"],
-    mcp: {
-      enabled: true,
-      route: "/mcp",
-      name: "Lenso Documentation",
-      instructions:
-        "Use the task-oriented Start, Build, and Operate pages first. Treat Implementation status as the authority for current support, and use Concepts or Reference only when the task crosses that boundary. Answer in the reader's language and cite the pages used.",
-    },
-    webmcp: true,
   },
   markdown: {
     imageZoom: true,
@@ -78,8 +70,7 @@ export default defineConfig({
     structuredData: true,
   },
   deployment: {
-    output: "server",
-    adapter: "cloudflare",
+    output: "static",
     site: "https://lenso.dev",
   },
   basePath: "/docs",

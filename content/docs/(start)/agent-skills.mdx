@@ -10,29 +10,17 @@ and stop only when the requested behavior is observable.
 The skills guide development work. They are not runtime plugins, do not add an
 Agent Module to an App, and do not grant an agent production authority.
 
-## Connect the documentation
+## Load the documentation
 
-Connect the read-only Lenso documentation MCP server so an agent can search the
-task guides, retrieve clean Markdown, and inspect navigation without scraping
-HTML:
+Start from `https://lenso.dev/llms.txt`, read the small page index, then load
+only the relevant `.md` pages. Use `llms-full.txt` only when a client cannot
+retrieve pages incrementally. `agent-readability.json` describes the published
+artifacts for tools that need a machine-readable entry point.
 
-```sh
-# Codex
-codex mcp add lenso-docs --url https://lenso.dev/mcp
-
-# Claude Code
-claude mcp add --transport http lenso-docs https://lenso.dev/mcp
-```
-
-Cursor and VS Code install links are available from the **Connect to MCP** menu
-on every documentation page. Agents that cannot use MCP can start from
-`https://lenso.dev/llms.txt`, fetch the smaller page index first, then load only
-the relevant `.md` pages. `llms-full.txt` is a last resort when a client cannot
-retrieve pages incrementally.
-
-The MCP server and Markdown files provide current product knowledge. The
-skills below provide the execution process. Use both: documentation tells the
-agent what exists; a skill tells it how to finish one class of change.
+These files provide current product knowledge. The skills below provide the
+execution process. Use both: documentation tells the agent what exists; a skill
+tells it how to finish one class of change. Lenso does not expose an MCP server;
+the published files are documentation artifacts, not runtime protocols.
 
 ## Install the catalog
 
@@ -125,7 +113,7 @@ names that should come from the selected package source.
   description="Copy a complete Lenso implementation request."
   actions={["copy", "cursor"]}
 >
-  Use the Lenso documentation MCP server and $lenso-start to route this request.
+  Read https://lenso.dev/llms.txt and use $lenso-start to route this request.
   Outcome: [who can do what]. Authority: [repository, existing package,
   Capability, and App Composition if known]. Constraints: [language, host,
   compatibility, security, and delivery limits]. Completion: prove one useful

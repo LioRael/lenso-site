@@ -3,7 +3,7 @@
 The Lenso public documentation, built with
 [Blume](https://useblume.dev). Markdown and MDX under `content/docs` are the
 source of truth for readers, search, `llms.txt`, raw Markdown routes, and the
-MCP-ready content model.
+agent-readable content model.
 
 The documentation tree describes the current Lenso architecture only. Retired product generations
 are intentionally excluded from the public site.

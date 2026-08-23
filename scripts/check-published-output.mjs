@@ -16,9 +16,6 @@ if (existsSync(join(outputRoot, "index.html"))) {
 }
 
 for (const file of [
-  ".well-known/api-catalog",
-  ".well-known/mcp.json",
-  ".well-known/mcp/server-card.json",
   "agent-readability.json",
   "blume-search.json",
   "llms.txt",
@@ -28,27 +25,15 @@ for (const file of [
   if (!existsSync(join(outputRoot, file))) failures.push(`dist/${file}: missing`);
 }
 
-for (const file of ["server/wrangler.json", "server/entry.mjs"]) {
-  if (!existsSync(join(distRoot, file))) failures.push(`dist/${file}: missing server artifact`);
-}
-
-const wranglerOutput = join(distRoot, "server/wrangler.json");
-if (existsSync(wranglerOutput)) {
-  const generated = JSON.parse(readFileSync(wranglerOutput, "utf8"));
-  const workerFirst = generated.assets?.run_worker_first;
-  if (!Array.isArray(workerFirst) || !workerFirst.includes("/mcp")) {
-    failures.push("dist/server/wrangler.json: /mcp must run through the Worker");
-  }
+for (const file of [".well-known/mcp.json", ".well-known/mcp/server-card.json"]) {
+  if (existsSync(join(outputRoot, file))) failures.push(`dist/${file}: Lenso must not publish MCP metadata`);
 }
 
 const agentManifest = join(outputRoot, "agent-readability.json");
 if (existsSync(agentManifest)) {
   const generated = JSON.parse(readFileSync(agentManifest, "utf8"));
-  if (generated.artifacts?.mcp?.url !== "https://lenso.dev/mcp") {
-    failures.push("dist/agent-readability.json: missing canonical MCP endpoint");
-  }
-  if (generated.artifacts?.markdown?.contentNegotiation !== "text/markdown") {
-    failures.push("dist/agent-readability.json: missing Markdown content negotiation");
+  if (generated.artifacts?.mcp) {
+    failures.push("dist/agent-readability.json: Lenso must not advertise an MCP endpoint");
   }
 }
 
