@@ -9,17 +9,32 @@ query、transaction 边界、备份与保留策略以及专用数据库 role 仍
 
 ## 定义并安装 schema
 
-Migration 是不可变、有序并与 Module 一起链接的：
+把 SQL 放在所属 Module 的 `migrations/` 目录中；Rust 只保留显式版本、名称和文件
+顺序：
+
+```text
+orders-module/
+├── migrations/
+│   ├── 001_create_orders.sql
+│   └── 002_add_order_status.sql
+└── src/lib.rs
+```
+
+```sql title="migrations/001_create_orders.sql"
+CREATE TABLE orders (
+    id bigint PRIMARY KEY,
+    total_cents bigint NOT NULL
+);
+```
 
 ```rust
-use lenso_postgres_kit::{Migration, OwnedPostgres, SchemaOperator, SchemaPlan};
+use lenso_postgres_kit::{
+    Migration, OwnedPostgres, SchemaOperator, SchemaPlan, sql_migrations,
+};
 
-const MIGRATIONS: &[Migration] = &[
-    Migration::new(
-        1,
-        "create-orders",
-        "CREATE TABLE orders (id bigint PRIMARY KEY, total_cents bigint NOT NULL)",
-    ),
+const MIGRATIONS: &[Migration] = sql_migrations![
+    (1, "create-orders", "migrations/001_create_orders.sql"),
+    (2, "add-order-status", "migrations/002_add_order_status.sql"),
 ];
 
 async fn install(database_url: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -35,13 +50,17 @@ async fn prepare(database_url: &str) -> Result<OwnedPostgres, Box<dyn std::error
 }
 ```
 
+路径相对于所属 crate 的 `Cargo.toml`。`sql_migrations!` 使用 `include_str!` 在编译期
+嵌入 SQL：文件缺失会直接编译失败，文件变化会触发重编译；运行时不会扫描目录。
+版本和名称仍然显式，因此顺序、连续版本校验和 checksum 漂移检测保持确定。
+
 `install` 必须作为显式安装或部署操作执行，不能放在 Module `prepare` 中。
 `OwnedPostgres::prepare` 成功后，通过 `postgres.pool()` 使用普通 SQLx query 与
 transaction。pool 会把自有 schema 选为 `search_path`。
 
 ## 显式升级
 
-追加 migration 2，不要修改 migration 1。新的 Module generation 会先返回
+追加新的 SQL 文件和声明项，不要修改已经应用的文件。新的 Module generation 会先返回
 `PostgresKitError::UpgradeRequired`；停止所属 Module，执行 operator action，再
 prepare 新 generation：
 

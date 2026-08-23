@@ -10,17 +10,32 @@ boundaries, backup and retention policy, and dedicated database role.
 
 ## Define and set up the schema
 
-Migrations are immutable, ordered, and linked with the Module:
+Keep SQL in the owning Module's `migrations/` directory. Rust retains only the
+explicit version, name, and file order:
+
+```text
+orders-module/
+├── migrations/
+│   ├── 001_create_orders.sql
+│   └── 002_add_order_status.sql
+└── src/lib.rs
+```
+
+```sql title="migrations/001_create_orders.sql"
+CREATE TABLE orders (
+    id bigint PRIMARY KEY,
+    total_cents bigint NOT NULL
+);
+```
 
 ```rust
-use lenso_postgres_kit::{Migration, OwnedPostgres, SchemaOperator, SchemaPlan};
+use lenso_postgres_kit::{
+    Migration, OwnedPostgres, SchemaOperator, SchemaPlan, sql_migrations,
+};
 
-const MIGRATIONS: &[Migration] = &[
-    Migration::new(
-        1,
-        "create-orders",
-        "CREATE TABLE orders (id bigint PRIMARY KEY, total_cents bigint NOT NULL)",
-    ),
+const MIGRATIONS: &[Migration] = sql_migrations![
+    (1, "create-orders", "migrations/001_create_orders.sql"),
+    (2, "add-order-status", "migrations/002_add_order_status.sql"),
 ];
 
 async fn install(database_url: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -36,13 +51,19 @@ async fn prepare(database_url: &str) -> Result<OwnedPostgres, Box<dyn std::error
 }
 ```
 
+Paths are relative to the owning crate's `Cargo.toml`. `sql_migrations!` uses
+`include_str!` to embed SQL at compile time: a missing file is a compile error,
+and an edit triggers recompilation; no directory is scanned at runtime. Versions
+and names stay explicit, preserving deterministic order, contiguous-version
+validation, and checksum drift detection.
+
 Run `install` as an explicit installation or deployment operation, never from
 Module `prepare`. After `OwnedPostgres::prepare`, use `postgres.pool()` with normal SQLx queries
 and transactions. The pool selects the owned schema as its `search_path`.
 
 ## Upgrade deliberately
 
-Append migration 2 without editing migration 1. The new Module generation first
+Append a new SQL file and declaration without editing an applied file. The new Module generation first
 returns `PostgresKitError::UpgradeRequired`; stop the owning Module, run the
 operator action, then prepare the new generation:
 
