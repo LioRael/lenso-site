@@ -7,6 +7,27 @@ Native Rust Modules implement generated Provider traits and register a factory
 with `lenso-native-adapter`. They are statically linked; the runtime does not
 scan Cargo packages at boot.
 
+## Create a standalone native project
+
+```sh
+lenso module create greeting --runtime rust
+cd greeting
+lenso module check
+lenso module dev
+lenso module verify
+```
+
+The atomic scaffold contains the Capability Descriptor and generated Rust and
+TypeScript bindings, Provider, `NativeModuleFactory`, App Composition, package
+lock, verification manifest, Module card, and a development Runner that
+statically registers the generated factory. `module dev` infers
+`lenso.native-rust@1`, resolves a fresh Plan after relevant source changes, and
+restarts that Runner.
+
+Use `--recipe stateless`, `stateful`, `web-console`, or `managed-work` to seed a
+focused Module card. The card is design evidence, not a second runtime manifest;
+replace every `TODO` before treating it as complete.
+
 ## Implement the generated Provider
 
 Assume the `example.greeting@1` Descriptor from
@@ -91,11 +112,28 @@ and `TokioDriver`. Registering two factories with the same package identity is
 an error; omitting the selected factory produces `MissingModuleFactory`.
 
 :::warning
-`lenso check` and `lenso resolve` validate native packages, but the generic CLI
-cannot dynamically link an arbitrary Rust factory. A native App binary must
-statically register its factories as shown above. `lenso run` is directly
-executable for Bun entrypoints; native auto-linking is not implemented.
+The generic CLI cannot dynamically link an arbitrary Rust factory. The
+standalone scaffold solves local development with a generated, statically
+linked development Runner; a production App binary must still register its
+selected factories explicitly. `lenso run` remains directly executable for Bun
+entrypoints.
 :::
+
+## Check evolution and prove removal
+
+`lenso module check` reports the owning layer, input path, and repair action for
+contract freshness, package-lock, execution, configuration, and Composition
+failures. `lenso module verify` runs the declared package, success, Domain Error,
+Runtime Failure, and lifecycle probes, resolves the real project, then removes
+the selected Instance and its required dependent chain and resolves the
+remainder. It writes `.lenso/module-verification.json` for CI and agents.
+
+Preview a Capability change before regenerating bindings:
+
+```sh
+lenso capability diff accepted.json contracts/greeting/capability.json \
+  --project lenso.json
+```
 
 ## Consume a required Capability
 

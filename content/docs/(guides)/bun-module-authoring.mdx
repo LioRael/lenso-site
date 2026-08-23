@@ -33,7 +33,7 @@ Provider, App Composition, and Bun workspace with one command:
 ```sh
 lenso module create greeting --runtime bun
 cd greeting
-lenso module dev --bun
+lenso module dev
 ```
 
 By default, creation stages the entire project, runs `bun install` and the
@@ -108,7 +108,7 @@ remain operational failures and are mapped truthfully at the Adapter boundary.
 Run the development loop from the project root:
 
 ```sh
-lenso module dev --bun
+lenso module dev
 # equivalent workspace script
 bun run dev
 ```
@@ -123,8 +123,8 @@ Ctrl-C performs cooperative shutdown.
 Use an alternate executable or project document only when needed:
 
 ```sh
-lenso module dev --bun --bun-bin /opt/bun/bin/bun
-lenso module dev --bun --project path/to/lenso.json
+lenso module dev --bun-bin /opt/bun/bin/bun
+lenso module dev --project path/to/lenso.json
 ```
 
 ## Check and resolve
@@ -135,6 +135,7 @@ The scaffold provides the repeatable CI commands:
 bun run typecheck
 bun run check
 bun run resolve
+lenso module verify
 ```
 
 `check` validates the Descriptor, checked-in generated bindings, package lock,

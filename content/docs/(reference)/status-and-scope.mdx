@@ -21,7 +21,7 @@ high-level starter.
 | Path | Request | Stream | Event | How it runs today |
 | --- | --- | --- | --- | --- |
 | Native Rust | implemented | implemented | implemented | statically register `NativeModuleFactory` values in the App binary |
-| Bun / TypeScript | public typed SDK | Adapter conformance only | Adapter conformance only | `lenso module dev --bun` and `lenso run` start entrypoints through `lenso.bun-process@1`; production wire is JSON-RPC over loopback HTTP |
+| Bun / TypeScript | public typed SDK | Adapter conformance only | Adapter conformance only | `lenso module dev` infers the project and starts entrypoints through `lenso.bun-process@1`; production wire is JSON-RPC over loopback HTTP |
 | Browser JavaScript Driver | scheduler/lifecycle smoke evidence | Kernel semantics apply | Kernel semantics apply | host profile; not hostile-code isolation |
 | WASIp2 Driver | scheduler/lifecycle smoke evidence | Kernel semantics apply | Kernel semantics apply | host profile; component packaging is not a starter workflow yet |
 

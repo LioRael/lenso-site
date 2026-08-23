@@ -6,6 +6,25 @@ description: 实现生成的 Capability Provider，并注册静态链接的原�
 原生 Rust Module 实现生成的 Provider Trait，并向 `lenso-native-adapter`
 注册 Factory。它们通过静态链接进入 App；运行时不会在启动时扫描 Cargo 包。
 
+## 创建独立原生项目
+
+```sh
+lenso module create greeting --runtime rust
+cd greeting
+lenso module check
+lenso module dev
+lenso module verify
+```
+
+原子脚手架会生成 Capability Descriptor、Rust / TypeScript Binding、Provider、
+`NativeModuleFactory`、App Composition、Package Lock、验证清单、Module Card，
+以及静态注册该 Factory 的开发 Runner。`module dev` 会自动识别
+`lenso.native-rust@1`；相关源码变化后，它会重新解析 Fresh Plan 并重启 Runner。
+
+可通过 `--recipe stateless`、`stateful`、`web-console` 或 `managed-work`
+生成聚焦的 Module Card。Card 是设计证据，不是第二份运行时 Manifest；所有
+`TODO` 完成前都不应把它视为最终设计。
+
 ## 实现生成的 Provider
 
 假设 [编写 Capability](/docs/zh/capability-authoring) 中的
@@ -89,10 +108,25 @@ let native = NativeModuleRegistry::new()
 会得到 `MissingModuleFactory`。
 
 :::warning
-`lenso check` 和 `lenso resolve` 可以校验原生包，但通用 CLI 无法动态链接任意
-Rust Factory。原生 App Binary 必须像上面一样静态注册 Factory。`lenso run`
-可以直接执行 Bun Entrypoint；原生自动链接尚未实现。
+通用 CLI 无法动态链接任意 Rust Factory。独立脚手架通过生成的静态链接开发
+Runner 解决本地开发问题；生产 App Binary 仍必须显式注册选中的 Factory。
+`lenso run` 继续可以直接执行 Bun Entrypoint。
 :::
+
+## 检查演进并证明可删除
+
+`lenso module check` 会针对 Contract Freshness、Package Lock、Execution、配置与
+Composition 错误，报告所属层、输入路径和修复动作。`lenso module verify` 会运行
+已声明的 Package、Success、Domain Error、Runtime Failure 与 Lifecycle Probe，
+解析真实项目，然后移除指定 Instance 及其必需依赖链并重新解析剩余部分。结果写入
+`.lenso/module-verification.json`，可供 CI 和 Agent 使用。
+
+重新生成 Binding 前，可先预览 Capability 变化：
+
+```sh
+lenso capability diff accepted.json contracts/greeting/capability.json \
+  --project lenso.json
+```
 
 ## 使用依赖的 Capability
 
