@@ -31,7 +31,7 @@ App Composition 与 Bun Workspace：
 ```sh
 lenso module create greeting --runtime bun
 cd greeting
-lenso module dev --bun
+lenso module dev
 ```
 
 默认情况下，创建过程会先在暂存目录生成完整项目，执行 `bun install` 与
@@ -104,7 +104,7 @@ Adapter 边界被如实映射。
 在项目根目录启动开发循环：
 
 ```sh
-lenso module dev --bun
+lenso module dev
 # 等价的 Workspace Script
 bun run dev
 ```
@@ -118,8 +118,8 @@ Fresh Generation。类型、Contract 或启动失败不会退出 Watcher，修�
 只有需要覆盖默认值时才指定 Bun 或项目文件：
 
 ```sh
-lenso module dev --bun --bun-bin /opt/bun/bin/bun
-lenso module dev --bun --project path/to/lenso.json
+lenso module dev --bun-bin /opt/bun/bin/bun
+lenso module dev --project path/to/lenso.json
 ```
 
 ## 检查与解析
@@ -130,6 +130,7 @@ lenso module dev --bun --project path/to/lenso.json
 bun run typecheck
 bun run check
 bun run resolve
+lenso module verify
 ```
 
 `check` 校验 Descriptor、已提交的生成 Binding、Package Lock、Entrypoint、

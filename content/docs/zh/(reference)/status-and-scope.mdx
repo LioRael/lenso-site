@@ -20,7 +20,7 @@ Interaction 或完整生产 App 都已有高层 Starter。
 | 路径 | Request | Stream | Event | 当前运行方式 |
 | --- | --- | --- | --- | --- |
 | 原生 Rust | 已实现 | 已实现 | 已实现 | 在 App Binary 中静态注册 `NativeModuleFactory` |
-| Bun / TypeScript | 公开类型化 SDK | 仅 Adapter Conformance | 仅 Adapter Conformance | `lenso module dev --bun` 与 `lenso run` 通过 `lenso.bun-process@1` 启动 Entrypoint；正式 Wire 是 Loopback HTTP 上的 JSON-RPC |
+| Bun / TypeScript | 公开类型化 SDK | 仅 Adapter Conformance | 仅 Adapter Conformance | `lenso module dev` 自动识别项目，并通过 `lenso.bun-process@1` 启动 Entrypoint；正式 Wire 是 Loopback HTTP 上的 JSON-RPC |
 | Browser JavaScript Driver | 有 Scheduler / Lifecycle Smoke Evidence | 使用 Kernel 语义 | 使用 Kernel 语义 | Host Profile；不提供敌对代码隔离 |
 | WASIp2 Driver | 有 Scheduler / Lifecycle Smoke Evidence | 使用 Kernel 语义 | 使用 Kernel 语义 | Host Profile；Component Packaging 还不是 Starter Workflow |
 

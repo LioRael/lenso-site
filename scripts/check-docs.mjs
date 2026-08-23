@@ -95,12 +95,12 @@ for (const [file, markers] of [
   ]],
   ["content/docs/(guides)/bun-module-authoring.mdx", [
     "lenso module create greeting --runtime bun",
-    "lenso module dev --bun",
+    "lenso module dev",
     "@lenso/bun-module",
   ]],
   ["content/docs/zh/(guides)/bun-module-authoring.mdx", [
     "lenso module create greeting --runtime bun",
-    "lenso module dev --bun",
+    "lenso module dev",
     "@lenso/bun-module",
   ]],
 ]) {
