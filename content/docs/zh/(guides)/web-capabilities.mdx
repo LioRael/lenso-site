@@ -90,25 +90,23 @@ path 与稳定的 `operationId`：
 #[endpoint]
 impl OrdersHttp {
     #[get("orders.read", "/orders/{order_id}")]
-    #[openapi(
-        r#"{
-          "summary": "Read an order",
-          "responses": {
+    #[openapi({
+        summary: "Read an order",
+        responses: {
             "200": {
-              "description": "Order",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "required": ["id"],
-                    "properties": {"id": {"type": "string"}}
-                  }
+                description: "Order",
+                content: {
+                    "application/json": {
+                        schema: {
+                            "type": "object",
+                            required: ["id"],
+                            properties: { id: { "type": "string" } }
+                        }
+                    }
                 }
-              }
             }
-          }
-        }"#
-    )]
+        }
+    })]
     async fn read(
         &self,
         Path(path): Path<OrderPath>,
@@ -119,9 +117,15 @@ impl OrdersHttp {
 }
 ```
 
-macro 会校验 JSON，并拒绝作者另行提供可能与稳定 route ID 漂移的 `operationId`。
-method 与 path 始终来自 route declaration。没有 OpenAPI metadata 的 route 仍然
-有效；被纳入文档时，assembler 会为它补上最小 fallback response。
+JSON-like DSL 的普通 identifier key 不需要引号；`"type"`、
+`"application/json"`、`"$ref"` 等 key 仍使用引号。原有 raw JSON string 写法继续
+兼容，`http_endpoint!` route table 也可以使用
+`openapi = openapi_operation!({ ... })`。macro 会在编译期校验 DSL，并拒绝作者另行
+提供可能与稳定 route ID 漂移的 `operationId`。method 与 path 始终来自 route
+declaration。
+
+注解本身仍然是可选的。没有 OpenAPI metadata 的 route 依旧有效；只有显式选择的
+OpenAPI Module 把它纳入文档时，assembler 才会为它补上最小 fallback response。
 
 要发布文档，App Composition 必须显式完成三个选择：
 

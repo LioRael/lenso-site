@@ -97,25 +97,23 @@ route declaration authoritative for its method, path, and stable
 #[endpoint]
 impl OrdersHttp {
     #[get("orders.read", "/orders/{order_id}")]
-    #[openapi(
-        r#"{
-          "summary": "Read an order",
-          "responses": {
+    #[openapi({
+        summary: "Read an order",
+        responses: {
             "200": {
-              "description": "Order",
-              "content": {
-                "application/json": {
-                  "schema": {
-                    "type": "object",
-                    "required": ["id"],
-                    "properties": {"id": {"type": "string"}}
-                  }
+                description: "Order",
+                content: {
+                    "application/json": {
+                        schema: {
+                            "type": "object",
+                            required: ["id"],
+                            properties: { id: { "type": "string" } }
+                        }
+                    }
                 }
-              }
             }
-          }
-        }"#
-    )]
+        }
+    })]
     async fn read(
         &self,
         Path(path): Path<OrderPath>,
@@ -126,10 +124,16 @@ impl OrdersHttp {
 }
 ```
 
-The macro validates the JSON and rejects an author-supplied `operationId` that
-could drift from the stable route ID. Method and path always come from the
-route declaration. Routes without OpenAPI metadata remain valid; the document
-assembler gives them a minimal fallback response when they are included.
+The JSON-like DSL accepts ordinary identifier keys without quotes. Quote keys
+such as `"type"`, `"application/json"`, and `"$ref"`. The previous raw JSON
+string form remains compatible, and `http_endpoint!` route tables can use
+`openapi = openapi_operation!({ ... })`. The macros validate the DSL at compile
+time and reject an author-supplied `operationId` that could drift from the
+stable route ID. Method and path always come from the route declaration.
+
+The annotation itself remains optional. Routes without OpenAPI metadata are
+valid and receive a minimal fallback response only if an explicitly selected
+OpenAPI Module includes them in its document.
 
 To publish a document, App Composition must make all three choices explicitly:
 
