@@ -35,12 +35,16 @@ Fixture。主要体验缺口是尚未发布高层 `@lenso/bun` Provider Server S
 | --- | --- | --- |
 | Auth | `lenso.auth@1`、Rust Assertion SDK、PostgreSQL API Token Provider、撤销 | API Token Module Crate 暂时保持私有；缺少 Bun 公开验证器 Helper |
 | Secrets | `lenso.secrets@1` 与 Allowlist Environment Provider | Registry 发布暂停；不含生产 Cloud Provider |
+| 后端 Web | HTTP Endpoint / Ingress 与 HTTP Client / Egress Capability 和 Module | 维护中的 transport provider 是 linked Rust Module；contract 不会自动安装 provider |
+| PostgreSQL Kit | 自有 schema setup / upgrade、漂移检测与已验证 SQLx pool | 基础设施 kit，不是共享 State Module 或跨 Module SQL 边界 |
 | OpenTelemetry | 可移除的 Native Module，以及 Rust / Bun Trace Propagation Fixture | Tracing 是可选 Composition，不是 Kernel 行为 |
 | Web UI | 显式 Shell、Browser Adapter 与 UI Contribution Role，已有 Target-owned Composition Evidence | 不是通用远程代码 Sandbox，也不是独立 Console 产品 |
 
 [Auth Module](/docs/zh/auth-module)列出了准确的已实现 Provider 与缺失项；
 [编写 Bun Module](/docs/zh/bun-module-authoring)给出当前可执行路径，不需要从仓库名
-猜测支持程度。
+猜测支持程度。[Web Capabilities](/docs/zh/web-capabilities)、
+[Secrets Module](/docs/zh/secrets-module)与
+[PostgreSQL Kit](/docs/zh/postgres-kit)给出具体 contract 与 lifecycle 边界。
 
 ## 尚未实现
 
