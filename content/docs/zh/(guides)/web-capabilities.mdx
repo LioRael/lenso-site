@@ -11,6 +11,8 @@ description: 通过显式 Capability binding 发布后端 HTTP endpoint，并调
 flowchart LR
   H[HTTP client] --> I[Web Ingress]
   I --> E[HTTP Endpoint providers]
+  I --> O[可选 OpenAPI document]
+  O -. 显式绑定的 descriptions .-> E
   M[Business Module] --> C[HTTP Client Capability]
   C --> X[HTTP Egress]
   X --> U[Allowed upstream]
@@ -77,6 +79,79 @@ Endpoint 拥有 HTTP 形态的业务行为。Web Ingress 拥有 listener 与协�
 继续走 Endpoint error path。需要 `Location`、`WWW-Authenticate` 或其他显式 header
 时，使用接收已校验 `http` header name/value 的 `HandleResponse::with_header`。只有
 少见的二进制响应体才需要直接构造生成的 wire DTO。
+
+## 添加可选 OpenAPI 文档
+
+OpenAPI 支持是普通的 opt-in Module，不是 Ingress 设置。Endpoint 作者可以给 route
+附加 OpenAPI 3.1 Operation Object，同时继续由 route declaration 权威定义 method、
+path 与稳定的 `operationId`：
+
+```rust title="src/http.rs"
+#[endpoint]
+impl OrdersHttp {
+    #[get("orders.read", "/orders/{order_id}")]
+    #[openapi(
+        r#"{
+          "summary": "Read an order",
+          "responses": {
+            "200": {
+              "description": "Order",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "required": ["id"],
+                    "properties": {"id": {"type": "string"}}
+                  }
+                }
+              }
+            }
+          }
+        }"#
+    )]
+    async fn read(
+        &self,
+        Path(path): Path<OrderPath>,
+    ) -> Result<HandleResponse, EndpointHandleInvocationError> {
+        // 业务 Endpoint 仍是最终权威。
+        self.read_order(path.order_id).await
+    }
+}
+```
+
+macro 会校验 JSON，并拒绝作者另行提供可能与稳定 route ID 漂移的 `operationId`。
+method 与 path 始终来自 route declaration。没有 OpenAPI metadata 的 route 仍然
+有效；被纳入文档时，assembler 会为它补上最小 fallback response。
+
+要发布文档，App Composition 必须显式完成三个选择：
+
+1. 把已发布的 `lenso-openapi` crate 选为一个 `lenso.openapi` Instance。
+2. 把需要写入文档的 Endpoint provider 绑定到该 Instance 的 `many`
+   `lenso.http.endpoint@1` requirement。
+3. 把 OpenAPI Instance 自己提供的 HTTP Endpoint 绑定到 Web Ingress。
+
+生成的 OpenAPI 3.1 文档只包含这个显式绑定的子集。Module 不会全局发现 provider，
+也不会从 listener 推断公开 server URL。不可变 configuration 控制文档 metadata 与
+静态 route：
+
+```json title="lenso.openapi configuration"
+{
+  "title": "Orders API",
+  "version": "1.0.0",
+  "description": "Public order operations",
+  "document_path": "/openapi.json",
+  "servers": [{"url": "https://api.example.com"}],
+  "components": {
+    "securitySchemes": {
+      "bearer": {"type": "http", "scheme": "bearer"}
+    }
+  }
+}
+```
+
+这里有意不提供 `enabled` 字段。删除 `lenso.openapi` Instance 及其 binding 就会移除
+`/openapi.json`，不会改动业务 Endpoint 或 Web Ingress。Swagger UI、Redoc、页面、
+asset 与 navigation 仍属于 App 或 Console 持有的 UI 关注点。
 
 ## 对入站请求进行认证
 

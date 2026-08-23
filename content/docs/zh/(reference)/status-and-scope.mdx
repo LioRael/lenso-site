@@ -36,7 +36,7 @@ Fixture。公开的 `@lenso/bun-module` Package 持有 Module 侧 Server，CLI �
 | --- | --- | --- |
 | Auth | `lenso.auth@1`、Rust Assertion SDK、PostgreSQL API Token Provider、撤销 | API Token Module Crate 暂时保持私有；缺少 Bun 公开验证器 Helper |
 | Secrets | `lenso.secrets@1` 与 Allowlist Environment Provider | Registry 发布暂停；不含生产 Cloud Provider |
-| 后端 Web | HTTP Endpoint / Ingress 与 HTTP Client / Egress Capability 和 Module | 维护中的 transport provider 是 linked Rust Module；contract 不会自动安装 provider |
+| 后端 Web | HTTP Endpoint / Ingress 与 HTTP Client / Egress Capability 和 Module；opt-in OpenAPI 3.1 文档 Module | 维护中的 provider 是 linked Rust Module；OpenAPI 必须显式选择 Instance 与 binding，且不包含 UI |
 | PostgreSQL Kit | 自有 schema setup / upgrade、漂移检测与已验证 SQLx pool | 基础设施 kit，不是共享 State Module 或跨 Module SQL 边界 |
 | OpenTelemetry | 可移除的 Native Module，以及 Rust / Bun Trace Propagation Fixture | Tracing 是可选 Composition，不是 Kernel 行为 |
 | Web UI | 显式 Shell、Browser Adapter 与 UI Contribution Role，已有 Target-owned Composition Evidence | 不是通用远程代码 Sandbox，也不是独立 Console 产品 |

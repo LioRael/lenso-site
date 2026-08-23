@@ -25,7 +25,7 @@ visible.
         "configuration": {},
         "provides": [{
           "capability_id": "lenso.http.endpoint@1",
-          "descriptor_version": "1.0.1",
+          "descriptor_version": "1.1.0",
           "operations": ["describe", "handle"]
         }],
         "requires": [{
@@ -52,7 +52,7 @@ visible.
         "configuration": { "bind_address": "0.0.0.0:8080" },
         "requires": [{
           "capability_id": "lenso.http.endpoint@1",
-          "descriptor_version": "1.0.1",
+          "descriptor_version": "1.1.0",
           "cardinality": "many"
         }]
       }
@@ -67,13 +67,18 @@ visible.
       {
         "consumer": "web",
         "capability_id": "lenso.http.endpoint@1",
-        "descriptor_version": "1.0.1",
+        "descriptor_version": "1.1.0",
         "provider": "orders"
       }
     ]
   }
 }
 ```
+
+HTTP Endpoint Descriptor `1.1.0` compatibly adds optional OpenAPI Operation
+metadata; using that Descriptor does not publish a document by itself. Select
+and bind the optional `lenso.openapi` Module only when the App wants a document,
+as shown in [Web Capabilities](/docs/web-capabilities/#add-an-optional-openapi-document).
 
 `one` must resolve to exactly one provider, `optional` to zero or one, and
 `many` to a deterministic provider list. A Module cannot query a global

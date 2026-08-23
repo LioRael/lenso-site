@@ -81,6 +81,18 @@ for (const marker of ["Resolved App Plan", "Runtime Driver", "Execution Adapter"
 }
 
 for (const [file, markers] of [
+  ["content/docs/(guides)/web-capabilities.mdx", [
+    "lenso-openapi",
+    "There is deliberately no `enabled` field.",
+    "Only that bound subset appears",
+    '"document_path": "/openapi.json"',
+  ]],
+  ["content/docs/zh/(guides)/web-capabilities.mdx", [
+    "lenso-openapi",
+    "这里有意不提供 `enabled` 字段。",
+    "只包含这个显式绑定的子集",
+    '"document_path": "/openapi.json"',
+  ]],
   ["content/docs/(guides)/bun-module-authoring.mdx", [
     "lenso module create greeting --runtime bun",
     "lenso module dev --bun",
