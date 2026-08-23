@@ -1,90 +1,87 @@
 ---
-title: 从这里开始
-description: 组合 Lenso 应用、在本地运行、连接 Console，并读取精确的 System 状态。
+title: 介绍
+description: 了解 Lenso 是什么、为什么使用显式 App Plan，以及运行时边界如何划分。
 ---
 
-Lenso 是面向 Rust 业务系统的 Agent-ready 模块化应用与微服务框架。
-先建立一个明确的应用组合，把业务能力保留为 Linked Module 或
-Provider-backed Module；只有边界需要独立所有权时，才迁移为
-Autonomous Service。
+Lenso 是一个面向模块化应用的本地优先、语言无关运行时。它把应用的 Module、
+Capability 绑定、执行选择与策略解析成不可变的 **Resolved App Plan**，再由一个
+小型可移植 Kernel 执行该 Plan。
 
-公开开发生命周期只有四步。
+核心思想很直接：在启动前决定应用结构，让运行时语义保持显式，并把环境相关
+工作留在宿主边界。
 
-## Compose（组合）
+## 为什么需要 Lenso
 
-从产品蓝图生成唯一的 `lenso.app.json`：
+模块化系统经常难以推理，是因为组合、运行时调度、传输、基础设施和产品行为
+被挤在同一层。最终往往形成隐式依赖发现、随环境变化的生命周期，以及必须等
+应用运行后才能校验的配置。
 
-```sh
-lenso app compose ./support-desk --blueprint support-desk --apply
+Lenso 将这些责任分开：
+
+- **Composition** 选择 Module、绑定 Capability，并生成 Plan。
+- **Kernel** 使用可移植的生命周期规则校验并执行 Plan。
+- **Runtime Driver** 提供调度、时钟、取消与关闭。
+- **Execution Adapter** 把 Kernel 连接到具体的 Module 实现。
+- **Module** 通过类型化 Capability Interface 持有产品行为。
+
+这种拆分让应用结构在执行前即可检查，同时避免宿主机制进入可移植核心。
+
+## 运行时模型
+
+```mermaid
+flowchart TD
+  C[App Composition] --> A[Authoring 与包管理工具]
+  A --> P[Resolved App Plan]
+  P --> K[可移植 Kernel]
+  D[Runtime Driver] --> K
+  K --> E[Execution Adapter]
+  E --> M[Module Instance]
+  M --> Q[Capability: request / stream / event]
 ```
 
-Bare Blueprint 选择 `auth`、`notification-worker` 与 `support-api`。生成文件
-绑定应用修订、制品摘要、依赖选择，以及 Linked 或 Service-backed Module
-实现。它就是应用组合与锁；不要手工把进程命令复制进去。Support Ticket 与
-Story 产品链由 Pack-backed [Support Desk 验收](/docs/zh/examples)覆盖。
+Plan 是完整的执行输入。它记录 Module 身份、Capability 绑定、Execution Class、
+连接、策略，以及应用准入所需的数据。Plan 解析完成后保持不可变；Kernel 不会
+在启动期间发现或改写运行图。
 
-## Run locally（本地运行）
+Kernel 持有图校验、分阶段生命周期、就绪门、调用、取消、监督和有界诊断；
+它不持有网络、文件系统、数据库、进程、Auth、遥测、Console 或业务语义。
 
-通过公开 CLI 启动生成的 Host、auto-start Provider Service 与已连接的本地
-Console：
+## 核心概念
 
-```sh
-cd support-desk
-lenso dev up --console-root ../lenso-console
-```
+| 概念 | 职责 |
+| --- | --- |
+| **App Composition** | 声明应用并选择兼容实现。 |
+| **Resolved App Plan** | 提供运行时接受的规范化、不可变输入。 |
+| **Capability** | 定义带版本的 Interface，以及 request、stream 或 event Operation。 |
+| **Module** | 实现产品行为，并声明它提供或依赖的 Capability。 |
+| **Kernel** | 持有可移植的准入、生命周期、调用、取消和诊断。 |
+| **Runtime Driver** | 提供宿主调度、时间、任务 join、取消和关闭。 |
+| **Execution Adapter** | 在具体环境或传输机制中运行 Module 实现。 |
 
-该命令会创建仅限 loopback 的已签名 Enrollment Material、协调 Module 自有
-UI Artifact，并在报告 System Ready 前连接精确拓扑。本地开发不需要
-Kubernetes。生产发布和部署由外部交付系统持有，不属于 Console 权限。
+## 可移植不等于没有环境差异
 
-## Connect（连接）
+相同的 Kernel 语义可以编译到 Native、浏览器 JavaScript 与 WASIp2 宿主配置。
+每个配置仍然需要 Driver 与兼容的 Execution Adapter。可移植表示 Kernel 不会
+吸收这些宿主机制，并不表示每个 Module 都能在所有环境中原样运行。
 
-`lenso dev up --console-root` 写入 `.lenso/console-connect.json`，再通过经过
-认证的 Console Connection Boundary 应用该精确 Bundle。Bundle 包含已签名的
-本地 Service Enrollment、Topology Digest、Management Binding，以及可选的
-Console Artifact Effect。Console 记录连接并加载与回执绑定的
-`console_ui_esm` Module Surface；它不会创建、部署、接管、删除、发布或修复
-Workload。
+## 当前实现边界
 
-服务端连接边界和浏览器流程请继续阅读
-[Lenso Console](/docs/zh/runtime-console)。
+- `lenso-app-plan` 持有可序列化执行输入。
+- `lenso-kernel` 持有可移植运行时语义与确定性 conformance。
+- `lenso-runtime-conformance` 持有产品无关的运行时验证。
+- Driver、Execution Adapter、协议、可选 Module、Authoring 与示例分别位于
+  独立的所有者仓库。
+- 运行时 discovery、hot graph mutation、distributed placement、自动副本与
+  独立 Console 产品都不是当前运行时承诺。
 
-## Status（状态）
+在[状态与范围](/docs/zh/status-and-scope)中查看已实现、Early-access 与刻意延后
+边界的准确说明。
 
-在 Console 中读取已连接的 System。System、Service、Module、Surface 与
-Adapter Projection 显示 `connected`、`unavailable`、`incompatible` 或
-`unmanaged`，需要处理时会给出直接原因。Workload Operational State 是独立
-维度；控制 Adapter 不可用时，Workload Observation 为 `unknown`，变更会被
-拒绝且不排队、不回退。
-
-## 选择开发路径
+## 下一步
 
 <CardGroup>
-  <Card title="Host 快速开始" href="/docs/zh/quickstart" description="通过受支持的公开生命周期组合并运行一个本地应用。" />
-  <Card title="产品蓝图" href="/docs/zh/product-blueprints" description="生成具备产品形态的 lenso.app.json，并理解其中锁定的选择。" />
-  <Card title="Module 开发" href="/docs/zh/module-authoring" description="使用明确的 Business API 与 Console Surface 构建 Linked 业务能力。" />
-  <Card title="Service Capability Tiers" href="/docs/zh/autonomous-services" description="选择准确的 Provider 或 Autonomous Service 能力层级与支持语言。" />
-  <Card title="Agent 开发" href="/docs/zh/agent-development" description="安装 Lenso Skills，并运行范围明确、可检查的 Agent 工作流。" />
-  <Card title="示例" href="/docs/zh/examples" description="通过公开入口运行 Support Desk 产品级验收。" />
-  <Card title="API 参考" href="/docs/zh/api" description="浏览从 framework 权威合约源同步的 API 参考。" />
+  <Card title="快速开始" href="/docs/zh/quickstart" description="构建可移植核心，查看 Authoring CLI，并跟踪 Plan 从项目输入到执行的过程。" />
+  <Card title="核心架构" href="/docs/zh/architecture" description="理解 Composition、Kernel、Driver 与 Adapter 的所有权边界。" />
+  <Card title="Module 与 Capability" href="/docs/zh/modules-and-capabilities" description="了解如何通过深层、带版本的 Interface 封装产品行为。" />
+  <Card title="开发 Module" href="/docs/zh/module-authoring" description="设计 Capability、实现 Module，并进行显式绑定。" />
 </CardGroup>
-
-## 核心边界
-
-- **Module 保持业务身份。** 能力可以 Linked 交付，也可以由 Service 提供，
-  不需要改名。
-- **Business API 保持强类型。** Module Surface 使用生成客户端和精确的
-  Surface Grant 调用声明的操作。
-- **Console 是 System Plane。** 它报告当前状态并调用目标持有的受支持操作，
-  不是部署平面。
-- **Rust 支持两个服务层级。** TypeScript 当前只支持 Provider 开发；详见
-  [Service Capability Tiers](/docs/zh/autonomous-services)。
-- **只拆分稳定边界。** Autonomous Service 持有自己的运行时、存储、身份与
-  运维，不是默认起点。
-
-## 安装
-
-- Rust Module 与 Host 声明使用当前 `lenso` facade。
-- `@lenso/cli` 与 `lenso-cli` 都提供 `lenso` 命令。
-- TypeScript Provider 使用 `@lenso/service-kit`。
-- Lenso Console 使用 `lenso console install` 独立安装。

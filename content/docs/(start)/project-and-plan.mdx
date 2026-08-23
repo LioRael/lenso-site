@@ -1,0 +1,34 @@
+---
+title: Project and Plan
+description: Separate reviewable authoring choices from the immutable execution input consumed by the Kernel.
+---
+
+Lenso uses two different documents for two different owners.
+
+| Artifact | Owner | Purpose |
+| --- | --- | --- |
+| `lenso.json` | Authoring tools and the App repository | Reviewable Modules, packages, contracts, profiles, configuration, and bindings |
+| Resolved App Plan | `lenso-app-plan` | Canonical, complete, immutable input consumed at boot |
+
+## What the project declares
+
+- keyed Module Instances and entrypoints;
+- explicit Capability requirements and provider bindings;
+- execution classes and optional placement;
+- ordinary Cargo, Bun, npm, or OCI package inputs;
+- exact Capability Descriptors and generated binding artifacts;
+- non-secret configuration and explicit `secret_ref` values; and
+- optional Web profiles that select a Shell, Browser Adapter, and UI Contributions.
+
+There is no Lenso-owned lockfile. Cargo, npm, and Bun retain ownership of their
+normal lock state; OCI inputs must use immutable digests.
+
+## What resolution guarantees
+
+Resolution validates package state, Descriptor freshness, configuration schema,
+execution classes, provider cardinality, and every explicit binding. Canonical
+serialization makes the approved Plan byte-stable.
+
+After boot, the Kernel cannot install packages, discover providers, rebind a
+consumer, change placement, or rewrite configuration. Any such change requires
+a new resolve and App restart.

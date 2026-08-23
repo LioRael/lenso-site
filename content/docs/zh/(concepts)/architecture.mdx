@@ -1,0 +1,46 @@
+---
+title: 核心架构
+description: Composition、可移植 Kernel、宿主调度与 Module 执行之间的稳定接缝。
+---
+
+## 四层所有权
+
+### App Composition
+
+Authoring 阶段的意图：Instance、包输入、配置、execution class、placement 与
+明确的 Capability 绑定。工具在启动前把它解析为一份完整 Plan。
+
+### 可移植 Kernel
+
+负责图校验、分阶段激活、就绪、强类型调用、scope、取消、监督、关闭和有界
+诊断的宿主无关状态机。它不依赖 Tokio、OS、网络、文件系统、数据库或产品 API。
+
+### Runtime Driver
+
+调度、单调时间、wakeup、取消通道、join 和关闭转换的宿主实现。Tokio、
+浏览器 JavaScript 与 WASIp2 是 Driver Profile，而不是 Kernel 分支。
+
+### Execution Adapter
+
+持有 Module generation 与 endpoint 机制：Native factory、Bun 子进程、未来
+宿主支持的 source、隔离、framing 和 Adapter 特定失败分类。
+
+## 删除测试
+
+只有删除 Kernel 后会迫使每个 Runner 与 Adapter 重复实现的机制才属于 Kernel。
+HTTP、PostgreSQL、Auth、Secrets、OpenTelemetry、UI 与产品 Workflow 都无法
+通过该测试；不选择相应 Module，它们的复杂度就会消失。
+
+## 依赖方向
+
+```text
+产品 Module / Authoring / Examples
+                ↓
+Runtime Driver 与 Execution Adapter
+                ↓
+可移植协议与核心 Interface
+                ↓
+App Plan + Kernel
+```
+
+Core 永远不反向依赖具体 Driver、Adapter、Module、CLI 或示例。

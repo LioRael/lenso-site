@@ -1,0 +1,59 @@
+---
+title: 快速开始
+description: 构建可移植核心，安装 Lenso CLI，并理解可执行工作流。
+---
+
+Lenso 当前以已发布的核心 crates 和拆分后的 runtime/tooling 仓库提供。Authoring
+命令统一由 `lenso` 可执行文件提供；`lenso-authoring` 仅保留为实现库。
+
+## 前置条件
+
+- Rust stable 与 Cargo
+- Git
+- 仅当 Plan 选择 `lenso.bun-child-process@1` 时需要 Bun
+
+## 1. 验证可移植核心
+
+```sh
+git clone https://github.com/LioRael/lenso.git
+cd lenso
+cargo fmt --all -- --check
+cargo xtask check-core-repository-boundary
+cargo check --locked --workspace --all-targets
+cargo test --locked --workspace
+```
+
+这些门禁验证 Plan、Kernel 与 Kernel 所有的 conformance 表面。CI 还会为
+`wasm32-unknown-unknown` 和 `wasm32-wasip2` 编译检查可移植核心。
+
+## 2. 安装 Lenso CLI
+
+```sh
+cargo install lenso-cli --locked
+lenso --help
+```
+
+该可执行文件提供当前的 `add`、`check`、`resolve` 与 `run` 表面。这仍是
+Early-access 工具，不会在运行时发现 Module 或修改正在执行的 App。
+
+## 3. 执行项目生命周期
+
+```sh
+lenso check --project lenso.json \
+  --execution-class lenso.native-rust@1
+lenso resolve --project lenso.json \
+  --execution-class lenso.native-rust@1 \
+  --output .lenso/resolved-plan.json
+lenso run \
+  --plan .lenso/resolved-plan.json --root .
+```
+
+`check` 校验项目输入和生成合约；`resolve` 生成规范化、不可变的字节；
+`run` 读取同一份字节，组装 Driver 和 Adapter，并把 Ctrl-C 转换为协作式关闭。
+
+:::warning
+目前还没有稳定的一键终端用户 Starter。不要把旧文档中的
+`lenso app compose`、`lenso system dev` 或 Console 生命周期当成当前流程。
+:::
+
+下一步阅读[项目与 Plan](/docs/zh/project-and-plan)。

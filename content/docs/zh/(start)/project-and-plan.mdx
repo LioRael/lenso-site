@@ -1,0 +1,32 @@
+---
+title: 项目与 Plan
+description: 将可审查的 Authoring 选择与 Kernel 消费的不可变执行输入分开。
+---
+
+Lenso 为两个不同所有者使用两份不同文档。
+
+| 制品 | 所有者 | 用途 |
+| --- | --- | --- |
+| `lenso.json` | Authoring 工具与 App 仓库 | 可审查的 Module、包、合约、Profile、配置与绑定 |
+| Resolved App Plan | `lenso-app-plan` | 启动时消费的规范、完整、不可变输入 |
+
+## 项目声明什么
+
+- 有键的 Module Instance 与 entrypoint；
+- 明确的 Capability requirement 与 provider binding；
+- execution class 和可选 placement；
+- 普通 Cargo、Bun、npm 或 OCI 包输入；
+- 精确的 Capability Descriptor 与生成 bindings；
+- 非敏感配置和显式 `secret_ref`；
+- 可选的 Web Profile，用于选择 Shell、Browser Adapter 和 UI Contribution。
+
+Lenso 不发明新的锁文件。Cargo、npm 与 Bun 继续持有常规 lock 状态；OCI
+输入必须使用不可变 digest。
+
+## Resolve 保证什么
+
+Resolve 会验证包状态、Descriptor 新鲜度、配置 schema、execution class、
+provider 基数与所有显式绑定。规范序列化使通过审查的 Plan 字节稳定。
+
+启动后，Kernel 不能安装包、发现 provider、重绑 consumer、改变 placement
+或重写配置。任何此类变更都需要重新 resolve 并重启 App。

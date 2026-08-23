@@ -1,0 +1,29 @@
+---
+title: Repository map
+description: Route changes to the repository that owns the Interface and its evidence.
+---
+
+| Repository | Current ownership |
+| --- | --- |
+| `LioRael/lenso` | App Plan, portable Kernel, Kernel conformance, canonical ADRs |
+| `LioRael/lenso-runtime-rust` | host-side Drivers, Runner, and native Execution Adapter |
+| `LioRael/lenso-bun-adapter` | Bun child-process Adapter and cross-runtime wire evidence |
+| `LioRael/lenso-protocols` | Descriptor codegen, portable contract runtime, value conformance |
+| `LioRael/lenso-cli` | authoring, project checks, Plan resolution, transition CLI |
+| `LioRael/lenso-examples` | executable examples and product-neutral fixtures |
+| `LioRael/lenso-auth-module` | portable Auth Capability and assertion SDK |
+| `LioRael/lenso-otel-module` | removable OpenTelemetry Module |
+| `LioRael/lenso-site` | this versioned public documentation |
+
+Dependencies point inward toward the portable core. A change that needs core to
+import one of these concrete owners is usually at the wrong seam.
+
+## Choosing an owner
+
+- Graph, lifecycle, invocation, cancellation, readiness, or diagnostics
+  semantics: core Kernel.
+- Scheduling, time, joins, or host shutdown: Runtime Driver.
+- Module generation, process/wire endpoint, or isolation: Execution Adapter.
+- Product behavior, state, Auth, secrets, telemetry, or UI: ordinary Module.
+- Package edits, lock inspection, schema/codegen freshness, or Plan resolution:
+  authoring tooling.

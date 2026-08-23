@@ -1,0 +1,41 @@
+---
+title: Module authoring
+description: Design a portable Capability first, then implement and compose the smallest Module that owns the behavior.
+---
+
+## 1. Name the deep role
+
+Start with the behavior consumers need, not the package or transport. Prefer a
+Capability such as `acme.orders@1` with focused Operations over a generic RPC,
+repository, or administration Interface.
+
+## 2. Author the Descriptor
+
+The portable Descriptor defines Operation shapes, domain values, errors, and
+version identity. `lenso-contract-codegen` generates Rust and TypeScript
+bindings from the same validated IR; generated artifact drift is a build error.
+
+## 3. Implement a Module entrypoint
+
+Keep product rules, state, and authorization inside the Module. An entrypoint
+declares provided and required Capabilities and exposes factories understood by
+its Execution Adapter. Native Rust Modules are statically linked in v1; Bun
+Modules use the Bun child-process Adapter.
+
+## 4. Compose explicitly
+
+Add the package and Module Instance to `lenso.json`, then bind each requirement
+to a named provider Instance. Run `check`, review the diff and ordinary package
+lock changes, then resolve a new Plan.
+
+## 5. Prove behavior at the Interface
+
+Test the generated client/provider contract and the public Capability outcome.
+Use `lenso-runtime-conformance` when implementing a Driver or Adapter; do not
+assert Kernel semantics from an owner-local mock.
+
+:::tip
+Persistence, Auth, secrets, telemetry, HTTP, and UI are composed capabilities.
+Add them only when the App selects them; never hide them behind an ambient
+Kernel service locator.
+:::

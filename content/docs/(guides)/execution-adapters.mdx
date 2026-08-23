@@ -1,0 +1,34 @@
+---
+title: Drivers and Adapters
+description: Implement a host profile without importing host or transport policy into the portable Kernel.
+---
+
+## Runtime Driver checklist
+
+A real Driver provides scheduling, wakeups, monotonic timers, joins,
+cooperative cancellation, and shutdown translation. Target compilation alone is
+not runtime proof; each profile needs scheduler, timer, readiness, cancellation,
+and shutdown smoke evidence.
+
+## Execution Adapter checklist
+
+An Adapter owns:
+
+- the execution-class identifier advertised to Plan validation;
+- Module factory or process generation;
+- typed endpoint creation and Adapter-specific dispatch;
+- framing, isolation, and resource ownership;
+- failure classification and restart cleanup; and
+- conformance against the published runtime Interface.
+
+## Current owners
+
+| Implementation | Repository |
+| --- | --- |
+| Tokio Runner, native Adapter, browser and WASIp2 Drivers | `LioRael/lenso-runtime-rust` |
+| Bun child-process Adapter and cross-runtime fixtures | `LioRael/lenso-bun-adapter` |
+| Descriptor code generation and portable value conformance | `LioRael/lenso-protocols` |
+
+The Bun Adapter uses JSON-RPC over HTTP for request dispatch and an explicit
+bidirectional stream seam. Those are Adapter/wire choices, not Capability or
+Kernel semantics.
