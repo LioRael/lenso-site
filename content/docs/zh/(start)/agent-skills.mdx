@@ -1,0 +1,157 @@
+---
+title: 使用 Agent Skills 构建
+description: 安装 Lenso 的六个公开 Skill，选择正确的所有者工作流，并为 Coding Agent 提供完成可验证 Module 工作所需的上下文。
+---
+
+Lenso 为 Coding Agent 提供六个公开 Skill。它们把架构转成可执行工作流：先确定
+变更由谁持有，再创建正确的制品，并在请求的行为可观察后才结束工作。
+
+这些 Skill 用于指导开发。它们不是运行时插件，不会向 App 添加 Agent Module，
+也不会自动授予 Agent 生产环境权限。
+
+## 安装 Skill Catalog
+
+安装前先查看 Catalog：
+
+```sh
+npx skills add LioRael/lenso --list
+```
+
+为安装器检测到的项目 Agent 安装全部六个 Skill：
+
+```sh
+npx skills add LioRael/lenso --all
+```
+
+以用户级方式安装到 Codex：
+
+```sh
+npx skills add LioRael/lenso \
+  --skill '*' \
+  --agent codex \
+  --global \
+  --yes
+```
+
+规范来源是 [Lenso Skill Pack](https://github.com/LioRael/lenso/tree/main/skills)。
+安装副本是派生制品；之后可以用 `npx skills update` 更新同名 Skill。
+
+## 选择一个主工作流
+
+所有者不明确时先使用 `lenso-start`；已经明确时，直接调用具体工作流。
+
+| 目标 | 主 Skill | 可观察的完成状态 |
+| --- | --- | --- |
+| 把模糊产品目标转成有明确所有者的纵向行为 | `lenso-business-planning` | Module Card、Capability Edge 与一个 Tracer Slice |
+| 定义或演进跨 Module 的角色契约 | `lenso-capability-authoring` | Descriptor、Schema、生成绑定与兼容性证据 |
+| 实现可移除的产品行为 | `lenso-module-authoring` | Package、Factory 或 Entrypoint、生命周期、行为与移除证据 |
+| 选择 Package 和 Instance，并绑定应用图 | `lenso-app-composition` | 通过检查的项目文档与已审查的不可变 Resolved App Plan |
+| 添加调度、进程、Wire、Endpoint 或宿主机制 | `lenso-runtime-extension` | 狭窄的 Driver、Adapter 或 Runner 变更，以及 Conformance 和真实宿主证据 |
+| 判断上述哪个工作流持有请求 | `lenso-start` | 一个主工作流与一个可检查的完成状态 |
+
+Kernel 语义不是第七种产品工作流。涉及可移植图校验、生命周期、准入、调用、
+就绪、监督或诊断的变更，应从[核心架构](/docs/zh/architecture)与相关 ADR 开始。
+
+## 给 Agent 完整的起点
+
+一个有效请求应包含四部分：
+
+1. **目标：** 对人或另一个 Module 产生什么实际价值。
+2. **权威来源：** 已知的目标仓库、现有 Package、Capability 来源与 App Composition。
+3. **约束：** 语言、执行环境、兼容性、安全与交付边界。
+4. **证据：** 完成时必须存在的行为、失败、生命周期与交付证据。
+
+所有权仍不明确时，先使用路由 Prompt：
+
+```text
+使用 $lenso-start 为这个请求选择工作流。
+
+目标：Operator 可以把一个 Open Support Ticket 分配给可用 Agent。
+已知上下文：App 已有 Ticket List，但没有 Assignment Contract。
+约束：产品行为必须可移除，不新增 Kernel 语义。
+完成条件：指出所有者 Module、所需 Capability 工作、Composition 工作，以及
+第一个可观察成功与真实失败。
+```
+
+所有者明确后，写出主 Skill 与真实目标：
+
+```text
+使用 $lenso-module-authoring，以 Rust 实现 Ticket Provider。
+
+从选定 Contract Crate 读取生成的 Ticket Provider Interface。Ticket State 与
+Assignment Policy 必须留在 Module 内。组合一个有稳定 Key 的 Instance，验证
+Assignment 与 ticket_not_open，从测试 Composition 移除该 Instance，并报告
+准确的检查命令与制品路径。
+```
+
+第二个 Prompt 刻意更具体：它提供权威边界和完成条件，但不猜测当前 API 名称；
+准确 API 应来自选中的 Package Source。
+
+## 完整示例：Support Ticket Assignment
+
+一个 Feature 可能跨越多个所有者，但每一步仍然只有一个主工作流。
+
+### 1. 规划产品切片
+
+当 Ticket Fact、Assignment Policy 或 Authorization 仍有多个可能所有者时，
+调用 `lenso-business-planning`。输出应说明 Ticket Module 持有哪些状态与转换、
+谁最终有权执行 Assignment、第一个有用转换，以及一个真实失败。
+
+当删除该 Module 也会删除 Ticket 的 Fact、Rule、Lifecycle 与运维复杂度，并且
+每条跨 Module 边都有显式角色时，规划才算完成。
+
+### 2. 编写协作契约
+
+如果另一个 Module 需要稳定的 Ticket 角色，调用
+`lenso-capability-authoring`。定义类似 `support.ticketing@1` 的 Identity、
+`assign_ticket` 等 Operation、Request/Response Schema，以及
+`ticket_not_found`、`ticket_not_open` 等 Domain Error。
+
+生成两种发布目标的 Binding，并证明 Freshness Gate 有效。Descriptor 与生成的
+Provider/Client 形状参见[编写 Capability](/docs/zh/capability-authoring)。
+
+### 3. 实现 Module
+
+针对持有 Ticket 行为的 Package 调用 `lenso-module-authoring`。Provider 实现
+生成的 Interface，校验不透明 Configuration，仅从 Lifecycle Context 获取依赖，
+并为 Endpoint 与 Managed Work 创建全新 Generation。
+
+静态链接的 `NativeModuleFactory` 参见
+[编写 Rust Module](/docs/zh/module-authoring)；通过 Bun Execution Adapter 运行的
+TypeScript Provider 参见[编写 Bun Module](/docs/zh/bun-module-authoring)。进程
+选择只改变 Adapter 与 Entrypoint，不改变产品边界。
+
+真实 Consumer Path 必须证明成功；Domain Error 与 Operational Failure 必须可以
+区分；Lifecycle Cleanup 必须可观察；移除 Module 后不能残留隐藏产品行为。满足
+这些条件后，Module 工作才算完成。
+
+### 4. 组合并解析 App
+
+调用 `lenso-app-composition`，选择已经锁定的 Package，声明稳定 Instance Key，
+选择 Entrypoint 与 Execution Class，添加 Configuration 或 Secret Reference，并
+把每项 Requirement 绑定到显式 Provider Key。
+
+运行已安装 CLI 的 Check 与 Resolve 工作流，审查项目和 Plan Diff，并且只执行
+已经批准的 Plan Bytes。参见[组合 Module](/docs/zh/module-composition)与
+[项目与 Plan](/docs/zh/project-and-plan)。
+
+### 5. 仅在宿主缺少机制时扩展 Runtime
+
+只有 Feature 确实需要新的 Driver、Execution Adapter、Runner、Execution Class
+或 Process/Wire 机制时，才使用 `lenso-runtime-extension`。普通 Ticket Rule、
+State、Background Work、HTTP 暴露与 UI 仍属于 Module。
+
+## 审查 Agent 的结果
+
+仅仅使用了正确架构术语并不等于完成。要求 Agent 返回可以检查或重跑的证据：
+
+- 修改的制品路径与对应所有者仓库；
+- 生成文件 Freshness 与 Package Lock 状态；
+- 通过检查的项目文档与 Canonical Plan Diff；
+- 成功、Domain Error、Runtime/Startup Failure 与 Lifecycle 证据；
+- 适用时的真实 Consumer-to-Provider 或 Host Boundary 路径；
+- 可选 Module 行为的移除证据；
+- 请求交付时的 Commit、PR、Checks 与 Merge 状态。
+
+如果请求声称存在的 Contract、Fixture、Package 或 App 实际不存在，Agent 应报告
+缺失输入，而不是制造不存在的 Package State。
