@@ -12,6 +12,8 @@ binds a consumer to the policy-bounded HTTP Egress provider of
 flowchart LR
   H[HTTP client] --> I[Web Ingress]
   I --> E[HTTP Endpoint providers]
+  I --> O[Optional OpenAPI document]
+  O -. explicitly bound descriptions .-> E
   M[Business Module] --> C[HTTP Client Capability]
   C --> X[HTTP Egress]
   X --> U[Allowed upstream]
@@ -83,6 +85,83 @@ error path. `HandleResponse::with_header` accepts validated `http` header names
 and values when a response needs `Location`, `WWW-Authenticate`, or another
 explicit header. Construct the generated wire DTO directly only for unusual
 binary response bodies.
+
+## Add an optional OpenAPI document
+
+OpenAPI support is an ordinary opt-in Module, not an Ingress setting. Endpoint
+authors can attach an OpenAPI 3.1 Operation Object to a route while keeping the
+route declaration authoritative for its method, path, and stable
+`operationId`:
+
+```rust title="src/http.rs"
+#[endpoint]
+impl OrdersHttp {
+    #[get("orders.read", "/orders/{order_id}")]
+    #[openapi(
+        r#"{
+          "summary": "Read an order",
+          "responses": {
+            "200": {
+              "description": "Order",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "required": ["id"],
+                    "properties": {"id": {"type": "string"}}
+                  }
+                }
+              }
+            }
+          }
+        }"#
+    )]
+    async fn read(
+        &self,
+        Path(path): Path<OrderPath>,
+    ) -> Result<HandleResponse, EndpointHandleInvocationError> {
+        // The business Endpoint remains the final authority.
+        self.read_order(path.order_id).await
+    }
+}
+```
+
+The macro validates the JSON and rejects an author-supplied `operationId` that
+could drift from the stable route ID. Method and path always come from the
+route declaration. Routes without OpenAPI metadata remain valid; the document
+assembler gives them a minimal fallback response when they are included.
+
+To publish a document, App Composition must make all three choices explicitly:
+
+1. Select one published `lenso-openapi` crate as a `lenso.openapi` Instance.
+2. Bind the Endpoint providers to document to that Instance's `many`
+   `lenso.http.endpoint@1` requirement.
+3. Bind the OpenAPI Instance's own HTTP Endpoint to Web Ingress.
+
+Only that bound subset appears in the generated OpenAPI 3.1 document. The
+Module does not discover providers globally or infer a public server URL from
+the listener. Its immutable configuration controls document metadata and the
+static route:
+
+```json title="lenso.openapi configuration"
+{
+  "title": "Orders API",
+  "version": "1.0.0",
+  "description": "Public order operations",
+  "document_path": "/openapi.json",
+  "servers": [{"url": "https://api.example.com"}],
+  "components": {
+    "securitySchemes": {
+      "bearer": {"type": "http", "scheme": "bearer"}
+    }
+  }
+}
+```
+
+There is deliberately no `enabled` field. Removing the `lenso.openapi`
+Instance and its bindings removes `/openapi.json` without changing the
+business Endpoints or Web Ingress. Swagger UI, Redoc, pages, assets, and
+navigation remain application- or Console-owned UI concerns.
 
 ## Authenticate an inbound request
 

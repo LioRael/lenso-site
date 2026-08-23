@@ -39,7 +39,7 @@ surface even though the lower-level Adapter has conformance for both.
 | --- | --- | --- |
 | Auth | `lenso.auth@1`, Rust assertion SDK, PostgreSQL API Token Provider, revocation | API Token Module crate is intentionally private; Bun public verifier helper is missing |
 | Secrets | `lenso.secrets@1` and allowlisted environment Provider | registry publication is parked; production cloud Providers are not included |
-| Backend Web | HTTP Endpoint/Ingress and HTTP Client/Egress Capabilities and Modules | maintained transport providers are linked Rust Modules; contracts do not install providers automatically |
+| Backend Web | HTTP Endpoint/Ingress and HTTP Client/Egress Capabilities and Modules; opt-in OpenAPI 3.1 document Module | maintained providers are linked Rust Modules; OpenAPI requires an explicitly selected Instance and bindings, and includes no UI |
 | PostgreSQL Kit | owned-schema setup, upgrade, drift detection, and verified SQLx pool | infrastructure kit, not a shared State Module or cross-Module SQL boundary |
 | OpenTelemetry | removable native Module plus Rust/Bun trace propagation fixtures | tracing is optional Composition, never Kernel behavior |
 | Web UI | explicit Shell, Browser Adapter, and UI Contribution roles with target-owned composition evidence | not a general remote-code sandbox or independent Console product |

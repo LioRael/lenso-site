@@ -23,7 +23,7 @@ App 中选择该 package，并提供非秘密配置。Capability 是它的类型
         "configuration": {},
         "provides": [{
           "capability_id": "lenso.http.endpoint@1",
-          "descriptor_version": "1.0.1",
+          "descriptor_version": "1.1.0",
           "operations": ["describe", "handle"]
         }],
         "requires": [{
@@ -50,7 +50,7 @@ App 中选择该 package，并提供非秘密配置。Capability 是它的类型
         "configuration": { "bind_address": "0.0.0.0:8080" },
         "requires": [{
           "capability_id": "lenso.http.endpoint@1",
-          "descriptor_version": "1.0.1",
+          "descriptor_version": "1.1.0",
           "cardinality": "many"
         }]
       }
@@ -65,13 +65,18 @@ App 中选择该 package，并提供非秘密配置。Capability 是它的类型
       {
         "consumer": "web",
         "capability_id": "lenso.http.endpoint@1",
-        "descriptor_version": "1.0.1",
+        "descriptor_version": "1.1.0",
         "provider": "orders"
       }
     ]
   }
 }
 ```
+
+HTTP Endpoint Descriptor `1.1.0` 以兼容方式增加了可选 OpenAPI Operation
+metadata；仅使用这个 Descriptor 不会发布文档。只有 App 需要文档时，才选择并绑定
+可选的 `lenso.openapi` Module，详见
+[Web Capabilities](/docs/zh/web-capabilities/#添加可选-openapi-文档)。
 
 `one` 必须恰好解析到一个 provider，`optional` 是零或一个，`many` 是确定顺序
 的 provider 列表。Module 不能从全局 registry 查询未声明的依赖。
