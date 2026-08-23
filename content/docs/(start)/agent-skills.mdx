@@ -1,0 +1,175 @@
+---
+title: Build with Agent Skills
+description: Install Lenso's six public skills, choose the owning workflow, and give a coding agent enough context to deliver verifiable Module work.
+---
+
+Lenso publishes six public skills for coding agents. They turn the architecture
+into executable workflows: decide who owns a change, create the right artifact,
+and stop only when the requested behavior is observable.
+
+The skills guide development work. They are not runtime plugins, do not add an
+Agent Module to an App, and do not grant an agent production authority.
+
+## Install the catalog
+
+Inspect the catalog before installing it:
+
+```sh
+npx skills add LioRael/lenso --list
+```
+
+Install all six skills for the project agents detected by the installer:
+
+```sh
+npx skills add LioRael/lenso --all
+```
+
+For a user-level Codex installation:
+
+```sh
+npx skills add LioRael/lenso \
+  --skill '*' \
+  --agent codex \
+  --global \
+  --yes
+```
+
+The canonical source is the
+[Lenso skill pack](https://github.com/LioRael/lenso/tree/main/skills). Installed
+copies are derived artifacts; use `npx skills update` to refresh same-named
+skills later.
+
+## Choose one primary workflow
+
+Start with `lenso-start` when the owner is unclear. Otherwise invoke the
+specific workflow directly.
+
+| Requested outcome | Primary skill | Observable completion |
+| --- | --- | --- |
+| Turn an unclear product goal into owned vertical behavior | `lenso-business-planning` | Module cards, Capability edges, and one tracer slice |
+| Define or evolve a cross-Module role contract | `lenso-capability-authoring` | Descriptor, Schemas, generated bindings, and compatibility proof |
+| Implement removable product behavior | `lenso-module-authoring` | Package, factory or entrypoint, lifecycle, behavior proof, and removal proof |
+| Select packages and Instances, then bind the graph | `lenso-app-composition` | Checked project document and reviewed immutable Resolved App Plan |
+| Add scheduling, process, wire, endpoint, or host mechanics | `lenso-runtime-extension` | Narrow Driver, Adapter, or Runner change with conformance and host proof |
+| Decide which of the above owns the request | `lenso-start` | One primary workflow and one checkable completion state |
+
+Kernel semantics are not a seventh product workflow. Changes to portable graph
+validation, lifecycle, admission, invocation, readiness, supervision, or
+diagnostics begin with [Core architecture](/docs/architecture) and the relevant
+ADR.
+
+## Give the agent a complete starting point
+
+A useful request has four parts:
+
+1. **Outcome:** what becomes useful to a person or another Module.
+2. **Authority:** the target repository, existing package, Capability source,
+   and App Composition when known.
+3. **Constraints:** language, execution environment, compatibility, security,
+   and delivery limits.
+4. **Proof:** the exact behavior, failure, lifecycle, and delivery evidence that
+   must exist when the task is complete.
+
+When ownership is still uncertain, start with a routing prompt:
+
+```text
+Use $lenso-start to route this request.
+
+Outcome: an operator can assign an open support ticket to an available agent.
+Known context: the App already has a ticket list, but no assignment contract.
+Constraints: keep product behavior removable and do not add Kernel semantics.
+Completion: name the owning Module, required Capability work, Composition work,
+and the first observable success and honest failure.
+```
+
+Once the owner is clear, name the primary skill and the real target:
+
+```text
+Use $lenso-module-authoring to implement the Ticket provider in Rust.
+
+Read the generated Ticket Provider Interface from the selected contract crate.
+Keep ticket state and assignment policy inside the Module. Compose one keyed
+Instance, exercise assignment plus ticket_not_open, remove the Instance from
+the test Composition, and report the exact checks and artifact paths.
+```
+
+The second prompt is intentionally more specific. It gives the agent an
+authority boundary and a completion criterion without inventing current API
+names that should come from the selected package source.
+
+## Worked flow: support-ticket assignment
+
+One feature may cross several owners, but each step still has one primary
+workflow.
+
+### 1. Plan the product slice
+
+Invoke `lenso-business-planning` while ticket facts, assignment policy, or
+authorization still have competing owners. The result should name a Ticket
+Module that owns ticket state and transitions, the actor authorized to assign,
+the first useful transition, and one honest failure.
+
+Planning is complete when deleting that Module would also delete the ticket
+facts, rules, lifecycle, and operational complexity—and every cross-Module edge
+has an explicit role.
+
+### 2. Author the collaboration contract
+
+Invoke `lenso-capability-authoring` if another Module needs a stable Ticket
+role. Define an identity such as `support.ticketing@1`, Operations such as
+`assign_ticket`, request and response Schemas, and Domain Errors such as
+`ticket_not_found` and `ticket_not_open`.
+
+Generate both published binding targets and prove the freshness gate. See
+[Capability authoring](/docs/capability-authoring) for the Descriptor and
+generated Provider/Client shape.
+
+### 3. Implement the Module
+
+Invoke `lenso-module-authoring` against the package that owns Ticket behavior.
+The provider implements the generated Interface, validates opaque
+configuration, obtains dependencies only from lifecycle context, and creates a
+fresh generation of endpoints and managed work.
+
+Use [Rust Module authoring](/docs/module-authoring) for a statically linked
+`NativeModuleFactory`, or [Bun Module authoring](/docs/bun-module-authoring) for
+a TypeScript Provider run through the Bun Execution Adapter. A process choice
+changes the Adapter and entrypoint, not the product boundary.
+
+Module work is complete after a real consumer path proves success, a Domain
+Error and an operational failure are distinguishable, lifecycle cleanup is
+observable, and removing the Module leaves no hidden product behavior behind.
+
+### 4. Compose and resolve the App
+
+Invoke `lenso-app-composition` to select the locked package, declare a stable
+Instance key, choose the entrypoint and execution class, add configuration or
+secret references, and bind every requirement to an explicit provider key.
+
+Run the installed CLI's check and resolve workflows, review the project and
+Plan diffs, and execute only the approved Plan bytes. See
+[Module composition](/docs/module-composition) and
+[Project and Plan](/docs/project-and-plan).
+
+### 5. Extend the runtime only when the host is missing a mechanism
+
+Use `lenso-runtime-extension` only if the feature requires a genuinely new
+Driver, Execution Adapter, Runner, execution class, or process/wire mechanism.
+Ordinary Ticket rules, state, background work, HTTP exposure, and UI remain
+Module concerns.
+
+## Review the agent's result
+
+Do not accept architecture vocabulary as completion. Ask for evidence that can
+be inspected or rerun:
+
+- changed artifact paths and their owning repositories;
+- generated-file freshness and package lock state;
+- the checked project document and canonical Plan diff;
+- success, Domain Error, runtime/startup failure, and lifecycle evidence;
+- a real consumer-to-provider or host-boundary path where applicable;
+- removal proof for optional Module behavior; and
+- commit, PR, checks, and merge state when delivery was requested.
+
+If a claimed contract, fixture, package, or App does not exist, the agent should
+report that missing input instead of manufacturing package state.

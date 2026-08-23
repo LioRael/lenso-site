@@ -10,6 +10,7 @@ const failures = [];
 const requiredCurrentPages = [
   "index.mdx",
   "(start)/quickstart.mdx",
+  "(start)/agent-skills.mdx",
   "(start)/project-and-plan.mdx",
   "(concepts)/architecture.mdx",
   "(concepts)/modules-and-capabilities.mdx",
