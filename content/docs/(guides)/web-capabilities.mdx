@@ -344,7 +344,8 @@ The generated Domain Errors are `destination_not_allowed`, `invalid_request`,
 `transport_failure`. The current provider does not follow redirects, use
 system proxies, manage cookies, or retry requests implicitly.
 
-Both HTTP contracts are portable and have generated TypeScript bindings.
+Both HTTP contracts are portable and their TypeScript projections are
+published by `@lenso/bun`.
 However, the maintained Ingress and Egress providers are linked Rust Modules;
 a Bun Module must still receive the Capability through an execution path and
 binding supported by its host. Contract portability is not automatic provider

@@ -20,12 +20,13 @@ lenso --version
 bun --version
 ```
 
-npm CLI 内含对应平台的可执行文件并带有 Provenance。Bun Module 的公开 Package
-是 `@lenso/bun-module`，不需要再寻找或安装单独的 `@lenso/bun` SDK。
+npm CLI 内含对应平台的可执行文件并带有 Provenance。`@lenso/bun-module`
+负责 Module Serving；`@lenso/bun` 发布 Bun Module 可直接引用的 Lenso 官方
+Capability 投影。
 
 ## 创建完整 Bun 项目
 
-一条命令生成 Capability Contract、Rust / TypeScript Binding、类型化 Provider、
+一条命令生成 Capability Contract、TypeScript Binding、类型化 Provider、
 App Composition 与 Bun Workspace：
 
 ```sh
@@ -46,7 +47,6 @@ greeting/
 ├── contracts/greeting/
 │   ├── capability.json
 │   ├── generated/
-│   │   ├── bindings.rs
 │   │   └── bindings.ts
 │   └── schemas/
 ├── modules/greeting/
