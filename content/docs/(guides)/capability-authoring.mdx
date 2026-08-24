@@ -1,13 +1,13 @@
 ---
 title: Capability authoring
-description: Define Request, Stream, and Event contracts, generate Rust and TypeScript bindings, and keep them fresh.
+description: Define Request, Stream, and Event contracts and generate each language projection in its owning package.
 ---
 
 A Capability is the contract between a consumer and a provider. Author it once;
-both Rust and Bun Modules use the generated bindings.
+each Rust or Bun distribution generates only the projection it owns.
 
 For a new Request Capability and Bun Provider, `lenso module create NAME
---runtime bun` generates the Descriptor, schemas, both bindings, and the typed
+--runtime bun` generates the Descriptor, schemas, TypeScript binding, and typed
 Provider together. Use the manual flow below when defining a custom contract or
 evolving an existing Capability.
 
@@ -43,22 +43,23 @@ exceptions:
 }
 ```
 
-Install the generator and write both bindings:
+Install the generator and write the projection owned by this package. For a
+native Rust Capability package:
 
 ```sh
 cargo install lenso-contract-codegen --locked
 lenso-contract-codegen generate \
   contract/greeting/capability.json \
-  contract/greeting/src/generated.rs \
-  contract/greeting/generated/bindings.ts
+  --rust \
+  contract/greeting/src/generated.rs
 ```
 
-Generated TypeScript imports `@lenso/contract-runtime`. A Bun Module scaffold
-installs it through `@lenso/bun-module`; a standalone contract package can add
-it directly:
+For a custom Bun Capability package, use `--typescript` and keep only the
+TypeScript output. Official Lenso Bun projections are published by
+`@lenso/bun` from locked snapshots of their owner repositories.
 
 ```sh
-bun add @lenso/contract-runtime
+bun add @lenso/bun @lenso/bun-module
 ```
 
 CI should reject generated drift and incompatible revisions:
@@ -66,8 +67,8 @@ CI should reject generated drift and incompatible revisions:
 ```sh
 lenso-contract-codegen check \
   contract/greeting/capability.json \
-  contract/greeting/src/generated.rs \
-  contract/greeting/generated/bindings.ts
+  --rust \
+  contract/greeting/src/generated.rs
 
 lenso-contract-codegen lint old/capability.json contract/greeting/capability.json
 ```
@@ -81,7 +82,7 @@ lenso-contract-codegen lint old/capability.json contract/greeting/capability.jso
 | Event | `"event"` | volatile fan-out | per-subscriber bounded admission and partial outcomes; no persistence or redelivery |
 
 For Stream and Event, only the `interaction` value changes. The generator emits
-the matching Rust and TypeScript Provider/Client types.
+the matching Provider/Client types for the selected language.
 
 ## Configure capacity in Composition
 
@@ -107,8 +108,8 @@ admission; it does not silently become a durable Outbox.
 
 ## Register the contract with the project
 
-`lenso check` compares the declared endpoint with the Descriptor and checks that
-both generated files are fresh:
+`lenso check` compares the declared endpoint with the Descriptor and checks
+every projection declared by this project. Omit languages owned elsewhere:
 
 ```json title="lenso.json (excerpt)"
 {
@@ -116,8 +117,7 @@ both generated files are fresh:
     "capability_id": "example.greeting@1",
     "descriptor_version": "1.0.0",
     "descriptor": "contract/greeting/capability.json",
-    "rust": "contract/greeting/src/generated.rs",
-    "typescript": "contract/greeting/generated/bindings.ts"
+    "rust": "contract/greeting/src/generated.rs"
   }]
 }
 ```

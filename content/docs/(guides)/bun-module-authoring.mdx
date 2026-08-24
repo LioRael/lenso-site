@@ -21,13 +21,13 @@ lenso --version
 bun --version
 ```
 
-The npm CLI contains the platform binary and publishes provenance. The Bun
-Module package is the public `@lenso/bun-module` package; there is no separate
-`@lenso/bun` SDK to install.
+The npm CLI contains the platform binary and publishes provenance.
+`@lenso/bun-module` owns Module serving, while `@lenso/bun` publishes the
+official Lenso Capability projections that Bun Modules can import directly.
 
 ## Create a complete Bun project
 
-Create the Capability contract, generated Rust and TypeScript bindings, typed
+Create the Capability contract, generated TypeScript binding, typed
 Provider, App Composition, and Bun workspace with one command:
 
 ```sh
@@ -49,7 +49,6 @@ greeting/
 ├── contracts/greeting/
 │   ├── capability.json
 │   ├── generated/
-│   │   ├── bindings.rs
 │   │   └── bindings.ts
 │   └── schemas/
 ├── modules/greeting/

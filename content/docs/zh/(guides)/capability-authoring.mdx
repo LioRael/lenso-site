@@ -1,13 +1,13 @@
 ---
 title: 编写 Capability
-description: 定义 Request、Stream 与 Event 契约，生成 Rust 和 TypeScript 绑定，并检查生成物是否同步。
+description: 定义 Request、Stream 与 Event 契约，并在各自负责的 Package 中生成语言投影。
 ---
 
-Capability 是 Consumer 与 Provider 之间的契约。只定义一次，Rust 与 Bun
-Module 都使用同一份 Descriptor 生成的绑定。
+Capability 是 Consumer 与 Provider 之间的契约。只定义一次；Rust 与 Bun
+各自在分发该语言的 Package 中生成自己的投影。
 
 新建 Request Capability 与 Bun Provider 时，`lenso module create NAME
---runtime bun` 会一起生成 Descriptor、Schema、两份 Binding 和类型化 Provider。
+--runtime bun` 会一起生成 Descriptor、Schema、TypeScript Binding 和类型化 Provider。
 定义自有 Contract 或演进已有 Capability 时，再使用下面的手工流程。
 
 ## 创建 Request Capability
@@ -41,21 +41,21 @@ Error Schema，不要把运行时异常字符串当作业务结果：
 }
 ```
 
-安装生成器，同时生成 Rust 与 TypeScript 绑定：
+安装生成器，并只生成当前 Package 负责的投影。原生 Rust Capability Package：
 
 ```sh
 cargo install lenso-contract-codegen --locked
 lenso-contract-codegen generate \
   contract/greeting/capability.json \
-  contract/greeting/src/generated.rs \
-  contract/greeting/generated/bindings.ts
+  --rust \
+  contract/greeting/src/generated.rs
 ```
 
-生成的 TypeScript 会直接引用 `@lenso/contract-runtime`。Bun Module Scaffold
-会通过 `@lenso/bun-module` 安装它；独立 Contract Package 可以直接添加：
+自定义 Bun Capability Package 使用 `--typescript`，并且只保留 TypeScript
+输出。Lenso 官方 Bun 投影由 `@lenso/bun` 从所有者仓库的锁定快照发布。
 
 ```sh
-bun add @lenso/contract-runtime
+bun add @lenso/bun @lenso/bun-module
 ```
 
 CI 应拒绝生成物漂移和不兼容变更：
@@ -63,8 +63,8 @@ CI 应拒绝生成物漂移和不兼容变更：
 ```sh
 lenso-contract-codegen check \
   contract/greeting/capability.json \
-  contract/greeting/src/generated.rs \
-  contract/greeting/generated/bindings.ts
+  --rust \
+  contract/greeting/src/generated.rs
 
 lenso-contract-codegen lint old/capability.json contract/greeting/capability.json
 ```
@@ -77,8 +77,8 @@ lenso-contract-codegen lint old/capability.json contract/greeting/capability.jso
 | Stream | `"stream"` | 双向会话 | 有界消息、两侧独立 half-close、显式最终结果 |
 | Event | `"event"` | 易失性 fan-out | 每个订阅者独立有界准入和部分结果；不保证持久化或重投 |
 
-Stream 与 Event 只需改变 `interaction`。生成器会输出对应的 Rust 和
-TypeScript Provider / Client 类型。
+Stream 与 Event 只需改变 `interaction`。生成器会输出所选语言对应的
+Provider / Client 类型。
 
 ## 在 Composition 中设置容量
 
@@ -104,7 +104,8 @@ TypeScript Provider / Client 类型。
 
 ## 把契约加入项目
 
-`lenso check` 会核对 Endpoint 声明与 Descriptor，并检查两份生成物是否最新：
+`lenso check` 会核对 Endpoint 声明与 Descriptor，并检查当前项目声明的每份
+投影是否最新。由其他 Package 负责的语言应省略：
 
 ```json title="lenso.json（节选）"
 {
@@ -112,8 +113,7 @@ TypeScript Provider / Client 类型。
     "capability_id": "example.greeting@1",
     "descriptor_version": "1.0.0",
     "descriptor": "contract/greeting/capability.json",
-    "rust": "contract/greeting/src/generated.rs",
-    "typescript": "contract/greeting/generated/bindings.ts"
+    "rust": "contract/greeting/src/generated.rs"
   }]
 }
 ```

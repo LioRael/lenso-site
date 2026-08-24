@@ -13,7 +13,7 @@ high-level starter.
 | --- | --- | --- |
 | App Plan | canonical validation, explicit Modules, bindings, execution classes, lanes, admission policy | no runtime discovery or graph mutation |
 | Kernel | Request, Stream, Event, lifecycle, deadlines, cancellation, diagnostics, deterministic conformance | owns no HTTP, database, Auth, process, or product policy |
-| Contract tooling | JSON Descriptor to Rust and TypeScript, drift check, compatibility lint, portable value runtime | schemas and generated artifacts must be committed by the Capability owner |
+| Contract tooling | JSON Descriptor to independently generated Rust or TypeScript, drift check, compatibility lint, portable value runtime | each language artifact must be committed by the package that distributes it |
 | `lenso` authoring | `add`, `check`, `resolve`, and `run`; typed Bun scaffold and watch-mode development; Cargo, Bun, npm, and OCI package inputs | Bun starter creates a Module project, not a complete production App |
 
 ## Runtime implementations
