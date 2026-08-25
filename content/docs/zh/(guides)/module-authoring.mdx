@@ -1,154 +1,131 @@
 ---
 title: 编写 Rust Module
-description: 实现生成的 Capability Provider，并注册静态链接的原生 Module Factory。
+description: 通过 Lenso 公共 Rust 门面实现原生 Module。
 ---
 
-原生 Rust Module 实现生成的 Provider Trait，并向 `lenso-native-adapter`
-注册 Factory。它们通过静态链接进入 App；运行时不会在启动时扫描 Cargo 包。
+原生 Module 应该呈现业务行为，而不是运行时接线。公共门面会根据 Module
+源码派生 Descriptor、Adapter Factory、Endpoint 注册和配置解码。
 
-## 创建独立原生项目
+## 创建 Module
 
 ```sh
-lenso module create greeting --runtime rust
+lenso new greeting --runtime rust
 cd greeting
-lenso module check
-lenso module dev
-lenso module verify
+lenso check
+lenso dev
+lenso verify
 ```
 
-原子脚手架会生成 Capability Descriptor、Rust Binding、Provider、
-`NativeModuleFactory`、App Composition、Package Lock、验证清单、Module Card，
-以及静态注册该 Factory 的开发 Runner。`module dev` 会自动识别
-`lenso.native-rust@1`；相关源码变化后，它会重新解析 Fresh Plan 并重启 Runner。
+脚手架包含 Capability Contract、原生 Module、开发 Runner、Lock 和验证用例。
+相关源码变化后，`lenso dev` 会重新构建选中的 Package、解析新的 App Plan，
+并重启 Runner。
 
-可通过 `--recipe stateless`、`stateful`、`web-console` 或 `managed-work`
-生成聚焦的 Module Card。Card 是设计证据，不是第二份运行时 Manifest；所有
-`TODO` 完成前都不应把它视为最终设计。
+可使用 `--recipe stateless`、`stateful`、`web-console` 或 `managed-work`
+生成聚焦的 Module Card。Card 记录设计意图，运行时元数据仍由源码派生。
 
-## 实现生成的 Provider
+## 实现业务行为
 
-假设 [编写 Capability](/docs/zh/capability-authoring) 中的
-`example.greeting@1` 已生成 `GreetingProvider`、`GreetingEndpoint` 以及请求、
-响应和错误类型：
+假设 [编写 Capability](/docs/zh/capability-authoring) 已生成
+`greeting_contract` crate：
 
 ```rust title="src/lib.rs"
-use futures::future;
-use lenso_kernel::{InvocationContext, NativeRequestFuture};
+use greeting_contract as greeting;
+use lenso::prelude::*;
 
-use crate::generated::{
-    GreetError, GreetRequest, GreetResponse, Greeting, GreetingProvider,
-};
+#[module]
+#[derive(Clone, Debug)]
+struct Greeter;
 
-#[derive(Debug)]
-pub struct Greeter;
-
-impl GreetingProvider for Greeter {
-    fn greet(
+#[provides(greeting::Greeting)]
+impl Greeter {
+    async fn greet(
         &self,
-        _context: InvocationContext,
-        request: GreetRequest,
-    ) -> NativeRequestFuture<Greeting> {
-        let result = if request.name.trim().is_empty() {
-            Err(GreetError::EmptyName)
+        _context: Ctx,
+        request: greeting::GreetRequest,
+    ) -> Result<greeting::GreetResponse, greeting::GreetError> {
+        if request.name.trim().is_empty() {
+            Err(greeting::GreetError::EmptyName)
         } else {
-            Ok(GreetResponse {
+            Ok(greeting::GreetResponse {
                 message: format!("Hello, {}!", request.name),
             })
-        };
-        Box::pin(future::ready(Ok(result)))
+        }
     }
 }
 ```
 
-外层 `Result` 表示 `RuntimeFailure`，内层 `Result` 才是生成的 Domain Result。
-像 `empty_name` 这样的校验失败应留在内层。
+方法直接返回生成的 Domain Result。Adapter Failure 由生成的 Lowering 在运行时
+处理。作者无需手写 `NativeModuleFactory`，也无需逐个注册 Endpoint。
 
-## 导出 Module Factory
-
-Factory Identity 必须与 Resolved App Plan 选中的包一致：
+## 仅在需要时添加配置
 
 ```rust title="src/lib.rs"
-use std::rc::Rc;
-use lenso_kernel::{NativeRequestEndpoint, RuntimeFailure};
-use lenso_native_adapter::{
-    NativeModuleFactory, NativeModuleFactoryContext, NativeModuleInstance,
-};
+#[derive(Clone, Debug, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GreetingConfig {
+    prefix: String,
+}
 
-use crate::generated::GreetingEndpoint;
+#[module]
+#[derive(Clone, Debug)]
+struct Greeter {
+    #[config]
+    config: GreetingConfig,
+}
+```
 
-#[derive(Debug)]
-pub struct GreeterFactory;
+无状态 Module 不写 `#[config]`。生成的 Factory 会在创建 Module 时解码并验证
+所选 Instance 的配置。
 
-impl NativeModuleFactory for GreeterFactory {
-    fn package_id(&self) -> &'static str { "example.greeter" }
-    fn package_version(&self) -> &'static str { env!("CARGO_PKG_VERSION") }
+## 仅在需要时添加生命周期和依赖
 
-    fn instantiate(
+只提供 Endpoint 的 Module 无需实现生命周期。拥有资源或托管任务的 Module
+需要显式选择加入：
+
+```rust title="src/lib.rs"
+#[module(lifecycle)]
+#[derive(Clone, Debug)]
+struct Worker {
+    greeting: Port<greeting::GreetingClient>,
+}
+
+impl Lifecycle for Worker {
+    async fn activate(
         &self,
-        _context: NativeModuleFactoryContext<'_>,
-    ) -> Result<NativeModuleInstance, RuntimeFailure> {
-        let endpoint = Rc::new(GreetingEndpoint::new(Greeter))
-            as Rc<dyn NativeRequestEndpoint>;
-        Ok(NativeModuleInstance::new(vec![endpoint]))
+        context: ActivateContext,
+    ) -> Result<(), RuntimeFailure> {
+        // 通过 context.tasks() 启动 Module 自己拥有的任务。
+        Ok(())
+    }
+
+    async fn deactivate(
+        &self,
+        context: DeactivateContext,
+    ) -> Result<(), RuntimeFailure> {
+        // 在这里关闭 Module 自己拥有的资源。
+        Ok(())
     }
 }
 ```
 
-## 在 App Binary 中注册
+生成的 Glue 会根据 App Plan 中的显式 Binding 连接 `Port<Client>` 字段；系统中
+不存在全局 Capability Registry。
+
+## 链接到产品 Runner
+
+产品 App Binary 只需一次性暴露所有编译进来的 Module Factory：
 
 ```rust
-use lenso_native_adapter::NativeModuleRegistry;
-
-let native = NativeModuleRegistry::new()
-    .with_factory(example_greeter::GreeterFactory);
+let native = NativeModuleRegistry::new().with_linked_factories();
+let adapters = ExecutionAdapterCatalog::single(native);
 ```
 
-组装 Kernel 与 `TokioDriver` 时，把该 Registry 作为原生 Execution Adapter
-传入。相同 Package Identity 注册两个 Factory 会报错；漏掉 Plan 选中的 Factory
-会得到 `MissingModuleFactory`。
+静态链接只表示 Factory 可用，并不会激活 Module。App Definition 仍负责选择
+Instance 和 Binding，产品自己的 Host 运行解析后的不可变 Plan。继续阅读
+[Module 组合](/docs/zh/module-composition)。
 
-:::warning
-通用 CLI 无法动态链接任意 Rust Factory。独立脚手架通过生成的静态链接开发
-Runner 解决本地开发问题；生产 App Binary 仍必须显式注册选中的 Factory。
-`lenso run` 继续可以直接执行 Bun Entrypoint。
-:::
+## 检查并证明可删除
 
-## 检查演进并证明可删除
-
-`lenso module check` 会针对 Contract Freshness、Package Lock、Execution、配置与
-Composition 错误，报告所属层、输入路径和修复动作。`lenso module verify` 会运行
-已声明的 Package、Success、Domain Error、Runtime Failure 与 Lifecycle Probe，
-解析真实项目，然后移除指定 Instance 及其必需依赖链并重新解析剩余部分。结果写入
-`.lenso/module-verification.json`，可供 CI 和 Agent 使用。
-
-重新生成 Binding 前，可先预览 Capability 变化：
-
-```sh
-lenso capability diff accepted.json contracts/greeting/capability.json \
-  --project lenso.json
-```
-
-## 使用依赖的 Capability
-
-生成的 Client 只能解析 Composition 中显式绑定的依赖：
-
-```rust
-use crate::generated::{GreetRequest, GreetingClient};
-use lenso_kernel::{ModuleDependencies, RuntimeFailure};
-
-fn client(dependencies: &ModuleDependencies) -> Result<GreetingClient, RuntimeFailure> {
-    GreetingClient::from_dependencies(dependencies)
-}
-
-async fn call(client: &GreetingClient) {
-    let response = client.greet(GreetRequest { name: "Ada".into() }).await;
-    // 在这里分别处理 Domain Failure 与 Runtime Failure。
-    println!("{response:?}");
-}
-```
-
-生成的 Stream / Event Endpoint 分别使用
-`NativeModuleInstance::with_stream_endpoints`、`with_event_endpoints` 或
-`with_all_endpoints`。持续维护的
-[Request 生成物 fixture](https://github.com/LioRael/lenso-cli/blob/main/crates/lenso-authoring/tests/fixtures/contracts/greeting/src/generated.rs)
-给出了准确的 Provider、Endpoint 与 Client 签名。
+`lenso check` 快速检查源码、Contract、配置和 Package Lock；`lenso verify`
+运行声明的成功、Domain Error、Runtime Failure、Lifecycle 和删除验证，并将结果
+写入 `.lenso/module-verification.json`，供 CI 与 Agent 使用。

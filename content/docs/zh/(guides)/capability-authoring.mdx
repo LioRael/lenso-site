@@ -6,7 +6,7 @@ description: 定义 Request、Stream 与 Event 契约，并在各自负责的 Pa
 Capability 是 Consumer 与 Provider 之间的契约。只定义一次；Rust 与 Bun
 各自在分发该语言的 Package 中生成自己的投影。
 
-新建 Request Capability 与 Bun Provider 时，`lenso module create NAME
+新建 Request Capability 与 Bun Provider 时，`lenso new NAME
 --runtime bun` 会一起生成 Descriptor、Schema、TypeScript Binding 和类型化 Provider。
 定义自有 Contract 或演进已有 Capability 时，再使用下面的手工流程。
 

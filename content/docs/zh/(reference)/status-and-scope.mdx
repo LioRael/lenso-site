@@ -13,14 +13,14 @@ Interaction 或完整生产 App 都已有高层 Starter。
 | App Plan | 规范校验、显式 Module / Binding / Execution Class / Lane / Admission Policy | 没有 Runtime Discovery 或 Graph Mutation |
 | Kernel | Request、Stream、Event、Lifecycle、Deadline、取消、诊断与确定性 Conformance | 不持有 HTTP、数据库、Auth、进程或产品策略 |
 | 契约工具 | JSON Descriptor 独立生成 Rust 或 TypeScript、漂移检查、兼容性 Lint、可移植值 Runtime | 各语言生成物由分发它的 Package 提交 |
-| `lenso` Authoring | `add`、`check`、`resolve`、`run`；类型化 Bun Scaffold 与 Watch-mode Development；Cargo、Bun、npm、OCI 包输入 | Bun Starter 创建 Module 项目，不创建完整生产 App |
+| `lenso` Authoring | `new`、`dev`、`check`、`verify` 与高级 `app` 编辑；类型化 Bun Scaffold 与 Watch-mode Development；Cargo、Bun、npm、OCI 包输入 | Bun Starter 创建 Module 项目，不创建完整生产 App |
 
 ## 运行时实现
 
 | 路径 | Request | Stream | Event | 当前运行方式 |
 | --- | --- | --- | --- | --- |
-| 原生 Rust | 已实现 | 已实现 | 已实现 | 在 App Binary 中静态注册 `NativeModuleFactory` |
-| Bun / TypeScript | 公开类型化 SDK | 仅 Adapter Conformance | 仅 Adapter Conformance | `lenso module dev` 自动识别项目，并通过 `lenso.bun-process@1` 启动 Entrypoint；正式 Wire 是 Loopback HTTP 上的 JSON-RPC |
+| 原生 Rust | 已实现 | 已实现 | 已实现 | App Binary 统一收集生成的 Linked Factory |
+| Bun / TypeScript | 公开类型化 SDK | 仅 Adapter Conformance | 仅 Adapter Conformance | `lenso dev` 自动识别项目，并通过 `lenso.bun-process@1` 启动 Entrypoint；正式 Wire 是 Loopback HTTP 上的 JSON-RPC |
 | Browser JavaScript Driver | 有 Scheduler / Lifecycle Smoke Evidence | 使用 Kernel 语义 | 使用 Kernel 语义 | Host Profile；不提供敌对代码隔离 |
 | WASIp2 Driver | 有 Scheduler / Lifecycle Smoke Evidence | 使用 Kernel 语义 | 使用 Kernel 语义 | Host Profile；Component Packaging 还不是 Starter Workflow |
 

@@ -30,9 +30,9 @@ Capability 投影。
 App Composition 与 Bun Workspace：
 
 ```sh
-lenso module create greeting --runtime bun
+lenso new greeting --runtime bun
 cd greeting
-lenso module dev
+lenso dev
 ```
 
 默认情况下，创建过程会先在暂存目录生成完整项目，执行 `bun install` 与
@@ -104,7 +104,7 @@ Adapter 边界被如实映射。
 在项目根目录启动开发循环：
 
 ```sh
-lenso module dev
+lenso dev
 # 等价的 Workspace Script
 bun run dev
 ```
@@ -118,24 +118,23 @@ Fresh Generation。类型、Contract 或启动失败不会退出 Watcher，修�
 只有需要覆盖默认值时才指定 Bun 或项目文件：
 
 ```sh
-lenso module dev --bun-bin /opt/bun/bin/bun
-lenso module dev --project path/to/lenso.json
+lenso dev --bun-bin /opt/bun/bin/bun
+lenso dev --project path/to/lenso.json
 ```
 
-## 检查与解析
+## 检查与验证
 
 脚手架已经提供可重复执行的 CI 命令：
 
 ```sh
 bun run typecheck
 bun run check
-bun run resolve
-lenso module verify
+bun run verify
 ```
 
-`check` 校验 Descriptor、已提交的生成 Binding、Package Lock、Entrypoint、
-Endpoint 与 Execution Class。`resolve` 写出规范化 Plan；运行中的 Kernel 不会
-安装 Package、发现 Provider 或修改该 Graph。
+`check` 快速校验 Descriptor、已提交的生成 Binding、Package Lock、Entrypoint、
+Endpoint 与 Execution Class；`verify` 运行声明的行为、Lifecycle 与删除验证。
+运行中的 Kernel 不会安装 Package、发现 Provider 或修改已解析的 Graph。
 
 ## 当前交互支持
 

@@ -1,123 +1,82 @@
 ---
-title: Module composition
-description: Select Module Instances, declare their Capability surfaces, and bind every dependency before boot.
+title: App definitions
+description: Select Module packages and keyed Instances without hand-authoring the derived Composition.
 ---
 
-A Module is a replaceable unit of product behavior. A package contains its
-implementation; a Module Instance selects that package for one App and supplies
-its non-secret configuration. Capabilities are its typed boundaries, and
-bindings decide which provider serves each requirement.
+A Module package owns its generated Descriptor: provided Capabilities, Ports,
+Operations, execution class, configuration Schema, and lifecycle facts. An App
+Definition owns only App intent: selected packages, keyed Instances,
+configuration, lanes, and decisions for real provider ambiguity.
 
-## Read one composition
+## Write intent, not the graph
 
-This excerpt composes an orders endpoint, an allowlisted Secrets provider, and
-Web Ingress. Exact package revisions and contract artifact paths are normally
-added with `lenso add`; they are omitted here so the dependency graph stays
-visible.
-
-```json title="lenso.json (composition excerpt)"
+```json title="lenso.app.json"
 {
-  "composition": {
+  "schema_version": 1,
+  "manifest": "Cargo.toml",
+  "packages": {
+    "example.orders": "orders-module",
+    "lenso.secrets.env": "lenso-secrets-env-module",
+    "lenso.web-ingress": "lenso-web-ingress"
+  },
+  "app": {
+    "name": "orders",
     "modules": [
-      {
-        "key": "orders",
-        "package": "example.orders",
-        "configuration": {},
-        "provides": [{
-          "capability_id": "lenso.http.endpoint@1",
-          "descriptor_version": "1.1.0",
-          "operations": ["describe", "handle"]
-        }],
-        "requires": [{
-          "capability_id": "lenso.secrets@1",
-          "descriptor_version": "1.0.0",
-          "cardinality": "one"
-        }]
-      },
+      { "key": "orders", "package": "example.orders" },
       {
         "key": "secrets",
         "package": "lenso.secrets.env",
         "configuration": {
           "references": { "database/url": "APP_DATABASE_URL" }
-        },
-        "provides": [{
-          "capability_id": "lenso.secrets@1",
-          "descriptor_version": "1.0.0",
-          "operations": ["resolve"]
-        }]
+        }
       },
       {
         "key": "web",
         "package": "lenso.web-ingress",
-        "configuration": { "bind_address": "0.0.0.0:8080" },
-        "requires": [{
-          "capability_id": "lenso.http.endpoint@1",
-          "descriptor_version": "1.1.0",
-          "cardinality": "many"
-        }]
+        "configuration": { "bind_address": "0.0.0.0:8080" }
       }
     ],
-    "bindings": [
-      {
-        "consumer": "orders",
-        "capability_id": "lenso.secrets@1",
-        "descriptor_version": "1.0.0",
-        "provider": "secrets"
-      },
-      {
-        "consumer": "web",
-        "capability_id": "lenso.http.endpoint@1",
-        "descriptor_version": "1.1.0",
-        "provider": "orders"
-      }
-    ]
+    "decisions": []
   }
 }
 ```
 
-HTTP Endpoint Descriptor `1.1.0` compatibly adds optional OpenAPI Operation
-metadata; using that Descriptor does not publish a document by itself. Select
-and bind the optional `lenso.openapi` Module only when the App wants a document,
-as shown in [Web Capabilities](/docs/web-capabilities/#add-an-optional-openapi-document).
+The resolver reads each locked package-owned Descriptor. If one compatible
+provider exists, it closes the binding automatically. `one` ambiguity becomes
+an explicit App decision; `many` providers receive deterministic order. A
+Module cannot query a global registry for an undeclared dependency.
 
-`one` must resolve to exactly one provider, `optional` to zero or one, and
-`many` to a deterministic provider list. A Module cannot query a global
-registry for an undeclared dependency.
+## Change the App transactionally
 
-## Put policy in the right place
+```sh
+lenso app add orders-module --definition lenso.app.json --version '^1.0' --dry-run
+lenso app add orders-module --definition lenso.app.json --version '^1.0'
+
+lenso app check --definition lenso.app.json
+lenso app resolve --definition lenso.app.json \
+  --output .lenso/resolved-plan.json
+
+lenso app remove orders --definition lenso.app.json --dry-run
+lenso app remove orders --definition lenso.app.json --uninstall
+```
+
+`app add` and `app remove` edit the package manifest, ordinary lock, and App
+Definition as one transaction. `app check` validates the selected locked
+packages and derived graph. `app resolve` emits canonical Plan bytes for the
+product-owned Runner or Host; there is no generic author-facing `run --plan`
+command.
+
+## Put policy in the right owner
 
 | Concern | Owner |
 | --- | --- |
 | Business rules, migrations, and transactions | Owning Module |
 | Interface types and Domain Errors | Capability owner |
-| Provider selection and request admission | App Composition |
-| Scheduling, deadlines, cancellation, shutdown | Runtime Driver and Kernel |
+| Package selection, configuration, lanes, real ambiguity | App Definition |
+| Derived endpoints and bindings | Resolver output |
+| Scheduling, cancellation, and shutdown | Runtime Driver and Kernel |
 | HTTP, process, browser, or host failure mechanics | Execution Adapter or protocol Module |
 
-Configuration is ordinary reviewable Plan data. Store only logical secret
-references there, never secret values. Use a configuration JSON Schema when
-invalid configuration can be detected before resolution.
-
-## Lifecycle and replacement
-
-The runtime prepares all selected Instances, activates them only after
-dependencies are ready, then deactivates them in dependency-safe order. Put
-resource verification in `prepare`, start acceptance of new work in `activate`,
-and stop it in `deactivate`.
-
-The useful design test is deletion: removing a product concern should remove
-its Module and bindings without changing the Kernel. Replacing a Provider
-should be a new composition and Resolved App Plan, not runtime discovery.
-
-## Authoring checklist
-
-1. Define the Module's product responsibility in one sentence.
-2. Declare every provided and required Capability with an exact Descriptor version.
-3. Choose `one`, `optional`, or `many` for each requirement.
-4. Bind every required provider explicitly and set bounded admission where needed.
-5. Keep secrets as references and owned state behind the Module boundary.
-6. Run `lenso check`, then `lenso resolve --output resolved-app-plan.json`.
-
-Continue with [Rust Module authoring](/docs/module-authoring),
-[Bun Module authoring](/docs/bun-module-authoring), or the concrete
-[Web Capabilities](/docs/web-capabilities) composition.
+Store only logical secret references in configuration. Removing a product
+concern should remove its Module selection without changing Kernel. Replacing a
+provider produces a new Plan or App Generation, never runtime discovery.

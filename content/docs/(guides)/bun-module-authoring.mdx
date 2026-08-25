@@ -31,9 +31,9 @@ Create the Capability contract, generated TypeScript binding, typed
 Provider, App Composition, and Bun workspace with one command:
 
 ```sh
-lenso module create greeting --runtime bun
+lenso new greeting --runtime bun
 cd greeting
-lenso module dev
+lenso dev
 ```
 
 By default, creation stages the entire project, runs `bun install` and the
@@ -107,7 +107,7 @@ remain operational failures and are mapped truthfully at the Adapter boundary.
 Run the development loop from the project root:
 
 ```sh
-lenso module dev
+lenso dev
 # equivalent workspace script
 bun run dev
 ```
@@ -122,25 +122,24 @@ Ctrl-C performs cooperative shutdown.
 Use an alternate executable or project document only when needed:
 
 ```sh
-lenso module dev --bun-bin /opt/bun/bin/bun
-lenso module dev --project path/to/lenso.json
+lenso dev --bun-bin /opt/bun/bin/bun
+lenso dev --project path/to/lenso.json
 ```
 
-## Check and resolve
+## Check and verify
 
 The scaffold provides the repeatable CI commands:
 
 ```sh
 bun run typecheck
 bun run check
-bun run resolve
-lenso module verify
+bun run verify
 ```
 
-`check` validates the Descriptor, checked-in generated bindings, package lock,
-entrypoint, endpoint, and execution class. `resolve` writes the canonical Plan;
-the running Kernel does not install packages, discover Providers, or mutate
-that graph.
+`check` quickly validates the Descriptor, checked-in generated bindings,
+package lock, entrypoint, endpoint, and execution class. `verify` runs the
+declared behavior, lifecycle, and removal probes; the running Kernel does not
+install packages, discover Providers, or mutate the resolved graph.
 
 ## Supported interaction surface
 

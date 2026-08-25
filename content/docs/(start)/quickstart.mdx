@@ -30,7 +30,7 @@ cargo install lenso-cli --locked
 ## 2. Create a Bun Module
 
 ```sh
-lenso module create greeting --runtime bun
+lenso new greeting --runtime bun
 cd greeting
 ```
 
@@ -43,7 +43,7 @@ leave a partial project.
 ## 3. Run the development loop
 
 ```sh
-lenso module dev
+lenso dev
 ```
 
 The CLI validates the project, resolves a fresh immutable Plan, and starts the
@@ -61,18 +61,20 @@ JSON-RPC handshake, framing, cancellation, or process lifecycle.
 ```sh
 bun run typecheck
 bun run check
-bun run resolve
+bun run verify
 ```
 
-`check` validates project inputs, package locks, endpoints, and generated
-contracts. `resolve` writes canonical Plan bytes. The running Kernel loads that
-exact Plan; it does not discover Modules, install packages, or mutate the graph.
+`check` gives fast diagnostics for project inputs, package locks, endpoints,
+and generated contracts. `verify` also runs the declared behavior, lifecycle,
+and removal probes. The development Host resolves and loads canonical Plan
+bytes; the Kernel does not discover Modules, install packages, or mutate the
+graph.
 
 :::note
 This is a complete Bun Module authoring and development starter, not a generator
 for an entire production application or deployment environment. Native Rust
-Modules remain statically linked and register `NativeModuleFactory` values in
-their App binary.
+Modules remain statically linked; generated factories are collected by the
+product App binary.
 :::
 
 Continue with [Bun Module authoring](/docs/bun-module-authoring) for the project
