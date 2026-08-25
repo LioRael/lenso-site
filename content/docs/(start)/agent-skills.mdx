@@ -132,9 +132,10 @@ configuration, obtains dependencies only from lifecycle context, and creates a
 fresh generation of endpoints and managed work.
 
 Use [Rust Module authoring](/docs/module-authoring) for a statically linked
-`NativeModuleFactory`, or [Bun Module authoring](/docs/bun-module-authoring) for
-a TypeScript Provider run through the Bun Execution Adapter. A process choice
-changes the Adapter and entrypoint, not the product boundary.
+Module written through the public facade, or
+[Bun Module authoring](/docs/bun-module-authoring) for a TypeScript Provider run
+through the Bun Execution Adapter. A process choice changes the Adapter and
+entrypoint, not the product boundary.
 
 Module work is complete after a real consumer path proves success, a Domain
 Error and an operational failure are distinguishable, lifecycle cleanup is

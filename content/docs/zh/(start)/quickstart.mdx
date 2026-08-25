@@ -29,7 +29,7 @@ cargo install lenso-cli --locked
 ## 2. 创建 Bun Module
 
 ```sh
-lenso module create greeting --runtime bun
+lenso new greeting --runtime bun
 cd greeting
 ```
 
@@ -40,7 +40,7 @@ Binding、类型化 Provider、`lenso.json`、Bun Workspace Manifest 和 `bun.lo
 ## 3. 启动开发循环
 
 ```sh
-lenso module dev
+lenso dev
 ```
 
 CLI 会校验项目，解析一份新的不可变 Plan，再通过正式 Bun Execution Adapter
@@ -57,17 +57,17 @@ Lifecycle。
 ```sh
 bun run typecheck
 bun run check
-bun run resolve
+bun run verify
 ```
 
-`check` 校验项目输入、Package Lock、Endpoint 与生成 Contract；`resolve` 写出
-规范化 Plan 字节。运行中的 Kernel 读取这份准确 Plan，不会发现 Module、安装
-Package 或修改 Graph。
+`check` 快速诊断项目输入、Package Lock、Endpoint 与生成 Contract；`verify`
+还会运行声明的行为、Lifecycle 与删除验证。开发 Host 解析并读取规范化 Plan
+字节；Kernel 不会发现 Module、安装 Package 或修改 Graph。
 
 :::note
 这是一套完整的 Bun Module 编写与开发 Starter，不是整个生产 App 或部署环境的
-生成器。原生 Rust Module 仍通过静态链接进入 App，并在 App Binary 中注册
-`NativeModuleFactory`。
+生成器。原生 Rust Module 仍通过静态链接进入 App；生成的 Factory 由产品 App
+Binary 统一收集。
 :::
 
 继续阅读[编写 Bun Module](/docs/zh/bun-module-authoring)，查看项目结构、Provider

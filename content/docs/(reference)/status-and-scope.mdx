@@ -14,14 +14,14 @@ high-level starter.
 | App Plan | canonical validation, explicit Modules, bindings, execution classes, lanes, admission policy | no runtime discovery or graph mutation |
 | Kernel | Request, Stream, Event, lifecycle, deadlines, cancellation, diagnostics, deterministic conformance | owns no HTTP, database, Auth, process, or product policy |
 | Contract tooling | JSON Descriptor to independently generated Rust or TypeScript, drift check, compatibility lint, portable value runtime | each language artifact must be committed by the package that distributes it |
-| `lenso` authoring | `add`, `check`, `resolve`, and `run`; typed Bun scaffold and watch-mode development; Cargo, Bun, npm, and OCI package inputs | Bun starter creates a Module project, not a complete production App |
+| `lenso` authoring | `new`, `dev`, `check`, `verify`, and advanced `app` editing; typed Bun scaffold and watch-mode development; Cargo, Bun, npm, and OCI package inputs | Bun starter creates a Module project, not a complete production App |
 
 ## Runtime implementations
 
 | Path | Request | Stream | Event | How it runs today |
 | --- | --- | --- | --- | --- |
-| Native Rust | implemented | implemented | implemented | statically register `NativeModuleFactory` values in the App binary |
-| Bun / TypeScript | public typed SDK | Adapter conformance only | Adapter conformance only | `lenso module dev` infers the project and starts entrypoints through `lenso.bun-process@1`; production wire is JSON-RPC over loopback HTTP |
+| Native Rust | implemented | implemented | implemented | generated linked factories are collected by the App binary |
+| Bun / TypeScript | public typed SDK | Adapter conformance only | Adapter conformance only | `lenso dev` infers the project and starts entrypoints through `lenso.bun-process@1`; production wire is JSON-RPC over loopback HTTP |
 | Browser JavaScript Driver | scheduler/lifecycle smoke evidence | Kernel semantics apply | Kernel semantics apply | host profile; not hostile-code isolation |
 | WASIp2 Driver | scheduler/lifecycle smoke evidence | Kernel semantics apply | Kernel semantics apply | host profile; component packaging is not a starter workflow yet |
 

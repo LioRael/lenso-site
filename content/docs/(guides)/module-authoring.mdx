@@ -1,160 +1,136 @@
 ---
 title: Rust Module authoring
-description: Implement a generated Capability Provider and register a statically linked native Module factory.
+description: Implement a native Module through Lenso's public Rust facade.
 ---
 
-Native Rust Modules implement generated Provider traits and register a factory
-with `lenso-native-adapter`. They are statically linked; the runtime does not
-scan Cargo packages at boot.
+A native Module should read like business behavior, not runtime wiring. The
+public facade derives its Descriptor, Adapter factory, endpoint registration,
+and configuration decoder from the Module source.
 
-## Create a standalone native project
+## Create a Module
 
 ```sh
-lenso module create greeting --runtime rust
+lenso new greeting --runtime rust
 cd greeting
-lenso module check
-lenso module dev
-lenso module verify
+lenso check
+lenso dev
+lenso verify
 ```
 
-The atomic scaffold contains the Capability Descriptor and generated Rust
-binding, Provider, `NativeModuleFactory`, App Composition, package
-lock, verification manifest, Module card, and a development Runner that
-statically registers the generated factory. `module dev` infers
-`lenso.native-rust@1`, resolves a fresh Plan after relevant source changes, and
-restarts that Runner.
+The scaffold includes a Capability contract, a native Module, a development
+Runner, a lock, and verification cases. `lenso dev` rebuilds the selected
+package, resolves a fresh App Plan, and restarts the Runner after relevant
+source changes.
 
 Use `--recipe stateless`, `stateful`, `web-console`, or `managed-work` to seed a
-focused Module card. The card is design evidence, not a second runtime manifest;
-replace every `TODO` before treating it as complete.
+focused Module card. The card records intent; generated runtime metadata remains
+derived from source.
 
-## Implement the generated Provider
+## Implement behavior
 
-Assume the `example.greeting@1` Descriptor from
-[Capability authoring](/docs/capability-authoring) generated `GreetingProvider`,
-`GreetingEndpoint`, and the request/response/error types:
+Assume [Capability authoring](/docs/capability-authoring) generated the
+`greeting_contract` crate:
 
 ```rust title="src/lib.rs"
-use futures::future;
-use lenso_kernel::{InvocationContext, NativeRequestFuture};
+use greeting_contract as greeting;
+use lenso::prelude::*;
 
-use crate::generated::{
-    GreetError, GreetRequest, GreetResponse, Greeting, GreetingProvider,
-};
+#[module]
+#[derive(Clone, Debug)]
+struct Greeter;
 
-#[derive(Debug)]
-pub struct Greeter;
-
-impl GreetingProvider for Greeter {
-    fn greet(
+#[provides(greeting::Greeting)]
+impl Greeter {
+    async fn greet(
         &self,
-        _context: InvocationContext,
-        request: GreetRequest,
-    ) -> NativeRequestFuture<Greeting> {
-        let result = if request.name.trim().is_empty() {
-            Err(GreetError::EmptyName)
+        _context: Ctx,
+        request: greeting::GreetRequest,
+    ) -> Result<greeting::GreetResponse, greeting::GreetError> {
+        if request.name.trim().is_empty() {
+            Err(greeting::GreetError::EmptyName)
         } else {
-            Ok(GreetResponse {
+            Ok(greeting::GreetResponse {
                 message: format!("Hello, {}!", request.name),
             })
-        };
-        Box::pin(future::ready(Ok(result)))
+        }
     }
 }
 ```
 
-The outer `Result` is a `RuntimeFailure`; the inner `Result` is the generated
-Domain Result. Keep validation failures such as `empty_name` in the inner
-result.
+The method returns the generated Domain Result. Adapter failures remain a
+runtime concern handled by generated lowering. You do not implement
+`NativeModuleFactory` or register individual endpoints by hand.
 
-## Export a Module factory
-
-The factory identity must match the package selected by the Resolved App Plan:
+## Add configuration only when needed
 
 ```rust title="src/lib.rs"
-use std::rc::Rc;
-use lenso_kernel::{NativeRequestEndpoint, RuntimeFailure};
-use lenso_native_adapter::{
-    NativeModuleFactory, NativeModuleFactoryContext, NativeModuleInstance,
-};
+#[derive(Clone, Debug, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct GreetingConfig {
+    prefix: String,
+}
 
-use crate::generated::GreetingEndpoint;
+#[module]
+#[derive(Clone, Debug)]
+struct Greeter {
+    #[config]
+    config: GreetingConfig,
+}
+```
 
-#[derive(Debug)]
-pub struct GreeterFactory;
+Stateless Modules omit `#[config]`. The generated factory decodes and validates
+the selected Instance's configuration when it creates the Module.
 
-impl NativeModuleFactory for GreeterFactory {
-    fn package_id(&self) -> &'static str { "example.greeter" }
-    fn package_version(&self) -> &'static str { env!("CARGO_PKG_VERSION") }
+## Add lifecycle and dependencies only when needed
 
-    fn instantiate(
+Endpoint-only Modules need no lifecycle implementation. Modules that own
+resources or managed work opt in explicitly:
+
+```rust title="src/lib.rs"
+#[module(lifecycle)]
+#[derive(Clone, Debug)]
+struct Worker {
+    greeting: Port<greeting::GreetingClient>,
+}
+
+impl Lifecycle for Worker {
+    async fn activate(
         &self,
-        _context: NativeModuleFactoryContext<'_>,
-    ) -> Result<NativeModuleInstance, RuntimeFailure> {
-        let endpoint = Rc::new(GreetingEndpoint::new(Greeter))
-            as Rc<dyn NativeRequestEndpoint>;
-        Ok(NativeModuleInstance::new(vec![endpoint]))
+        context: ActivateContext,
+    ) -> Result<(), RuntimeFailure> {
+        // Start Module-owned work through context.tasks().
+        Ok(())
+    }
+
+    async fn deactivate(
+        &self,
+        context: DeactivateContext,
+    ) -> Result<(), RuntimeFailure> {
+        // Close Module-owned resources here.
+        Ok(())
     }
 }
 ```
 
-## Register it in the App binary
+Generated glue connects `Port<Client>` fields from the dependencies explicitly
+bound in the App Plan. There is no global Capability registry.
+
+## Link it into a product Runner
+
+The product App binary makes all compiled Module factories available once:
 
 ```rust
-use lenso_native_adapter::NativeModuleRegistry;
-
-let native = NativeModuleRegistry::new()
-    .with_factory(example_greeter::GreeterFactory);
+let native = NativeModuleRegistry::new().with_linked_factories();
+let adapters = ExecutionAdapterCatalog::single(native);
 ```
 
-Pass this registry as the native Execution Adapter when assembling the Kernel
-and `TokioDriver`. Registering two factories with the same package identity is
-an error; omitting the selected factory produces `MissingModuleFactory`.
+Linking makes a factory available; it does not activate the Module. The App
+Definition still selects Instances and bindings, and the product-owned Host
+runs the resolved immutable Plan. See [Module composition](/docs/module-composition).
 
-:::warning
-The generic CLI cannot dynamically link an arbitrary Rust factory. The
-standalone scaffold solves local development with a generated, statically
-linked development Runner; a production App binary must still register its
-selected factories explicitly. `lenso run` remains directly executable for Bun
-entrypoints.
-:::
+## Check and prove removal
 
-## Check evolution and prove removal
-
-`lenso module check` reports the owning layer, input path, and repair action for
-contract freshness, package-lock, execution, configuration, and Composition
-failures. `lenso module verify` runs the declared package, success, Domain Error,
-Runtime Failure, and lifecycle probes, resolves the real project, then removes
-the selected Instance and its required dependent chain and resolves the
-remainder. It writes `.lenso/module-verification.json` for CI and agents.
-
-Preview a Capability change before regenerating bindings:
-
-```sh
-lenso capability diff accepted.json contracts/greeting/capability.json \
-  --project lenso.json
-```
-
-## Consume a required Capability
-
-Generated clients resolve only explicitly bound dependencies:
-
-```rust
-use crate::generated::{GreetRequest, GreetingClient};
-use lenso_kernel::{ModuleDependencies, RuntimeFailure};
-
-fn client(dependencies: &ModuleDependencies) -> Result<GreetingClient, RuntimeFailure> {
-    GreetingClient::from_dependencies(dependencies)
-}
-
-async fn call(client: &GreetingClient) {
-    let response = client.greet(GreetRequest { name: "Ada".into() }).await;
-    // Match Domain and Runtime failures separately here.
-    println!("{response:?}");
-}
-```
-
-Use `NativeModuleInstance::with_stream_endpoints`, `with_event_endpoints`, or
-`with_all_endpoints` for generated Stream and Event endpoints. The maintained
-[generated request fixture](https://github.com/LioRael/lenso-cli/blob/main/crates/lenso-authoring/tests/fixtures/contracts/greeting/src/generated.rs)
-shows the exact Provider, Endpoint, and Client signatures.
+`lenso check` gives fast source, contract, configuration, and package-lock
+diagnostics. `lenso verify` runs the declared success, Domain Error, Runtime
+Failure, lifecycle, and removal probes and writes
+`.lenso/module-verification.json` for CI and agents.

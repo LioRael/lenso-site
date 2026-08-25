@@ -94,13 +94,13 @@ for (const [file, markers] of [
     '"document_path": "/openapi.json"',
   ]],
   ["content/docs/(guides)/bun-module-authoring.mdx", [
-    "lenso module create greeting --runtime bun",
-    "lenso module dev",
+    "lenso new greeting --runtime bun",
+    "lenso dev",
     "@lenso/bun-module",
   ]],
   ["content/docs/zh/(guides)/bun-module-authoring.mdx", [
-    "lenso module create greeting --runtime bun",
-    "lenso module dev",
+    "lenso new greeting --runtime bun",
+    "lenso dev",
     "@lenso/bun-module",
   ]],
 ]) {
