@@ -218,7 +218,7 @@ async function bindActor(
 
 There is not yet a published Bun Auth helper, so keep this logic centralized and
 tested; do not trust `extensions[].value` by decoding JSON alone. The current
-[Rust SDK](https://github.com/LioRael/lenso-auth-module/blob/main/crates/lenso-auth-sdk/src/lib.rs)
+[Rust SDK](https://github.com/LioRael/lenso-auth-plugin/blob/main/crates/lenso-auth-sdk/src/lib.rs)
 is the semantic source, and the Bun helper must produce the same verification
 result before becoming a public package.
 
