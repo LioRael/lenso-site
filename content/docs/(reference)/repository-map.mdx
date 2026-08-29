@@ -11,9 +11,9 @@ description: Route changes to the repository that owns the Interface and its evi
 | `LioRael/lenso-protocols` | Descriptor codegen, portable contract runtime, value conformance |
 | `LioRael/lenso-cli` | authoring, project checks, Plan resolution, transition CLI |
 | `LioRael/lenso-examples` | executable examples and product-neutral fixtures |
-| `LioRael/lenso-web` | backend HTTP Endpoint/Client Capabilities, Ingress/Egress Modules, and optional OpenAPI document Module |
+| `LioRael/lenso-web` | backend HTTP Endpoint/Client Capabilities, Ingress/Egress Plugins, and optional OpenAPI document Plugin |
 | `LioRael/lenso-auth-plugin` | portable Auth Capability and assertion SDK |
-| `LioRael/lenso-otel-plugin` | removable OpenTelemetry Module |
+| `LioRael/lenso-otel-plugin` | removable OpenTelemetry Plugin |
 | `LioRael/lenso-site` | this versioned public documentation |
 
 Dependencies point inward toward the portable core. A change that needs core to
@@ -24,7 +24,7 @@ import one of these concrete owners is usually at the wrong seam.
 - Graph, lifecycle, invocation, cancellation, readiness, or diagnostics
   semantics: core Kernel.
 - Scheduling, time, joins, or host shutdown: Runtime Driver.
-- Module generation, process/wire endpoint, or isolation: Execution Adapter.
-- Product behavior, state, Auth, secrets, telemetry, or UI: ordinary Module.
+- Plugin generation, process/wire endpoint, or isolation: Execution Adapter.
+- Product behavior, state, Auth, secrets, telemetry, or UI: ordinary Plugin.
 - Package edits, lock inspection, schema/codegen freshness, or Plan resolution:
   authoring tooling.

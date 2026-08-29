@@ -1,0 +1,67 @@
+---
+title: 编写 Bun Plugin
+description: 使用受支持的 Bun SDK 与 CLI 路径构建强类型 Request Plugin。
+---
+
+Bun 是可信子进程 Execution Class，不是 Sandbox。Plugin 业务代码实现生成的
+Capability Provider 类型；`@lenso/bun` 与生成的 Entrypoint 持有启动、JSON-RPC、
+取消与关闭。
+
+## 创建项目
+
+```sh
+lenso plugin new example.echo --runtime bun
+cd example.echo
+```
+
+创建过程会先暂存完整目录、安装精确 `bun.lock` 并执行 TypeScript 检查，成功后才
+发布项目。只有离线脚手架才使用 `--no-install`。
+
+```text
+example.echo/
+├── package.json
+├── bun.lock
+├── tsconfig.json
+└── src/
+    ├── plugin.ts
+    ├── lenso.bun.generated.ts
+    ├── lenso.describe.generated.ts
+    └── lenso.invoke.generated.ts
+```
+
+只编辑 `src/plugin.ts`。初始脚手架实现生成的
+`lenso.agent.tool-provider@1` Provider，并暴露一个 Tool。预期业务结果返回生成的
+Domain Error；抛出的异常仍是 Runtime Failure。
+
+## 检查与开发
+
+```sh
+lenso plugin check
+lenso plugin dev \
+  --operation execute \
+  --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+lenso plugin dev --watch \
+  --operation execute \
+  --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+```
+
+`check` 会类型检查、构建 Bun 实现、派生可移植 Descriptor、生成标准 Bundle 并
+验证其 Closure。`dev` 直接调用同一份 Provider，作者无需实现测试 Wire。Watch
+Mode 在一次构建失败后仍保持运行。
+
+## 打包与运行
+
+```sh
+lenso plugin pack
+lenso plugins add dist/example.echo-0.1.0.lenso-plugin --root /path/to/app
+```
+
+Archive 选择 `lenso.bun-process@1`。兼容的产品 Host 必须链接 Bun Adapter，并为
+每个 Provided Capability 注册生成的 Rust Codec；Agent Host 已包含这条集成。
+运行 Host 的机器必须能找到 `bun`。
+
+公开高层 SDK 当前支持 Request Capability。尽管底层 Adapter 已有 Stream 与 Event
+Conformance，Authoring Surface 仍保持 Fail-closed；不要从内部测试推断公开支持。
+
+类型化 SDK 见 [`@lenso/bun`](https://www.npmjs.com/package/@lenso/bun)，进程边界见
+[`lenso-bun-adapter`](https://github.com/LioRael/lenso-bun-adapter)。

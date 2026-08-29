@@ -13,13 +13,13 @@ flowchart LR
   I --> E[HTTP Endpoint providers]
   I --> O[可选 OpenAPI document]
   O -. 显式绑定的 descriptions .-> E
-  M[Business Module] --> C[HTTP Client Capability]
+  M[Business Plugin] --> C[HTTP Client Capability]
   C --> X[HTTP Egress]
   X --> U[Allowed upstream]
 ```
 
 这些后端契约与 App 自己的浏览器 UI 分开。Web Shell、Browser Adapter 与 UI
-Contribution Module 负责组合页面和生成的浏览器 client，并不拥有后端 HTTP route。
+Contribution Plugin 负责组合页面和生成的浏览器 client，并不拥有后端 HTTP route。
 
 ## 发布入站 Endpoint
 
@@ -68,7 +68,7 @@ impl OrdersHttp {
 `#[endpoint]` 汇总同一个 `impl` 中的 handler。可使用 `#[get]`、`#[post]`、
 `#[put]`、`#[patch]`、`#[delete]`、`#[head]` 与 `#[options]`；每个属性依次声明
 稳定 route ID 和 path。旧的 `http_endpoint!` 静态表仍可用于生成代码或兼容已有
-Module。
+Plugin。
 
 Endpoint 拥有 HTTP 形态的业务行为。Web Ingress 拥有 listener 与协议机制、route
 匹配、path parameter、大小与并发限制、deadline、断连 cancel、request ID 以及
@@ -82,7 +82,7 @@ Endpoint 拥有 HTTP 形态的业务行为。Web Ingress 拥有 listener 与协�
 
 ## 添加可选 OpenAPI 文档
 
-OpenAPI 支持是普通的 opt-in Module，不是 Ingress 设置。Endpoint 作者可以给 route
+OpenAPI 支持是普通的 opt-in Plugin，不是 Ingress 设置。Endpoint 作者可以给 route
 附加 OpenAPI 3.1 Operation Object，同时继续由 route declaration 权威定义 method、
 path 与稳定的 `operationId`：
 
@@ -125,7 +125,7 @@ JSON-like DSL 的普通 identifier key 不需要引号；`"type"`、
 declaration。
 
 注解本身仍然是可选的。没有 OpenAPI metadata 的 route 依旧有效；只有显式选择的
-OpenAPI Module 把它纳入文档时，assembler 才会为它补上最小 fallback response。
+OpenAPI Plugin 把它纳入文档时，assembler 才会为它补上最小 fallback response。
 
 要发布文档，App Composition 必须显式完成三个选择：
 
@@ -134,7 +134,7 @@ OpenAPI Module 把它纳入文档时，assembler 才会为它补上最小 fallba
    `lenso.http.endpoint@1` requirement。
 3. 把 OpenAPI Instance 自己提供的 HTTP Endpoint 绑定到 Web Ingress。
 
-生成的 OpenAPI 3.1 文档只包含这个显式绑定的子集。Module 不会全局发现 provider，
+生成的 OpenAPI 3.1 文档只包含这个显式绑定的子集。Plugin 不会全局发现 provider，
 也不会从 listener 推断公开 server URL。不可变 configuration 控制文档 metadata 与
 静态 route：
 
@@ -229,8 +229,8 @@ impl OrdersHttp {
 `extract_authenticated_actor` 统一处理 evidence 转换、Auth 调用、稳定的 `401`/`403` 响应以及
 assertion 附加。`OrdersHttp::auth` 与 Orders client 是从 `ActivateContext::dependencies()` 一次性创建、
 并在 deactivate 时释放的 client；不要在每个请求里重复解析 binding。目标 Orders
-Module 仍必须校验 assertion 的 proof、issuer、有效期和 operation audience，然后再投影
-为自己的 typed actor。Provider 与目标侧的完整代码见 [Auth Module](/docs/zh/auth-module/)。
+Plugin 仍必须校验 assertion 的 proof、issuer、有效期和 operation audience，然后再投影
+为自己的 typed actor。Provider 与目标侧的完整代码见 [Auth Plugin](/docs/zh/auth-plugin/)。
 
 extractor 按 handler 参数顺序运行。它可以等待 provider 上保存的 client、为后续
 extractor 和 handler 增强 context、返回明确响应，或保留 Endpoint failure。内置
@@ -242,10 +242,10 @@ middleware 更适合自然包裹多个 handler 参数的行为，例如 tracing 
 期望的身份类型。这些是应用自己实现 `AuthenticatedHttpActor` 的 HTTP 入口身份类型；
 Lenso 不强加一套通用 user 模型。它与目标侧验证后才投影的 `TypedActor` 有意分开。
 `AdminActor` 只应该表示一种不同的、已经认证的 actor kind，不应借 extractor
-直接授予角色、tenant access 或 resource ownership；这些决定仍属于目标 Module。
+直接授予角色、tenant access 或 resource ownership；这些决定仍属于目标 Plugin。
 
 `handle_authenticated` 是 Endpoint 自己的应用代码：它携带上述 assertion context
-调用 `self.orders`，用 `response::json` 序列化成功结果，并把目标 Module 的授权拒绝
+调用 `self.orders`，用 `response::json` 序列化成功结果，并把目标 Plugin 的授权拒绝
 显式映射成 `403` Problem Details。
 
 请显式保持以下映射：
@@ -253,13 +253,13 @@ Lenso 不强加一套通用 user 模型。它与目标侧验证后才投影的 `
 | 结果 | Endpoint 响应 |
 | --- | --- |
 | credential 缺失、无效、过期或已撤销 | `401` Problem Details 和 `WWW-Authenticate` |
-| actor 有效，但无权调用目标 operation | Endpoint 把目标 Module 的授权拒绝映射为 `403` |
+| actor 有效，但无权调用目标 operation | Endpoint 把目标 Plugin 的授权拒绝映射为 `403` |
 | path、query 或 body 格式错误 | `400` |
 | JSON extractor 缺少 content type 或 content type 不受支持 | `415` |
 | Auth 或业务 Capability 不可用 | `503` |
 | response 序列化或 header 构造失败 | Endpoint internal failure，映射为 `503` |
 
-Ingress 拥有 transport error；Auth 拥有 evidence authentication；目标业务 Module
+Ingress 拥有 transport error；Auth 拥有 evidence authentication；目标业务 Plugin
 拥有最终授权。Auth 成功不等于获得所有业务权限。
 
 在 Plan 中为一个 Ingress Instance 设置不可变配置：
@@ -298,9 +298,9 @@ let config = HttpEgressConfig::new(["https://api.example.test"])?
 use lenso_capability_http_client::{
     ClientClient, ClientInvocationError, SendRequest, SendRequestHeadersItem,
 };
-use lenso_kernel::{ModuleDependencies, RuntimeFailure};
+use lenso_kernel::{PluginDependencies, RuntimeFailure};
 
-fn client(dependencies: &ModuleDependencies) -> Result<ClientClient, RuntimeFailure> {
+fn client(dependencies: &PluginDependencies) -> Result<ClientClient, RuntimeFailure> {
     ClientClient::from_dependencies(dependencies)
 }
 
@@ -323,5 +323,5 @@ async fn send(client: &ClientClient) -> Result<i64, ClientInvocationError> {
 当前 provider 不会自动跟随 redirect、使用 system proxy、管理 cookie 或重试。
 
 两个 HTTP contract 都是 portable 的，并有生成的 TypeScript binding。但当前维护的
-Ingress 与 Egress provider 是 linked Rust Module；Bun Module 仍需通过 host 支持的
+Ingress 与 Egress provider 是 linked Rust Plugin；Bun Plugin 仍需通过 host 支持的
 execution path 与 binding 获得 Capability。contract portable 不等于 provider 自动安装。

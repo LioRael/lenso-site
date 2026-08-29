@@ -1,6 +1,6 @@
 ---
 title: 核心架构
-description: Composition、可移植 Kernel、宿主调度与 Module 执行之间的稳定接缝。
+description: Composition、可移植 Kernel、宿主调度与 Plugin 执行之间的稳定接缝。
 ---
 
 ## 四层所有权
@@ -22,19 +22,19 @@ Authoring 阶段的意图：Instance、包输入、配置、execution class、pl
 
 ### Execution Adapter
 
-持有 Module generation 与 endpoint 机制：Native factory、Bun 子进程、未来
+持有 Plugin generation 与 endpoint 机制：Native factory、Bun 子进程、未来
 宿主支持的 source、隔离、framing 和 Adapter 特定失败分类。
 
 ## 删除测试
 
 只有删除 Kernel 后会迫使每个 Runner 与 Adapter 重复实现的机制才属于 Kernel。
 HTTP、PostgreSQL、Auth、Secrets、OpenTelemetry、UI 与产品 Workflow 都无法
-通过该测试；不选择相应 Module，它们的复杂度就会消失。
+通过该测试；不选择相应 Plugin，它们的复杂度就会消失。
 
 ## 依赖方向
 
 ```text
-产品 Module / Authoring / Examples
+产品 Plugin / Authoring / Examples
                 ↓
 Runtime Driver 与 Execution Adapter
                 ↓
@@ -43,4 +43,4 @@ Runtime Driver 与 Execution Adapter
 App Plan + Kernel
 ```
 
-Core 永远不反向依赖具体 Driver、Adapter、Module、CLI 或示例。
+Core 永远不反向依赖具体 Driver、Adapter、Plugin、CLI 或示例。

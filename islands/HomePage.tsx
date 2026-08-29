@@ -6,30 +6,30 @@ import { ThemeSwitcher } from '../components/home/ThemeSwitcher';
 
 const heroDemoFrames = [
   {
-    command: 'lenso app compose ./support-desk --blueprint support-desk --apply',
+    command: 'lenso plugin new example.echo',
     items: [
-      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'support-desk/', trail: true },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'lenso.app.json' },
-      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: 'services/' },
-      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: 'modules/' },
+      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'example.echo/', trail: true },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'plugin-package.json' },
+      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: 'src/' },
+      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: 'generated/' },
     ],
   },
   {
-    command: 'lenso dev up --console-root ../lenso-console',
+    command: 'lenso app init --host ./host --host-catalog ./host-catalog.json',
     items: [
-      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'support-desk/', trail: true },
+      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'my-app/', trail: true },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'plugin-root.json' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'host-catalog.json' },
+      { depth: 1, icon: '/lenso-assets/tree-folder.svg', label: 'plugins/' },
+    ],
+  },
+  {
+    command: 'lenso app check && lenso run',
+    items: [
+      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'my-app/', trail: true },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'Resolved Plan · valid' },
+      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'Ready Gate · passed' },
       { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'Host · running' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'Console · ready' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'exact topology · connected' },
-    ],
-  },
-  {
-    command: 'GET /api/console/v1/system',
-    items: [
-      { depth: 0, icon: '/lenso-assets/tree-folder.svg', label: 'support-desk/', trail: true },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'Services · connected' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'Modules · connected' },
-      { depth: 1, icon: '/lenso-assets/tree-file.svg', label: 'Control Adapters · connected' },
     ],
   },
 ];
@@ -37,71 +37,71 @@ const heroDemoFrames = [
 const lifecycleSteps = [
   {
     index: '1',
-    title: 'Compose',
-    tag: 'lenso.app.json',
-    text: 'Materialize the exact app revision, artifact digests, dependency selections, and linked or service-backed bindings.',
-    links: [{ label: 'Product Blueprints', icon: '/lenso-assets/runtime-starter-manifest.svg' }],
+    title: 'Author',
+    tag: 'plugin new',
+    text: 'Create one typed Plugin, edit its business Provider, and check it against generated Capability contracts.',
+    links: [{ label: 'Plugin authoring', icon: '/lenso-assets/runtime-starter-manifest.svg' }],
   },
   {
     index: '2',
-    title: 'Run locally',
-    tag: 'dev up',
-    text: 'Run lenso dev up with --console-root to start the Host, auto-start Services, and the independent Console in one foreground-bound local session.',
-    links: [{ label: 'Connected local path', icon: '/lenso-assets/runtime-starter-models.svg' }],
+    title: 'Package',
+    tag: 'plugin pack',
+    text: 'Build and verify one portable .lenso-plugin archive with content digests and an explicit execution class.',
+    links: [{ label: 'Portable Plugin', icon: '/lenso-assets/runtime-starter-models.svg' }],
   },
   {
     index: '3',
-    title: 'Connect',
-    tag: 'dev up',
-    text: 'The same command creates signed loopback enrollment material, reconciles Module-owned UI artifacts, and connects the exact topology. Console does not deploy or adopt the app.',
-    links: [{ label: 'Console', icon: '/lenso-assets/runtime-console-card.svg' }],
+    title: 'Compose',
+    tag: 'app init',
+    text: 'Initialize a Plugin Root from one reviewed Host Catalog, then add, configure, enable, or disable explicit Plugin instances.',
+    links: [{ label: 'Plugin composition', icon: '/lenso-assets/runtime-console-card.svg' }],
   },
   {
     index: '4',
-    title: 'Status',
-    tag: 'connected',
-    text: 'Read direct connection state for each System object, then inspect and control supported local Workloads through their separate operational state.',
-    links: [{ label: 'System status', icon: '/lenso-assets/feature-console.svg' }],
+    title: 'Run',
+    tag: 'app check',
+    text: 'Resolve and validate the complete Plan before boot. The Host starts only after the Ready Gate passes.',
+    links: [{ label: 'Runtime lifecycle', icon: '/lenso-assets/feature-console.svg' }],
   },
 ];
 
 const lifecyclePanels = [
   {
     folder: './',
-    file: 'lenso.app.json',
-    lines: ['{', '"revision": 1', '"contentDigest": "sha256:…"', '"modules": [ … ]'],
+    file: 'src/plugin.rs',
+    lines: ['impl ToolProvider for ExampleEcho', 'generated request type', 'generated domain error'],
   },
   {
     folder: '$',
-    file: 'lenso dev up --console-root ../lenso-console',
-    lines: ['Lenso local System is ready', 'Host: http://127.0.0.1:…', 'Console: http://127.0.0.1:…', 'System: support-desk'],
+    file: 'lenso plugin pack',
+    lines: ['Descriptor derived', 'Bundle closure verified', 'dist/example.echo-0.1.0.lenso-plugin'],
   },
   {
-    folder: 'dev up',
-    file: 'connected local path',
-    lines: ['signed enrollment material', 'Console Stores migrated', 'Module UI artifacts reconciled', 'exact topology connected'],
+    folder: 'app init',
+    file: 'plugin-root.json',
+    lines: ['Host Catalog copied', 'Plugin Root initialized', 'no partial workspace on failure'],
   },
   {
-    folder: 'GET',
-    file: '/api/console/v1/system',
-    lines: ['{', '"status": "connected"', '"services": [ … ]', '"modules": [ … ]'],
+    folder: 'app check',
+    file: 'Resolved Plan',
+    lines: ['dependencies selected', 'bindings resolved', 'Ready Gate passed'],
   },
 ];
 
 const runtimeCards = [
   {
     title: 'App Composition',
-    text: 'One content-bound selection of Module Releases, dependencies, and implementation bindings.',
+    text: 'One content-bound selection of Plugin Releases, dependencies, and implementation bindings.',
     icon: '/lenso-assets/runtime-starter-manifest.svg',
   },
   {
-    title: 'Module manifest',
+    title: 'Plugin manifest',
     text: 'Explicit Business API operations, runtime behavior, dependencies, and Console Surfaces.',
     icon: '/lenso-assets/runtime-starter-models.svg',
   },
   {
     title: 'Business API',
-    text: 'Generated clients call declared module operations through scoped Surface Grants.',
+    text: 'Generated clients call declared Plugin operations through scoped Surface Grants.',
     icon: '/lenso-assets/brand-api.svg',
   },
   {
@@ -121,11 +121,11 @@ const runtimeChannels = [
   'Topology Digest',
   'Connection Status',
   'Services',
-  'Modules',
+  'Plugins',
   'Workloads',
   'Control Adapters',
   'Management Binding',
-  'Module Surfaces',
+  'Plugin Surfaces',
   'Surface Grants',
 ];
 
@@ -141,7 +141,7 @@ const channelGroups = [
   {
     label: 'Owner-local contracts',
     items: [
-      { label: 'Module Contracts', icon: '/lenso-assets/feature-contract.svg' },
+      { label: 'Plugin Contracts', icon: '/lenso-assets/feature-contract.svg' },
       { label: 'Business APIs', icon: '/lenso-assets/brand-api.svg' },
       { label: 'Service Contracts', icon: '/lenso-assets/runtime-starter-models.svg' },
     ],
@@ -150,7 +150,7 @@ const channelGroups = [
     label: 'Connected runtime',
     items: [
       { label: 'Services', icon: '/lenso-assets/runtime-starter-models.svg' },
-      { label: 'Modules', icon: '/lenso-assets/feature-contract.svg' },
+      { label: 'Plugins', icon: '/lenso-assets/feature-contract.svg' },
       { label: 'Workloads', icon: '/lenso-assets/feature-console.svg' },
       { label: 'Control Adapters', icon: '/lenso-assets/runtime-console-card.svg' },
     ],
@@ -171,8 +171,8 @@ const agentRows = [
   ['app: support-desk', 'Composed', 'json'],
   ['system: support-desk', 'Running', 'local'],
   ['console', 'Connected', 'system'],
-  ['module contracts', 'Current', 'lock'],
-  ['surface: support-tickets', 'Connected', 'module'],
+  ['Plugin contracts', 'Current', 'lock'],
+  ['surface: support-tickets', 'Connected', 'Plugin'],
   ['service: support-suite-provider', 'Running', 'service'],
   ['runtime stories', 'Running', 'live'],
   ['local control', 'Connected', 'adapter'],
@@ -203,7 +203,7 @@ const featureCards = [
   },
   {
     title: 'Console',
-    text: 'See the connected System, module Surfaces, direct object states, runtime stories, and local workload operations.',
+    text: 'See the connected System, Plugin Surfaces, direct object states, runtime stories, and local workload operations.',
     icon: '/lenso-assets/feature-console.svg',
   },
   {
@@ -215,13 +215,13 @@ const featureCards = [
 
 const footerColumns: Array<[string, Array<[string, string]>]> = [
   ['Start', [['Overview', '/docs'], ['Quickstart', '/docs/quickstart'], ['Product Blueprints', '/docs/product-blueprints'], ['CLI Reference', '/docs/cli-reference']]],
-  ['Build', [['Product Blueprints', '/docs/product-blueprints'], ['Module Authoring', '/docs/module-authoring'], ['Business API Surfaces', '/docs/admin-surfaces'], ['Module Console UI', '/docs/console-packages']]],
+  ['Build', [['Product Blueprints', '/docs/product-blueprints'], ['Plugin Authoring', '/docs/plugin-authoring'], ['Business API Surfaces', '/docs/admin-surfaces'], ['Plugin Console UI', '/docs/console-packages']]],
   ['Extend', [['Business API Surfaces', '/docs/admin-surfaces'], ['Service Capability Tiers', '/docs/autonomous-services'], ['Service System', '/docs/service-system-plane'], ['Auth Capabilities', '/docs/auth-capabilities']]],
   ['Operate', [['Console', '/docs/runtime-console'], ['Service System', '/docs/service-system-plane'], ['Troubleshooting', '/docs/troubleshooting'], ['Examples', '/docs/examples']]],
   ['Concepts', [['Platform Concepts', '/docs/platform-concepts'], ['Runtime Stories', '/docs/runtime-stories'], ['Service System', '/docs/service-system-plane'], ['Service Capability Tiers', '/docs/autonomous-services']]],
   ['Agents', [['Agent Development', '/docs/agent-development'], ['Contracts and Checks', '/docs/contracts-and-checks'], ['Service System', '/docs/service-system-plane'], ['Examples', '/docs/examples']]],
   ['Reference', [['Manifest Reference', '/docs/manifest-reference'], ['Service Capability Tiers', '/docs/autonomous-services'], ['API Reference', '/docs/api'], ['Troubleshooting', '/docs/troubleshooting']]],
-  ['Modules', [['Module Authoring', '/docs/module-authoring'], ['Module Console UI', '/docs/console-packages'], ['Business API Surfaces', '/docs/admin-surfaces'], ['Runtime Lifecycle', '/docs/runtime-lifecycle']]],
+  ['Plugins', [['Plugin Authoring', '/docs/plugin-authoring'], ['Plugin Console UI', '/docs/console-packages'], ['Business API Surfaces', '/docs/admin-surfaces'], ['Runtime Lifecycle', '/docs/runtime-lifecycle']]],
   ['Community', [['GitHub', 'https://github.com/LioRael/lenso'], ['Issues', 'https://github.com/LioRael/lenso/issues'], ['Discussions', 'https://github.com/LioRael/lenso/discussions'], ['Examples', 'https://github.com/LioRael/lenso-examples']]],
 ];
 
@@ -508,7 +508,7 @@ function RuntimePrimitiveSection() {
   return (
     <section className="mx-auto min-h-[588px] max-w-[1392px] pt-[120px] max-[1439px]:mx-6 max-[1439px]:max-w-none max-[1199px]:min-h-[664px] max-[900px]:min-h-[1132px] max-[560px]:!min-h-0 max-[560px]:pt-16">
       <SectionIntro
-        copy="Blueprints and Capability Packs materialize one exact App Composition; Agent Skills guide the bounded authoring path. Console then projects the connected System's services, modules, adapters, workloads, and Surfaces."
+        copy="Plugin packages and one reviewed Host Catalog materialize an exact App Composition; Agent Skills guide the bounded authoring path. Console projects active Plugins, Generations, and supported lifecycle controls."
         title="From authoring inputs to a connected System"
       />
 
@@ -636,7 +636,7 @@ function ConsoleShowcaseSection() {
         </h2>
         <p className="max-w-[566px] text-lg leading-7 text-[var(--site-muted)]">
           The images below are illustrative mock views, not current product captures. The
-          shipped Console reads exact topology, Module-owned Surfaces, direct object status,
+          shipped Console reads exact topology, Plugin-owned Surfaces, direct object status,
           and supported local Workload operations.
         </p>
       </div>
@@ -647,7 +647,7 @@ function ConsoleShowcaseSection() {
       >
         <p>
           <span className="block font-medium text-[var(--site-ink)]">See the whole app</span>
-          Services, modules, Workloads, Adapters, and capability bindings.
+          Services, Plugins, Workloads, Adapters, and capability bindings.
         </p>
         <p>
           <span className="block font-medium text-[var(--site-ink)]">Find the gap</span>

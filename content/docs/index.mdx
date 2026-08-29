@@ -4,7 +4,7 @@ description: Understand what Lenso is, why it uses an explicit App Plan, and whe
 ---
 
 Lenso is a local-first, language-independent runtime for modular applications.
-It turns an application's Modules, Capability bindings, execution choices, and
+It turns an application's Plugins, Capability bindings, execution choices, and
 policies into an immutable **Resolved App Plan**, then runs that plan through a
 small portable Kernel.
 
@@ -21,11 +21,11 @@ validated until the application is already running.
 
 Lenso separates those concerns:
 
-- **Composition** selects Modules, binds Capabilities, and produces the Plan.
+- **Composition** selects Plugins, binds Capabilities, and produces the Plan.
 - **The Kernel** validates and executes the Plan with portable lifecycle rules.
 - **Runtime Drivers** provide scheduling, clocks, cancellation, and shutdown.
-- **Execution Adapters** connect the Kernel to concrete Module implementations.
-- **Modules** own product behavior behind typed Capability Interfaces.
+- **Execution Adapters** connect the Kernel to concrete Plugin implementations.
+- **Plugins** own product behavior behind typed Capability Interfaces.
 
 This separation makes application structure inspectable before execution and
 keeps host-specific mechanisms out of the portable core.
@@ -39,11 +39,11 @@ flowchart TD
   P --> K[Portable Kernel]
   D[Runtime Driver] --> K
   K --> E[Execution Adapters]
-  E --> M[Module Instances]
+  E --> M[Plugin Instances]
   M --> Q[Capabilities: request, stream, event]
 ```
 
-The Plan is the complete execution input. It records Module identities,
+The Plan is the complete execution input. It records Plugin identities,
 Capability bindings, execution classes, connections, policies, and the data
 needed to admit the application. Once resolved, the Plan is immutable; the
 Kernel does not discover or rewrite the graph while booting.
@@ -59,17 +59,17 @@ filesystem, database, process, Auth, telemetry, Console, or business semantics.
 | **App Composition** | Declares the application and selects compatible implementations. |
 | **Resolved App Plan** | Provides the canonical, immutable input accepted by the runtime. |
 | **Capability** | Defines a versioned Interface with request, stream, or event Operations. |
-| **Module** | Implements product behavior and declares the Capabilities it provides or requires. |
+| **Plugin** | Implements product behavior and declares the Capabilities it provides or requires. |
 | **Kernel** | Owns portable admission, lifecycle, invocation, cancellation, and diagnostics. |
 | **Runtime Driver** | Supplies host scheduling, time, task joining, cancellation, and shutdown. |
-| **Execution Adapter** | Runs a Module implementation in a concrete environment or transport. |
+| **Execution Adapter** | Runs a Plugin implementation in a concrete environment or transport. |
 
 ## Portable does not mean environment-free
 
 The same Kernel semantics can be compiled for native, browser JavaScript, and
 WASIp2 host profiles. Each profile still needs a Driver and compatible
 Execution Adapters. Portability means the Kernel does not absorb those host
-mechanisms; it does not imply that every Module runs unchanged in every
+mechanisms; it does not imply that every Plugin runs unchanged in every
 environment.
 
 ## Current implementation boundary
@@ -77,7 +77,7 @@ environment.
 - `lenso-app-plan` owns the serializable execution input.
 - `lenso-kernel` owns portable runtime semantics and deterministic conformance.
 - `lenso-runtime-conformance` owns product-neutral runtime proofs.
-- Drivers, Execution Adapters, protocols, optional Modules, authoring, and
+- Drivers, Execution Adapters, protocols, optional Plugins, authoring, and
   examples live in separate owner repositories.
 - Runtime discovery, hot graph mutation, distributed placement, automatic
   replicas, and an independent Console product are not current runtime promises.
@@ -88,13 +88,13 @@ early-access, and deliberately deferred boundaries.
 ## Where to go next
 
 <CardGroup>
-  <Card title="Quickstart" href="/docs/quickstart" description="Install the CLI, scaffold a typed Bun Module, and run its production Adapter development loop." />
+  <Card title="Quickstart" href="/docs/quickstart" description="Install the CLI, scaffold a typed Bun Plugin, and run its production Adapter development loop." />
   <Card title="Agent skills" href="/docs/agent-skills" description="Install the six public workflows, route work to the right owner, and ask for verifiable completion evidence." />
   <Card title="Core architecture" href="/docs/architecture" description="Study the ownership boundaries between composition, Kernel, Driver, and Adapter." />
   <Card title="Capability authoring" href="/docs/capability-authoring" description="Define Request, Stream, and Event contracts and generate each owned language projection." />
-  <Card title="Rust Modules" href="/docs/module-authoring" description="Implement a generated Provider and register its native factory." />
-  <Card title="Bun Modules" href="/docs/bun-module-authoring" description="Generate a complete typed project and develop it with fresh Plans and hot reload." />
+  <Card title="Rust Plugins" href="/docs/plugin-authoring" description="Implement a generated Provider and register its native factory." />
+  <Card title="Bun Plugins" href="/docs/bun-plugin-authoring" description="Generate a complete typed project and develop it with fresh Plans and hot reload." />
   <Card title="Web Capabilities" href="/docs/web-capabilities" description="Publish HTTP endpoints and call policy-bounded upstream services." />
-  <Card title="Auth Module" href="/docs/auth-module" description="Authenticate evidence, propagate assertions, and authorize at the target." />
+  <Card title="Auth Plugin" href="/docs/auth-plugin" description="Authenticate evidence, propagate assertions, and authorize at the target." />
   <Card title="Persistence and secrets" href="/docs/postgres-kit" description="Own a PostgreSQL schema and resolve secret references without leaking them into the Plan." />
 </CardGroup>

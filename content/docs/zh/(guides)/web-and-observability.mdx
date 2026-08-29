@@ -5,7 +5,7 @@ description: 组合可选产品与运维关注点，而不把它们变成 Kernel
 
 ## Target-owned Web UI
 
-目标 App 可以选择 Web Shell、Browser Adapter、业务 Module 和多个 UI
+目标 App 可以选择 Web Shell、Browser Adapter、业务 Plugin 和多个 UI
 Contribution provider。Shell 绑定 `many lenso.ui.contribution@1` provider。
 生成的浏览器 client 只暴露所选 Contribution 声明并在启动前解析的可移植
 Capability requirement。
@@ -20,8 +20,8 @@ contract 及其配置见 [Web Capabilities](/docs/zh/web-capabilities)。
 ## Auth
 
 Ingress Adapter 把协议特定输入转换为 Credential Evidence，并调用普通 Auth
-Capability。Auth Module 签发短生命周期、有 audience 限制的 Actor Assertion。
-目标 Module 验证后投影成强类型领域 Actor，并在本地做最终授权。
+Capability。Auth Plugin 签发短生命周期、有 audience 限制的 Actor Assertion。
+目标 Plugin 验证后投影成强类型领域 Actor，并在本地做最终授权。
 
 不存在环境式 System Actor、通用 grants 列表或自动匿名身份。
 
@@ -32,4 +32,4 @@ Actor Assertion。可移除的 `lenso-otel-module` 导出选定 diagnostics 与�
 OTel signal；导出失败不会改变 App 行为。
 
 Telemetry 不是持久业务证据。Audit、Story、Workflow 与 Outbox 语义只有在产品
-选择时才由可选 Module 持有。
+选择时才由可选 Plugin 持有。

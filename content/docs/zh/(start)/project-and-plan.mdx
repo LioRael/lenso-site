@@ -7,15 +7,15 @@ Lenso 为两个不同所有者使用两份不同文档。
 
 | 制品 | 所有者 | 用途 |
 | --- | --- | --- |
-| `lenso.json` | Authoring 工具与 App 仓库 | 可审查的 Module、包、合约、Profile、配置与绑定 |
+| Plugin Root 与 Host Catalog | Authoring 工具、产品 Host 与 App 仓库 | 可审查的 Plugin Release、Keyed Instance、Profile、配置与 Disable Marker |
 | Resolved App Plan | `lenso-app-plan` | 启动时消费的规范、完整、不可变输入 |
 
 ## 项目声明什么
 
-- 有键的 Module Instance 与 entrypoint；
+- 有键的 Plugin Instance 与 entrypoint；
 - 明确的 Capability requirement 与 provider binding；
 - execution class 和可选 placement；
-- 普通 Cargo、Bun、npm 或 OCI 包输入；
+- 为当前 Host 选择并验证的 `.lenso-plugin` Bundle 输入；
 - 精确的 Capability Descriptor 与生成 bindings；
 - 非敏感配置和显式 `secret_ref`；
 - 可选的 Web Profile，用于选择 Shell、Browser Adapter 和 UI Contribution。
@@ -28,5 +28,6 @@ Lenso 不发明新的锁文件。Cargo、npm 与 Bun 继续持有常规 lock 状
 Resolve 会验证包状态、Descriptor 新鲜度、配置 schema、execution class、
 provider 基数与所有显式绑定。规范序列化使通过审查的 Plan 字节稳定。
 
-启动后，Kernel 不能安装包、发现 provider、重绑 consumer、改变 placement
-或重写配置。任何此类变更都需要重新 resolve 并重启 App。
+启动后，Kernel 不能安装包、发现 Provider、重绑 Consumer、改变 Placement 或重写
+配置。Host 可以把新的 Desired State 解析成新的不可变 App Generation，但已有
+Turn 会保留其租用的 Generation，直到 Drain 完成。

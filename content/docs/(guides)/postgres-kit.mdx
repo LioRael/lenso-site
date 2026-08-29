@@ -1,16 +1,16 @@
 ---
 title: PostgreSQL Kit
-description: Give a stateful Module an explicit, fail-closed lifecycle for its own PostgreSQL schema.
+description: Give a stateful Plugin an explicit, fail-closed lifecycle for its own PostgreSQL schema.
 ---
 
-`lenso-postgres-kit` is a lifecycle kit for one Module-owned PostgreSQL schema.
-It is not a shared State Module, generic SQL Capability, repository abstraction,
-or ORM. The owning Module still defines its data model, queries, transaction
+`lenso-postgres-kit` is a lifecycle kit for one Plugin-owned PostgreSQL schema.
+It is not a shared State Plugin, generic SQL Capability, repository abstraction,
+or ORM. The owning Plugin still defines its data model, queries, transaction
 boundaries, backup and retention policy, and dedicated database role.
 
 ## Define and set up the schema
 
-Keep SQL in the owning Module's `migrations/` directory. Rust retains only the
+Keep SQL in the owning Plugin's `migrations/` directory. Rust retains only the
 explicit version, name, and file order:
 
 ```text
@@ -58,13 +58,13 @@ and names stay explicit, preserving deterministic order, contiguous-version
 validation, and checksum drift detection.
 
 Run `install` as an explicit installation or deployment operation, never from
-Module `prepare`. After `OwnedPostgres::prepare`, use `postgres.pool()` with normal SQLx queries
+Plugin `prepare`. After `OwnedPostgres::prepare`, use `postgres.pool()` with normal SQLx queries
 and transactions. The pool selects the owned schema as its `search_path`.
 
 ## Upgrade deliberately
 
-Append a new SQL file and declaration without editing an applied file. The new Module generation first
-returns `PostgresKitError::UpgradeRequired`; stop the owning Module, run the
+Append a new SQL file and declaration without editing an applied file. The new Plugin generation first
+returns `PostgresKitError::UpgradeRequired`; stop the owning Plugin, run the
 operator action, then prepare the new generation:
 
 ```rust
@@ -82,10 +82,10 @@ The private ledger records version, name, and checksum.
 | Failure | Meaning |
 | --- | --- |
 | `SetupRequired` | The managed schema has not been installed. |
-| `UpgradeRequired` | The linked Module has pending migrations. |
+| `UpgradeRequired` | The linked Plugin has pending migrations. |
 | `UnmanagedSchema` | A schema exists without the kit's ledger; it is never adopted. |
 | `HistoryDiverged` | Applied name, version, or SQL checksum changed. |
-| `SchemaAhead` | The database is newer than this Module generation. |
+| `SchemaAhead` | The database is newer than this Plugin generation. |
 | `OwnershipMismatch` | The current database role does not own the schema. |
 
 `setup` is idempotent: it returns `Created` once and `AlreadyCurrent` after
@@ -93,14 +93,14 @@ that. Failures roll back the schema and ledger together.
 
 ## Enforce isolation in PostgreSQL
 
-`search_path` is query convenience, not a security boundary. Give each Module
+`search_path` is query convenience, not a security boundary. Give each Plugin
 a dedicated non-superuser role that owns only its schema, and restrict database
 grants accordingly. Sharing one physical cluster does not authorize direct
-access to another Module's tables.
+access to another Plugin's tables.
 
-Cross-Module workflows use Capability calls and application-level coordination,
+Cross-Plugin workflows use Capability calls and application-level coordination,
 not shared SQL transactions. Resolve a database URL through the
-[Secrets Module](/docs/secrets-module), but never place the URL itself in the
+[Secrets Plugin](/docs/secrets-plugin), but never place the URL itself in the
 Resolved App Plan.
 
 ## Verify the kit

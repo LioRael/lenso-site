@@ -1,0 +1,76 @@
+---
+title: Rust Plugin authoring
+description: Create one portable Rust Plugin and ship a verified Bundle.
+---
+
+The Rust scaffold keeps business behavior in one source file and lets the SDK
+derive its Capability descriptor and runtime lowering.
+
+## Choose an implementation policy
+
+```sh
+# Portable Wasm plus a trusted native Process from the same source
+lenso plugin new example.echo
+
+# Wasm only
+lenso plugin new example.echo --runtime wasm
+
+# Trusted Process only
+lenso plugin new example.echo --runtime process
+```
+
+The default multi-output project is useful when portability and native process
+compatibility both matter. Process Plugins have normal local process authority;
+they are not sandboxes.
+
+## Implement behavior
+
+The initial scaffold uses the public macros rather than hand-written Adapter
+protocol code:
+
+```rust title="src/lib.rs"
+use lenso_agent_tool_sdk::prelude::*;
+use schemars::JsonSchema;
+
+#[derive(Debug, serde::Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct Arguments {
+    text: String,
+}
+
+#[lenso::plugin]
+#[derive(Clone, Copy, Debug, Default)]
+struct Plugin;
+
+#[lenso_agent_tool_sdk::tool_provider]
+impl Plugin {
+    #[tool(name = "example.echo", description = "Echo text.")]
+    fn execute(arguments: Arguments) -> Result<ExecuteResponse, ExecuteError> {
+        Ok(ExecuteResponse {
+            content: arguments.text,
+            content_type: ContentType::Text,
+            metadata_json: "{}".try_into().unwrap(),
+        })
+    }
+}
+```
+
+## Use the fast loop and release proof
+
+```sh
+lenso plugin check
+lenso plugin dev --operation execute --request-json \
+  '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+lenso plugin dev --watch --operation execute --request-json \
+  '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+lenso plugin pack
+```
+
+`check` and `dev` use the development profile. `pack` builds release artifacts,
+requires every implementation to expose the same contract, writes one immutable
+ZIP-based `.lenso-plugin`, and re-verifies the published bytes.
+
+The first CLI scaffold intentionally targets the Agent Tool Provider Capability.
+For a new cross-Plugin role, define and generate the Capability contract first,
+then evolve the Plugin against those generated types. See
+[Capability authoring](/docs/capability-authoring).

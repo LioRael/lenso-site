@@ -11,9 +11,9 @@ description: 把变更路由到持有 Interface 与证据的仓库。
 | `LioRael/lenso-protocols` | Descriptor codegen、可移植 contract runtime、value conformance |
 | `LioRael/lenso-cli` | Authoring、项目检查、Plan resolve 与过渡 CLI |
 | `LioRael/lenso-examples` | 可执行示例与产品无关 fixtures |
-| `LioRael/lenso-web` | 后端 HTTP Endpoint / Client Capability、Ingress / Egress Module 与可选 OpenAPI 文档 Module |
+| `LioRael/lenso-web` | 后端 HTTP Endpoint / Client Capability、Ingress / Egress Plugin 与可选 OpenAPI 文档 Plugin |
 | `LioRael/lenso-auth-plugin` | 可移植 Auth Capability 与 assertion SDK |
-| `LioRael/lenso-otel-plugin` | 可移除 OpenTelemetry Module |
+| `LioRael/lenso-otel-plugin` | 可移除 OpenTelemetry Plugin |
 | `LioRael/lenso-site` | 当前版本化公开文档 |
 
 依赖向内指向可移植核心。任何要求 core 导入上述具体所有者的变更，通常放错了接缝。
@@ -22,6 +22,6 @@ description: 把变更路由到持有 Interface 与证据的仓库。
 
 - 图、生命周期、调用、取消、就绪或 diagnostics 语义：Core Kernel。
 - 调度、时间、join 或宿主关闭：Runtime Driver。
-- Module generation、process/wire endpoint 或隔离：Execution Adapter。
-- 产品行为、状态、Auth、Secrets、Telemetry 或 UI：普通 Module。
+- Plugin generation、process/wire endpoint 或隔离：Execution Adapter。
+- 产品行为、状态、Auth、Secrets、Telemetry 或 UI：普通 Plugin。
 - 包编辑、lock 检查、schema/codegen 新鲜度或 Plan resolve：Authoring 工具。

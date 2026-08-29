@@ -6,10 +6,10 @@ description: Define Request, Stream, and Event contracts and generate each langu
 A Capability is the contract between a consumer and a provider. Author it once;
 each Rust or Bun distribution generates only the projection it owns.
 
-For a new Request Capability and Bun Provider, `lenso new NAME
---runtime bun` generates the Descriptor, schemas, TypeScript binding, and typed
-Provider together. Use the manual flow below when defining a custom contract or
-evolving an existing Capability.
+The first `lenso plugin new` scaffold consumes the existing Agent Tool Provider
+Capability. Defining a new cross-Plugin role remains an explicit contract-owner
+workflow: author the Descriptor and schemas, generate each owned projection,
+and publish them from the Capability package.
 
 ## Create a request Capability
 
@@ -59,7 +59,7 @@ TypeScript output. Official Lenso Bun projections are published by
 `@lenso/bun` from locked snapshots of their owner repositories.
 
 ```sh
-bun add @lenso/bun @lenso/bun-module
+bun add @lenso/bun
 ```
 
 CI should reject generated drift and incompatible revisions:
@@ -86,41 +86,19 @@ the matching Provider/Client types for the selected language.
 
 ## Configure capacity in Composition
 
-Capacity is App policy, not part of the portable Descriptor. A provider can set
-request admission and Event mailbox bounds; a binding can override them:
-
-```json title="lenso.json (excerpt)"
-{
-  "provides": [{
-    "capability_id": "example.greeting@1",
-    "descriptor_version": "1.0.0",
-    "operations": ["greet"],
-    "operation_kinds": {},
-    "admission": { "queue_capacity": 64, "max_concurrency": 16 },
-    "operation_admissions": {},
-    "event_capacity": 128
-  }]
-}
-```
+Capacity is App policy, not part of the portable Descriptor. The Plugin-owned
+contract supplies safe defaults; the resolved App Plan records Request
+admission, operation overrides, and Event mailbox bounds for the exact
+Generation.
 
 `event_capacity` matters only for Event Operations. A full queue rejects
 admission; it does not silently become a durable Outbox.
 
-## Register the contract with the project
+## Keep package-owned projections current
 
-`lenso check` compares the declared endpoint with the Descriptor and checks
-every projection declared by this project. Omit languages owned elsewhere:
-
-```json title="lenso.json (excerpt)"
-{
-  "contracts": [{
-    "capability_id": "example.greeting@1",
-    "descriptor_version": "1.0.0",
-    "descriptor": "contract/greeting/capability.json",
-    "rust": "contract/greeting/src/generated.rs"
-  }]
-}
-```
+Run `lenso-contract-codegen check` in each package that distributes a generated
+projection. App authoring consumes the resulting Plugin Descriptor and Bundle;
+it does not use a second `lenso.json` contract registry.
 
 See the complete, maintained fixtures for
 [Request](https://github.com/LioRael/lenso-cli/tree/main/crates/lenso-authoring/tests/fixtures/contracts/greeting),
