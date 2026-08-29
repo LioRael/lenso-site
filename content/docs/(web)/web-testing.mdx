@@ -1,0 +1,75 @@
+---
+title: Prove the HTTP backend
+description: Exercise successful requests, designed failures, route collisions, and removal through the real Web Ingress.
+---
+
+Direct Endpoint tests prove handler behavior. This step proves the assembled
+backend through a real listener.
+
+## 1. Run the success path
+
+Start the target Host with its repository command, then create a greeting:
+
+```sh
+curl -i \
+  -H 'content-type: application/json' \
+  -d '{"name":"Lenso"}' \
+  http://127.0.0.1:8080/greetings
+```
+
+Require `201`, a JSON content type, and a stable ID. Read the resource back:
+
+```sh
+curl -i http://127.0.0.1:8080/greetings/greeting-1
+```
+
+Require `200` and the same ID and message.
+
+## 2. Run the failure matrix
+
+```sh
+curl -i -H 'content-type: application/json' -d '{"name":""}' \
+  http://127.0.0.1:8080/greetings
+curl -i -H 'content-type: application/json' -d '{bad json' \
+  http://127.0.0.1:8080/greetings
+curl -i http://127.0.0.1:8080/greetings/missing
+curl -i -X DELETE http://127.0.0.1:8080/greetings/greeting-1
+```
+
+| Request | Expected owner | Expected result |
+| --- | --- | --- |
+| Empty `name` | Endpoint Plugin | Intentional `400` with `invalid_name`. |
+| Malformed JSON | Endpoint extractor | `400` before the handler runs. |
+| Unknown ID | Endpoint Plugin | `404` with `greeting_not_found`. |
+| Unsupported method | Ingress | `405` with `Allow`. |
+
+## 3. Prove readiness and removal
+
+Add an integration case in which a second Endpoint provider declares the same
+method and path. Activation must fail before readiness; routing order must not
+silently choose a winner.
+
+Then remove or disable `company.greetings-http/api`, resolve a new Generation,
+and prove both routes are absent. This demonstrates that the backend behavior
+is owned by the removable Plugin rather than hidden Host code.
+
+The maintained owner-repository socket proof is:
+
+```sh
+cargo test --locked -p lenso-web-ingress \
+  --test http_ingress sdk_authored_endpoint_routes_through_the_real_ingress
+```
+
+## 4. Add production concerns deliberately
+
+- Use [Web Capabilities](/docs/web-capabilities) for middleware, limits,
+  cancellation, stable transport errors, and HTTP Egress.
+- Add [Auth](/docs/auth-plugin) when the route must authenticate evidence. The
+  target business Plugin still owns final authorization.
+- Add OpenAPI only when a document is required, binding an exact Endpoint subset.
+- Grant Egress only to exact allowed origins; it supplies no ambient network
+  authority, redirects, cookies, proxies, or automatic retries.
+
+The backend is complete when the success and failure matrix passes through the
+socket, duplicate routes block readiness, and removal deletes the routes from
+the next Generation.

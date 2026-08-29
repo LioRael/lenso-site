@@ -1,17 +1,19 @@
 ---
-title: 使用 Agent Skills 构建
-description: 安装 Lenso 的六个公开 Skill，选择正确的所有者工作流，并为 Coding Agent 提供完成可验证 Plugin 工作所需的上下文。
+title: 使用 Agent 开发 Lenso
+description: 安装 Lenso 的六个开发 Skill，把工作路由到正确所有者，并驱动 Coding Agent 从源码检查走到可观察交付。
 ---
 
-Lenso 为 Coding Agent 提供六个公开 Skill。它们把架构转成可执行工作流：先确定
-变更由谁持有，再创建正确的制品，并在请求的行为可观察后才结束工作。
+当你准备让 Coding Agent 构建或修改 Lenso 时，应从这里开始。六个 Lenso Skill
+为产品规划、Capability Contract、Plugin 行为、App 配置与 Host 机制提供有顺序的
+工作流。它们不会替代仓库源码、`--help`、测试和人工审查；它们负责告诉 Agent
+应该检查什么，以及什么状态才算真正完成。
 
-这些 Skill 用于指导开发。它们不是运行时插件，不会向 App 添加 Agent Plugin，
-也不会自动授予 Agent 生产环境权限。
+完成本指南后，你可以向 Agent 提交一个具体请求，让它选择正确的所有者工作流，
+并要求它返回可检查的实现与交付报告。
 
-## 安装 Skill Catalog
+## 1. 安装 Skill Pack
 
-安装前先查看 Catalog：
+先检查公开 Catalog：
 
 ```sh
 npx skills add LioRael/lenso --list
@@ -34,124 +36,214 @@ npx skills add LioRael/lenso \
 ```
 
 规范来源是 [Lenso Skill Pack](https://github.com/LioRael/lenso/tree/main/skills)。
-安装副本是派生制品；之后可以用 `npx skills update` 更新同名 Skill。
+安装副本是派生制品，之后可通过 `npx skills update` 刷新。
 
-## 选择一个主工作流
+当 Agent 能看到以下准确名称时，安装才算完成：
 
-所有者不明确时先使用 `lenso-start`；已经明确时，直接调用具体工作流。
+```text
+lenso-start
+lenso-business-planning
+lenso-capability-authoring
+lenso-plugin-authoring
+lenso-app-configuration
+lenso-runtime-extension
+```
 
-| 目标 | 主 Skill | 可观察的完成状态 |
+如果出现的是 `lenso-app-composition`，而不是 `lenso-app-configuration`，说明安装的
+Skill Pack 已经过期。先完成更新，再让 Agent 修改 App。
+
+## 2. 从一个有边界的请求开始
+
+向 Agent 提供四类输入：
+
+| 输入 | 应该说明什么 | 为什么重要 |
 | --- | --- | --- |
-| 把模糊产品目标转成有明确所有者的纵向行为 | `lenso-business-planning` | Plugin Card、Capability Edge 与一个 Tracer Slice |
-| 定义或演进跨 Plugin 的角色契约 | `lenso-capability-authoring` | Descriptor、Schema、生成绑定与兼容性证据 |
-| 实现可移除的产品行为 | `lenso-plugin-authoring` | Package、Factory 或 Entrypoint、生命周期、行为与移除证据 |
-| 选择 Package 和 Instance，并绑定应用图 | `lenso-app-composition` | 通过检查的项目文档与已审查的不可变 Resolved App Plan |
-| 添加调度、进程、Wire、Endpoint 或宿主机制 | `lenso-runtime-extension` | 狭窄的 Driver、Adapter 或 Runner 变更，以及 Conformance 和真实宿主证据 |
-| 判断上述哪个工作流持有请求 | `lenso-start` | 一个主工作流与一个可检查的完成状态 |
+| 结果 | 完成后人或另一个 Plugin 可以做什么 | 避免只输出架构描述 |
+| 权威来源 | 已知的仓库、Package、Host 与现有 Contract | 让源码选择保持显式 |
+| 约束 | 语言、Target、兼容性、安全和允许的交付动作 | 防止扩大范围 |
+| 完成条件 | 行为、真实失败、移除、检查与交付状态 | 防止过早结束 |
 
-Kernel 语义不是第七种产品工作流。涉及可移植图校验、生命周期、准入、调用、
-就绪、监督或诊断的变更，应从[核心架构](/docs/zh/architecture)与相关 ADR 开始。
-
-## 给 Agent 完整的起点
-
-一个有效请求应包含四部分：
-
-1. **目标：** 对人或另一个 Plugin 产生什么实际价值。
-2. **权威来源：** 已知的目标仓库、现有 Package、Capability 来源与 App Composition。
-3. **约束：** 语言、执行环境、兼容性、安全与交付边界。
-4. **证据：** 完成时必须存在的行为、失败、生命周期与交付证据。
-
-所有权仍不明确时，先使用路由 Prompt：
+复制以下模板并替换方括号：
 
 ```text
-使用 $lenso-start 为这个请求选择工作流。
+使用 $lenso-start 路由并完成这个 Lenso 任务。
 
-目标：Operator 可以把一个 Open Support Ticket 分配给可用 Agent。
-已知上下文：App 已有 Ticket List，但没有 Assignment Contract。
-约束：产品行为必须可移除，不新增 Kernel 语义。
-完成条件：指出所有者 Plugin、所需 Capability 工作、Composition 工作，以及
-第一个可观察成功与真实失败。
+结果：[一个用户或 Plugin 可观察的结果]
+权威来源：[仓库、Package、Host、Capability，未知时明确写未知]
+约束：[语言、Target、兼容性、安全与交付范围]
+完成条件：
+- [必须实际运行的成功行为]
+- [必须保持可区分的真实失败]
+- [适用时的配置、生命周期或移除证据]
+- [要求的检查以及 Commit/PR/Merge 状态]
+
+编辑前先报告所选主工作流、所有者仓库、当前源码 API，以及任何缺失前置条件。
+除非缺失条件会实质改变请求的产品结果，否则报告后继续完成任务。
 ```
 
-所有者明确后，写出主 Skill 与真实目标：
+最后一段提供了早期审查点，同时不会让 Agent 因普通实现选择而停下来等待。
+
+## 3. 让 `lenso-start` 路由工作
+
+当前所有权问题只选择一个主工作流：
+
+| 请求结果 | 主 Skill | 完成边界 |
+| --- | --- | --- |
+| 把模糊结果变成纵向产品行为 | `lenso-business-planning` | Plugin Card、显式 Capability Edge 与一个 Tracer Slice |
+| 定义或演进跨 Plugin 角色 | `lenso-capability-authoring` | Descriptor、Schema、生成 Binding、兼容性与 Freshness 证据 |
+| 实现可移除行为 | `lenso-plugin-authoring` | Plugin Contract、受支持实现、真实 Consumer Path 与移除证据 |
+| 在一个 App 中配置 Package 与 Instance | `lenso-app-configuration` | 已审查的 `plugins/` 差异、Derived App、行为与移除证据 |
+| 添加调度、进程、传输、Endpoint 或 Host 机制 | `lenso-runtime-extension` | 狭窄的 Driver、Adapter、Runner 或 Generation 改动及 Conformance、Host 证据 |
+| 判断上述哪一行持有请求 | `lenso-start` | 一个主工作流与一个可检查完成状态 |
+
+一个 Feature 可以跨越多行。Agent 应先完成一个所有者边界，再交给下一个工作流。
+例如，一个新 Web API 可能需要业务 Plugin、HTTP Endpoint Provider 与 App 配置；
+这不意味着三者必须放进同一个 Package。
+
+Kernel 语义不是常规的第七工作流。图校验、生命周期、准入、调用、Readiness、监督
+或诊断变更，需要对应 Architecture Decision 与 Portable Conformance 证据。
+
+## 4. 实现前必须检查源码
+
+Agent 应按以下顺序检查：
+
+1. 仓库说明与 Dirty Worktree；
+2. Package Manifest、Lock 与确定的依赖版本；
+3. Capability Source 和生成的 Provider/Client Projection；
+4. 现有 Plugin Descriptor、Factory、Entrypoint 与 Host Registration；
+5. App 的 Host Catalog 与可见 `plugins/` 差异；
+6. 能证明受影响路径的仓库 CI 或本地命令。
+
+只有方案中的每个 API 和命令都来自当前源码或已安装的 `--help`，这一步才算完成。
+ADR 可以解释意图，但不能证明 Package、命令、Scaffold 或远程服务已经交付。
+
+第一次编辑前要求一份简短 Routing Report：
 
 ```text
-使用 $lenso-plugin-authoring，以 Rust 实现 Ticket Provider。
-
-从选定 Contract Crate 读取生成的 Ticket Provider Interface。Ticket State 与
-Assignment Policy 必须留在 Plugin 内。组合一个有稳定 Key 的 Instance，验证
-Assignment 与 ticket_not_open，从测试 Composition 移除该 Instance，并报告
-准确的检查命令与制品路径。
+现在返回 Routing Report：
+- 主 Skill；
+- 所有者与删除边界；
+- 当前源码文件与 Package 版本；
+- 提供和依赖的 Capability；
+- App/Host 改动；
+- 第一个成功、真实失败与移除证据；
+- 未支持或缺失的前置条件。
 ```
 
-第二个 Prompt 刻意更具体：它提供权威边界和完成条件，但不猜测当前 API 名称；
-准确 API 应来自选中的 Package Source。
+## 5. 为实际任务选择 Prompt
 
-## 完整示例：Support Ticket Assignment
+### 增加一个 Plugin 行为
 
-一个 Feature 可能跨越多个所有者，但每一步仍然只有一个主工作流。
+```text
+使用 $lenso-plugin-authoring，以 Rust 添加 company.uppercase，作为一个可移除的
+Agent Tool Plugin。
 
-### 1. 规划产品切片
+使用当前 CLI Scaffold 和已安装的 --help。所有打包实现必须共享一个 Plugin
+Contract。实际运行成功的大写转换与无效参数，打包受支持实现，把 Bundle 安装到
+维护中的 Agent Host，通过真实 Agent Turn 调用它，然后移除并重新解析 App。
+报告准确路径与命令。
+```
 
-当 Ticket Fact、Assignment Policy 或 Authorization 仍有多个可能所有者时，
-调用 `lenso-business-planning`。输出应说明 Ticket Plugin 持有哪些状态与转换、
-谁最终有权执行 Assignment、第一个有用转换，以及一个真实失败。
+对应的人工教程见[为 Agent 添加一个 Tool](/docs/zh/first-app)。
 
-当删除该 Plugin 也会删除 Ticket 的 Fact、Rule、Lifecycle 与运维复杂度，并且
-每条跨 Plugin 边都有显式角色时，规划才算完成。
+### 配置已有 App
 
-### 2. 编写协作契约
+```text
+使用 $lenso-app-configuration，只修改这个 App 可见的 plugins/ 差异。
 
-如果另一个 Plugin 需要稳定的 Ticket 角色，调用
-`lenso-capability-authoring`。定义类似 `support.ticketing@1` 的 Identity、
-`assign_ticket` 等 Operation、Request/Response Schema，以及
-`ticket_not_found`、`ticket_not_open` 等 Domain Error。
+结果：review Profile 使用 semantic Session presentation Instance。先检查准确的
+Host Catalog 与当前 Derived App。添加最小 Instance TOML 与 Profile Selection，
+Secret 值保持外部化，运行 app show 与 app check，实际启动一个新 Session，然后
+移除该差异，证明 Host Default 再次可见。
+```
 
-生成两种发布目标的 Binding，并证明 Freshness Gate 有效。Descriptor 与生成的
-Provider/Client 形状参见[编写 Capability](/docs/zh/capability-authoring)。
+文件和发布模型见[配置 Plugin](/docs/zh/plugin-configuration)与
+[配置 Agent](/docs/zh/agent-configuration)。
 
-### 3. 实现 Plugin
+### 构建 Web 后端
 
-针对持有 Ticket 行为的 Package 调用 `lenso-plugin-authoring`。Provider 实现
-生成的 Interface，校验不透明 Configuration，仅从 Lifecycle Context 获取依赖，
-并为 Endpoint 与 Managed Work 创建全新 Generation。
+```text
+使用 $lenso-start，然后使用选中的 Plugin 与 App 工作流，添加一个 JSON Web 后端：
+POST /greetings 与 GET /greetings/{greeting_id}。
 
-通过公共门面编写的静态链接 Plugin 参见
-[编写 Rust Plugin](/docs/zh/plugin-authoring)；通过 Bun Execution Adapter 运行的
-TypeScript Provider 参见[编写 Bun Plugin](/docs/zh/bun-plugin-authoring)。进程
-选择只改变 Adapter 与 Entrypoint，不改变产品边界。
+使用当前 lenso.http.endpoint@1 Authoring API，以及现有 Host 已链接的 Web Ingress。
+Route 形态留在 HTTP Endpoint Provider，Transport Limit 留在 Ingress 配置；在 Handler
+运行前拒绝无效 JSON；通过真实 Socket 证明 201、200、400、404 与 405；并证明
+Route Collision 会阻止 Readiness。如果已安装 CLI 没有 Web Scaffold，不要发明一个。
+```
 
-真实 Consumer Path 必须证明成功；Domain Error 与 Operational Failure 必须可以
-区分；Lifecycle Cleanup 必须可观察；移除 Plugin 后不能残留隐藏产品行为。满足
-这些条件后，Plugin 工作才算完成。
+完整人工步骤与当前兼容边界见[开发 Web 后端](/docs/zh/web-backend)。
 
-### 4. 组合并解析 App
+### 增加 Host 机制
 
-调用 `lenso-app-composition`，选择已经锁定的 Package，声明稳定 Instance Key，
-选择 Entrypoint 与 Execution Class，添加 Configuration 或 Secret Reference，并
-把每项 Requirement 绑定到显式 Provider Key。
+```text
+使用 $lenso-runtime-extension 添加缺失的 Host 机制。
 
-运行已安装 CLI 的 Check 与 Resolve 工作流，审查项目和 Plan Diff，并且只执行
-已经批准的 Plan Bytes。参见[组合 Plugin](/docs/zh/plugin-composition)与
-[项目与 Plan](/docs/zh/project-and-plan)。
+说明为什么现有 Driver、Execution Adapter、Runner 或 Plugin 都不能持有该结果。
+除非不变量本身是 Portable 的，否则保持 Kernel 不变。增加 Conformance、真实 Host
+Boundary 证据、Cancellation 与 Shutdown 行为，并报告哪些产品 Plugin 现在可以使用
+这个机制。
+```
 
-### 5. 仅在宿主缺少机制时扩展 Runtime
+## 6. 控制 Agent 可以交付到哪里
 
-只有 Feature 确实需要新的 Driver、Execution Adapter、Runner、Execution Class
-或 Process/Wire 机制时，才使用 `lenso-runtime-extension`。普通 Ticket Rule、
-State、Background Work、HTTP 暴露与 UI 仍属于 Plugin。
+明确允许的交付级别：
 
-## 审查 Agent 的结果
+| 级别 | Agent 在哪里停止 |
+| --- | --- |
+| 调查 | 基于源码的结论与建议所有者边界；不修改产品文件 |
+| 实现 | Working Tree 改动与相称检查；不 Commit，不外部发布 |
+| 交付 | 请求的 Commit、PR、Required Checks、Merge 验证与安全清理 |
 
-仅仅使用了正确架构术语并不等于完成。要求 Agent 返回可以检查或重跑的证据：
+“Review”或“Explain”不授权创建 PR。“Implement”不意味着发布 Package。要求交付时，
+明确仓库以及是否必须在 Merge 前停止。
 
-- 修改的制品路径与对应所有者仓库；
-- 生成文件 Freshness 与 Package Lock 状态；
-- 通过检查的项目文档与 Canonical Plan Diff；
+## 7. 审查所有权边界，而不是活动日志
+
+### 路由完成后
+
+- 主 Skill，以及它为什么持有下一个决定；
+- 所有者仓库与删除边界；
+- 准确的当前 API、命令与 Package 证据；
+- 会改变请求结果的缺失前置条件。
+
+### 实现完成后
+
+- 修改的制品路径与生成文件 Freshness；
 - 成功、Domain Error、Runtime/Startup Failure 与 Lifecycle 证据；
-- 适用时的真实 Consumer-to-Provider 或 Host Boundary 路径；
-- 可选 Plugin 行为的移除证据；
-- 请求交付时的 Commit、PR、Checks 与 Merge 状态。
+- 真实 Consumer-to-Provider 或 Host Boundary 执行；
+- 配置与 Resolved Plan 的影响；
+- 可选行为的移除证据。
 
-如果请求声称存在的 Contract、Fixture、Package 或 App 实际不存在，Agent 应报告
-缺失输入，而不是制造不存在的 Package State。
+### 交付完成后
+
+- Commit 与远程 Branch；
+- PR 与 Required Checks；
+- Merge Commit 或远程 Tree 证据；
+- 有意保留、未被清理的 Dirty 或 Unmerged 工作。
+
+架构词汇、文件数量，以及不含准确命令的“测试已通过”，都不是完成证据。
+
+## 8. Agent 方向错误时如何纠正
+
+使用聚焦纠正，不必重新开始整个任务：
+
+```text
+暂停实现并重新运行 $lenso-start。
+
+当前方向似乎把 [行为] 放进了 [错误所有者]。重新检查 Plugin 删除边界、Capability
+Source、Host Catalog 与现有 Adapter。继续前先返回纠正后的主工作流与最小可逆切片。
+```
+
+常见纠正方式：
+
+| 症状 | 纠正方式 |
+| --- | --- |
+| Agent 为普通产品行为提出 Kernel 改动 | 路由到 Plugin Authoring |
+| Agent 手写 Binding | 路由到 Capability Authoring 并重新生成 |
+| Agent 在 App 文件中选择实现 | 保持 Host Policy 权威；App Configuration 只持有可见差异 |
+| Agent 把检查本身当成功能 | 重申可观察结果，把检查保留为完成证据 |
+| Agent 声称存在未交付的远程服务或 Scaffold | 要求 Package Source、已安装 `--help` 或可执行 Owner Example |
+
+当 Agent 能识别正确所有者、完成最小的源码支撑改动、通过真实 Consumer 运行结果，
+并返回足够信息让另一个开发者重跑或审查时，这条工作流才算成功。

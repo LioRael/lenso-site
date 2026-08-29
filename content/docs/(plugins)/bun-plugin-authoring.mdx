@@ -1,5 +1,5 @@
 ---
-title: Bun Plugin authoring
+title: Bun Plugin
 description: Build a typed request Plugin with the supported Bun SDK and CLI path.
 ---
 
@@ -7,7 +7,7 @@ Bun is a trusted child-process execution class, not a sandbox. Plugin business
 code implements generated Capability Provider types; `@lenso/bun` and generated
 entrypoints own startup, JSON-RPC, cancellation, and shutdown.
 
-## Create the project
+## 1. Create the project
 
 ```sh
 lenso plugin new example.echo --runtime bun
@@ -35,7 +35,61 @@ Edit only `src/plugin.ts`. The initial scaffold implements the generated
 outcomes return generated Domain Errors; thrown exceptions remain Runtime
 Failures.
 
-## Check and develop
+## 2. Implement the Provider
+
+The authored file exports one Plugin definition. Generated files own the Bun
+server, descriptor projection, and development invocation:
+
+```ts title="src/plugin.ts"
+import { definePlugin } from "@lenso/bun";
+import {
+  bindToolProviderProvider,
+  type ToolProviderProvider,
+} from "@lenso/bun/capabilities/agent-tool-provider";
+
+const tool: ToolProviderProvider = {
+  async catalog() {
+    return { ok: true, value: { tools: [{
+      name: "company.uppercase",
+      description: "Convert text to uppercase.",
+      input_schema_json: JSON.stringify({
+        type: "object",
+        additionalProperties: false,
+        properties: { text: { type: "string", maxLength: 4096 } },
+        required: ["text"],
+      }),
+    }] } };
+  },
+  async execute(_context, request) {
+    if (request.name !== "company.uppercase") {
+      return { ok: false, error: { kind: "domain", error: "not_found" } };
+    }
+    let input: unknown;
+    try {
+      input = JSON.parse(request.arguments_json);
+    } catch {
+      return { ok: false, error: { kind: "domain", error: "invalid_arguments" } };
+    }
+    if (typeof input !== "object" || input === null || !("text" in input)
+      || typeof input.text !== "string") {
+      return { ok: false, error: { kind: "domain", error: "invalid_arguments" } };
+    }
+    return { ok: true, value: {
+      content: input.text.toUpperCase(),
+      content_type: "text",
+      metadata_json: "{}",
+    } };
+  },
+};
+
+export default definePlugin({ providers: [bindToolProviderProvider(tool)] });
+```
+
+Keep input validation and expected business rejection inside the generated
+Domain Error union. Reserve thrown exceptions for broken implementation or
+runtime conditions.
+
+## 3. Check and develop
 
 ```sh
 lenso plugin check
@@ -52,11 +106,11 @@ Descriptor, materializes a standard Bundle, and verifies the closure. `dev`
 invokes the same authored Provider without asking authors to implement a test
 wire. Watch mode stays alive after a failed rebuild.
 
-## Package and run
+## 4. Package and install
 
 ```sh
 lenso plugin pack
-lenso plugins add dist/example.echo-0.1.0.lenso-plugin --root /path/to/app
+lenso plugins add dist/example.echo-0.1.0.lenso-plugin --root "$HOME/.lenso/agent"
 ```
 
 The archive selects `lenso.bun-process@1`. A compatible product Host must link

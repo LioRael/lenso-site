@@ -1,0 +1,225 @@
+---
+title: 配置 Agent
+description: 在本地配置 Plugin Instance，通过 Agent Web 发布受审查变更，并连接 Host 自有的远程 authority。
+---
+
+Agent 只有一种可见配置模型：Plugin Root 中的 Plugin Instance TOML 与 Resource。
+本地文件、托管 SQLite Store 和注入的远程 Authority，只是编写同一份 Desired State
+的不同方式，并不是三套运行时模型。
+
+## 选择 Authoring 模式
+
+| 模式 | 当前可用性 | 适用场景 |
+| --- | --- | --- |
+| 直接本地 Plugin Root | 默认，已交付 | 单个操作者或本地开发持有 `~/.lenso/agent/plugins/` |
+| SQLite 托管 Authority | 可选，已随 Agent Web 交付 | 单个 Host 需要持久 Proposal、发布历史、恢复与回滚 Proposal |
+| 注入 Authority | Host 集成 Port 已支持 | 嵌入式 Host 已有远程配置服务或控制面 |
+
+Harness **没有**交付第一方分布式配置服务。SQLite 是单 Host Store。注入 Port 允许
+接入远程 Adapter，但服务、认证、租户和 Rollout Policy 由嵌入式 Host 持有。
+
+## 1. 配置本地 Agent Home
+
+默认 Agent Home 是 `~/.lenso/agent`：
+
+```text
+~/.lenso/agent/
+├── .lenso/host-catalog.json
+├── plugins/
+│   └── lenso.agent.loop/
+│       └── agent.toml
+└── profiles/
+    └── code.toml
+```
+
+为默认 Agent Loop 创建 Patch：
+
+```toml title="agent-loop.toml"
+model = "gpt-5.6-luna"
+max_steps = 9
+max_tool_calls = 4
+max_user_resumes = 8
+max_parallel_tool_calls = 4
+max_output_tokens = 1024
+max_history_events = 200
+max_compaction_summary_characters = 8192
+max_memory_items = 8
+max_memory_characters = 16384
+```
+
+显式传入 Agent Home，就可以从任意目录应用并检查配置：
+
+```sh
+lenso plugins configure lenso.agent.loop agent \
+  --file ./agent-loop.toml \
+  --root "$HOME/.lenso/agent"
+lenso plugins list --root "$HOME/.lenso/agent"
+lenso app show --root "$HOME/.lenso/agent"
+lenso app check --root "$HOME/.lenso/agent"
+```
+
+Package default、Host configuration 与 Instance Patch 合并后才会校验最终 Schema。
+未知字段或无效值会在可见 Plugin Root 改变前失败。
+
+## 2. 使用 Profile 选择 Instance
+
+Profile 为一个 Session 选择确定的已配置 Instance，不持有它们的配置：
+
+```toml title="~/.lenso/agent/profiles/review.toml"
+description = "Read-only review agent"
+agent = "lenso.agent.loop/agent"
+instances = [
+  "lenso.agent.loop/agent",
+  "lenso.agent.session-presentation.model/semantic",
+]
+```
+
+通过该选择启动 Session：
+
+```sh
+cargo run -p lenso-agent-tui -- --profile review
+cargo run -p lenso-agent-cli -- --profile review "Review this workspace."
+```
+
+较大或结构化输入放在 `plugins/<plugin-id>/<instance>/`。Secret 值留在选中的
+Secret Provider 中；TOML 只保存 Reference 或映射。完整文件模型见
+[配置 Plugin](/docs/zh/plugin-configuration)。
+
+## 3. 启动托管配置 API
+
+从 Agent Harness Checkout 启用 Plugin Control，并选择持久化 SQLite Authority：
+
+```sh
+export LENSO_AGENT_CONTROL_TOKEN="replace-with-a-local-control-token"
+cargo run -p lenso-agent-web -- \
+  --listen 127.0.0.1:8788 \
+  --plugin-control \
+  --plugin-configuration-store "$HOME/.lenso/agent/plugin-configuration.sqlite3"
+```
+
+数据库路径必须解析为绝对路径。省略 `--plugin-configuration-store` 时，同一套
+Proposal 与 Publication API 会使用直接本地 Authority；该模式不提供 SQLite 历史
+与 Rollback Proposal。
+
+为后续命令设置 API Base：
+
+```sh
+export LENSO_AGENT_CONTROL_API="http://127.0.0.1:8788/api/console/v1/agent/control"
+```
+
+## 4. 读取当前 Revision
+
+```sh
+MANAGEMENT="$(curl -sS \
+  -H "Authorization: Bearer $LENSO_AGENT_CONTROL_TOKEN" \
+  "$LENSO_AGENT_CONTROL_API/plugins")"
+REVISION="$(printf '%s' "$MANAGEMENT" | jq -r '.revision')"
+printf '%s' "$MANAGEMENT" | jq '{revision, configurationAuthority}'
+```
+
+直接本地发布时，`configurationAuthority.kind` 是 `local_plugin_root`；使用持久
+Store 时为 `sqlite_configuration_store`。`publicationHistory` 与
+`rollbackProposals` 字段告诉 Client 哪些可选操作可用。
+
+## 5. 构建只读 Proposal
+
+使用前面创建的同一份 `agent-loop.toml`：
+
+```sh
+CONFIG_TOML="$(cat ./agent-loop.toml)"
+PROPOSAL="$(jq -n \
+  --arg expectedRevision "$REVISION" \
+  --arg toml "$CONFIG_TOML" \
+  '{expectedRevision: $expectedRevision, toml: $toml}' |
+  curl -sS -X POST \
+    -H "Authorization: Bearer $LENSO_AGENT_CONTROL_TOKEN" \
+    -H "Content-Type: application/json" \
+    --data-binary @- \
+    "$LENSO_AGENT_CONTROL_API/plugins/lenso.agent.loop/agent/configuration/proposals")"
+printf '%s' "$PROPOSAL" | jq '{status, application, baseRevision, candidateRevision, proposalDigest, diagnostics}'
+```
+
+Proposal 不会改变 Desired State。只有 `status` 为 `ready` 时才能发布。
+`needs_decision` 需要操作者显式决策；`rejected` 会包含诊断且不能发布。
+`application` 说明该变更是 no-op、需要新 App Generation，还是已被阻止。
+
+## 6. 发布完全相同的已审查 Proposal
+
+Digest 封闭 TOML 的确切字节，Expected Revision 则阻止旧 Writer 覆盖新变更：
+
+```sh
+PROPOSAL_DIGEST="$(printf '%s' "$PROPOSAL" | jq -r '.proposalDigest')"
+jq -n \
+  --arg expectedRevision "$REVISION" \
+  --arg proposalDigest "$PROPOSAL_DIGEST" \
+  --arg toml "$CONFIG_TOML" \
+  '{expectedRevision: $expectedRevision, proposalDigest: $proposalDigest, toml: $toml}' |
+  curl -sS -X PUT \
+    -H "Authorization: Bearer $LENSO_AGENT_CONTROL_TOKEN" \
+    -H "Content-Type: application/json" \
+    --data-binary @- \
+    "$LENSO_AGENT_CONTROL_API/plugins/lenso.agent.loop/agent/configuration" |
+  jq '{status, revision, desired}'
+```
+
+接受发布时返回 HTTP `202` 与 `status: "published"`。随后 Host Snapshot 已物化的
+Plugin Root，根据不可变 Host Catalog 解析它，暂存 Candidate Generation，并且只在
+Readiness 通过后切换。Reconciliation 需要单独观察：
+
+```sh
+curl -sS "http://127.0.0.1:8788/api/console/v1/agent/plugins" |
+  jq '{desiredRevision, appliedRevision, configurationStatus}'
+```
+
+## 7. 检查历史并创建 Rollback Proposal
+
+当所选 Authority 声明支持 History 与 Rollback 时，以下 Route 可用：
+
+```sh
+PUBLICATIONS_URL="$LENSO_AGENT_CONTROL_API/plugins/lenso.agent.loop/agent/configuration/publications"
+HISTORY="$(curl -sS \
+  -H "Authorization: Bearer $LENSO_AGENT_CONTROL_TOKEN" \
+  "$PUBLICATIONS_URL")"
+printf '%s' "$HISTORY" | jq '.publications'
+```
+
+选择一条旧 Publication 的 `proposalDigest`，再根据当前 Revision 请求 Rollback
+Proposal：
+
+```sh
+CURRENT_REVISION="$(curl -sS \
+  -H "Authorization: Bearer $LENSO_AGENT_CONTROL_TOKEN" \
+  "$LENSO_AGENT_CONTROL_API/plugins" | jq -r '.revision')"
+TARGET_DIGEST="replace-with-a-previous-proposal-digest"
+ROLLBACK="$(jq -n \
+  --arg expectedRevision "$CURRENT_REVISION" \
+  --arg publicationProposalDigest "$TARGET_DIGEST" \
+  '{expectedRevision: $expectedRevision, publicationProposalDigest: $publicationProposalDigest}' |
+  curl -sS -X POST \
+    -H "Authorization: Bearer $LENSO_AGENT_CONTROL_TOKEN" \
+    -H "Content-Type: application/json" \
+    --data-binary @- \
+    "$LENSO_AGENT_CONTROL_API/plugins/lenso.agent.loop/agent/configuration/rollback-proposals")"
+printf '%s' "$ROLLBACK" | jq '{configurationToml, proposal}'
+```
+
+这一步仍然只读。审查后，把 `configurationToml` 与
+`proposal.proposalDigest` 通过同一个 `PUT .../configuration` Route 发布。因此
+Rollback 是另一条受 Revision Fence 保护的 Publication，而不是绕过流程回退数据库。
+
+## 8. 连接远程 Authority
+
+嵌入式 Host 可以在 `AgentWebConfig` 上提供
+`plugin_configuration_authority`，并可配对
+`plugin_configuration_history`。合法 Adapter 必须：
+
+1. 暴露稳定 Source Provenance；
+2. 检查一份完整 Desired State 与 Semantic Revision；
+3. 构建只读、受 Revision Fence 约束的 Proposal；
+4. 只通过 Compare-and-Swap 发布完全相同的已审查 Proposal；
+5. 在 Publication 返回前，把完整 Desired State 原子物化到受管理的本地 Plugin Root。
+
+不要同时配置 SQLite Store；两个 Authority 互相冲突。远程服务不可用时，操作会失败，
+而不是悄悄回退到本地 Publication。在当前切片中，安装、选择和移除仍是本地操作。
+最重要的是，Adapter 提供的是配置，而不是远程编写的 Plan。只有本地 Host 能解析、
+暂存并激活 Generation。
