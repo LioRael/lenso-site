@@ -1,5 +1,5 @@
 ---
-title: 编写 Bun Plugin
+title: Bun Plugin
 description: 使用受支持的 Bun SDK 与 CLI 路径构建强类型 Request Plugin。
 ---
 
@@ -7,7 +7,7 @@ Bun 是可信子进程 Execution Class，不是 Sandbox。Plugin 业务代码实
 Capability Provider 类型；`@lenso/bun` 与生成的 Entrypoint 持有启动、JSON-RPC、
 取消与关闭。
 
-## 创建项目
+## 1. 创建项目
 
 ```sh
 lenso plugin new example.echo --runtime bun
@@ -33,7 +33,60 @@ example.echo/
 `lenso.agent.tool-provider@1` Provider，并暴露一个 Tool。预期业务结果返回生成的
 Domain Error；抛出的异常仍是 Runtime Failure。
 
-## 检查与开发
+## 2. 实现 Provider
+
+authoring 文件只导出一个 Plugin definition。生成文件负责 Bun server、Descriptor
+投影与开发调用：
+
+```ts title="src/plugin.ts"
+import { definePlugin } from "@lenso/bun";
+import {
+  bindToolProviderProvider,
+  type ToolProviderProvider,
+} from "@lenso/bun/capabilities/agent-tool-provider";
+
+const tool: ToolProviderProvider = {
+  async catalog() {
+    return { ok: true, value: { tools: [{
+      name: "company.uppercase",
+      description: "Convert text to uppercase.",
+      input_schema_json: JSON.stringify({
+        type: "object",
+        additionalProperties: false,
+        properties: { text: { type: "string", maxLength: 4096 } },
+        required: ["text"],
+      }),
+    }] } };
+  },
+  async execute(_context, request) {
+    if (request.name !== "company.uppercase") {
+      return { ok: false, error: { kind: "domain", error: "not_found" } };
+    }
+    let input: unknown;
+    try {
+      input = JSON.parse(request.arguments_json);
+    } catch {
+      return { ok: false, error: { kind: "domain", error: "invalid_arguments" } };
+    }
+    if (typeof input !== "object" || input === null || !("text" in input)
+      || typeof input.text !== "string") {
+      return { ok: false, error: { kind: "domain", error: "invalid_arguments" } };
+    }
+    return { ok: true, value: {
+      content: input.text.toUpperCase(),
+      content_type: "text",
+      metadata_json: "{}",
+    } };
+  },
+};
+
+export default definePlugin({ providers: [bindToolProviderProvider(tool)] });
+```
+
+输入校验与预期业务拒绝应保留在生成的 Domain Error union 中。只有实现损坏或
+运行时条件才应抛出异常。
+
+## 3. 检查与开发
 
 ```sh
 lenso plugin check
@@ -49,11 +102,11 @@ lenso plugin dev --watch \
 验证其 Closure。`dev` 直接调用同一份 Provider，作者无需实现测试 Wire。Watch
 Mode 在一次构建失败后仍保持运行。
 
-## 打包与运行
+## 4. 打包并安装
 
 ```sh
 lenso plugin pack
-lenso plugins add dist/example.echo-0.1.0.lenso-plugin --root /path/to/app
+lenso plugins add dist/example.echo-0.1.0.lenso-plugin --root "$HOME/.lenso/agent"
 ```
 
 Archive 选择 `lenso.bun-process@1`。兼容的产品 Host 必须链接 Bun Adapter，并为

@@ -1,7 +1,7 @@
 import { defineMeta } from "blume";
 
 export default defineMeta({
-  title: "开始",
+  title: "从这里开始",
   order: 1,
-  pages: ["quickstart", "agent-skills", "project-and-plan"],
+  pages: ["agent-skills", "quickstart"],
 });

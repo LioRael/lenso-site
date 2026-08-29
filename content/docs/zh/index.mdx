@@ -99,12 +99,19 @@ Kernel 持有图校验、分阶段生命周期、就绪门、调用、取消、�
 ## 下一步
 
 <CardGroup>
-  <Card title="快速开始" href="/docs/zh/quickstart" description="安装 CLI，创建强类型 Bun Plugin，并启动正式 Adapter 开发循环。" />
-  <Card title="Agent Skills" href="/docs/zh/agent-skills" description="安装六个公开工作流，把工作路由到正确所有者，并要求可验证的完成证据。" />
+  <Card title="使用 Agent 开发 Lenso" href="/docs/zh/agent-skills" description="安装六个公开工作流，把任务路由到正确所有者，并驱动 Agent 完成可检查交付。" />
+  <Card title="Plugin 快速开始" href="/docs/zh/quickstart" description="创建并打包一个自包含的 Rust 或 Bun Plugin。" />
+  <Card title="开发 Web 后端" href="/docs/zh/web-backend" description="实现强类型 JSON Route，通过 Web Ingress 绑定，并运行真实 Socket Path。" />
+  <Card title="开发 Agent 产品" href="/docs/zh/agent-development" description="运行维护中的 Host，选择最小的产品扩展点，并从一个可观察行为开始迭代。" />
+  <Card title="配置 Agent" href="/docs/zh/agent-configuration" description="从本地 Plugin 文件开始，再通过 SQLite 或 Host 自有的远程 Authority 发布受审查变更。" />
+  <Card title="为 Agent 添加一个 Tool" href="/docs/zh/first-app" description="创建 Agent Tool，运行、打包并安装进真实 Host，最后再将它移除。" />
+  <Card title="选择 Plugin 开发路径" href="/docs/zh/choose-plugin-path" description="比较可移植 Rust、Linked Rust 与 Bun，并区分开发路径和交互形态。" />
   <Card title="核心架构" href="/docs/zh/architecture" description="理解 Composition、Kernel、Driver 与 Adapter 的所有权边界。" />
   <Card title="编写 Capability" href="/docs/zh/capability-authoring" description="定义 Request、Stream 与 Event 契约，并生成两种语言的绑定。" />
-  <Card title="Rust Plugin" href="/docs/zh/plugin-authoring" description="实现生成的 Provider，并注册原生 Factory。" />
+  <Card title="可移植 Rust Plugin" href="/docs/zh/plugin-authoring" description="把一个 Agent Tool 源码构建为 Wasm、可信 Process 或两者。" />
+  <Card title="Linked Rust Plugin" href="/docs/zh/linked-rust-plugin" description="用强类型配置、Port、生命周期和生成注册实现深层原生行为。" />
   <Card title="Bun Plugin" href="/docs/zh/bun-plugin-authoring" description="生成完整类型化项目，并通过 Fresh Plan 与热重载持续开发。" />
+  <Card title="Plugin 配置" href="/docs/zh/plugin-configuration" description="使用强类型 Instance TOML、结构化 Resource、外部 Secret、校验与发布。" />
   <Card title="Web Capabilities" href="/docs/zh/web-capabilities" description="发布 HTTP endpoint，并调用受策略约束的上游服务。" />
   <Card title="Auth Plugin" href="/docs/zh/auth-plugin" description="认证 Evidence、传递 Assertion，并在目标边界授权。" />
   <Card title="持久化与 Secret" href="/docs/zh/postgres-kit" description="持有 PostgreSQL schema，并在不把值泄漏进 Plan 的前提下解析 secret reference。" />

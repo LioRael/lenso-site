@@ -1,18 +1,21 @@
 ---
-title: Build with Agent Skills
-description: Install Lenso's six public skills, choose the owning workflow, and give a coding agent enough context to deliver verifiable Plugin work.
+title: Develop Lenso with an Agent
+description: Install Lenso's six development skills, route work to the right owner, and drive a coding agent from source inspection to observable delivery.
 ---
 
-Lenso publishes six public skills for coding agents. They turn the architecture
-into executable workflows: decide who owns a change, create the right artifact,
-and stop only when the requested behavior is observable.
+This is the recommended starting point when a coding agent will build or change
+something in Lenso. The six Lenso skills give the agent an ordered workflow for
+product planning, Capability contracts, Plugin behavior, App configuration,
+and Host mechanics. They do not replace repository source, `--help`, tests, or
+review; they tell the agent which evidence to inspect and what “done” means.
 
-The skills guide development work. They are not runtime plugins, do not add an
-Agent Plugin to an App, and do not grant an agent production authority.
+By the end of this guide you can give an agent one concrete request, watch it
+select the owning workflow, and require an inspectable implementation and
+delivery report.
 
-## Install the catalog
+## 1. Install the skill pack
 
-Inspect the catalog before installing it:
+Inspect the published catalog:
 
 ```sh
 npx skills add LioRael/lenso --list
@@ -36,141 +39,233 @@ npx skills add LioRael/lenso \
 
 The canonical source is the
 [Lenso skill pack](https://github.com/LioRael/lenso/tree/main/skills). Installed
-copies are derived artifacts; use `npx skills update` to refresh same-named
-skills later.
+copies are derived artifacts. Refresh them later with `npx skills update`.
 
-## Choose one primary workflow
+Installation is complete when the agent can see these exact names:
 
-Start with `lenso-start` when the owner is unclear. Otherwise invoke the
-specific workflow directly.
+```text
+lenso-start
+lenso-business-planning
+lenso-capability-authoring
+lenso-plugin-authoring
+lenso-app-configuration
+lenso-runtime-extension
+```
 
-| Requested outcome | Primary skill | Observable completion |
+If `lenso-app-composition` appears instead of `lenso-app-configuration`, the
+installed pack is stale. Update it before asking the agent to change an App.
+
+## 2. Start with a bounded request
+
+Give the agent four inputs:
+
+| Input | What to say | Why it matters |
 | --- | --- | --- |
-| Turn an unclear product goal into owned vertical behavior | `lenso-business-planning` | Plugin cards, Capability edges, and one tracer slice |
-| Define or evolve a cross-Plugin role contract | `lenso-capability-authoring` | Descriptor, Schemas, generated bindings, and compatibility proof |
-| Implement removable product behavior | `lenso-plugin-authoring` | Package, factory or entrypoint, lifecycle, behavior proof, and removal proof |
-| Select packages and Instances, then bind the graph | `lenso-app-composition` | Checked project document and reviewed immutable Resolved App Plan |
-| Add scheduling, process, wire, endpoint, or host mechanics | `lenso-runtime-extension` | Narrow Driver, Adapter, or Runner change with conformance and host proof |
-| Decide which of the above owns the request | `lenso-start` | One primary workflow and one checkable completion state |
+| Outcome | What a person or another Plugin can do afterward | Prevents architecture-only output |
+| Authority | Repository, package, current Host, and existing contract when known | Keeps source selection explicit |
+| Constraints | Language, target, compatibility, security, and allowed delivery actions | Prevents scope expansion |
+| Completion | Behavior, honest failure, removal, checks, and delivery state | Prevents premature completion |
 
-Kernel semantics are not a seventh product workflow. Changes to portable graph
-validation, lifecycle, admission, invocation, readiness, supervision, or
-diagnostics begin with [Core architecture](/docs/architecture) and the relevant
-ADR.
-
-## Give the agent a complete starting point
-
-A useful request has four parts:
-
-1. **Outcome:** what becomes useful to a person or another Plugin.
-2. **Authority:** the target repository, existing package, Capability source,
-   and App Composition when known.
-3. **Constraints:** language, execution environment, compatibility, security,
-   and delivery limits.
-4. **Proof:** the exact behavior, failure, lifecycle, and delivery evidence that
-   must exist when the task is complete.
-
-When ownership is still uncertain, start with a routing prompt:
+Copy this template and replace the brackets:
 
 ```text
-Use $lenso-start to route this request.
+Use $lenso-start to route and complete this Lenso task.
 
-Outcome: an operator can assign an open support ticket to an available agent.
-Known context: the App already has a ticket list, but no assignment contract.
-Constraints: keep product behavior removable and do not add Kernel semantics.
-Completion: name the owning Plugin, required Capability work, Composition work,
-and the first observable success and honest failure.
+Outcome: [one observable user or Plugin result]
+Authority: [repository, package, Host, Capability, or say unknown]
+Constraints: [language, target, compatibility, security, and delivery scope]
+Completion:
+- [success that must be exercised]
+- [honest failure that must remain distinguishable]
+- [configuration, lifecycle, or removal proof when applicable]
+- [checks and commit/PR/merge state requested]
+
+Before editing, report the selected primary workflow, owning repository,
+current source APIs, and any missing prerequisite. Then continue unless the
+missing prerequisite would materially change the requested product result.
 ```
 
-Once the owner is clear, name the primary skill and the real target:
+The last paragraph creates an early review point without forcing the agent to
+stop for routine implementation choices.
+
+## 3. Let `lenso-start` route the work
+
+Use one primary workflow for the current ownership question:
+
+| Requested result | Primary skill | Completion boundary |
+| --- | --- | --- |
+| Turn an unclear outcome into vertical product behavior | `lenso-business-planning` | Plugin cards, explicit Capability edges, and one tracer slice |
+| Define or evolve a cross-Plugin role | `lenso-capability-authoring` | Descriptor, Schemas, generated bindings, compatibility and freshness proof |
+| Implement removable behavior | `lenso-plugin-authoring` | Plugin Contract, supported implementation, real consumer path, and removal proof |
+| Configure packages and Instances in one App | `lenso-app-configuration` | Reviewed `plugins/` differences, derived App, behavior and removal proof |
+| Add scheduling, process, transport, endpoint, or Host mechanics | `lenso-runtime-extension` | Narrow Driver, Adapter, Runner, or Generation change with conformance and Host proof |
+| Decide which row owns the request | `lenso-start` | One primary workflow and one checkable completion state |
+
+A feature can cross several rows. The agent should finish one owner boundary,
+then hand off to the next workflow. For example, a new Web API may require a
+business Plugin, an HTTP Endpoint provider, and App configuration; it does not
+make all three one package.
+
+Kernel semantics are not a routine seventh workflow. Graph validation,
+lifecycle, admission, invocation, readiness, supervision, or diagnostic
+changes require the relevant architecture decision and portable conformance
+proof.
+
+## 4. Require source inspection before implementation
+
+The agent should inspect, in this order:
+
+1. repository instructions and the dirty worktree;
+2. package manifests, locks, and exact dependency versions;
+3. the Capability source and generated Provider/Client projections;
+4. existing Plugin descriptors, factories, entrypoints, and Host registration;
+5. the App's Host Catalog and visible `plugins/` differences; and
+6. repository CI or local commands that prove the affected path.
+
+This step is complete only when every API and command in the proposed change
+comes from current source or installed `--help`. An ADR may explain intent, but
+it is not evidence that a package, command, scaffold, or remote service ships.
+
+Ask for a short routing report before the first edit:
 
 ```text
-Use $lenso-plugin-authoring to implement the Ticket provider in Rust.
-
-Read the generated Ticket Provider Interface from the selected contract crate.
-Keep ticket state and assignment policy inside the Plugin. Compose one keyed
-Instance, exercise assignment plus ticket_not_open, remove the Instance from
-the test Composition, and report the exact checks and artifact paths.
+Return the routing report now:
+- primary skill;
+- owner and deletion boundary;
+- current source files and package versions;
+- provided and required Capabilities;
+- App/Host changes;
+- first success, honest failure, and removal proof;
+- unsupported or missing prerequisites.
 ```
 
-The second prompt is intentionally more specific. It gives the agent an
-authority boundary and a completion criterion without inventing current API
-names that should come from the selected package source.
+## 5. Use a prompt for the actual task
 
-## Worked flow: support-ticket assignment
+### Add one Plugin behavior
 
-One feature may cross several owners, but each step still has one primary
-workflow.
+```text
+Use $lenso-plugin-authoring to add company.uppercase as one removable Agent
+Tool Plugin in Rust.
 
-### 1. Plan the product slice
+Use the current CLI scaffold and installed --help. Keep one Plugin Contract
+across every packaged implementation. Exercise a successful uppercase call,
+invalid arguments, package the supported implementations, install the Bundle
+into the maintained Agent Host, invoke it through a real Agent Turn, then
+remove it and resolve the App again. Report exact paths and commands.
+```
 
-Invoke `lenso-business-planning` while ticket facts, assignment policy, or
-authorization still have competing owners. The result should name a Ticket
-Plugin that owns ticket state and transitions, the actor authorized to assign,
-the first useful transition, and one honest failure.
+Continue with [Give the Agent a new Tool](/docs/first-app) for the matching
+manual tutorial.
 
-Planning is complete when deleting that Plugin would also delete the ticket
-facts, rules, lifecycle, and operational complexity—and every cross-Plugin edge
-has an explicit role.
+### Configure an existing App
 
-### 2. Author the collaboration contract
+```text
+Use $lenso-app-configuration to change only the visible plugins/ differences
+for this App.
 
-Invoke `lenso-capability-authoring` if another Plugin needs a stable Ticket
-role. Define an identity such as `support.ticketing@1`, Operations such as
-`assign_ticket`, request and response Schemas, and Domain Errors such as
-`ticket_not_found` and `ticket_not_open`.
+Outcome: the review Profile uses the semantic Session presentation Instance.
+Inspect the exact Host Catalog and current derived App first. Add the smallest
+Instance TOML and Profile selection, keep secret values external, run app show
+and app check, exercise one new Session, then remove the difference and prove
+the Host default becomes visible again.
+```
 
-Generate both published binding targets and prove the freshness gate. See
-[Capability authoring](/docs/capability-authoring) for the Descriptor and
-generated Provider/Client shape.
+Continue with [Configure a Plugin](/docs/plugin-configuration) and
+[Configure an Agent](/docs/agent-configuration) for the file and publication
+models.
 
-### 3. Implement the Plugin
+### Build a Web backend
 
-Invoke `lenso-plugin-authoring` against the package that owns Ticket behavior.
-The provider implements the generated Interface, validates opaque
-configuration, obtains dependencies only from lifecycle context, and creates a
-fresh generation of endpoints and managed work.
+```text
+Use $lenso-start, then the selected Plugin and App workflows, to add a JSON Web
+backend with POST /greetings and GET /greetings/{greeting_id}.
 
-Use [Rust Plugin authoring](/docs/plugin-authoring) for a statically linked
-Plugin written through the public facade, or
-[Bun Plugin authoring](/docs/bun-plugin-authoring) for a TypeScript Provider run
-through the Bun Execution Adapter. A process choice changes the Adapter and
-entrypoint, not the product boundary.
+Use the current lenso.http.endpoint@1 authoring API and the existing Host's
+linked Web Ingress. Keep route shape in the HTTP Endpoint provider, keep
+transport limits in Ingress configuration, reject malformed JSON before the
+handler, prove 201, 200, 400, 404, and 405 through a real socket, and prove a
+route collision fails readiness. Do not invent a generic web scaffold if the
+installed CLI does not ship one.
+```
 
-Plugin work is complete after a real consumer path proves success, a Domain
-Error and an operational failure are distinguishable, lifecycle cleanup is
-observable, and removing the Plugin leaves no hidden product behavior behind.
+Continue with [Build a Web backend](/docs/web-backend) for the complete manual
+sequence and the current compatibility boundary.
 
-### 4. Compose and resolve the App
+### Add Host mechanics
 
-Invoke `lenso-app-composition` to select the locked package, declare a stable
-Instance key, choose the entrypoint and execution class, add configuration or
-secret references, and bind every requirement to an explicit provider key.
+```text
+Use $lenso-runtime-extension to add the missing Host mechanism.
 
-Run the installed CLI's check and resolve workflows, review the project and
-Plan diffs, and execute only the approved Plan bytes. See
-[Plugin composition](/docs/plugin-composition) and
-[Project and Plan](/docs/project-and-plan).
+Show why no existing Driver, Execution Adapter, Runner, or Plugin can own the
+result. Keep the portable Kernel unchanged unless the invariant itself is
+portable. Add conformance, a real Host-boundary proof, cancellation and
+shutdown behavior, then report which product Plugins can now use the mechanism.
+```
 
-### 5. Extend the runtime only when the host is missing a mechanism
+## 6. Control how far the agent may deliver
 
-Use `lenso-runtime-extension` only if the feature requires a genuinely new
-Driver, Execution Adapter, Runner, execution class, or process/wire mechanism.
-Ordinary Ticket rules, state, background work, HTTP exposure, and UI remain
-Plugin concerns.
+Say which delivery level is authorized:
 
-## Review the agent's result
+| Level | Agent stops after |
+| --- | --- |
+| Investigate | Source-grounded findings and a proposed owner boundary; no product edits |
+| Implement | Working-tree changes and proportionate checks; no commit or external publication |
+| Deliver | Requested commit, PR, required checks, merge verification, and safe cleanup |
 
-Do not accept architecture vocabulary as completion. Ask for evidence that can
-be inspected or rerun:
+“Review” or “explain” does not authorize a PR. “Implement” does not imply
+publishing packages. For delivery, state the repository and whether the agent
+must stop before merge.
 
-- changed artifact paths and their owning repositories;
-- generated-file freshness and package lock state;
-- the checked project document and canonical Plan diff;
+## 7. Review checkpoints instead of activity logs
+
+### After routing
+
+- primary skill and why it owns the next decision;
+- owner repository and deletion boundary;
+- exact current API, command, and package evidence;
+- missing prerequisites that would change the requested result.
+
+### After implementation
+
+- changed artifact paths and generated-file freshness;
 - success, Domain Error, runtime/startup failure, and lifecycle evidence;
-- a real consumer-to-provider or host-boundary path where applicable;
-- removal proof for optional Plugin behavior; and
-- commit, PR, checks, and merge state when delivery was requested.
+- real consumer-to-provider or Host-boundary execution;
+- configuration and Resolved Plan effects;
+- optional behavior removal proof.
 
-If a claimed contract, fixture, package, or App does not exist, the agent should
-report that missing input instead of manufacturing package state.
+### After delivery
+
+- commit and remote branch;
+- PR and required checks;
+- merge commit or remote tree proof;
+- retained dirty or unmerged work that was deliberately not cleaned.
+
+Architecture vocabulary, file counts, and “tests passed” without exact commands
+are not completion evidence.
+
+## 8. Recover when the agent goes in the wrong direction
+
+Use a focused correction rather than restarting the entire task:
+
+```text
+Pause implementation and rerun $lenso-start.
+
+The current direction appears to put [behavior] in [wrong owner]. Reinspect the
+Plugin deletion boundary, Capability source, Host Catalog, and existing
+Adapters. Return the corrected primary workflow and the smallest reversible
+slice before continuing.
+```
+
+Common corrections:
+
+| Symptom | Correction |
+| --- | --- |
+| Agent proposes Kernel work for ordinary product behavior | Route to Plugin authoring |
+| Agent writes bindings by hand | Route to Capability authoring and regenerate |
+| Agent changes implementation selection in App files | Keep Host policy authoritative; use App configuration only for visible differences |
+| Agent treats checks as the feature | Restate the observable outcome, then keep checks as completion evidence |
+| Agent claims an unshipped remote service or scaffold | Require package source, installed `--help`, or an executable owner example |
+
+The workflow is successful when the agent can identify the owner, make the
+smallest source-backed change, exercise the result through its real consumer,
+and return enough evidence for another developer to rerun or review it.

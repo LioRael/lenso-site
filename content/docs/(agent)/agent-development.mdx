@@ -1,0 +1,101 @@
+---
+title: Build an Agent product with Lenso
+description: Start the maintained Agent Host, choose the smallest product extension point, and iterate from one observable behavior.
+---
+
+This page is for changing the Agent product itself. If you want a coding agent
+to develop a Lenso App, Plugin, Capability, or Runtime extension for you, start
+with [Develop Lenso with an Agent](/docs/agent-skills).
+
+Lenso Agent development starts from a user-visible job, not from a new runtime.
+Run the maintained Agent Host first, then change one Plugin Instance, Tool, or
+Capability provider. The Host keeps composition, configuration, lifecycle, and
+Generation switching consistent while your Plugin owns the new behavior.
+
+## What belongs where
+
+```text
+Agent Home                         Workspace
+~/.lenso/agent/                   the directory where the Agent starts
+├── plugins/      behavior/config  source files the Agent may inspect or edit
+├── profiles/     session choices  AGENTS.md and project-specific context
+├── runtime/      Host state
+└── sessions.sqlite3
+```
+
+Changing repositories changes the Workspace. It does not silently change the
+Agent's installed Plugins, Profiles, Session history, or runtime lineage. Set
+`LENSO_AGENT_HOME` to another absolute path when you need an isolated Agent.
+
+## 1. Run the maintained Host
+
+Clone the Agent Harness, authenticate once, and start either an interactive or
+headless surface:
+
+```sh
+git clone https://github.com/LioRael/lenso-agent-harness.git
+cd lenso-agent-harness
+cargo run -p lenso-agent-cli -- auth login
+cargo run -p lenso-agent-tui
+```
+
+For one non-interactive Turn:
+
+```sh
+cargo run -p lenso-agent-cli -- "Summarize this workspace README."
+```
+
+At this point you have a complete Agent application. Do not fork the Agent Loop
+just to add one command, storage backend, prompt source, or model integration.
+
+## 2. Choose the smallest change
+
+| Desired result | First extension point | Continue with |
+| --- | --- | --- |
+| Change limits, model selection, storage path, or policy | Configure an existing Plugin Instance | [Configure an Agent](/docs/agent-configuration) |
+| Add one action the model can call | Add an Agent Tool Plugin | [Give the Agent a new Tool](/docs/first-app) |
+| Replace memory, sessions, compaction, secrets, or another role | Implement its Capability | [Plugins and Capabilities](/docs/plugins-and-capabilities) |
+| Change scheduling, clocks, process execution, or another Host mechanism | Add a Driver or Execution Adapter | [Execution Adapters](/docs/execution-adapters) |
+
+If more than one row appears relevant, begin with configuration. New code is
+needed only when the existing Plugin contract cannot express the behavior.
+
+## 3. Install an Agent experience
+
+The official coding experience installs inspectable Plugin configuration and
+three Profiles:
+
+```sh
+cargo run -p lenso-agent-cli -- profiles install coding
+cargo run -p lenso-agent-tui -- --profile code
+```
+
+Use `code` for editing and bounded processes, `code-sandbox` for an isolated
+process provider with no network, and `plan` for read-only planning. A Profile
+selects configured Plugin Instances for a Session; it does not duplicate their
+configuration.
+
+## 4. Make one change and observe it
+
+Use this loop for every Agent feature:
+
+1. Name the observable result, such as “the Agent can uppercase text.”
+2. Change one file under `plugins/`, or build and install one Plugin.
+3. Inspect the derived App with `lenso app show` from the Agent Home.
+4. Start a new Turn and observe the selected Tool or provider.
+5. Disable or remove the difference and confirm the old behavior returns.
+
+The Host resolves each accepted change into a new immutable Generation. A Turn
+keeps the Generation on which it started; later Turns can use the replacement
+after it passes readiness.
+
+## 5. Add a product surface only when needed
+
+The Harness ships terminal, headless CLI, and embeddable Web surfaces. Product
+behavior still comes from the Host-selected Plugin inventory. A Web shell does
+not become a second composition authority, and a remote configuration system
+does not send executable Plans to the Kernel.
+
+Next, follow [Give the Agent a new Tool](/docs/first-app) for a complete coding
+slice, or [Configure an Agent](/docs/agent-configuration) to change existing
+behavior without writing a new Plugin.

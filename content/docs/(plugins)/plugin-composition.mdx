@@ -1,5 +1,5 @@
 ---
-title: App definitions
+title: Add Plugins to an App
 description: Compose one App through its visible Plugin Root and Host Catalog.
 ---
 
@@ -7,7 +7,12 @@ The reviewed authoring authority is a visible `plugins/` directory. The matching
 Host Build publishes `.lenso/host-catalog.json`; resolution merges Host defaults
 with Plugin Root differences and produces the complete immutable App Plan.
 
-## Plugin Root layout
+Before using these commands, obtain the executable Host Build and
+`host-catalog.json` generated from that exact build. They define which linked
+Plugins, Slots, Execution Adapters, and defaults the product actually supports;
+the generic CLI cannot invent them.
+
+## 1. Understand the App files
 
 ```text
 my-app/
@@ -28,6 +33,8 @@ my-app/
 - `<instance>/` contains immutable resources for that configured Instance;
 - `<instance>.disabled` is an empty marker that disables an existing Instance.
 
+## 2. Change the App through the CLI
+
 Use the CLI to preserve these invariants:
 
 ```sh
@@ -37,6 +44,7 @@ lenso plugins configure example.echo default --file ./echo.toml --root ./my-app
 lenso plugins disable example.echo default --root ./my-app
 lenso plugins enable example.echo default --root ./my-app
 lenso plugins remove example.echo default --root ./my-app
+lenso plugins remove example.echo --root ./my-app
 lenso app check --root ./my-app
 lenso app show --root ./my-app
 ```
@@ -47,7 +55,15 @@ bindings fail before files are committed. The running product Host separately
 stages a Generation, passes its Ready Gate, switches routing, drains the old
 Generation, and can roll back runtime failure.
 
-## Catalog lifecycle
+Passing an Instance key to `remove` deletes only that App-owned difference.
+Omitting it removes the entire Plugin directory through the recoverable
+`.lenso/trash/` path.
+
+`plugins list` shows App-owned differences. `app show` explains the complete
+derived App, including Host defaults. `app check` is the shortest readiness
+check after a manual review or merge.
+
+## 3. Use exact Catalog Releases
 
 ```sh
 lenso plugins search tool

@@ -1,0 +1,100 @@
+---
+title: Configure a Plugin
+description: Understand configuration layers, Instance TOML, resources, secrets, validation, and publication.
+---
+
+A Plugin package defines what may be configured. An App owns the differences
+for each configured Instance. The Host combines both with its own policy, then
+validates the final configuration before it can become a Generation.
+
+## The three configuration layers
+
+Configuration is merged in this order:
+
+1. **Package defaults** — safe defaults shipped by the Plugin author.
+2. **Host configuration** — product-wide choices selected by the Host build.
+3. **Instance patch** — App-owned TOML under the visible Plugin Root.
+
+Later layers override earlier ones. The merged result must satisfy the Plugin's
+final configuration schema. A patch is not an independent schema and cannot
+introduce unknown fields merely because it is valid TOML.
+
+## Files for one Instance
+
+```text
+plugins/
+└── example.echo/
+    ├── plugin.lenso-plugin/   # optional packaged implementation
+    ├── default.toml           # values for Instance "default"
+    ├── default/               # structured resources for that Instance
+    │   └── prompt.md
+    └── default.disabled       # optional disable marker
+```
+
+Use each representation for one kind of input:
+
+| Input | Location | Example |
+| --- | --- | --- |
+| Small typed values | `<instance>.toml` | limits, model IDs, paths, feature policy |
+| Structured or larger content | `<instance>/` | prompts, templates, certificates, mappings |
+| Secret values | external provider | environment, Keychain, encrypted file, secret manager |
+
+Store only secret references or mappings in TOML. Secret values must not enter
+the Plugin Root, Resolved Plan, diagnostics, or Session facts.
+
+## Configure a local App step by step
+
+Suppose `example.echo/default` accepts this patch:
+
+```toml title="echo.toml"
+prefix = "Agent: "
+max_characters = 4096
+```
+
+Apply it through the CLI:
+
+```sh
+lenso plugins configure example.echo default --file ./echo.toml --root ./my-app
+lenso plugins list --root ./my-app
+lenso app show --root ./my-app
+lenso app check --root ./my-app
+```
+
+`plugins configure` first builds a candidate App against the exact Host
+Catalog. Invalid fields, missing required bindings, and ambiguous providers fail
+before the visible files are committed. `plugins list` shows App-owned
+differences; `app show` explains the complete derived App, including Host
+defaults.
+
+Add a resource beside the Instance patch when its contract declares one:
+
+```text
+my-app/plugins/example.echo/default/prompt.md
+```
+
+The resource directory is captured with the same App snapshot. Do not point a
+Plugin at mutable files elsewhere and assume they share Generation semantics.
+
+## Change or remove the difference
+
+```sh
+lenso plugins disable example.echo default --root ./my-app
+lenso plugins enable example.echo default --root ./my-app
+lenso plugins remove example.echo default --root ./my-app
+lenso app check --root ./my-app
+```
+
+Removing the Instance deletes only the App-owned patch and resources; Host
+defaults can therefore become visible again. Removing the whole Plugin uses the
+recoverable `.lenso/trash/` path.
+
+## Local and managed publication use the same model
+
+Editing local files is the default authoring workflow. A Host may instead put a
+configuration authority in front of the same Plugin Root so an administrator
+can review proposals, publish with revision fencing, keep history, or connect a
+remote control plane. That authority still has to materialize the complete
+desired Plugin Root locally. It cannot send a Plan directly to the Kernel.
+
+For the concrete local, SQLite, and remote-authority Agent workflows, continue
+with [Configure an Agent](/docs/agent-configuration).

@@ -1,0 +1,84 @@
+---
+title: What is a Plugin?
+description: Understand the one Plugin model, its implementations, Instances, and Capability connections.
+---
+
+A Plugin is the unit of application behavior that a team can build, version,
+install, configure, disable, update, and remove. Examples include an Agent
+Tool, an Auth provider, a Prompt source, a Web endpoint, or a Session store.
+
+Lenso has **one Plugin model**. Wasm, native Process, linked Rust, and Bun are
+ways to implement or execute a Plugin; they are not separate product types.
+
+## The four things you work with
+
+| Term | What it answers | Example |
+| --- | --- | --- |
+| Plugin Contract | What behavior and configuration does this Release promise? | `company.uppercase@1.0.0` provides Agent Tool Provider |
+| Plugin Implementation | How can a compatible Host execute that Contract? | Wasm Component or trusted Process |
+| Plugin Instance | Which configured copy exists in this App? | `company.uppercase/default` |
+| Capability | How does this Plugin collaborate with another Plugin? | `lenso.agent.tool-provider@2` |
+
+One Release may contain several implementations only when they preserve the
+same Contract and observable behavior. The Host selects one compatible
+implementation before resolving the App. It does not benchmark implementations
+or fall back to another one after a failure.
+
+One App may create several Instances from one Plugin. Each Instance has its own
+key, configuration, resources, lifecycle generation, endpoints, and bindings.
+
+## A concrete example
+
+The [first App tutorial](/docs/first-app) creates this behavior:
+
+```text
+Plugin Release: company.uppercase@0.1.0
+Contract:       provides lenso.agent.tool-provider@2
+Implementations:
+  - wasm
+  - process
+App Instance:   company.uppercase/default
+Visible Tool:   company.uppercase
+```
+
+Removing the Plugin directory removes its package and Instance from that App.
+No consumer reaches into the Plugin's private Rust types, files, or tables.
+
+## Capabilities connect Plugins
+
+A Capability is a versioned role contract. It owns operations and domain
+values, not transport or deployment. A consumer receives only the typed client
+explicitly bound to it by the resolved App.
+
+Capabilities support three interaction shapes:
+
+| Shape | Use it for | Result |
+| --- | --- | --- |
+| Request | a command or query | one terminal success or Domain Error |
+| Stream | a bounded conversation | typed messages, half-close, and one terminal result |
+| Event | volatile fan-out | an admission result per subscriber |
+
+These are Capability operation shapes, not Plugin types. One linked Rust
+Plugin may provide Request, Stream, and Event operations in the same lifecycle.
+
+Requirements declare their cardinality: exactly one provider, an optional
+provider, or many providers. App resolution closes every required binding
+before boot. Plugin code never looks up a provider from a runtime registry.
+
+## Contract ownership
+
+The Plugin Contract owns:
+
+- Plugin ID and Release version;
+- configuration Schema and defaults;
+- provided and required Capabilities;
+- restart policy and criticality; and
+- lifecycle and state semantics.
+
+Each implementation owns its runtime artifact, target, entrypoint, and
+Execution Class. The App owner owns Instances, configuration patches, resource
+files, and provider selection. The Host owns which exact implementations and
+Adapters are available.
+
+Continue with [Choose a Plugin path](/docs/choose-plugin-path) to decide how to
+write one.

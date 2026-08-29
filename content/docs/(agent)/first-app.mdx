@@ -1,0 +1,173 @@
+---
+title: Give the Agent a new Tool
+description: Build, install, run, disable, and remove one real Agent Tool Plugin.
+---
+
+In this tutorial you will add an `uppercase` Tool to the Lenso Agent Host. You
+will write the behavior once, run it through a real Execution Adapter, package
+it, install it into an App, ask the Agent to use it, and remove it again.
+
+The current public CLI scaffolds Plugins; it does not scaffold a generic
+product Host. This tutorial therefore uses the maintained Agent Harness as the
+concrete Host.
+
+## What you will build
+
+```text
+company.uppercase Plugin
+  provides lenso.agent.tool-provider@2
+  packages Wasm + trusted Process implementations
+  installs into ~/.lenso/agent/plugins/
+  becomes the uppercase Tool in the Agent App
+```
+
+## 1. Install the authoring tools
+
+You need Rust 1.94 or newer, the Wasm target, Git, and either distribution of
+the Lenso CLI:
+
+```sh
+rustup target add wasm32-unknown-unknown
+npm install -g @lenso/cli
+# or: cargo install lenso-cli
+```
+
+Confirm the workflow exposed by your installed version:
+
+```sh
+lenso --version
+lenso plugin new --help
+```
+
+## 2. Create the Plugin
+
+Run this in an empty tutorial directory:
+
+```sh
+lenso plugin new company.uppercase
+cd company.uppercase
+```
+
+The default Rust project has one editable `src/lib.rs`. It produces a portable
+Wasm implementation and a trusted native Process implementation of the same
+Plugin Contract.
+
+Replace the generated `execute` body with uppercase behavior:
+
+```rust title="src/lib.rs"
+fn execute(arguments: Arguments) -> Result<ExecuteResponse, ExecuteError> {
+    if arguments.text.is_empty() {
+        return Err(ExecuteError::InvalidArguments);
+    }
+
+    Ok(ExecuteResponse {
+        content: arguments.text.to_uppercase(),
+        content_type: ContentType::Text,
+        metadata_json: r#"{"operation":"uppercase"}"#
+            .try_into()
+            .expect("static metadata is valid JSON"),
+    })
+}
+```
+
+Keep the generated `#[lenso::plugin]`, `#[tool_provider]`, and `#[tool]`
+annotations. They own the Plugin descriptor and Agent Tool projection.
+
+## 3. Run it before packaging
+
+```sh
+lenso plugin check
+lenso plugin dev \
+  --implementation auto \
+  --operation execute \
+  --request-json '{"name":"company.uppercase","arguments_json":"{\"text\":\"hello lenso\"}"}'
+```
+
+The result contains `HELLO LENSO`. For a multi-output Rust project, `auto`
+uses the fastest declared local implementation. Run `--implementation wasm`
+and `--implementation process` when you need implementation-specific evidence.
+
+During editing, rerun automatically with the same request:
+
+```sh
+lenso plugin dev --watch \
+  --operation execute \
+  --request-json '{"name":"company.uppercase","arguments_json":"{\"text\":\"hello lenso\"}"}'
+```
+
+## 4. Package one Release
+
+```sh
+lenso plugin pack
+```
+
+The command creates and reopens
+`dist/company.uppercase-0.1.0.lenso-plugin`. That archive contains both
+implementations and one shared Contract.
+
+Keep the absolute bundle path before moving to the Host checkout:
+
+```sh
+PLUGIN_BUNDLE="$PWD/dist/company.uppercase-0.1.0.lenso-plugin"
+```
+
+## 5. Start the Agent Host
+
+In the parent tutorial directory, clone the maintained Host and authenticate
+the Agent once:
+
+```sh
+cd ..
+git clone https://github.com/LioRael/lenso-agent-harness.git
+cd lenso-agent-harness
+cargo run -p lenso-agent-cli -- auth login
+cargo run -p lenso-agent-cli -- contexts
+```
+
+The `contexts` command boots the Host without starting a model Turn and
+publishes the matching Host Catalog. The App owner changes only the visible
+Plugin Root under `~/.lenso/agent/plugins/`.
+
+## 6. Add the Plugin to the App
+
+```sh
+lenso plugins add "$PLUGIN_BUNDLE" --root "$HOME/.lenso/agent"
+lenso plugins list --root "$HOME/.lenso/agent"
+lenso app check --root "$HOME/.lenso/agent"
+```
+
+`plugins add` validates the received Bundle, derives a candidate App from the
+Host Catalog and Plugin Root, and commits the files only when the candidate is
+valid.
+
+## 7. Use the new behavior
+
+From the Agent Harness checkout:
+
+```sh
+cargo run -p lenso-agent-cli -- \
+  "Use company.uppercase to convert 'hello lenso' to uppercase."
+```
+
+The observable result is an Agent Turn that calls `company.uppercase` and
+returns `HELLO LENSO`. The Plugin is now application behavior, not only a
+locally callable package.
+
+## 8. Disable, enable, and remove it
+
+```sh
+lenso plugins disable company.uppercase default --root "$HOME/.lenso/agent"
+lenso plugins enable company.uppercase default --root "$HOME/.lenso/agent"
+lenso plugins remove company.uppercase --root "$HOME/.lenso/agent"
+lenso app check --root "$HOME/.lenso/agent"
+```
+
+Disable keeps the package and configuration available. Omitting the Instance
+key from `remove` deletes the whole Plugin directory and moves it into the
+App's recoverable `.lenso/trash/`. In both cases the Host resolves a new immutable App
+Generation; existing work keeps the Generation on which it started.
+
+You have now completed the full author workflow. Continue with
+[Choose a Plugin path](/docs/choose-plugin-path) when the next behavior is not
+an Agent Tool, or [Add Plugins to an App](/docs/plugin-composition) for
+configuration, resources, and Catalog operations.

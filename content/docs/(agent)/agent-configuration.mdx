@@ -1,0 +1,242 @@
+---
+title: Configure an Agent
+description: Configure Plugin Instances locally, publish reviewed changes through Agent Web, and connect a Host-owned remote authority.
+---
+
+An Agent has one visible configuration model: Plugin Instance TOML and
+resources under its Plugin Root. Local files, the managed SQLite store, and an
+injected remote authority are different ways to author that same desired state.
+They are not different runtime models.
+
+## Choose an authoring mode
+
+| Mode | What is available now | Use it when |
+| --- | --- | --- |
+| Direct local Plugin Root | Default, shipped | One operator or local development owns `~/.lenso/agent/plugins/` |
+| SQLite managed authority | Opt-in, shipped in Agent Web | One Host needs durable proposals, publication history, recovery, and rollback proposals |
+| Injected authority | Supported Host integration port | Your embedding Host already has a remote configuration service or control plane |
+
+The Harness does **not** ship a first-party distributed configuration service.
+SQLite is a single-Host store. The injected port makes a remote adapter
+possible, but its service, authentication, tenancy, and rollout policy belong
+to the embedding Host.
+
+## 1. Configure the local Agent Home
+
+The default Agent Home is `~/.lenso/agent`:
+
+```text
+~/.lenso/agent/
+├── .lenso/host-catalog.json
+├── plugins/
+│   └── lenso.agent.loop/
+│       └── agent.toml
+└── profiles/
+    └── code.toml
+```
+
+Create a patch for the default Agent Loop:
+
+```toml title="agent-loop.toml"
+model = "gpt-5.6-luna"
+max_steps = 9
+max_tool_calls = 4
+max_user_resumes = 8
+max_parallel_tool_calls = 4
+max_output_tokens = 1024
+max_history_events = 200
+max_compaction_summary_characters = 8192
+max_memory_items = 8
+max_memory_characters = 16384
+```
+
+Apply and inspect it from any directory by passing the Agent Home explicitly:
+
+```sh
+lenso plugins configure lenso.agent.loop agent \
+  --file ./agent-loop.toml \
+  --root "$HOME/.lenso/agent"
+lenso plugins list --root "$HOME/.lenso/agent"
+lenso app show --root "$HOME/.lenso/agent"
+lenso app check --root "$HOME/.lenso/agent"
+```
+
+The final schema is checked after package defaults, Host configuration, and the
+Instance patch are merged. An unknown field or invalid value fails before the
+visible Plugin Root is changed.
+
+## 2. Select Instances with a Profile
+
+A Profile selects exact configured Instances for one Session. It does not hold
+their configuration:
+
+```toml title="~/.lenso/agent/profiles/review.toml"
+description = "Read-only review agent"
+agent = "lenso.agent.loop/agent"
+instances = [
+  "lenso.agent.loop/agent",
+  "lenso.agent.session-presentation.model/semantic",
+]
+```
+
+Start a Session through that selection:
+
+```sh
+cargo run -p lenso-agent-tui -- --profile review
+cargo run -p lenso-agent-cli -- --profile review "Review this workspace."
+```
+
+Keep large or structured inputs in
+`plugins/<plugin-id>/<instance>/`. Keep secret values in a selected Secret
+Provider; only references or mappings belong in TOML. See
+[Configure a Plugin](/docs/plugin-configuration) for the complete file model.
+
+## 3. Start the managed configuration API
+
+From the Agent Harness checkout, enable Plugin control and choose the durable
+SQLite authority:
+
+```sh
+export LENSO_AGENT_CONTROL_TOKEN="replace-with-a-local-control-token"
+cargo run -p lenso-agent-web -- \
+  --listen 127.0.0.1:8788 \
+  --plugin-control \
+  --plugin-configuration-store "$HOME/.lenso/agent/plugin-configuration.sqlite3"
+```
+
+The database path must resolve to an absolute path. Omit
+`--plugin-configuration-store` to use the direct local authority through the
+same proposal and publication API; that mode does not provide SQLite history
+or rollback proposals.
+
+Set the API base for the following commands:
+
+```sh
+export LENSO_AGENT_CONTROL_API="http://127.0.0.1:8788/api/console/v1/agent/control"
+```
+
+## 4. Read the current revision
+
+```sh
+MANAGEMENT="$(curl -sS \
+  -H "Authorization: Bearer $LENSO_AGENT_CONTROL_TOKEN" \
+  "$LENSO_AGENT_CONTROL_API/plugins")"
+REVISION="$(printf '%s' "$MANAGEMENT" | jq -r '.revision')"
+printf '%s' "$MANAGEMENT" | jq '{revision, configurationAuthority}'
+```
+
+`configurationAuthority.kind` is `local_plugin_root` for direct local
+publication or `sqlite_configuration_store` for the durable store. Its
+`publicationHistory` and `rollbackProposals` fields tell a client which optional
+operations are available.
+
+## 5. Build a read-only proposal
+
+Use the same `agent-loop.toml` created earlier:
+
+```sh
+CONFIG_TOML="$(cat ./agent-loop.toml)"
+PROPOSAL="$(jq -n \
+  --arg expectedRevision "$REVISION" \
+  --arg toml "$CONFIG_TOML" \
+  '{expectedRevision: $expectedRevision, toml: $toml}' |
+  curl -sS -X POST \
+    -H "Authorization: Bearer $LENSO_AGENT_CONTROL_TOKEN" \
+    -H "Content-Type: application/json" \
+    --data-binary @- \
+    "$LENSO_AGENT_CONTROL_API/plugins/lenso.agent.loop/agent/configuration/proposals")"
+printf '%s' "$PROPOSAL" | jq '{status, application, baseRevision, candidateRevision, proposalDigest, diagnostics}'
+```
+
+A proposal never changes desired state. Publish only when `status` is `ready`.
+`needs_decision` requires an explicit operator decision; `rejected` includes
+diagnostics and cannot be published. `application` explains whether the change
+is a no-op, requires a new App Generation, or is blocked.
+
+## 6. Publish the exact reviewed proposal
+
+The digest closes the exact TOML bytes, while the expected revision prevents a
+stale writer from overwriting a newer change:
+
+```sh
+PROPOSAL_DIGEST="$(printf '%s' "$PROPOSAL" | jq -r '.proposalDigest')"
+jq -n \
+  --arg expectedRevision "$REVISION" \
+  --arg proposalDigest "$PROPOSAL_DIGEST" \
+  --arg toml "$CONFIG_TOML" \
+  '{expectedRevision: $expectedRevision, proposalDigest: $proposalDigest, toml: $toml}' |
+  curl -sS -X PUT \
+    -H "Authorization: Bearer $LENSO_AGENT_CONTROL_TOKEN" \
+    -H "Content-Type: application/json" \
+    --data-binary @- \
+    "$LENSO_AGENT_CONTROL_API/plugins/lenso.agent.loop/agent/configuration" |
+  jq '{status, revision, desired}'
+```
+
+An accepted publication returns HTTP `202` and `status: "published"`. The Host
+then snapshots the materialized Plugin Root, resolves it against the immutable
+Host Catalog, stages a candidate Generation, and switches only after readiness.
+Observe reconciliation separately:
+
+```sh
+curl -sS "http://127.0.0.1:8788/api/console/v1/agent/plugins" |
+  jq '{desiredRevision, appliedRevision, configurationStatus}'
+```
+
+## 7. Inspect history and create a rollback proposal
+
+These routes are available when the selected authority advertises history and
+rollback support:
+
+```sh
+PUBLICATIONS_URL="$LENSO_AGENT_CONTROL_API/plugins/lenso.agent.loop/agent/configuration/publications"
+HISTORY="$(curl -sS \
+  -H "Authorization: Bearer $LENSO_AGENT_CONTROL_TOKEN" \
+  "$PUBLICATIONS_URL")"
+printf '%s' "$HISTORY" | jq '.publications'
+```
+
+Choose the `proposalDigest` of a previous publication, then request a rollback
+proposal against the current revision:
+
+```sh
+CURRENT_REVISION="$(curl -sS \
+  -H "Authorization: Bearer $LENSO_AGENT_CONTROL_TOKEN" \
+  "$LENSO_AGENT_CONTROL_API/plugins" | jq -r '.revision')"
+TARGET_DIGEST="replace-with-a-previous-proposal-digest"
+ROLLBACK="$(jq -n \
+  --arg expectedRevision "$CURRENT_REVISION" \
+  --arg publicationProposalDigest "$TARGET_DIGEST" \
+  '{expectedRevision: $expectedRevision, publicationProposalDigest: $publicationProposalDigest}' |
+  curl -sS -X POST \
+    -H "Authorization: Bearer $LENSO_AGENT_CONTROL_TOKEN" \
+    -H "Content-Type: application/json" \
+    --data-binary @- \
+    "$LENSO_AGENT_CONTROL_API/plugins/lenso.agent.loop/agent/configuration/rollback-proposals")"
+printf '%s' "$ROLLBACK" | jq '{configurationToml, proposal}'
+```
+
+This is still read-only. Review it, then publish its `configurationToml` and
+`proposal.proposalDigest` through the same `PUT .../configuration` route. A
+rollback is therefore another revision-fenced publication, not an out-of-band
+database rewind.
+
+## 8. Connect a remote authority
+
+An embedding Host may provide `plugin_configuration_authority` on
+`AgentWebConfig`, and may pair it with `plugin_configuration_history`. A valid
+adapter must:
+
+1. expose stable source provenance;
+2. inspect one complete desired state and semantic revision;
+3. build a read-only, revision-fenced proposal;
+4. publish only the exact reviewed proposal with compare-and-swap; and
+5. atomically materialize the complete desired state into the managed local
+   Plugin Root before publication returns.
+
+Do not also configure the SQLite store; the two authorities conflict. A remote
+outage fails the operation instead of silently falling back to local
+publication. Installation, selection, and removal remain local operations in
+the current slice. Most importantly, the adapter supplies configuration—not a
+remote-authored Plan. The local Host remains the only component that resolves,
+stages, and activates a Generation.

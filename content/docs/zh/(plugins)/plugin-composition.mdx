@@ -1,5 +1,5 @@
 ---
-title: App Definition
+title: 向 App 添加 Plugin
 description: 通过可见 Plugin Root 与 Host Catalog 组合一个 App。
 ---
 
@@ -7,7 +7,11 @@ description: 通过可见 Plugin Root 与 Host Catalog 组合一个 App。
 `.lenso/host-catalog.json`；解析器合并 Host Default 与 Plugin Root 差异，生成完整、
 不可变的 App Plan。
 
-## Plugin Root 目录
+使用这些命令前，先取得可执行 Host Build，以及从这个确定 Build 生成的
+`host-catalog.json`。它们定义产品实际支持的 linked Plugin、Slot、Execution
+Adapter 与默认值；通用 CLI 无法自行发明这些信息。
+
+## 1. 理解 App 文件
 
 ```text
 my-app/
@@ -28,6 +32,8 @@ my-app/
 - `<instance>/` 保存该配置 Instance 的不可变 Resource；
 - `<instance>.disabled` 是禁用已有 Instance 的空 Marker。
 
+## 2. 通过 CLI 修改 App
+
 使用 CLI 保持这些不变量：
 
 ```sh
@@ -37,6 +43,7 @@ lenso plugins configure example.echo default --file ./echo.toml --root ./my-app
 lenso plugins disable example.echo default --root ./my-app
 lenso plugins enable example.echo default --root ./my-app
 lenso plugins remove example.echo default --root ./my-app
+lenso plugins remove example.echo --root ./my-app
 lenso app check --root ./my-app
 lenso app show --root ./my-app
 ```
@@ -45,7 +52,13 @@ lenso app show --root ./my-app
 Slot、未知 Plugin 与歧义 Binding 会在文件提交前失败。运行中的产品 Host 另行暂存
 Generation、通过 Ready Gate、切换 Route、Drain 旧 Generation，并可在运行失败时回滚。
 
-## Catalog 生命周期
+向 `remove` 传入 Instance key 只会删除该 App-owned 差异；省略 key 会通过可恢复的
+`.lenso/trash/` 路径移除整个 Plugin 目录。
+
+`plugins list` 显示 App-owned 差异。`app show` 解释包含 Host default 在内的完整
+derived App。人工审查或合并后，`app check` 是最短的 readiness 检查。
+
+## 3. 使用确定的 Catalog Release
 
 ```sh
 lenso plugins search tool

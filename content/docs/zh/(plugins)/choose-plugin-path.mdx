@@ -1,0 +1,51 @@
+---
+title: 选择 Plugin 开发路径
+description: 根据目标 Host、语言和 Capability 选择当前受支持的开发路径。
+---
+
+Lenso 只有一种 Plugin 产品模型，并不会为每个 Runtime 再定义一种 Plugin
+类型。一个 Plugin Release 拥有一个 Contract，可以包含一个或多个确定的实现。
+你需要选择的是代码如何开发、如何被 Host 加载的 **authoring path**。
+
+## 当前支持的三条路径
+
+| 开发路径 | 什么时候选它 | 执行方式 | 当前边界 |
+| --- | --- | --- | --- |
+| [可移植 Rust Plugin](/docs/zh/plugin-authoring) | 添加一个需要打包、安装的 Agent Tool | Wasm、可信 Process，或两者 | `lenso plugin new` 当前只脚手架化 Agent Tool Provider Capability |
+| [Linked Rust Plugin](/docs/zh/linked-rust-plugin) | 你拥有产品 Host，需要深层、有状态或提供多个 Capability 的实现 | 链接进 Host 的原生 Rust | Host 二进制必须包含生成的 factory |
+| [Bun Plugin](/docs/zh/bun-plugin-authoring) | 希望用 TypeScript 实现强类型 Request provider | 可信 Bun 子进程 | 公共 SDK 当前只开放 Request Capability |
+
+普通 Agent Tool 优先从可移植 Rust 开始。Plugin 需要产品资源、生命周期、多个
+Capability，或者 CLI 尚未脚手架化的 Capability 时，选择 Linked Rust。目标 Host
+已经包含 Bun Adapter，并且实现语言是 TypeScript 时，选择 Bun。
+
+## 不要混淆三种分类
+
+**开发路径**回答“Plugin 如何编写和打包”。目前是可移植 Rust、Linked Rust 和
+Bun 三条路径。
+
+**交互形态**回答“一个 Capability operation 如何交互”：
+
+- Request 返回一个终结结果；
+- Stream 是有界的双向会话；
+- Event 向各自独立准入的订阅者发布事件。
+
+**Execution Class**回答“Host 如何运行一个实现”。当前例子包括 linked native
+Rust、Wasm Component、可信原生 Process 和 Bun 子进程。Execution Class 是 Host
+机制，不是第二套 Plugin 分类。
+
+## 按这个顺序决定
+
+1. 确定 Plugin 提供什么 Capability，又依赖什么 Capability。
+2. 检查 `lenso plugin new` 是否已经为这个角色提供脚手架；当前普通脚手架面向
+   Agent Tool。
+3. 检查目标 Host 实际包含哪些 Execution Adapter。
+4. 从上表选择一条开发路径。
+5. 同一个 Release 的所有实现必须保持相同的 Plugin ID、配置、提供与依赖的
+   Capability、生命周期和状态语义。
+
+如果第 2 或第 3 步没有受支持的答案，缺少的 SDK、Capability 投影或 Host
+Adapter 就是前置工作。不要把自制协议胶水藏进 Plugin 业务代码。
+
+接下来可以跟随[实现第一个 App 行为](/docs/zh/first-app)完成一次真实安装，或从
+表格进入对应路径的教程。

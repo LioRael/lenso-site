@@ -1,0 +1,209 @@
+---
+title: 编写 Endpoint Plugin
+description: 创建包含强类型 JSON Route 的 Linked Rust Plugin，并在打开 Socket 前证明其行为。
+---
+
+本步骤生成 `company.greetings-http`，它提供两条
+`lenso.http.endpoint@1` Route。完成本步骤后再连接 Ingress。
+
+## 1. 创建 Crate
+
+在 Host Workspace 中增加一个 Crate：
+
+```text
+crates/greetings-http-plugin/
+├── Cargo.toml
+└── src/
+    ├── lib.rs
+    └── http.rs
+```
+
+使用 Workspace 固定的依赖：
+
+```toml title="crates/greetings-http-plugin/Cargo.toml"
+[package]
+name = "greetings-http-plugin"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[package.metadata.lenso]
+plugin-id = "company.greetings-http"
+root-slot = "web"
+
+[dependencies]
+lenso.workspace = true
+lenso-capability-http-endpoint.workspace = true
+serde = { workspace = true, features = ["derive"] }
+```
+
+Host 不使用 Workspace Dependency 时，选择其 `Cargo.lock` 已有的版本。
+
+## 2. 实现 Route
+
+创建 Endpoint Provider：
+
+```rust title="src/http.rs"
+use std::{cell::{Cell, RefCell}, collections::BTreeMap, rc::Rc};
+
+use lenso::prelude::*;
+use lenso_capability_http_endpoint::{
+    prelude::*,
+    response::{Problem, StatusCode},
+};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct CreateGreeting {
+    name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct GreetingPath {
+    greeting_id: String,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+struct Greeting {
+    id: String,
+    message: String,
+}
+
+#[lenso::plugin]
+#[derive(Clone, Debug, Default)]
+pub struct GreetingsHttp {
+    next_id: Rc<Cell<u64>>,
+    greetings: Rc<RefCell<BTreeMap<String, Greeting>>>,
+}
+
+#[endpoint]
+impl GreetingsHttp {
+    #[post("greetings.create", "/greetings")]
+    async fn create(
+        &self,
+        Json(input): Json<CreateGreeting>,
+    ) -> Result<(StatusCode, Json<Greeting>), Problem> {
+        // 真实 Plugin 在这里调用并等待业务 Capability。
+        std::future::ready(()).await;
+        let name = input.name.trim();
+        if name.is_empty() {
+            return Err(Problem::new(
+                StatusCode::BAD_REQUEST,
+                "invalid_name",
+                "name must not be empty",
+            ));
+        }
+
+        let sequence = self.next_id.get() + 1;
+        self.next_id.set(sequence);
+        let greeting = Greeting {
+            id: format!("greeting-{sequence}"),
+            message: format!("Hello, {name}!"),
+        };
+        self.greetings
+            .borrow_mut()
+            .insert(greeting.id.clone(), greeting.clone());
+        Ok((StatusCode::CREATED, Json(greeting)))
+    }
+
+    #[get("greetings.read", "/greetings/{greeting_id}")]
+    async fn read(
+        &self,
+        Path(path): Path<GreetingPath>,
+    ) -> Result<Json<Greeting>, Problem> {
+        std::future::ready(()).await;
+        self.greetings
+            .borrow()
+            .get(&path.greeting_id)
+            .cloned()
+            .map(Json)
+            .ok_or_else(|| Problem::new(
+                StatusCode::NOT_FOUND,
+                "greeting_not_found",
+                "the greeting does not exist",
+            ))
+    }
+}
+```
+
+`#[lenso::plugin]` 声明产品行为边界；`#[endpoint]` 从同一组声明生成 Route
+Description、Dispatch Path、`lenso.http.endpoint@1` Capability 与 Linked Plugin
+Factory。业务作者不需要实现 `NativePluginFactory`，更不应再编写
+`NativeModuleFactory`。Handler 直接返回面向业务的值：`Json<T>` 表示 `200`
+JSON Response，`(StatusCode, T)` 覆盖状态码，`Problem` 表示有意返回给 Client
+的失败；Macro 会把它们降为 Portable Capability Contract。
+
+`Json<T>` 也会在 Handler 运行前拒绝无效 JSON 与不支持的 Content Type，
+`Path<T>` 解码命名 Path Parameter，`QueryParams<T>` 解码 URL Query String。
+HTTP QUERY Method 使用 `#[query("route.id", "/path")]`：它适合安全、幂等、
+但需要结构化 Body 的请求，和 URL Query Parameter 不是一回事。
+
+示例中的 Map 是临时 Instance State。其他 Interface 也需要 Greeting 行为时，
+把共享业务 Fact 移到业务 Capability Provider。持久状态属于 Store Plugin，
+不属于 Ingress。
+
+## 3. 直接证明 Provider
+
+在同一个 Crate 中使用无 Socket Test Harness：
+
+```rust title="src/http.rs"
+#[cfg(test)]
+mod tests {
+    use futures::executor::block_on;
+    use lenso_capability_http_endpoint::testing::EndpointTest;
+
+    use super::*;
+
+    #[test]
+    fn creates_and_reads_a_greeting() {
+        block_on(async {
+            let endpoint = EndpointTest::new(GreetingsHttp::default());
+            let created = endpoint
+                .request("greetings.create")
+                .json(&CreateGreeting { name: "Lenso".to_owned() })
+                .unwrap()
+                .send().await.unwrap();
+            assert_eq!(created.status(), StatusCode::CREATED);
+            let greeting = created.json::<Greeting>().unwrap();
+
+            let read = endpoint
+                .request("greetings.read")
+                .path_parameter("greeting_id", &greeting.id)
+                .send().await.unwrap();
+            assert_eq!(read.json::<Greeting>().unwrap(), greeting);
+        });
+    }
+}
+```
+
+`EndpointTest` 从生成的 Route Table 读取 Method 与 Path，直接调用 Plugin，
+因此无需绑定端口即可测试 Extractor、Middleware、Typed Response 与 Dispatch。
+Request Builder 还支持 `.query()`、`.path_parameter()` 与 `.header()`。
+
+针对生成的 `EndpointProvider` 增加聚焦测试：
+
+- `describe` 只返回 `greetings.create` 和 `greetings.read`；
+- 有效 JSON 返回 `201`；
+- 空 `name` 返回有意设计的 `400` Problem Details；
+- 无效 JSON 与不支持的 Content Type 在 `create` 前失败；
+- 未知 ID 返回带 `greeting_not_found` 的 `404`。
+
+运行 Crate 检查：
+
+```sh
+cargo fmt --all -- --check
+cargo test --locked -p greetings-http-plugin
+cargo clippy --locked -p greetings-http-plugin --all-targets -- -D warnings
+```
+
+Owner Repository 在 `examples/greetings-http-plugin` 提供了完整、可复制的
+Scaffold，同时维护了 Extractor 与 Response 示例：
+
+```sh
+cargo test --locked -p lenso-capability-http-endpoint \
+  --test endpoint_attributes
+```
+
+Route Description 稳定，并且所有直接成功与失败断言通过时，本步骤完成。继续
+[连接 Host 与 Ingress](/docs/zh/web-host-integration)。

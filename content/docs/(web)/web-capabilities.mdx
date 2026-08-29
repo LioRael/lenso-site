@@ -8,6 +8,12 @@ Ingress to one or more `lenso.http.endpoint@1` providers. Outbound traffic
 binds a consumer to the policy-bounded HTTP Egress provider of
 `lenso.http.client@1`.
 
+If you are building your first backend, follow [Build a Web backend](/docs/web-backend)
+first. That tutorial covers the Host prerequisite, Endpoint crate, linked
+registration, Ingress configuration, real socket calls, and removal. Return to
+this page for the detailed HTTP contract, Auth, OpenAPI, middleware, and Egress
+reference.
+
 ```mermaid
 flowchart LR
   H[HTTP client] --> I[Web Ingress]
@@ -29,11 +35,11 @@ Use the endpoint macro so `describe` and `handle` share one compile-time checked
 route table:
 
 ```rust title="src/http.rs"
+use lenso::prelude::*;
 use lenso_capability_http_endpoint::{
-    endpoint, HandleResponse, EndpointHandleInvocationError, Json,
+    prelude::*,
     response::{self, HeaderValue, StatusCode, header},
 };
-use lenso_kernel::InvocationContext;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
@@ -46,6 +52,7 @@ struct CreatedOrder<'a> {
     id: &'a str,
 }
 
+#[lenso::plugin]
 #[derive(Clone, Debug, Default)]
 struct OrdersHttp;
 
@@ -54,7 +61,7 @@ impl OrdersHttp {
     #[post("orders.create", "/orders")]
     async fn create(
         &self,
-        _context: InvocationContext,
+        _context: Ctx,
         Json(_order): Json<CreateOrder>,
     ) -> Result<HandleResponse, EndpointHandleInvocationError> {
         Ok(response::json(
@@ -69,9 +76,32 @@ impl OrdersHttp {
 ```
 
 `#[endpoint]` collects the handlers in one `impl`. Use `#[get]`, `#[post]`,
-`#[put]`, `#[patch]`, `#[delete]`, `#[head]`, or `#[options]`; each attribute
+`#[put]`, `#[patch]`, `#[delete]`, `#[head]`, `#[options]`, or `#[query]`; each attribute
 declares a stable route ID followed by its path. The `http_endpoint!` static
 table remains available for generated code and existing Plugins.
+
+`#[query]` declares the HTTP QUERY method for safe, idempotent searches that
+need structured request content. It is different from a URL query string;
+decode URL parameters with `QueryParams<T>`:
+
+```rust title="src/http.rs"
+#[endpoint]
+impl OrdersHttp {
+    #[query("orders.search", "/orders/search")]
+    async fn search(
+        &self,
+        Json(filter): Json<SearchFilter>,
+        QueryParams(page): QueryParams<Page>,
+    ) -> Result<HandleResponse, EndpointHandleInvocationError> {
+        self.search_orders(filter, page).await
+    }
+}
+```
+
+A QUERY request with content must declare the correct `Content-Type`.
+`Json<T>` enforces this before the handler runs. The old `Query<T>` extractor
+name remains temporarily available for migration; new code should use
+`QueryParams<T>`.
 
 The endpoint owns HTTP-shaped business behavior. Web Ingress owns listener and
 protocol mechanics, route matching, path parameters, size and concurrency
@@ -247,7 +277,7 @@ provider and target-side code.
 
 Extractors run in handler-argument order. They may await clients stored on the
 provider, enrich the context for later extractors and the handler, return an
-intentional response, or preserve an Endpoint failure. `Path<T>`, `Query<T>`,
+intentional response, or preserve an Endpoint failure. `Path<T>`, `QueryParams<T>`,
 `Json<T>`, and `RequestId` are built in. Invalid path, query, or JSON input is
 rejected before the handler runs.
 
