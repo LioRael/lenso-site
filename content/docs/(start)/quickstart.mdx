@@ -1,11 +1,13 @@
 ---
 title: Quickstart
-description: Create, exercise, package, and install one typed Lenso Plugin.
+description: Create, exercise, package, and verify one typed Lenso Plugin.
 ---
 
-The shortest supported path starts with one ordinary Plugin project. Rust can
-produce portable Wasm plus a trusted Process implementation from the same
-source; Bun uses the generated `@lenso/bun` runtime lowering.
+The shortest supported path is self-contained: create one ordinary Plugin,
+exercise it through the real Execution Adapter, and verify the exact Bundle
+that you can later offer to a Host. Rust can produce portable Wasm plus a
+trusted Process implementation from the same source; Bun uses the generated
+`@lenso/bun` runtime lowering.
 
 ## Prerequisites
 
@@ -15,64 +17,64 @@ source; Bun uses the generated `@lenso/bun` runtime lowering.
 
 ## Create and exercise a Plugin
 
+Choose exactly one of the following paths and run it from a directory that does
+not already contain `example.echo`.
+
+### Rust
+
 ```sh
 lenso plugin new example.echo
 cd example.echo
 lenso plugin check
 lenso plugin dev \
+  --implementation auto \
   --operation execute \
   --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
 lenso plugin pack
+cd ..
 ```
 
-Use `lenso plugin dev --watch` to rebuild and rerun after source changes. The
-development build stays unoptimized; `plugin pack` performs the release build
-and reopens the resulting `.lenso-plugin` archive through the same verifier used
-for installation.
-
-For TypeScript, create the equivalent Bun project:
+### Bun / TypeScript
 
 ```sh
 lenso plugin new example.echo --runtime bun
+cd example.echo
+lenso plugin check
+lenso plugin dev \
+  --implementation auto \
+  --operation execute \
+  --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+lenso plugin pack
+cd ..
 ```
 
-Edit `src/plugin.ts`. The generated entrypoints own descriptor projection,
+Business changes live in `example.echo/src/plugin.ts`. The generated entrypoints own descriptor projection,
 development invocation, and the production Bun server; business code does not
 implement JSON-RPC or process lifecycle.
 
-## Create an App workspace
+In either path, append `--watch` to the same `plugin dev` invocation, retaining
+its operation and request arguments, to rebuild and rerun after source changes.
+The development build stays unoptimized. `plugin pack` performs the
+release build, reopens the resulting `.lenso-plugin` archive through the same
+verifier used for installation, and prints its verified path under `dist/`.
+Both paths then return to the parent directory so the Bundle is available at
+`./example.echo/dist/example.echo-0.1.0.lenso-plugin`. That completes this
+quickstart; it does not assume an unpublished catalog entry or a product Host
+that is not on your machine.
 
-An App is derived from one exact Host Build plus a visible `plugins/` directory.
-Initialize that layout from matching Host artifacts:
+## Connect the Bundle to an App
 
-```sh
-lenso app init \
-  --host /path/to/host \
-  --host-catalog /path/to/host-catalog.json \
-  --root ./my-app
-cd my-app
-lenso app check
-lenso app show
-```
-
-Install a local bundle with `lenso plugins add`, or use exact catalog versions:
-
-```sh
-lenso plugins search echo
-lenso plugins install example.echo --version 1.0.0
-lenso plugins configure example.echo default --file echo.toml
-lenso app check
-lenso run
-```
-
-Catalog installs verify the downloaded archive digest, Manifest digest, Bundle
-closure, Host target, execution class, and candidate App before replacing
-Desired State. Updates retain exact archives for `plugins history` and
-`plugins rollback`.
+An App is derived from one exact Host Build, its matching Host Catalog, and a
+visible Plugin Root. Those artifacts belong to the product Host rather than to
+the generic CLI, so the next step starts from the Host's own setup instructions.
+Use [Plugin composition](/docs/plugin-composition) once you have those two
+matching Host artifacts. Add the local Bundle produced above first; catalog
+installation is optional and only applies to a Release that the selected
+catalog actually returns.
 
 Run `lenso doctor` when setup or resolution fails. It emits human-readable
 checks by default and stable JSON with `--json`.
 
 Continue with [Plugin authoring](/docs/plugin-authoring),
 [Bun Plugin authoring](/docs/bun-plugin-authoring), and
-[App definitions](/docs/plugin-composition).
+[Plugin composition](/docs/plugin-composition).

@@ -32,7 +32,7 @@ Use the CLI to preserve these invariants:
 
 ```sh
 lenso app init --host ./host --host-catalog ./host-catalog.json --root ./my-app
-lenso plugins add ./example.echo-1.0.0.lenso-plugin --root ./my-app
+lenso plugins add ./example.echo/dist/example.echo-0.1.0.lenso-plugin --root ./my-app
 lenso plugins configure example.echo default --file ./echo.toml --root ./my-app
 lenso plugins disable example.echo default --root ./my-app
 lenso plugins enable example.echo default --root ./my-app

@@ -39,6 +39,29 @@ function read(file) {
   return readFileSync(absolute, "utf8");
 }
 
+function requireOrderedMarkers(file, markers) {
+  const text = read(file);
+  let cursor = 0;
+  for (const marker of markers) {
+    const index = text.indexOf(marker, cursor);
+    if (index === -1) {
+      failures.push(`${file}: missing ordered marker ${JSON.stringify(marker)}`);
+      return;
+    }
+    cursor = index + marker.length;
+  }
+}
+
+function requireCount(file, marker, expected) {
+  const text = read(file);
+  const actual = text.split(marker).length - 1;
+  if (actual !== expected) {
+    failures.push(
+      `${file}: expected ${expected} occurrence(s) of ${JSON.stringify(marker)}, found ${actual}`,
+    );
+  }
+}
+
 for (const page of requiredCurrentPages) {
   read(`content/docs/${page}`);
   read(`content/docs/zh/${page}`);
@@ -81,6 +104,26 @@ for (const marker of ["Resolved App Plan", "Runtime Driver", "Execution Adapter"
 }
 
 for (const [file, markers] of [
+  ["content/docs/(start)/quickstart.mdx", [
+    "self-contained",
+    "--implementation auto",
+    "completes this",
+  ]],
+  ["content/docs/zh/(start)/quickstart.mdx", [
+    "自包含",
+    "--implementation auto",
+    "本 Quickstart 已完成",
+  ]],
+  ["content/docs/(guides)/plugin-composition.mdx", [
+    "lenso app init",
+    "lenso plugins add ./example.echo/dist/example.echo-0.1.0.lenso-plugin --root ./my-app",
+    "lenso app check",
+  ]],
+  ["content/docs/zh/(guides)/plugin-composition.mdx", [
+    "lenso app init",
+    "lenso plugins add ./example.echo/dist/example.echo-0.1.0.lenso-plugin --root ./my-app",
+    "lenso app check",
+  ]],
   ["content/docs/(guides)/web-capabilities.mdx", [
     "lenso-openapi",
     "There is deliberately no `enabled` field.",
@@ -110,6 +153,47 @@ for (const [file, markers] of [
       failures.push(`${file}: missing current Bun marker ${JSON.stringify(marker)}`);
     }
   }
+}
+
+for (const file of [
+  "content/docs/(start)/quickstart.mdx",
+  "content/docs/zh/(start)/quickstart.mdx",
+]) {
+  const text = read(file);
+  for (const forbidden of ["/path/to/", "lenso plugins search", "lenso plugins install"]) {
+    if (text.includes(forbidden)) {
+      failures.push(`${file}: quickstart depends on unavailable ${JSON.stringify(forbidden)}`);
+    }
+  }
+}
+
+for (const file of [
+  "content/docs/(start)/quickstart.mdx",
+  "content/docs/zh/(start)/quickstart.mdx",
+]) {
+  requireOrderedMarkers(file, [
+    "### Rust",
+    "lenso plugin new example.echo\n",
+    "cd example.echo",
+    "lenso plugin check",
+    "lenso plugin dev",
+    "--implementation auto",
+    "lenso plugin pack",
+    "cd ..",
+    "### Bun / TypeScript",
+    "lenso plugin new example.echo --runtime bun",
+    "cd example.echo",
+    "lenso plugin check",
+    "lenso plugin dev",
+    "--implementation auto",
+    "lenso plugin pack",
+    "cd ..",
+  ]);
+  requireCount(file, "lenso plugin check", 2);
+  requireCount(file, "lenso plugin dev", 2);
+  requireCount(file, "lenso plugin pack", 2);
+  requireCount(file, "--implementation auto", 2);
+  requireCount(file, "cd ..", 2);
 }
 
 if (failures.length > 0) {
