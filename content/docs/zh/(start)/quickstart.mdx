@@ -3,15 +3,24 @@ title: 快速开始
 description: 创建、运行、打包并校验一个强类型 Lenso Plugin。
 ---
 
-当前最短的受支持路径是自包含的：创建一个普通 Plugin，通过真实 Execution
-Adapter 运行它，再校验之后可交给 Host 的精确 Bundle。Rust 可由同一份源码生成
-可移植 Wasm 与可信 Process 实现；Bun 使用生成的 `@lenso/bun` Runtime Lowering。
+在这个自包含 Quickstart 中，你会创建一个普通 Plugin，通过真实 Execution Adapter
+调用它，并生成一个通过校验的 `.lenso-plugin` Bundle。完成这条路径不需要产品 Host，
+也不依赖 Catalog 条目。
+
+Rust 可由同一份源码生成可移植 Wasm 与可信 Process 实现；Bun 使用生成的
+`@lenso/bun` Runtime Lowering。
 
 ## 前置条件
 
-- `lenso` CLI；
 - 默认脚手架需要 Rust Stable 与 `wasm32-unknown-unknown` Target；
 - 只有选择 `--runtime bun` 时才需要 Bun 1.2.21 或更新版本。
+
+从 npm 安装 CLI：
+
+```sh
+npm install -g @lenso/cli
+lenso --version
+```
 
 ## 创建并运行 Plugin
 
@@ -45,8 +54,9 @@ lenso plugin pack
 cd ..
 ```
 
-业务代码只需编辑 `example.echo/src/plugin.ts`。生成的 Entrypoint 持有 Descriptor 投影、开发调用与
-正式 Bun Server；业务代码不实现 JSON-RPC 或进程生命周期。
+在 Bun 路径中，业务代码只需编辑 `example.echo/src/plugin.ts`。生成的 Entrypoint
+持有 Descriptor 投影、开发调用与正式 Bun Server；业务代码不实现 JSON-RPC 或
+进程生命周期。
 
 两条路径都可以在同一个 `plugin dev` 命令中追加 `--watch`，并保留 Operation 与
 Request 参数，以便源码变化后重新构建并调用。开发构建保持未优化；`plugin pack`

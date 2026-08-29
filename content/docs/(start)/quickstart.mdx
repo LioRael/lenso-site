@@ -3,17 +3,24 @@ title: Quickstart
 description: Create, exercise, package, and verify one typed Lenso Plugin.
 ---
 
-The shortest supported path is self-contained: create one ordinary Plugin,
-exercise it through the real Execution Adapter, and verify the exact Bundle
-that you can later offer to a Host. Rust can produce portable Wasm plus a
-trusted Process implementation from the same source; Bun uses the generated
-`@lenso/bun` runtime lowering.
+In this self-contained quickstart, you will create one ordinary Plugin, invoke
+it through a real Execution Adapter, and produce a verified `.lenso-plugin`
+Bundle. You do not need a product Host or a catalog entry to complete it.
+
+Rust produces portable Wasm plus a trusted Process implementation from the
+same source. Bun uses the generated `@lenso/bun` runtime lowering.
 
 ## Prerequisites
 
-- the `lenso` CLI;
 - Rust stable with the `wasm32-unknown-unknown` target for the default scaffold;
 - Bun 1.2.21 or newer only when selecting `--runtime bun`.
+
+Install the CLI from npm:
+
+```sh
+npm install -g @lenso/cli
+lenso --version
+```
 
 ## Create and exercise a Plugin
 
@@ -48,9 +55,10 @@ lenso plugin pack
 cd ..
 ```
 
-Business changes live in `example.echo/src/plugin.ts`. The generated entrypoints own descriptor projection,
-development invocation, and the production Bun server; business code does not
-implement JSON-RPC or process lifecycle.
+In the Bun path, business changes live in `example.echo/src/plugin.ts`. The
+generated entrypoints own Descriptor projection, development invocation, and
+the production Bun server; business code does not implement JSON-RPC or process
+lifecycle.
 
 In either path, append `--watch` to the same `plugin dev` invocation, retaining
 its operation and request arguments, to rebuild and rerun after source changes.

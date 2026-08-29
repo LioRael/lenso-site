@@ -1,20 +1,39 @@
 ---
 title: 介绍
-description: 了解 Lenso 是什么、为什么使用显式 App Plan，以及运行时边界如何划分。
+description: 通过类型化 Capability 与可验证组合，用可替换 Plugin 构建产品。
 ---
 
-Lenso 是一个面向模块化应用的本地优先、语言无关运行时。它把应用的 Plugin、
-Capability 绑定、执行选择与策略解析成不可变的 **Resolved App Plan**，再由一个
-小型可移植 Kernel 执行该 Plan。
+## 用可替换 Plugin 构建产品
 
-核心思想很直接：在启动前决定应用结构，让运行时语义保持显式，并把环境相关
-工作留在宿主边界。
+Lenso 是一个本地优先、语言无关的产品运行时，适用于需要持续添加、替换与移除
+行为，同时又不希望组合逻辑变成框架黑盒的应用。
+
+将产品角色定义为类型化 Capability，用 Plugin 实现这些角色，再由 Host 在启动前
+解析出一个精确应用。开发者与 Coding Agent 面对同一份可检查 Plugin Root，运行时
+则让生命周期、失败语义与执行选择保持显式。
+
+Lenso 适合长期演进的业务系统、开发者工具、自动化产品与 Agent 应用。它不是
+Web 框架，也不是分布式控制平面。
+
+<CardGroup>
+  <Card title="创建第一个 Plugin" href="/docs/zh/quickstart" description="安装 CLI，运行一个类型化 Plugin，并验证可分发 Bundle。" />
+  <Card title="查看当前实现范围" href="/docs/zh/status-and-scope" description="区分稳定、Early-access 与刻意延后的能力。" />
+</CardGroup>
 
 ## 为什么需要 Lenso
 
-模块化系统经常难以推理，是因为组合、运行时调度、传输、基础设施和产品行为
-被挤在同一层。最终往往形成隐式依赖发现、随环境变化的生命周期，以及必须等
-应用运行后才能校验的配置。
+在长期演进的产品中，一个功能很少只存在于一个文件里。它的配置、状态、权限、
+后台任务与失败策略会逐渐散落到整个应用。此后再移除或替换它就充满风险，Coding
+Agent 也只能猜测系统从未明确记录的边界。
+
+Lenso 让这些产品边界可以被执行和验证：
+
+- **Plugin 持有产品行为。** 移除 Plugin，也移除它带来的产品复杂度。
+- **Capability 定义协作。** 消费方依赖类型化角色，而不是实现方的私有代码或传输。
+- **Plugin Root 表达意图。** App Owner 修改可见的 Plugin 选择与配置，无需手写运行图。
+- **解析在启动前失败。** 不兼容或有歧义的选择不会变成只启动了一半的应用。
+
+在这条产品工作流之下，Lenso 进一步拆开经常被挤在同一层的运行时责任：
 
 Lenso 将这些责任分开：
 

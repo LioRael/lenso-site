@@ -1,23 +1,47 @@
 ---
 title: Introduction
-description: Understand what Lenso is, why it uses an explicit App Plan, and where its runtime boundaries are drawn.
+description: Build products from replaceable Plugins with typed Capabilities and verifiable composition.
 ---
 
-Lenso is a local-first, language-independent runtime for modular applications.
-It turns an application's Plugins, Capability bindings, execution choices, and
-policies into an immutable **Resolved App Plan**, then runs that plan through a
-small portable Kernel.
+## Build products from replaceable Plugins
 
-The central idea is simple: decide the application before boot, keep runtime
-semantics explicit, and leave environment-specific work at the host boundary.
+Lenso is a local-first, language-independent runtime for products whose
+behavior must be added, replaced, and removed without turning composition into
+hidden framework magic.
+
+Define product roles as typed Capabilities, implement them as Plugins, and let
+each Host resolve one exact application before it boots. Humans and coding
+agents work against the same inspectable Plugin Root, while the runtime keeps
+lifecycle, failure, and execution choices explicit.
+
+Lenso is designed for long-lived business systems, developer tools,
+automation products, and Agent applications. It is not a Web framework or a
+distributed control plane.
+
+<CardGroup>
+  <Card title="Create your first Plugin" href="/docs/quickstart" description="Install the CLI, run one typed Plugin, and verify its distributable Bundle." />
+  <Card title="See what is implemented" href="/docs/status-and-scope" description="Review stable, early-access, and deliberately deferred capabilities." />
+</CardGroup>
 
 ## Why Lenso exists
 
-Modular systems often become difficult to reason about because composition,
-runtime scheduling, transport, infrastructure, and product behavior collapse
-into the same layer. The result is usually implicit dependency discovery,
-environment-specific lifecycle behavior, and configuration that cannot be
-validated until the application is already running.
+In a long-lived product, a feature rarely stays in one file. Its configuration,
+state, permissions, background work, and failure policy spread across the
+application. Removing or replacing it then becomes risky, and coding agents
+have to infer boundaries that the system never recorded.
+
+Lenso makes those product boundaries executable:
+
+- **Plugins own behavior.** Removing a Plugin removes its product complexity.
+- **Capabilities define collaboration.** Consumers depend on typed roles, not
+  a provider's private code or transport.
+- **The Plugin Root shows intent.** An App owner changes visible Plugin
+  selections and configuration instead of hand-authoring a runtime graph.
+- **Resolution fails before boot.** Incompatible or ambiguous selections do
+  not become partially running applications.
+
+Under that product workflow, Lenso separates runtime responsibilities that
+often collapse into one layer:
 
 Lenso separates those concerns:
 
