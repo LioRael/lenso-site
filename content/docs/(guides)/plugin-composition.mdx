@@ -1,0 +1,65 @@
+---
+title: App definitions
+description: Compose one App through its visible Plugin Root and Host Catalog.
+---
+
+The reviewed authoring authority is a visible `plugins/` directory. The matching
+Host Build publishes `.lenso/host-catalog.json`; resolution merges Host defaults
+with Plugin Root differences and produces the complete immutable App Plan.
+
+## Plugin Root layout
+
+```text
+my-app/
+├── .lenso/
+│   ├── host
+│   └── host-catalog.json
+└── plugins/
+    └── example.echo/
+        ├── plugin.lenso-plugin/
+        ├── default.toml
+        ├── default/
+        │   └── prompt.md
+        └── old.disabled
+```
+
+- `plugin.lenso-plugin/` is the verified extracted Bundle;
+- `<instance>.toml` adds or configures a keyed Instance;
+- `<instance>/` contains immutable resources for that configured Instance;
+- `<instance>.disabled` is an empty marker that disables an existing Instance.
+
+Use the CLI to preserve these invariants:
+
+```sh
+lenso app init --host ./host --host-catalog ./host-catalog.json --root ./my-app
+lenso plugins add ./example.echo-1.0.0.lenso-plugin --root ./my-app
+lenso plugins configure example.echo default --file ./echo.toml --root ./my-app
+lenso plugins disable example.echo default --root ./my-app
+lenso plugins enable example.echo default --root ./my-app
+lenso plugins remove example.echo default --root ./my-app
+lenso app check --root ./my-app
+lenso app show --root ./my-app
+```
+
+Every mutation first resolves a candidate snapshot against the Host Catalog.
+Invalid configuration, missing required Slots, unknown Plugins, and ambiguous
+bindings fail before files are committed. The running product Host separately
+stages a Generation, passes its Ready Gate, switches routing, drains the old
+Generation, and can roll back runtime failure.
+
+## Catalog lifecycle
+
+```sh
+lenso plugins search tool
+lenso plugins install example.tool --version 1.2.0
+lenso plugins update example.tool --version 1.3.0
+lenso plugins history example.tool
+lenso plugins rollback example.tool --version 1.2.0
+```
+
+There is no implicit “latest.” Catalog and Bundle schemas are strict, network
+downloads are digest-bound, and retained versions are immutable. The official
+catalog may truthfully be empty until a Release has a real downloadable Bundle.
+
+The Kernel never reads this directory and never installs a package. It receives
+only the resolved Plan selected for one App Generation.

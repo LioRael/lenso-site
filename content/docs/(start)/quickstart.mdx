@@ -1,101 +1,78 @@
 ---
 title: Quickstart
-description: Install the Lenso CLI, scaffold a typed Bun Module, and run its production Adapter development loop.
+description: Create, exercise, package, and install one typed Lenso Plugin.
 ---
 
-The fastest executable Lenso path is a generated Bun Module project. It uses
-the same Capability Descriptor, immutable Resolved App Plan, and portable
-Kernel contracts as native Rust, while keeping process and wire mechanics in a
-separate Execution Adapter.
+The shortest supported path starts with one ordinary Plugin project. Rust can
+produce portable Wasm plus a trusted Process implementation from the same
+source; Bun uses the generated `@lenso/bun` runtime lowering.
 
 ## Prerequisites
 
-- Bun 1.2.21 or newer
-- Node.js 18 or newer for the npm-distributed CLI, or Rust stable with Cargo
+- the `lenso` CLI;
+- Rust stable with the `wasm32-unknown-unknown` target for the default scaffold;
+- Bun 1.2.21 or newer only when selecting `--runtime bun`.
 
-## 1. Install the Lenso CLI
-
-```sh
-npm install -g @lenso/cli
-lenso --version
-```
-
-The npm package contains the platform-specific `lenso` binary. Rust users can
-install the same CLI from crates.io instead:
+## Create and exercise a Plugin
 
 ```sh
-cargo install lenso-cli --locked
+lenso plugin new example.echo
+cd example.echo
+lenso plugin check
+lenso plugin dev \
+  --operation execute \
+  --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+lenso plugin pack
 ```
 
-## 2. Create a Bun Module
+Use `lenso plugin dev --watch` to rebuild and rerun after source changes. The
+development build stays unoptimized; `plugin pack` performs the release build
+and reopens the resulting `.lenso-plugin` archive through the same verifier used
+for installation.
+
+For TypeScript, create the equivalent Bun project:
 
 ```sh
-lenso new greeting --runtime bun
-cd greeting
+lenso plugin new example.echo --runtime bun
 ```
 
-The command generates a complete project: a Capability Descriptor and schemas,
-a checked-in TypeScript binding, a typed Provider, `lenso.json`, Bun
-workspace manifests, and `bun.lock`. It runs installation and type checking
-before atomically publishing the new directory, so a failed scaffold does not
-leave a partial project.
+Edit `src/plugin.ts`. The generated entrypoints own descriptor projection,
+development invocation, and the production Bun server; business code does not
+implement JSON-RPC or process lifecycle.
 
-## 3. Run the development loop
+## Create an App workspace
+
+An App is derived from one exact Host Build plus a visible `plugins/` directory.
+Initialize that layout from matching Host artifacts:
 
 ```sh
-lenso dev
+lenso app init \
+  --host /path/to/host \
+  --host-catalog /path/to/host-catalog.json \
+  --root ./my-app
+cd my-app
+lenso app check
+lenso app show
 ```
 
-The CLI validates the project, resolves a fresh immutable Plan, and starts the
-Module through the production Bun Execution Adapter. Source and project changes
-cleanly stop the old child and resolve a new generation. Type, contract, and
-startup failures keep the watcher alive; fix the file and save again. Ctrl-C
-performs cooperative shutdown.
-
-Edit `modules/greeting/src/index.ts` to change the generated Provider. The
-Module uses `@lenso/bun-module`; application code never implements the
-JSON-RPC handshake, framing, cancellation, or process lifecycle.
-
-## 4. Run the repeatable checks
+Install a local bundle with `lenso plugins add`, or use exact catalog versions:
 
 ```sh
-bun run typecheck
-bun run check
-bun run verify
+lenso plugins search echo
+lenso plugins install example.echo --version 1.0.0
+lenso plugins configure example.echo default --file echo.toml
+lenso app check
+lenso run
 ```
 
-`check` gives fast diagnostics for project inputs, package locks, endpoints,
-and generated contracts. `verify` also runs the declared behavior, lifecycle,
-and removal probes. The development Host resolves and loads canonical Plan
-bytes; the Kernel does not discover Modules, install packages, or mutate the
-graph.
+Catalog installs verify the downloaded archive digest, Manifest digest, Bundle
+closure, Host target, execution class, and candidate App before replacing
+Desired State. Updates retain exact archives for `plugins history` and
+`plugins rollback`.
 
-:::note
-This is a complete Bun Module authoring and development starter, not a generator
-for an entire production application or deployment environment. Native Rust
-Modules remain statically linked; generated factories are collected by the
-product App binary.
-:::
+Run `lenso doctor` when setup or resolution fails. It emits human-readable
+checks by default and stable JSON with `--json`.
 
-Continue with [Bun Module authoring](/docs/bun-module-authoring) for the project
-layout, Provider API, CLI options, and current Request-only SDK boundary. Read
-[Project and Plan](/docs/project-and-plan) for the language-independent
-composition model.
-
-## Verify the portable core
-
-Framework contributors can run the core repository gates independently of the
-Bun host path:
-
-```sh
-git clone https://github.com/LioRael/lenso.git
-cd lenso
-cargo fmt --all -- --check
-cargo xtask check-core-repository-boundary
-cargo check --locked --workspace --all-targets
-cargo test --locked --workspace
-```
-
-CI also compile-checks the portable core for `wasm32-unknown-unknown` and
-`wasm32-wasip2`. Those host profiles do not automatically gain the Bun
-child-process Adapter.
+Continue with [Plugin authoring](/docs/plugin-authoring),
+[Bun Plugin authoring](/docs/bun-plugin-authoring), and
+[App definitions](/docs/plugin-composition).

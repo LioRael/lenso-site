@@ -14,13 +14,13 @@ flowchart LR
   I --> E[HTTP Endpoint providers]
   I --> O[Optional OpenAPI document]
   O -. explicitly bound descriptions .-> E
-  M[Business Module] --> C[HTTP Client Capability]
+  M[Business Plugin] --> C[HTTP Client Capability]
   C --> X[HTTP Egress]
   X --> U[Allowed upstream]
 ```
 
 These backend contracts are separate from target-owned browser UI. Web Shell,
-Browser Adapter, and UI Contribution Modules compose pages and generated
+Browser Adapter, and UI Contribution Plugins compose pages and generated
 browser clients; they do not own backend HTTP routing.
 
 ## Publish an inbound endpoint
@@ -71,7 +71,7 @@ impl OrdersHttp {
 `#[endpoint]` collects the handlers in one `impl`. Use `#[get]`, `#[post]`,
 `#[put]`, `#[patch]`, `#[delete]`, `#[head]`, or `#[options]`; each attribute
 declares a stable route ID followed by its path. The `http_endpoint!` static
-table remains available for generated code and existing Modules.
+table remains available for generated code and existing Plugins.
 
 The endpoint owns HTTP-shaped business behavior. Web Ingress owns listener and
 protocol mechanics, route matching, path parameters, size and concurrency
@@ -88,7 +88,7 @@ binary response bodies.
 
 ## Add an optional OpenAPI document
 
-OpenAPI support is an ordinary opt-in Module, not an Ingress setting. Endpoint
+OpenAPI support is an ordinary opt-in Plugin, not an Ingress setting. Endpoint
 authors can attach an OpenAPI 3.1 Operation Object to a route while keeping the
 route declaration authoritative for its method, path, and stable
 `operationId`:
@@ -133,7 +133,7 @@ stable route ID. Method and path always come from the route declaration.
 
 The annotation itself remains optional. Routes without OpenAPI metadata are
 valid and receive a minimal fallback response only if an explicitly selected
-OpenAPI Module includes them in its document.
+OpenAPI Plugin includes them in its document.
 
 To publish a document, App Composition must make all three choices explicitly:
 
@@ -143,7 +143,7 @@ To publish a document, App Composition must make all three choices explicitly:
 3. Bind the OpenAPI Instance's own HTTP Endpoint to Web Ingress.
 
 Only that bound subset appears in the generated OpenAPI 3.1 document. The
-Module does not discover providers globally or infer a public server URL from
+Plugin does not discover providers globally or infer a public server URL from
 the listener. Its immutable configuration controls document metadata and the
 static route:
 
@@ -240,9 +240,9 @@ impl OrdersHttp {
 `extract_authenticated_actor` owns evidence conversion, Auth invocation, stable `401`/`403`
 responses, and assertion attachment. `OrdersHttp::auth` and its Orders client are created once from
 `ActivateContext::dependencies()` and released during deactivation; do not
-resolve bindings for every request. The target Orders Module must still verify
+resolve bindings for every request. The target Orders Plugin must still verify
 the assertion proof, issuer, validity, and operation audience before projecting
-it into its own typed actor. See [Auth Module](/docs/auth-module/) for the
+it into its own typed actor. See [Auth Plugin](/docs/auth-plugin/) for the
 provider and target-side code.
 
 Extractors run in handler-argument order. They may await clients stored on the
@@ -259,7 +259,7 @@ types implementing `AuthenticatedHttpActor`; Lenso does not impose one universal
 user model. This trait is deliberately different from target-side `TypedActor`.
 `AdminActor` should
 only mean a distinct authenticated actor kind. Do not use the extractor to grant
-roles, tenant access, or resource ownership—the target Module still owns those
+roles, tenant access, or resource ownership—the target Plugin still owns those
 decisions.
 
 `handle_authenticated` is Endpoint-owned application code: it calls
@@ -272,14 +272,14 @@ Keep these mappings intentional:
 | Outcome | Endpoint response |
 | --- | --- |
 | Missing, invalid, expired, or revoked credential | `401` Problem Details and `WWW-Authenticate` |
-| Valid actor without permission for the target operation | Endpoint maps the target Module's authorization rejection to `403` |
+| Valid actor without permission for the target operation | Endpoint maps the target Plugin's authorization rejection to `403` |
 | Malformed path, query, or body | `400` |
 | JSON extractor with a missing or unsupported content type | `415` |
 | Auth or business Capability unavailable | `503` |
 | Response serialization or header construction fails | internal Endpoint failure, mapped to `503` |
 
 Ingress owns transport errors; Auth owns evidence authentication; the target
-business Module owns the final authorization decision. A successful Auth call
+business Plugin owns the final authorization decision. A successful Auth call
 must not be treated as blanket permission.
 
 Configure one immutable Ingress Instance in the Plan:
@@ -319,9 +319,9 @@ Resolve the generated client from the consumer's declared dependencies:
 use lenso_capability_http_client::{
     ClientClient, ClientInvocationError, SendRequest, SendRequestHeadersItem,
 };
-use lenso_kernel::{ModuleDependencies, RuntimeFailure};
+use lenso_kernel::{PluginDependencies, RuntimeFailure};
 
-fn client(dependencies: &ModuleDependencies) -> Result<ClientClient, RuntimeFailure> {
+fn client(dependencies: &PluginDependencies) -> Result<ClientClient, RuntimeFailure> {
     ClientClient::from_dependencies(dependencies)
 }
 
@@ -346,7 +346,7 @@ system proxies, manage cookies, or retry requests implicitly.
 
 Both HTTP contracts are portable and their TypeScript projections are
 published by `@lenso/bun`.
-However, the maintained Ingress and Egress providers are linked Rust Modules;
-a Bun Module must still receive the Capability through an execution path and
+However, the maintained Ingress and Egress providers are linked Rust Plugins;
+a Bun Plugin must still receive the Capability through an execution path and
 binding supported by its host. Contract portability is not automatic provider
 installation.

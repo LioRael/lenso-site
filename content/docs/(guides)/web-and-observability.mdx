@@ -5,7 +5,7 @@ description: Compose optional product and operator concerns without turning them
 
 ## Target-owned Web UI
 
-A target App can select a Web Shell, Browser Adapter, business Module, and one
+A target App can select a Web Shell, Browser Adapter, business Plugin, and one
 or more UI Contribution providers. The Shell binds `many`
 `lenso.ui.contribution@1` providers. Generated browser clients expose only the
 portable Capability requirements declared by each selected contribution and
@@ -23,8 +23,8 @@ Ingress, Client, and Egress contracts and their configuration.
 ## Auth
 
 Ingress Adapters turn protocol-specific input into Credential Evidence and call
-an ordinary Auth Capability. Auth Modules issue short-lived, audience-limited
-Actor Assertions. The target Module verifies and projects an assertion into a
+an ordinary Auth Capability. Auth Plugins issue short-lived, audience-limited
+Actor Assertions. The target Plugin verifies and projects an assertion into a
 typed domain Actor, then performs final authorization locally.
 
 There is no ambient System Actor, universal grants list, or automatic anonymous
@@ -38,4 +38,4 @@ payloads, secrets, configuration, and Actor Assertions. The removable
 signals. Export failure never changes App behavior.
 
 Telemetry is not durable business evidence. Audit, Story, Workflow, and Outbox
-semantics belong to optional Modules when a product selects them.
+semantics belong to optional Plugins when a product selects them.

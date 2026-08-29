@@ -1,0 +1,73 @@
+---
+title: Bun Plugin authoring
+description: Build a typed request Plugin with the supported Bun SDK and CLI path.
+---
+
+Bun is a trusted child-process execution class, not a sandbox. Plugin business
+code implements generated Capability Provider types; `@lenso/bun` and generated
+entrypoints own startup, JSON-RPC, cancellation, and shutdown.
+
+## Create the project
+
+```sh
+lenso plugin new example.echo --runtime bun
+cd example.echo
+```
+
+Creation stages the whole directory, installs the exact `bun.lock`, and runs the
+TypeScript check before publishing the project. Use `--no-install` only for an
+offline scaffold.
+
+```text
+example.echo/
+├── package.json
+├── bun.lock
+├── tsconfig.json
+└── src/
+    ├── plugin.ts
+    ├── lenso.bun.generated.ts
+    ├── lenso.describe.generated.ts
+    └── lenso.invoke.generated.ts
+```
+
+Edit only `src/plugin.ts`. The initial scaffold implements the generated
+`lenso.agent.tool-provider@1` Provider and exposes one Tool. Expected business
+outcomes return generated Domain Errors; thrown exceptions remain Runtime
+Failures.
+
+## Check and develop
+
+```sh
+lenso plugin check
+lenso plugin dev \
+  --operation execute \
+  --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+lenso plugin dev --watch \
+  --operation execute \
+  --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+```
+
+`check` type-checks, builds the Bun implementation, derives its portable
+Descriptor, materializes a standard Bundle, and verifies the closure. `dev`
+invokes the same authored Provider without asking authors to implement a test
+wire. Watch mode stays alive after a failed rebuild.
+
+## Package and run
+
+```sh
+lenso plugin pack
+lenso plugins add dist/example.echo-0.1.0.lenso-plugin --root /path/to/app
+```
+
+The archive selects `lenso.bun-process@1`. A compatible product Host must link
+the Bun Adapter and the generated Rust codec for every provided Capability;
+the Agent Host includes that integration. The machine running the Host must
+have `bun` available.
+
+The public high-level SDK currently supports Request Capabilities. Stream and
+Event authoring remains fail-closed even though lower-level Adapter conformance
+exists; do not infer a supported authoring surface from those internal tests.
+
+See [`@lenso/bun`](https://www.npmjs.com/package/@lenso/bun) for the typed SDK
+and [`lenso-bun-adapter`](https://github.com/LioRael/lenso-bun-adapter) for the
+process boundary.

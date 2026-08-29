@@ -7,15 +7,15 @@ Lenso uses two different documents for two different owners.
 
 | Artifact | Owner | Purpose |
 | --- | --- | --- |
-| `lenso.json` | Authoring tools and the App repository | Reviewable Modules, packages, contracts, profiles, configuration, and bindings |
+| Plugin Root plus Host Catalog | Authoring tools, product Host, and the App repository | Reviewable Plugin Releases, keyed Instances, Profiles, configuration, and disable markers |
 | Resolved App Plan | `lenso-app-plan` | Canonical, complete, immutable input consumed at boot |
 
 ## What the project declares
 
-- keyed Module Instances and entrypoints;
+- keyed Plugin Instances and entrypoints;
 - explicit Capability requirements and provider bindings;
 - execution classes and optional placement;
-- ordinary Cargo, Bun, npm, or OCI package inputs;
+- verified `.lenso-plugin` Bundle inputs selected for the current Host;
 - exact Capability Descriptors and generated binding artifacts;
 - non-secret configuration and explicit `secret_ref` values; and
 - optional Web profiles that select a Shell, Browser Adapter, and UI Contributions.
@@ -30,5 +30,6 @@ execution classes, provider cardinality, and every explicit binding. Canonical
 serialization makes the approved Plan byte-stable.
 
 After boot, the Kernel cannot install packages, discover providers, rebind a
-consumer, change placement, or rewrite configuration. Any such change requires
-a new resolve and App restart.
+consumer, change placement, or rewrite configuration. The Host may resolve a
+new Desired State into a new immutable App Generation, but existing Turns keep
+their leased Generation until drain completes.

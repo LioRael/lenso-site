@@ -1,91 +1,73 @@
 ---
 title: 快速开始
-description: 安装 Lenso CLI，创建强类型 Bun Module，并启动正式 Adapter 开发循环。
+description: 创建、运行、打包并安装一个强类型 Lenso Plugin。
 ---
 
-当前最快的 Lenso 可执行路径是生成一个 Bun Module 项目。它与原生 Rust 使用
-相同的 Capability Descriptor、不可变 Resolved App Plan 和可移植 Kernel
-Contract，同时把进程与 Wire 机制留在独立的 Execution Adapter 中。
+当前最短的受支持路径从一个普通 Plugin 项目开始。Rust 可由同一份源码生成
+可移植 Wasm 与可信 Process 实现；Bun 使用生成的 `@lenso/bun` Runtime Lowering。
 
 ## 前置条件
 
-- Bun 1.2.21 或更高版本
-- npm 版 CLI 需要 Node.js 18 或更高版本；也可以使用 Rust stable 与 Cargo
+- `lenso` CLI；
+- 默认脚手架需要 Rust Stable 与 `wasm32-unknown-unknown` Target；
+- 只有选择 `--runtime bun` 时才需要 Bun 1.2.21 或更新版本。
 
-## 1. 安装 Lenso CLI
-
-```sh
-npm install -g @lenso/cli
-lenso --version
-```
-
-npm Package 内含对应平台的 `lenso` 可执行文件。Rust 用户也可以从 crates.io
-安装同一个 CLI：
+## 创建并运行 Plugin
 
 ```sh
-cargo install lenso-cli --locked
+lenso plugin new example.echo
+cd example.echo
+lenso plugin check
+lenso plugin dev \
+  --operation execute \
+  --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+lenso plugin pack
 ```
 
-## 2. 创建 Bun Module
+`lenso plugin dev --watch` 会在源码变化后重新构建并调用。开发构建保持未优化；
+`plugin pack` 执行 Release 构建，并用安装时相同的验证器重新打开生成的
+`.lenso-plugin` Archive。
+
+TypeScript 使用等价的 Bun 脚手架：
 
 ```sh
-lenso new greeting --runtime bun
-cd greeting
+lenso plugin new example.echo --runtime bun
 ```
 
-该命令生成完整项目：Capability Descriptor 与 Schema、已提交的 TypeScript
-Binding、类型化 Provider、`lenso.json`、Bun Workspace Manifest 和 `bun.lock`。
-安装与类型检查成功后才会原子发布新目录，因此失败的创建不会留下半成品。
+只编辑 `src/plugin.ts`。生成的 Entrypoint 持有 Descriptor 投影、开发调用与
+正式 Bun Server；业务代码不实现 JSON-RPC 或进程生命周期。
 
-## 3. 启动开发循环
+## 创建 App Workspace
+
+App 由一个精确 Host Build 与可见 `plugins/` 目录派生。使用匹配的 Host Artifact
+初始化目录：
 
 ```sh
-lenso dev
+lenso app init \
+  --host /path/to/host \
+  --host-catalog /path/to/host-catalog.json \
+  --root ./my-app
+cd my-app
+lenso app check
+lenso app show
 ```
 
-CLI 会校验项目，解析一份新的不可变 Plan，再通过正式 Bun Execution Adapter
-启动 Module。源码与项目文件变化时，旧 Child Process 会被干净停止，并解析新的
-Generation。类型、Contract 或启动失败不会终止 Watcher；修改并再次保存即可
-恢复。Ctrl-C 会执行协作式关闭。
-
-修改 `modules/greeting/src/index.ts` 即可改变生成的 Provider。Module 使用
-`@lenso/bun-module`；应用代码不需要实现 JSON-RPC 握手、Framing、取消或进程
-Lifecycle。
-
-## 4. 执行可重复检查
+本地 Bundle 使用 `lenso plugins add`；Catalog 安装必须指定精确版本：
 
 ```sh
-bun run typecheck
-bun run check
-bun run verify
+lenso plugins search echo
+lenso plugins install example.echo --version 1.0.0
+lenso plugins configure example.echo default --file echo.toml
+lenso app check
+lenso run
 ```
 
-`check` 快速诊断项目输入、Package Lock、Endpoint 与生成 Contract；`verify`
-还会运行声明的行为、Lifecycle 与删除验证。开发 Host 解析并读取规范化 Plan
-字节；Kernel 不会发现 Module、安装 Package 或修改 Graph。
+Catalog 安装会校验下载 Archive Digest、Manifest Digest、Bundle Closure、Host
+Target、Execution Class 与 Candidate App，之后才替换 Desired State。更新时保留
+精确 Archive，可通过 `plugins history` 与 `plugins rollback` 回滚。
 
-:::note
-这是一套完整的 Bun Module 编写与开发 Starter，不是整个生产 App 或部署环境的
-生成器。原生 Rust Module 仍通过静态链接进入 App；生成的 Factory 由产品 App
-Binary 统一收集。
-:::
+设置或解析失败时运行 `lenso doctor`；默认输出适合人阅读，`--json` 输出稳定结构。
 
-继续阅读[编写 Bun Module](/docs/zh/bun-module-authoring)，查看项目结构、Provider
-API、CLI 选项与当前仅开放 Request 的 SDK 边界。语言无关的组合模型见
-[项目与 Plan](/docs/zh/project-and-plan)。
-
-## 验证可移植核心
-
-Framework Contributor 可以独立于 Bun Host 路径执行核心仓库门禁：
-
-```sh
-git clone https://github.com/LioRael/lenso.git
-cd lenso
-cargo fmt --all -- --check
-cargo xtask check-core-repository-boundary
-cargo check --locked --workspace --all-targets
-cargo test --locked --workspace
-```
-
-CI 还会为 `wasm32-unknown-unknown` 和 `wasm32-wasip2` 编译检查可移植核心；
-这些 Host Profile 不会自动获得 Bun Child-process Adapter。
+继续阅读[编写 Plugin](/docs/zh/plugin-authoring)、
+[编写 Bun Plugin](/docs/zh/bun-plugin-authoring)与
+[App Definition](/docs/zh/plugin-composition)。

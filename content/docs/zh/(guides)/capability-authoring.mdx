@@ -6,9 +6,9 @@ description: 定义 Request、Stream 与 Event 契约，并在各自负责的 Pa
 Capability 是 Consumer 与 Provider 之间的契约。只定义一次；Rust 与 Bun
 各自在分发该语言的 Package 中生成自己的投影。
 
-新建 Request Capability 与 Bun Provider 时，`lenso new NAME
---runtime bun` 会一起生成 Descriptor、Schema、TypeScript Binding 和类型化 Provider。
-定义自有 Contract 或演进已有 Capability 时，再使用下面的手工流程。
+首个 `lenso plugin new` 脚手架使用已有 Agent Tool Provider Capability。新的跨
+Plugin 角色仍是显式 Contract-owner Workflow：编写 Descriptor 与 Schema，生成各
+Package 自己持有的投影，再由 Capability Package 发布。
 
 ## 创建 Request Capability
 
@@ -55,7 +55,7 @@ lenso-contract-codegen generate \
 输出。Lenso 官方 Bun 投影由 `@lenso/bun` 从所有者仓库的锁定快照发布。
 
 ```sh
-bun add @lenso/bun @lenso/bun-module
+bun add @lenso/bun
 ```
 
 CI 应拒绝生成物漂移和不兼容变更：
@@ -82,41 +82,17 @@ Provider / Client 类型。
 
 ## 在 Composition 中设置容量
 
-容量是 App 策略，不属于可移植 Descriptor。Provider 可以设置 Request
-准入与 Event Mailbox 上限，Binding 还可以覆盖它们：
-
-```json title="lenso.json（节选）"
-{
-  "provides": [{
-    "capability_id": "example.greeting@1",
-    "descriptor_version": "1.0.0",
-    "operations": ["greet"],
-    "operation_kinds": {},
-    "admission": { "queue_capacity": 64, "max_concurrency": 16 },
-    "operation_admissions": {},
-    "event_capacity": 128
-  }]
-}
-```
+容量是 App 策略，不属于可移植 Descriptor。Plugin-owned Contract 提供安全默认；
+Resolved App Plan 为精确 Generation 记录 Request Admission、Operation Override 与
+Event Mailbox 上限。
 
 `event_capacity` 只作用于 Event Operation。队列满时会拒绝准入，不会悄悄
 变成带持久化和重投的 Outbox。
 
-## 把契约加入项目
+## 保持 Package-owned 投影最新
 
-`lenso check` 会核对 Endpoint 声明与 Descriptor，并检查当前项目声明的每份
-投影是否最新。由其他 Package 负责的语言应省略：
-
-```json title="lenso.json（节选）"
-{
-  "contracts": [{
-    "capability_id": "example.greeting@1",
-    "descriptor_version": "1.0.0",
-    "descriptor": "contract/greeting/capability.json",
-    "rust": "contract/greeting/src/generated.rs"
-  }]
-}
-```
+每个分发生成投影的 Package 都应运行 `lenso-contract-codegen check`。App Authoring
+消费最终 Plugin Descriptor 与 Bundle，不再维护第二份 `lenso.json` Contract Registry。
 
 可直接参考持续维护的完整 fixture：
 [Request](https://github.com/LioRael/lenso-cli/tree/main/crates/lenso-authoring/tests/fixtures/contracts/greeting)、

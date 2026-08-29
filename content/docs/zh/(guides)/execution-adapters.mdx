@@ -14,7 +14,7 @@ cancellation 与 shutdown smoke evidence。
 Adapter 持有：
 
 - 提供给 Plan 校验的 execution-class 标识；
-- Module factory 或 process generation；
+- Plugin factory 或 process generation；
 - 强类型 endpoint 与 Adapter 特定 dispatch；
 - framing、isolation 和资源所有权；
 - 失败分类和 restart cleanup；
@@ -30,6 +30,6 @@ Adapter 持有：
 
 Bun Adapter 在正式路径使用 JSON-RPC over HTTP，并实现 Request、双向 Stream
 与易失性 Event Dispatch。这些是 Adapter / Wire 选择，不是 Capability 或 Kernel
-语义。Module Author 使用公开的 `@lenso/bun-module` Server 与
-自动识别的 `lenso dev`，不自行实现 Handshake 或 Process Protocol。完整
-Scaffold 与开发路径见[编写 Bun Module](/docs/zh/bun-module-authoring)。
+语义。Plugin Author 使用公开的 `@lenso/bun` Server 与
+`lenso plugin dev`，不自行实现 Handshake 或 Process Protocol。完整
+Scaffold 与开发路径见[编写 Bun Plugin](/docs/zh/bun-plugin-authoring)。

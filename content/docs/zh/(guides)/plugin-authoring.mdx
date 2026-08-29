@@ -1,0 +1,73 @@
+---
+title: 编写 Rust Plugin
+description: 创建一个可移植 Rust Plugin，并交付经过验证的 Bundle。
+---
+
+Rust 脚手架把业务行为留在同一份源码中，由 SDK 派生 Capability Descriptor 与
+Runtime Lowering。
+
+## 选择实现策略
+
+```sh
+# 同一源码生成可移植 Wasm 与可信 Native Process
+lenso plugin new example.echo
+
+# 只生成 Wasm
+lenso plugin new example.echo --runtime wasm
+
+# 只生成可信 Process
+lenso plugin new example.echo --runtime process
+```
+
+默认 Multi-output 项目同时满足可移植性与原生进程兼容性。Process Plugin 拥有普通
+本地进程权限，不是 Sandbox。
+
+## 实现行为
+
+初始脚手架使用公共 Macro，不要求手写 Adapter Protocol：
+
+```rust title="src/lib.rs"
+use lenso_agent_tool_sdk::prelude::*;
+use schemars::JsonSchema;
+
+#[derive(Debug, serde::Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+struct Arguments {
+    text: String,
+}
+
+#[lenso::plugin]
+#[derive(Clone, Copy, Debug, Default)]
+struct Plugin;
+
+#[lenso_agent_tool_sdk::tool_provider]
+impl Plugin {
+    #[tool(name = "example.echo", description = "Echo text.")]
+    fn execute(arguments: Arguments) -> Result<ExecuteResponse, ExecuteError> {
+        Ok(ExecuteResponse {
+            content: arguments.text,
+            content_type: ContentType::Text,
+            metadata_json: "{}".try_into().unwrap(),
+        })
+    }
+}
+```
+
+## 使用快速循环与 Release Proof
+
+```sh
+lenso plugin check
+lenso plugin dev --operation execute --request-json \
+  '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+lenso plugin dev --watch --operation execute --request-json \
+  '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+lenso plugin pack
+```
+
+`check` 与 `dev` 使用 Development Profile。`pack` 构建 Release Artifact，要求所有
+实现暴露相同 Contract，写出一个不可变的 ZIP-based `.lenso-plugin`，并重新验证
+发布后的字节。
+
+首个 CLI 脚手架有意聚焦 Agent Tool Provider Capability。新的跨 Plugin 角色应先
+定义并生成 Capability Contract，再使用这些生成类型演进 Plugin。参见
+[Capability Authoring](/docs/zh/capability-authoring)。

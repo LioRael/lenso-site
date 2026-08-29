@@ -1,21 +1,21 @@
 ---
-title: Auth Module
-description: 认证 Adapter 选出的凭据，传递签名 ActorAssertion，并在目标 Module 内完成授权。
+title: Auth Plugin
+description: Authenticate adapter-selected credentials, propagate a signed ActorAssertion, and authorize inside the target Plugin.
 ---
 
-Auth 是普通的、显式绑定的 Capability，不是 Kernel 里的环境中间件。当前契约是
-`lenso.auth@1`，只有一个 `authenticate` Request Operation。
+Auth is an ordinary bound Capability, not ambient Kernel middleware. The current
+contract is `lenso.auth@1` with one `authenticate` Request Operation.
 
 ```text
-Ingress Adapter -> CredentialEvidence -> Auth Module
+Ingress Adapter -> CredentialEvidence -> Auth Plugin
                <- absent | signed ActorAssertion | Domain Error
-Target Module  <- verified, audience-limited assertion
+Target Plugin  <- verified, audience-limited assertion
 ```
 
-## 认证选出的凭据
+## Authenticate selected evidence
 
-HTTP Adapter 可以选择 Bearer Token，但 Header 与 Cookie 不进入 Auth 契约。
-调用绑定的 Capability 时只传协议无关的 Evidence：
+An HTTP Adapter may select a bearer token, but headers and cookies do not enter
+the Auth contract. Invoke the bound Capability with protocol-neutral evidence:
 
 ```rust
 use lenso_auth_sdk::{
@@ -32,26 +32,27 @@ let response = app
     .await??;
 
 match decode_auth_response(response)? {
-    AuthOutcome::Absent => { /* 保持匿名或拒绝请求 */ }
+    AuthOutcome::Absent => { /* continue anonymously or reject */ }
     AuthOutcome::Authenticated(assertion) => {
-        // 只挂到这次需要授权的下游 Invocation。
+        // Attach it only to the downstream invocation being authorized.
         let context = assertion.attach(app.invocation_context(None, cancellation))?;
     }
 }
 ```
 
-类型化 Domain Error 是 `invalid`、`expired`、`revoked` 和 `unsupported`。
-传输失败、Deadline 和 Provider 不可用仍属于 Runtime Failure。
+The typed Domain Errors are `invalid`, `expired`, `revoked`, and `unsupported`.
+Transport failures, deadlines, and unavailable providers remain Runtime
+Failures.
 
-完整的 HTTP Endpoint 流程，包括 `lenso-http-auth` helper、应用自有的
-`UserActor` / `AdminActor` extractor、`401` Problem Details、`WWW-Authenticate`、
-activate 阶段创建 client 和状态码映射，见
-[Web Capabilities](/docs/zh/web-capabilities/)。
+For a complete HTTP Endpoint flow, including the `lenso-http-auth` helper,
+application-owned `UserActor` / `AdminActor` extractors, `401` Problem Details,
+`WWW-Authenticate`, activation-time clients, and status mapping, see
+[Web Capabilities](/docs/web-capabilities/#authenticate-an-inbound-request).
 
-## 在目标 Rust Module 中授权
+## Authorize in the target Rust Plugin
 
-先定义目标真正需要的 Actor 类型，再验证 Issuer、Ed25519 Proof、Audience 与
-有效期，最后做类型投影：
+Define the actor type the target actually needs, then verify issuer, Ed25519
+proof, audience, and validity before projection:
 
 ```rust
 use lenso_auth_sdk::{
@@ -88,13 +89,14 @@ let actor = verifier.project_context::<OrdersActor>(
 )?;
 ```
 
-期望的 Audience 必须准确等于 `orders.api@1:read`。目标只接收公开验证密钥，
-绝不能拿到 Auth Signing Key。
+The expected audience is exactly `orders.api@1:read`. A target receives the
+public verification key, never the Auth signing key.
 
-## 签发与撤销 API Token
+## Issue and revoke API tokens
 
-第一个具体 Provider 是 PostgreSQL API Token Module。Schema 初始化和 Token
-操作属于显式 Operator Workflow，不是 App 启动时的隐式副作用：
+The first concrete Provider is the PostgreSQL-backed API Token Plugin. Schema
+setup and token operations are explicit operator work, not App boot side
+effects:
 
 ```rust
 use std::collections::BTreeMap;
@@ -112,32 +114,33 @@ let issued = operator.issue(token_pepper, IssueApiToken {
     expires_at: OffsetDateTime::now_utc() + Duration::days(30),
 }).await?;
 
-let token = issued.expose_secret(); // 只展示一次；Debug 会脱敏
+let token = issued.expose_secret(); // show once; Debug redacts it
 operator.revoke_session(issued.session_id()).await?;
 ```
 
-数据库只保存带 Key 的 Token Digest，并在每次认证时检查持久化的 Token / Session
-撤销状态。
+The database stores only a keyed token digest and checks durable token/session
+revocation on every authentication.
 
-## 自己实现 Auth Provider
+## Implement another Auth Provider
 
-实现生成的 `AuthProvider::authenticate` Trait，并通过 `AuthEndpoint` 暴露。
-Provider 必须：
+Implement the generated `AuthProvider::authenticate` trait and expose it through
+`AuthEndpoint`. A provider must:
 
-1. 只接受自己明确支持的 Scheme；
-2. 没有选出 Evidence 时返回 `absent`；
-3. 把凭据结果映射到四种类型化 Domain Error；
-4. 只为准确的 Capability / Operation Audience 签发短期 Assertion；
-5. 私有保存 Credential Store、撤销状态与 Signing Material。
+1. accept only schemes it explicitly supports;
+2. return `absent` when no evidence was selected;
+3. map credential outcomes to the four typed Domain Errors;
+4. issue a short-lived assertion for exact Capability/Operation audiences; and
+5. keep credential stores, revocation, and signing material private.
 
-OAuth、密码、Cookie 和 Organization/RBAC 目前都不是 `lenso.auth@1` 的已实现
-能力。它们应成为同一 Capability 后面的独立 Ingress 或 Provider Module，而不是
-新的 Kernel 行为。
+OAuth, password, cookie, and Organization/RBAC behavior are not currently
+implemented by `lenso.auth@1`. They should be separate ingress or Provider
+Plugins behind this same Capability, not new Kernel behavior.
 
-## Bun 目标 Module
+## Bun target Plugins
 
-Bun Adapter 会原样传递密封的 Invocation Extension。Bun 目标在使用 `subject`
-或 Claims 之前，必须执行相同的 Issuer、Ed25519 Proof、Audience 与时间检查：
+The Bun Adapter transports sealed invocation extensions unchanged. A Bun target
+must perform the same issuer, Ed25519 proof, audience, and time checks before it
+uses `subject` or claims. The essential target-side check is:
 
 ```ts
 type WireExtension = {
@@ -213,16 +216,17 @@ async function bindActor(
 }
 ```
 
-目前还没有发布 Bun Auth Helper，因此应集中维护并测试这段逻辑；不能只把
-`extensions[].value` 解成 JSON 就信任。
-当前 [Rust SDK](https://github.com/LioRael/lenso-auth-plugin/blob/main/crates/lenso-auth-sdk/src/lib.rs)
-是语义来源，Bun Helper 必须得到相同验证结果后才能成为公开 Package。
+There is not yet a published Bun Auth helper, so keep this logic centralized and
+tested; do not trust `extensions[].value` by decoding JSON alone. The current
+[Rust SDK](https://github.com/LioRael/lenso-auth-plugin/blob/main/crates/lenso-auth-sdk/src/lib.rs)
+is the semantic source, and the Bun helper must produce the same verification
+result before becoming a public package.
 
-## 当前可用性
+## Current availability
 
-| 组件 | 源码状态 | Package 状态 |
+| Component | Source status | Package status |
 | --- | --- | --- |
-| `lenso-capability-auth` | 已生成 `lenso.auth@1` 契约 | 可发布 Crate |
-| `lenso-auth-sdk` | Assertion 签发、验证、收窄和类型投影 | 可发布 Crate |
-| API Token Auth Module | PostgreSQL Provider、Operator Workflow、撤销 | 源码已实现；Crate 暂时保持私有 |
-| Bun Auth Helper | 密封 Extension 已能跨 Adapter | 公开验证器 Package 尚未实现 |
+| `lenso-capability-auth` | generated `lenso.auth@1` contract | publishable crate |
+| `lenso-auth-sdk` | assertion issue, verify, attenuation, typed projection | publishable crate |
+| API Token Auth Plugin | PostgreSQL provider, operator workflow, revocation | source implemented; crate intentionally private for now |
+| Bun Auth helper | sealed extensions cross the Adapter | public verifier package not implemented |
