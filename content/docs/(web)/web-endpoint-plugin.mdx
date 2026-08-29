@@ -6,48 +6,47 @@ description: Create one linked Rust Plugin with typed JSON routes and prove its 
 This step produces `company.greetings-http`, a Plugin that provides two
 `lenso.http.endpoint@1` routes. Complete it before touching Ingress.
 
-## 1. Create the crate
+## 1. Generate the Plugin
 
-Add one crate to the Host workspace:
+Start from the CLI's Web authoring path:
 
-```text
-crates/greetings-http-plugin/
-├── Cargo.toml
-└── src/
-    ├── lib.rs
-    └── http.rs
+```sh
+lenso plugin new company.greetings-http --web
+cd company.greetings-http
 ```
 
-Use dependencies pinned by the workspace:
+The command creates a standalone linked Rust Plugin:
 
-```toml title="crates/greetings-http-plugin/Cargo.toml"
-[package]
-name = "greetings-http-plugin"
-version = "0.1.0"
-edition = "2024"
-publish = false
+```text
+company.greetings-http/
+├── Cargo.toml
+├── README.md
+└── src/
+    └── lib.rs
+```
 
+Its manifest already declares the Web root slot and pins compatible framework
+revisions:
+
+```toml title="Cargo.toml"
 [package.metadata.lenso]
 plugin-id = "company.greetings-http"
 root-slot = "web"
-
-[dependencies]
-lenso.workspace = true
-lenso-capability-http-endpoint.workspace = true
-serde = { workspace = true, features = ["derive"] }
 ```
 
-If the Host does not use workspace dependencies, select the versions already
-present in its `Cargo.lock`.
+By default, generation also creates `Cargo.lock` and runs the socket-free test.
+Use `--no-install` only when dependency resolution must happen later. When you
+move the crate into a Host workspace, replace the pinned dependencies with that
+workspace's dependency entries and remove the scaffold's standalone
+`[workspace]` table.
 
 ## 2. Implement the routes
 
 Create the Endpoint provider:
 
-```rust title="src/http.rs"
+```rust title="src/lib.rs"
 use std::{cell::{Cell, RefCell}, collections::BTreeMap, rc::Rc};
 
-use lenso::prelude::*;
 use lenso_capability_http_endpoint::{
     prelude::*,
     response::{Problem, StatusCode},
@@ -60,9 +59,9 @@ struct CreateGreeting {
     name: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct GreetingPath {
-    greeting_id: String,
+#[derive(Debug, Deserialize, Serialize)]
+struct SearchGreetings {
+    term: String,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -108,22 +107,19 @@ impl GreetingsHttp {
         Ok((StatusCode::CREATED, Json(greeting)))
     }
 
-    #[get("greetings.read", "/greetings/{greeting_id}")]
-    async fn read(
+    #[query("greetings.search", "/greetings/search")]
+    async fn search(
         &self,
-        Path(path): Path<GreetingPath>,
-    ) -> Result<Json<Greeting>, Problem> {
+        Json(input): Json<SearchGreetings>,
+    ) -> Result<Json<Vec<Greeting>>, Problem> {
         std::future::ready(()).await;
-        self.greetings
+        let greetings = self.greetings
             .borrow()
-            .get(&path.greeting_id)
+            .values()
+            .filter(|greeting| greeting.message.contains(&input.term))
             .cloned()
-            .map(Json)
-            .ok_or_else(|| Problem::new(
-                StatusCode::NOT_FOUND,
-                "greeting_not_found",
-                "the greeting does not exist",
-            ))
+            .collect();
+        Ok(Json(greetings))
     }
 }
 ```
@@ -151,7 +147,7 @@ durable state in a selected Store Plugin, not in Ingress.
 
 Use the socket-free harness in the same crate:
 
-```rust title="src/http.rs"
+```rust title="src/lib.rs"
 #[cfg(test)]
 mod tests {
     use futures::executor::block_on;
@@ -160,7 +156,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn creates_and_reads_a_greeting() {
+    fn creates_and_queries_a_greeting() {
         block_on(async {
             let endpoint = EndpointTest::new(GreetingsHttp::default());
             let created = endpoint
@@ -169,13 +165,12 @@ mod tests {
                 .unwrap()
                 .send().await.unwrap();
             assert_eq!(created.status(), StatusCode::CREATED);
-            let greeting = created.json::<Greeting>().unwrap();
-
-            let read = endpoint
-                .request("greetings.read")
-                .path_parameter("greeting_id", &greeting.id)
+            let found = endpoint
+                .request("greetings.search")
+                .json(&SearchGreetings { term: "Lenso".to_owned() })
+                .unwrap()
                 .send().await.unwrap();
-            assert_eq!(read.json::<Greeting>().unwrap(), greeting);
+            assert_eq!(found.json::<Vec<Greeting>>().unwrap().len(), 1);
         });
     }
 }
@@ -188,18 +183,18 @@ dispatch without binding a port. Its request builder also supports `.query()`,
 
 Add focused tests against the generated `EndpointProvider`:
 
-- `describe` returns exactly `greetings.create` and `greetings.read`;
+- `describe` returns exactly `greetings.create` and `greetings.search`;
 - valid JSON returns `201`;
 - empty `name` returns an intentional `400` Problem Details response;
 - malformed JSON and unsupported content types fail before `create` runs; and
-- an unknown ID returns `404` with `greeting_not_found`.
+- `greetings.search` uses the HTTP QUERY method and accepts a JSON body.
 
 Run the crate's checks:
 
 ```sh
 cargo fmt --all -- --check
-cargo test --locked -p greetings-http-plugin
-cargo clippy --locked -p greetings-http-plugin --all-targets -- -D warnings
+cargo test --locked
+cargo clippy --locked --all-targets -- -D warnings
 ```
 
 The owner repository includes the complete copyable scaffold at

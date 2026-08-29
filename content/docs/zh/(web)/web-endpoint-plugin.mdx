@@ -6,47 +6,45 @@ description: 创建包含强类型 JSON Route 的 Linked Rust Plugin，并在打
 本步骤生成 `company.greetings-http`，它提供两条
 `lenso.http.endpoint@1` Route。完成本步骤后再连接 Ingress。
 
-## 1. 创建 Crate
+## 1. 生成 Plugin
 
-在 Host Workspace 中增加一个 Crate：
+从 CLI 的 Web Authoring Path 开始：
 
-```text
-crates/greetings-http-plugin/
-├── Cargo.toml
-└── src/
-    ├── lib.rs
-    └── http.rs
+```sh
+lenso plugin new company.greetings-http --web
+cd company.greetings-http
 ```
 
-使用 Workspace 固定的依赖：
+该命令会创建一个独立的 Linked Rust Plugin：
 
-```toml title="crates/greetings-http-plugin/Cargo.toml"
-[package]
-name = "greetings-http-plugin"
-version = "0.1.0"
-edition = "2024"
-publish = false
+```text
+company.greetings-http/
+├── Cargo.toml
+├── README.md
+└── src/
+    └── lib.rs
+```
 
+Manifest 已经声明 Web Root Slot，并固定相互兼容的 Framework Revision：
+
+```toml title="Cargo.toml"
 [package.metadata.lenso]
 plugin-id = "company.greetings-http"
 root-slot = "web"
-
-[dependencies]
-lenso.workspace = true
-lenso-capability-http-endpoint.workspace = true
-serde = { workspace = true, features = ["derive"] }
 ```
 
-Host 不使用 Workspace Dependency 时，选择其 `Cargo.lock` 已有的版本。
+默认情况下，生成流程还会创建 `Cargo.lock` 并运行无 Socket 测试。仅当依赖必须
+稍后解析时才使用 `--no-install`。把 Crate 移入 Host Workspace 时，改用该
+Workspace 的 Dependency Entry，并删除脚手架中用于隔离独立项目的
+`[workspace]` Table。
 
 ## 2. 实现 Route
 
 创建 Endpoint Provider：
 
-```rust title="src/http.rs"
+```rust title="src/lib.rs"
 use std::{cell::{Cell, RefCell}, collections::BTreeMap, rc::Rc};
 
-use lenso::prelude::*;
 use lenso_capability_http_endpoint::{
     prelude::*,
     response::{Problem, StatusCode},
@@ -59,9 +57,9 @@ struct CreateGreeting {
     name: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct GreetingPath {
-    greeting_id: String,
+#[derive(Debug, Deserialize, Serialize)]
+struct SearchGreetings {
+    term: String,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -107,22 +105,19 @@ impl GreetingsHttp {
         Ok((StatusCode::CREATED, Json(greeting)))
     }
 
-    #[get("greetings.read", "/greetings/{greeting_id}")]
-    async fn read(
+    #[query("greetings.search", "/greetings/search")]
+    async fn search(
         &self,
-        Path(path): Path<GreetingPath>,
-    ) -> Result<Json<Greeting>, Problem> {
+        Json(input): Json<SearchGreetings>,
+    ) -> Result<Json<Vec<Greeting>>, Problem> {
         std::future::ready(()).await;
-        self.greetings
+        let greetings = self.greetings
             .borrow()
-            .get(&path.greeting_id)
+            .values()
+            .filter(|greeting| greeting.message.contains(&input.term))
             .cloned()
-            .map(Json)
-            .ok_or_else(|| Problem::new(
-                StatusCode::NOT_FOUND,
-                "greeting_not_found",
-                "the greeting does not exist",
-            ))
+            .collect();
+        Ok(Json(greetings))
     }
 }
 ```
@@ -147,7 +142,7 @@ HTTP QUERY Method 使用 `#[query("route.id", "/path")]`：它适合安全、幂
 
 在同一个 Crate 中使用无 Socket Test Harness：
 
-```rust title="src/http.rs"
+```rust title="src/lib.rs"
 #[cfg(test)]
 mod tests {
     use futures::executor::block_on;
@@ -156,7 +151,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn creates_and_reads_a_greeting() {
+    fn creates_and_queries_a_greeting() {
         block_on(async {
             let endpoint = EndpointTest::new(GreetingsHttp::default());
             let created = endpoint
@@ -165,13 +160,12 @@ mod tests {
                 .unwrap()
                 .send().await.unwrap();
             assert_eq!(created.status(), StatusCode::CREATED);
-            let greeting = created.json::<Greeting>().unwrap();
-
-            let read = endpoint
-                .request("greetings.read")
-                .path_parameter("greeting_id", &greeting.id)
+            let found = endpoint
+                .request("greetings.search")
+                .json(&SearchGreetings { term: "Lenso".to_owned() })
+                .unwrap()
                 .send().await.unwrap();
-            assert_eq!(read.json::<Greeting>().unwrap(), greeting);
+            assert_eq!(found.json::<Vec<Greeting>>().unwrap().len(), 1);
         });
     }
 }
@@ -183,18 +177,18 @@ Request Builder 还支持 `.query()`、`.path_parameter()` 与 `.header()`。
 
 针对生成的 `EndpointProvider` 增加聚焦测试：
 
-- `describe` 只返回 `greetings.create` 和 `greetings.read`；
+- `describe` 只返回 `greetings.create` 和 `greetings.search`；
 - 有效 JSON 返回 `201`；
 - 空 `name` 返回有意设计的 `400` Problem Details；
 - 无效 JSON 与不支持的 Content Type 在 `create` 前失败；
-- 未知 ID 返回带 `greeting_not_found` 的 `404`。
+- `greetings.search` 使用 HTTP QUERY Method 并接收 JSON Body。
 
 运行 Crate 检查：
 
 ```sh
 cargo fmt --all -- --check
-cargo test --locked -p greetings-http-plugin
-cargo clippy --locked -p greetings-http-plugin --all-targets -- -D warnings
+cargo test --locked
+cargo clippy --locked --all-targets -- -D warnings
 ```
 
 Owner Repository 在 `examples/greetings-http-plugin` 提供了完整、可复制的
