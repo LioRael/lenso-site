@@ -20,7 +20,7 @@ for (const file of ["blume-search.json", "llms.txt", "llms-full.txt", "sitemap.x
 
 const smokePages = [
   ["docs/index.html", ["Introduction", "Why Lenso exists", "Resolved App Plan"]],
-  ["docs/quickstart/index.html", ["Create and exercise a Plugin", "Create an App workspace"]],
+  ["docs/quickstart/index.html", ["Create and exercise a Plugin", "Connect the Bundle to an App"]],
   ["docs/zh/index.html", ["介绍", "为什么需要 Lenso", "可移植 Kernel"]],
 ];
 

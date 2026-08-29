@@ -1,9 +1,10 @@
 ---
 title: 快速开始
-description: 创建、运行、打包并安装一个强类型 Lenso Plugin。
+description: 创建、运行、打包并校验一个强类型 Lenso Plugin。
 ---
 
-当前最短的受支持路径从一个普通 Plugin 项目开始。Rust 可由同一份源码生成
+当前最短的受支持路径是自包含的：创建一个普通 Plugin，通过真实 Execution
+Adapter 运行它，再校验之后可交给 Host 的精确 Bundle。Rust 可由同一份源码生成
 可移植 Wasm 与可信 Process 实现；Bun 使用生成的 `@lenso/bun` Runtime Lowering。
 
 ## 前置条件
@@ -14,60 +15,57 @@ description: 创建、运行、打包并安装一个强类型 Lenso Plugin。
 
 ## 创建并运行 Plugin
 
+下面两条路径只选一条，并从尚不存在 `example.echo` 的目录开始执行。
+
+### Rust
+
 ```sh
 lenso plugin new example.echo
 cd example.echo
 lenso plugin check
 lenso plugin dev \
+  --implementation auto \
   --operation execute \
   --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
 lenso plugin pack
+cd ..
 ```
 
-`lenso plugin dev --watch` 会在源码变化后重新构建并调用。开发构建保持未优化；
-`plugin pack` 执行 Release 构建，并用安装时相同的验证器重新打开生成的
-`.lenso-plugin` Archive。
-
-TypeScript 使用等价的 Bun 脚手架：
+### Bun / TypeScript
 
 ```sh
 lenso plugin new example.echo --runtime bun
+cd example.echo
+lenso plugin check
+lenso plugin dev \
+  --implementation auto \
+  --operation execute \
+  --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+lenso plugin pack
+cd ..
 ```
 
-只编辑 `src/plugin.ts`。生成的 Entrypoint 持有 Descriptor 投影、开发调用与
+业务代码只需编辑 `example.echo/src/plugin.ts`。生成的 Entrypoint 持有 Descriptor 投影、开发调用与
 正式 Bun Server；业务代码不实现 JSON-RPC 或进程生命周期。
 
-## 创建 App Workspace
+两条路径都可以在同一个 `plugin dev` 命令中追加 `--watch`，并保留 Operation 与
+Request 参数，以便源码变化后重新构建并调用。开发构建保持未优化；`plugin pack`
+执行 Release 构建，用安装时相同的验证器重新打开生成的 `.lenso-plugin`
+Archive，并打印 `dist/` 下经过校验的路径。两条路径随后都会回到父目录，因此 Bundle
+位于 `./example.echo/dist/example.echo-0.1.0.lenso-plugin`。到这里，本 Quickstart 已完成；
+它不会假定 Catalog 中存在尚未发布的条目，也不会假定你的机器上已经有某个
+产品 Host。
 
-App 由一个精确 Host Build 与可见 `plugins/` 目录派生。使用匹配的 Host Artifact
-初始化目录：
+## 将 Bundle 接入 App
 
-```sh
-lenso app init \
-  --host /path/to/host \
-  --host-catalog /path/to/host-catalog.json \
-  --root ./my-app
-cd my-app
-lenso app check
-lenso app show
-```
-
-本地 Bundle 使用 `lenso plugins add`；Catalog 安装必须指定精确版本：
-
-```sh
-lenso plugins search echo
-lenso plugins install example.echo --version 1.0.0
-lenso plugins configure example.echo default --file echo.toml
-lenso app check
-lenso run
-```
-
-Catalog 安装会校验下载 Archive Digest、Manifest Digest、Bundle Closure、Host
-Target、Execution Class 与 Candidate App，之后才替换 Desired State。更新时保留
-精确 Archive，可通过 `plugins history` 与 `plugins rollback` 回滚。
+App 由一个精确 Host Build、与它匹配的 Host Catalog 以及可见 Plugin Root 派生。
+这些 Artifact 归产品 Host 所有，并非通用 CLI 的内置资源。拿到这两个匹配的 Host
+Artifact 后，再按[Plugin Composition](/docs/zh/plugin-composition)接入上面生成的
+本地 Bundle。Catalog 安装是可选路径，并且只适用于所选 Catalog 实际返回的
+Release。
 
 设置或解析失败时运行 `lenso doctor`；默认输出适合人阅读，`--json` 输出稳定结构。
 
 继续阅读[编写 Plugin](/docs/zh/plugin-authoring)、
 [编写 Bun Plugin](/docs/zh/bun-plugin-authoring)与
-[App Definition](/docs/zh/plugin-composition)。
+[Plugin Composition](/docs/zh/plugin-composition)。
