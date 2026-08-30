@@ -8,7 +8,7 @@ description: 构建、安装、运行、停用并移除一个真实的 Agent Too
 最后再把它移除。
 
 当前公共 CLI 负责脚手架化 Plugin，并不生成通用产品 Host。因此本教程使用持续
-维护的 Agent Harness 作为具体 Host。
+维护的 Lenso Agent 作为具体 Host。
 
 ## 你将实现什么
 
@@ -115,8 +115,8 @@ PLUGIN_BUNDLE="$PWD/dist/company.uppercase-0.1.0.lenso-plugin"
 
 ```sh
 cd ..
-git clone https://github.com/LioRael/lenso-agent-harness.git
-cd lenso-agent-harness
+git clone https://github.com/LioRael/lenso-agent.git
+cd lenso-agent
 cargo run -p lenso-agent-cli -- auth login
 cargo run -p lenso-agent-cli -- contexts
 ```
@@ -137,7 +137,7 @@ App，并且只在候选状态有效时提交文件。
 
 ## 7. 使用新行为
 
-在 Agent Harness checkout 中运行：
+在 Lenso Agent checkout 中运行：
 
 ```sh
 cargo run -p lenso-agent-cli -- \

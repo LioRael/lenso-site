@@ -15,7 +15,7 @@ Agent 只有一种可见配置模型：Plugin Root 中的 Plugin Instance TOML �
 | SQLite 托管 Authority | 可选，已随 Agent Web 交付 | 单个 Host 需要持久 Proposal、发布历史、恢复与回滚 Proposal |
 | 注入 Authority | Host 集成 Port 已支持 | 嵌入式 Host 已有远程配置服务或控制面 |
 
-Harness **没有**交付第一方分布式配置服务。SQLite 是单 Host Store。注入 Port 允许
+Lenso Agent **没有**交付第一方分布式配置服务。SQLite 是单 Host Store。注入 Port 允许
 接入远程 Adapter，但服务、认证、租户和 Rollout Policy 由嵌入式 Host 持有。
 
 ## 1. 配置本地 Agent Home
@@ -87,7 +87,7 @@ Secret Provider 中；TOML 只保存 Reference 或映射。完整文件模型见
 
 ## 3. 启动托管配置 API
 
-从 Agent Harness Checkout 启用 Plugin Control，并选择持久化 SQLite Authority：
+从 Lenso Agent Checkout 启用 Plugin Control，并选择持久化 SQLite Authority：
 
 ```sh
 export LENSO_AGENT_CONTROL_TOKEN="replace-with-a-local-control-token"

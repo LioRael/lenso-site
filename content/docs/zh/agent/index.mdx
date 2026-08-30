@@ -39,11 +39,11 @@ Agent Home                         Workspace
 
 ## 1. 运行维护中的 Host
 
-克隆 Agent Harness，完成一次认证，然后启动交互式或 headless surface：
+克隆 Lenso Agent，完成一次认证，然后启动交互式或 headless surface：
 
 ```sh
-git clone https://github.com/LioRael/lenso-agent-harness.git
-cd lenso-agent-harness
+git clone https://github.com/LioRael/lenso-agent.git
+cd lenso-agent
 cargo run -p lenso-agent-cli -- auth login
 cargo run -p lenso-agent-tui
 ```
@@ -97,7 +97,7 @@ Host 会把每个接受的改动解析为新的不可变 Generation。一个 Tur
 
 ## 5. 只在需要时添加产品 Surface
 
-Harness 提供终端、headless CLI 与可嵌入 Web surface。产品行为仍来自 Host 选择的
+Lenso Agent 提供终端、headless CLI 与可嵌入 Web surface。产品行为仍来自 Host 选择的
 Plugin inventory。Web shell 不会成为第二个组合 authority，远程配置系统也不会把
 可执行 Plan 发送给 Kernel。
 
