@@ -1,0 +1,105 @@
+---
+title: Agent
+description: 启动维护中的 Agent Host，选择最小的产品扩展点，并从一个可观察行为开始迭代。
+---
+
+## 使用 Lenso 构建 Agent 产品
+
+<CardGroup>
+  <Card title="运行第一个 Turn" href="/docs/zh/agent/first-turn" description="完成认证，启动 TUI，并证明 Headless Surface。" />
+  <Card title="学习 Agent 心智模型" href="/docs/zh/agent/mental-model" description="区分 Agent Home、Workspace、Profile、Session、Turn 与 Generation。" />
+  <Card title="恢复持久工作" href="/docs/zh/agent/sessions-and-memory" description="理解 Session 历史、压缩与跨 Session Memory。" />
+  <Card title="委派有边界的任务" href="/docs/zh/agent/subagents" description="使用命名的只读 Child Agent 与隔离 Worktree Worker。" />
+  <Card title="增加一个 Tool" href="/docs/zh/agent/first-app" description="构建、安装、运行、禁用并移除一个 Tool Plugin。" />
+  <Card title="连接 MCP Server" href="/docs/zh/agent/mcp-servers" description="通过一个选定 Plugin Instance 投影 MCP Tool、Prompt 与 Resource。" />
+</CardGroup>
+
+本页用于修改 Agent 产品本身。如果你希望让 Coding Agent 帮你开发 Lenso App、
+Plugin、Capability 或 Runtime Extension，请从
+[使用 Agent 开发 Lenso](/docs/zh/core/agent-skills)开始。
+
+Lenso Agent 开发从用户可观察的任务开始，而不是先造一套新运行时。先运行维护中的
+Agent Host，再修改一个 Plugin Instance、Tool 或 Capability Provider。Host 统一处理
+组合、配置、生命周期和 Generation 切换，Plugin 只持有新增行为。
+
+## 哪些内容放在哪里
+
+```text
+Agent Home                         Workspace
+~/.lenso/agent/                   Agent 启动时所在的目录
+├── plugins/      行为与配置       Agent 可以检查或编辑的源码
+├── profiles/     Session 选择     AGENTS.md 与项目上下文
+├── runtime/      Host 状态
+└── sessions.sqlite3
+```
+
+切换仓库只会改变 Workspace，不会暗中改变 Agent 已安装的 Plugin、Profile、Session
+历史或运行时 lineage。需要隔离的 Agent 时，把 `LENSO_AGENT_HOME` 设置为另一个
+绝对路径。
+
+## 1. 运行维护中的 Host
+
+克隆 Agent Harness，完成一次认证，然后启动交互式或 headless surface：
+
+```sh
+git clone https://github.com/LioRael/lenso-agent-harness.git
+cd lenso-agent-harness
+cargo run -p lenso-agent-cli -- auth login
+cargo run -p lenso-agent-tui
+```
+
+运行一个非交互 Turn：
+
+```sh
+cargo run -p lenso-agent-cli -- "Summarize this workspace README."
+```
+
+此时你已经拥有一个完整 Agent 应用。不要为了增加一个命令、存储后端、Prompt
+来源或模型集成就 fork Agent Loop。
+
+## 2. 选择最小改动
+
+| 目标结果 | 首选扩展点 | 继续阅读 |
+| --- | --- | --- |
+| 修改限制、模型选择、存储路径或策略 | 配置已有 Plugin Instance | [配置 Agent](/docs/zh/agent/agent-configuration) |
+| 增加一个模型可调用的动作 | 添加 Agent Tool Plugin | [为 Agent 添加一个 Tool](/docs/zh/agent/first-app) |
+| 替换 Memory、Session、Compaction、Secret 或其他角色 | 实现对应 Capability | [Plugin 与 Capability](/docs/zh/core/plugins-and-capabilities) |
+| 改变调度、时钟、进程执行或其他 Host 机制 | 添加 Driver 或 Execution Adapter | [Execution Adapter](/docs/zh/core/execution-adapters) |
+
+如果有多行似乎都适用，先从配置开始。只有现有 Plugin Contract 无法表达所需行为时，
+才需要增加代码。
+
+## 3. 安装一种 Agent 体验
+
+官方 coding experience 会安装可检查的 Plugin 配置与三个 Profile：
+
+```sh
+cargo run -p lenso-agent-cli -- profiles install coding
+cargo run -p lenso-agent-tui -- --profile code
+```
+
+`code` 用于编辑和受限进程，`code-sandbox` 使用无网络的隔离进程 Provider，`plan`
+用于只读规划。Profile 为一个 Session 选择已配置的 Plugin Instance，不会复制它们
+的配置。
+
+## 4. 完成一个改动并观察结果
+
+每个 Agent 功能都使用同一条循环：
+
+1. 说清可观察结果，例如“Agent 可以把文本转换为大写”。
+2. 修改 `plugins/` 下的一个文件，或构建并安装一个 Plugin。
+3. 从 Agent Home 运行 `lenso app show`，检查 derived App。
+4. 启动一个新 Turn，观察所选 Tool 或 Provider。
+5. 禁用或移除这个差异，确认原有行为恢复。
+
+Host 会把每个接受的改动解析为新的不可变 Generation。一个 Turn 固定使用其启动时
+的 Generation；替代版本通过 readiness 后，后续 Turn 才会使用它。
+
+## 5. 只在需要时添加产品 Surface
+
+Harness 提供终端、headless CLI 与可嵌入 Web surface。产品行为仍来自 Host 选择的
+Plugin inventory。Web shell 不会成为第二个组合 authority，远程配置系统也不会把
+可执行 Plan 发送给 Kernel。
+
+下一步可按照[为 Agent 添加一个 Tool](/docs/zh/agent/first-app)完成一条完整编码切片，或
+阅读[配置 Agent](/docs/zh/agent/agent-configuration)，在不新写 Plugin 的情况下改变行为。

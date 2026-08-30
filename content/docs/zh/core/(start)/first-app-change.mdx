@@ -1,0 +1,113 @@
+---
+title: 修改第一个 App
+description: 初始化一个准确 Host Workspace，加入 Plugin Bundle，检查 Derived App，运行并移除改动。
+---
+
+[Quickstart](/docs/zh/core/quickstart)证明了一个隔离 Plugin。这个指南完成下一层边界：
+让该 Bundle 成为一个真实 App 的显式差异。
+
+你需要从 Product Host Owner 获取两个 Artifact：
+
+- Host Executable；
+- 由这个准确 Host Build 生成的 `host-catalog.json`。
+
+通用 CLI 无法自行发明 Host 的 Root Slot、Embedded Plugin、Replacement Policy、
+Runtime Driver 或 Execution Adapter。
+
+## 1. 初始化 App Workspace
+
+始终让 Host 与匹配的 Catalog 成对出现：
+
+```sh
+lenso app init \
+  --host ./host \
+  --host-catalog ./host-catalog.json \
+  --root ./my-app
+```
+
+该命令创建 App Owner 唯一可见的两个 Root：
+
+```text
+my-app/
+├── .lenso/
+│   ├── host
+│   └── host-catalog.json
+└── plugins/
+```
+
+`.lenso/host-catalog.json` 是 Host Build 生成的只读 Authority。`plugins/` 只包含
+App 相对 Host Default 的差异。
+
+## 2. 检查 Host Default
+
+```sh
+lenso plugins list --root ./my-app
+lenso app show --root ./my-app
+lenso app check --root ./my-app
+```
+
+`plugins list` 显示每个 Derived Plugin Instance 及其来源；`app show` 继续显示准确
+Capability Binding 与 Plan Key；`app check` 给出 Derived App 最短的 Pass/Fail 验证。
+
+## 3. 加入 Bundle
+
+使用 Quickstart 生成的 Bundle：
+
+```sh
+lenso plugins add \
+  ./example.echo/dist/example.echo-0.1.0.lenso-plugin \
+  --root ./my-app
+```
+
+在向 `plugins/` 提交字节前，CLI 会验证 Archive、根据 Host Catalog 解析完整
+Candidate，并拒绝未知 Plugin、非法 Replacement、缺失 Capability、歧义 Binding 或
+无效配置。
+
+检查已接纳结果，不要仅凭新增目录推断成功：
+
+```sh
+lenso app show --root ./my-app
+lenso app check --root ./my-app
+```
+
+新 Instance 必须带预期来源与 Capability Binding。如果 Host Catalog 没有把该 Plugin
+提供给兼容 Slot，就应停止：App 配置不能扩大 Host Policy。
+
+## 4. 运行当前 Host
+
+```sh
+lenso doctor --root ./my-app
+lenso run --root ./my-app
+```
+
+`doctor` 检查 Host Catalog、可选 Host Executable、Derived App，以及 Execution Class
+选择的外部 Runtime。`run` 使用当前 Plugin Root 直接派生 App，再启动复制的 Host。
+App Owner 不需要生成或手工修改 Plan File。
+
+接下来如何调用 `example.echo` 取决于 Host 的产品 Surface。Agent Host 可以把它暴露为
+Tool；其他 Host 可以把同一个 Plugin Role 绑定到不同 Surface。
+
+## 5. 证明替换与移除
+
+先在不删除配置的情况下禁用 Instance、检查结果，再启用：
+
+```sh
+lenso plugins disable example.echo default --root ./my-app
+lenso app show --root ./my-app
+lenso plugins enable example.echo default --root ./my-app
+```
+
+最后移除整个 App-owned Plugin 目录：
+
+```sh
+lenso plugins remove example.echo --root ./my-app
+lenso app check --root ./my-app
+```
+
+整个 Plugin 的移除会使用可恢复的 `.lenso/trash/` 路径。传入 Instance Key 只会删除
+该 Instance Difference，并可能重新显示匹配的 Host Default；两种操作后都应检查
+Derived App。
+
+当 Add、Run、Disable、Enable 与 Remove 都产生预期的可观察行为时，这个闭环才算
+完成。设置或解析结果与本指南不一致时，继续阅读
+[检查与排障 App](/docs/zh/core/inspect-an-app)。

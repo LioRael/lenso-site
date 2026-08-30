@@ -1,0 +1,211 @@
+---
+title: Write the Endpoint Plugin
+description: Create one linked Rust Plugin with typed JSON routes and prove its behavior before opening a socket.
+---
+
+This step produces `company.greetings-http`, a Plugin that provides two
+`lenso.http.endpoint@1` routes. Complete it before touching Ingress.
+
+## 1. Generate the Plugin
+
+Start from the CLI's Web authoring path:
+
+```sh
+lenso plugin new company.greetings-http --web
+cd company.greetings-http
+```
+
+The command creates a standalone linked Rust Plugin:
+
+```text
+company.greetings-http/
+├── Cargo.toml
+├── README.md
+└── src/
+    └── lib.rs
+```
+
+Its manifest already declares the Web root slot and pins compatible framework
+revisions:
+
+```toml title="Cargo.toml"
+[package.metadata.lenso]
+plugin-id = "company.greetings-http"
+root-slot = "web"
+```
+
+By default, generation also creates `Cargo.lock` and runs the socket-free test.
+Use `--no-install` only when dependency resolution must happen later. When you
+move the crate into a Host workspace, replace the pinned dependencies with that
+workspace's dependency entries and remove the scaffold's standalone
+`[workspace]` table.
+
+## 2. Implement the routes
+
+Create the Endpoint provider:
+
+```rust title="src/lib.rs"
+use std::{cell::{Cell, RefCell}, collections::BTreeMap, rc::Rc};
+
+use lenso_capability_http_endpoint::{
+    prelude::*,
+    response::{Problem, StatusCode},
+};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct CreateGreeting {
+    name: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct SearchGreetings {
+    term: String,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+struct Greeting {
+    id: String,
+    message: String,
+}
+
+#[lenso::plugin]
+#[derive(Clone, Debug, Default)]
+pub struct GreetingsHttp {
+    next_id: Rc<Cell<u64>>,
+    greetings: Rc<RefCell<BTreeMap<String, Greeting>>>,
+}
+
+#[endpoint]
+impl GreetingsHttp {
+    #[post("greetings.create", "/greetings")]
+    async fn create(
+        &self,
+        Json(input): Json<CreateGreeting>,
+    ) -> Result<(StatusCode, Json<Greeting>), Problem> {
+        // Replace this with the business Capability call in a real Plugin.
+        std::future::ready(()).await;
+        let name = input.name.trim();
+        if name.is_empty() {
+            return Err(Problem::new(
+                StatusCode::BAD_REQUEST,
+                "invalid_name",
+                "name must not be empty",
+            ));
+        }
+
+        let sequence = self.next_id.get() + 1;
+        self.next_id.set(sequence);
+        let greeting = Greeting {
+            id: format!("greeting-{sequence}"),
+            message: format!("Hello, {name}!"),
+        };
+        self.greetings
+            .borrow_mut()
+            .insert(greeting.id.clone(), greeting.clone());
+        Ok((StatusCode::CREATED, Json(greeting)))
+    }
+
+    #[query("greetings.search", "/greetings/search")]
+    async fn search(
+        &self,
+        Json(input): Json<SearchGreetings>,
+    ) -> Result<Json<Vec<Greeting>>, Problem> {
+        std::future::ready(()).await;
+        let greetings = self.greetings
+            .borrow()
+            .values()
+            .filter(|greeting| greeting.message.contains(&input.term))
+            .cloned()
+            .collect();
+        Ok(Json(greetings))
+    }
+}
+```
+
+`#[lenso::plugin]` declares the product behavior boundary. `#[endpoint]`
+generates the route description, dispatch path, `lenso.http.endpoint@1`
+Capability, and linked Plugin factory from the same declarations. Product code
+does not implement `NativePluginFactory`, and must not use the retired
+`NativeModuleFactory` API. A handler returns business-facing values:
+`Json<T>` means a `200` JSON response, `(StatusCode, T)` overrides its status,
+and `Problem` is an intentional client-visible failure. The macro lowers these
+values into the portable Capability contract.
+
+`Json<T>` also rejects malformed JSON and unsupported content types before the
+handler runs. `Path<T>` decodes named path parameters, while `QueryParams<T>`
+decodes URL query strings. Use `#[query("route.id", "/path")]` for the HTTP
+QUERY method—a safe, idempotent request that may carry a structured body. It is
+not the same thing as URL query parameters.
+
+The map is temporary Instance state. Move shared business facts into a business
+Capability provider when another interface also needs Greeting behavior. Put
+durable state in a selected Store Plugin, not in Ingress.
+
+## 3. Prove the provider directly
+
+Use the socket-free harness in the same crate:
+
+```rust title="src/lib.rs"
+#[cfg(test)]
+mod tests {
+    use futures::executor::block_on;
+    use lenso_capability_http_endpoint::testing::EndpointTest;
+
+    use super::*;
+
+    #[test]
+    fn creates_and_queries_a_greeting() {
+        block_on(async {
+            let endpoint = EndpointTest::new(GreetingsHttp::default());
+            let created = endpoint
+                .request("greetings.create")
+                .json(&CreateGreeting { name: "Lenso".to_owned() })
+                .unwrap()
+                .send().await.unwrap();
+            assert_eq!(created.status(), StatusCode::CREATED);
+            let found = endpoint
+                .request("greetings.search")
+                .json(&SearchGreetings { term: "Lenso".to_owned() })
+                .unwrap()
+                .send().await.unwrap();
+            assert_eq!(found.json::<Vec<Greeting>>().unwrap().len(), 1);
+        });
+    }
+}
+```
+
+`EndpointTest` reads method and path from the generated route table. It invokes
+the Plugin directly, so it tests extractors, middleware, typed responses, and
+dispatch without binding a port. Its request builder also supports `.query()`,
+`.path_parameter()`, and `.header()`.
+
+Add focused tests against the generated `EndpointProvider`:
+
+- `describe` returns exactly `greetings.create` and `greetings.search`;
+- valid JSON returns `201`;
+- empty `name` returns an intentional `400` Problem Details response;
+- malformed JSON and unsupported content types fail before `create` runs; and
+- `greetings.search` uses the HTTP QUERY method and accepts a JSON body.
+
+Run the crate's checks:
+
+```sh
+cargo fmt --all -- --check
+cargo test --locked
+cargo clippy --locked --all-targets -- -D warnings
+```
+
+The owner repository includes the complete copyable scaffold at
+`examples/greetings-http-plugin`. It also maintains extractor and response
+examples:
+
+```sh
+cargo test --locked -p lenso-capability-http-endpoint \
+  --test endpoint_attributes
+```
+
+This step is complete when route descriptions are stable and every direct
+success and failure assertion passes. Continue with
+[Connect the Host and Ingress](/docs/web/web-host-integration).

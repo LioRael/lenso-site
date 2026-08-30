@@ -214,14 +214,14 @@ const featureCards = [
 ];
 
 const footerColumns: Array<[string, Array<[string, string]>]> = [
-  ['Start', [['Overview', '/docs'], ['Quickstart', '/docs/quickstart'], ['Product Blueprints', '/docs/product-blueprints'], ['CLI Reference', '/docs/cli-reference']]],
-  ['Build', [['Product Blueprints', '/docs/product-blueprints'], ['Plugin Authoring', '/docs/plugin-authoring'], ['Business API Surfaces', '/docs/admin-surfaces'], ['Plugin Console UI', '/docs/console-packages']]],
+  ['Start', [['Overview', '/docs'], ['Quickstart', '/docs/core/quickstart'], ['Product Blueprints', '/docs/product-blueprints'], ['CLI Reference', '/docs/cli-reference']]],
+  ['Build', [['Product Blueprints', '/docs/product-blueprints'], ['Plugin Authoring', '/docs/core/plugin-authoring'], ['Business API Surfaces', '/docs/admin-surfaces'], ['Plugin Console UI', '/docs/console-packages']]],
   ['Extend', [['Business API Surfaces', '/docs/admin-surfaces'], ['Service Capability Tiers', '/docs/autonomous-services'], ['Service System', '/docs/service-system-plane'], ['Auth Capabilities', '/docs/auth-capabilities']]],
   ['Operate', [['Console', '/docs/runtime-console'], ['Service System', '/docs/service-system-plane'], ['Troubleshooting', '/docs/troubleshooting'], ['Examples', '/docs/examples']]],
   ['Concepts', [['Platform Concepts', '/docs/platform-concepts'], ['Runtime Stories', '/docs/runtime-stories'], ['Service System', '/docs/service-system-plane'], ['Service Capability Tiers', '/docs/autonomous-services']]],
-  ['Agents', [['Agent Development', '/docs/agent-development'], ['Contracts and Checks', '/docs/contracts-and-checks'], ['Service System', '/docs/service-system-plane'], ['Examples', '/docs/examples']]],
+  ['Agents', [['Agent Development', '/docs/agent'], ['Contracts and Checks', '/docs/contracts-and-checks'], ['Service System', '/docs/service-system-plane'], ['Examples', '/docs/examples']]],
   ['Reference', [['Manifest Reference', '/docs/manifest-reference'], ['Service Capability Tiers', '/docs/autonomous-services'], ['API Reference', '/docs/api'], ['Troubleshooting', '/docs/troubleshooting']]],
-  ['Plugins', [['Plugin Authoring', '/docs/plugin-authoring'], ['Plugin Console UI', '/docs/console-packages'], ['Business API Surfaces', '/docs/admin-surfaces'], ['Runtime Lifecycle', '/docs/runtime-lifecycle']]],
+  ['Plugins', [['Plugin Authoring', '/docs/core/plugin-authoring'], ['Plugin Console UI', '/docs/console-packages'], ['Business API Surfaces', '/docs/admin-surfaces'], ['Runtime Lifecycle', '/docs/core/runtime-lifecycle']]],
   ['Community', [['GitHub', 'https://github.com/LioRael/lenso'], ['Issues', 'https://github.com/LioRael/lenso/issues'], ['Discussions', 'https://github.com/LioRael/lenso/discussions'], ['Examples', 'https://github.com/LioRael/lenso-examples']]],
 ];
 
@@ -868,14 +868,14 @@ function CtaSection() {
         <div className="mt-1 flex flex-wrap gap-3">
           <Link
             className="inline-flex h-12 w-[121px] items-center justify-center rounded-full bg-[var(--site-ink)] px-3 text-base font-medium leading-6 text-[var(--site-inverse)]"
-            href="/docs/quickstart"
+            href="/docs/core/quickstart"
           >
             Start building
           </Link>
           <Link
             aria-label="Install Lenso agent skills"
             className="inline-flex h-12 items-center justify-center rounded-full border border-[var(--site-border)] px-5 text-base font-medium leading-6 text-[var(--site-ink)] max-[560px]:px-3"
-            href="/docs/agent-development"
+            href="/docs/agent"
           >
             Install skills
           </Link>

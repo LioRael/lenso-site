@@ -1,0 +1,106 @@
+---
+title: Linked Rust Plugin
+description: 实现一个直接编译进产品 Host 的原生 Rust Plugin。
+---
+
+当你拥有 Host 二进制，而且 Plugin 需要普通 CLI 脚手架没有提供的 Capability、
+配置、生命周期或状态模型时，选择这条路径。这是最完整的 Rust authoring path。
+
+## 1. 添加 facade 和 Capability crate
+
+Plugin crate 依赖公共 `lenso` facade，以及它提供或依赖的生成 Capability crate。
+使用 owner repository 已经锁定的同一组 Git revision 或发布版本，不要自行混用
+不同版本的框架包。
+
+```toml title="Cargo.toml"
+[dependencies]
+lenso = { version = "0.2", features = ["host"] }
+serde = { version = "1", features = ["derive"] }
+example-greeting-contract = { version = "1" }
+example-profile-contract = { version = "1" }
+```
+
+上面的包名用于说明所有权。实际开发时请替换为目标 Host 使用的生成
+Capability 包。
+
+## 2. 定义配置与依赖
+
+```rust title="src/lib.rs"
+use example_greeting_contract as greeting;
+use example_profile_contract as profile;
+use lenso::prelude::*;
+
+#[derive(Clone, Debug, serde::Deserialize, PluginConfig)]
+struct GreetingConfig {
+    #[lenso(default = "Hello")]
+    prefix: String,
+}
+
+#[plugin]
+#[derive(Clone, Debug)]
+struct GreetingPlugin {
+    #[config]
+    config: GreetingConfig,
+    profile: Port<profile::ProfileClient>,
+}
+```
+
+`PluginConfig` 会生成封闭的配置 Schema 和默认值。`Port<Client>` 声明必须绑定
+一个 provider；只有 Capability Contract 确实接受多个 provider 时才使用
+`ManyPort<Client>`。
+
+无状态 Plugin 可以省略 `#[config]`，此时生成的 Contract 只接受空对象。
+
+## 3. 实现业务行为
+
+```rust title="src/lib.rs"
+#[provides(greeting::Greeting)]
+impl GreetingPlugin {
+    async fn greet(
+        &self,
+        ctx: Ctx,
+        request: greeting::GreetRequest,
+    ) -> Result<greeting::GreetResponse, greeting::GreetError> {
+        // Port 通过 Deref 直接暴露生成的 client。
+        let _ = (&self.profile, &self.config.prefix, ctx, request);
+        todo!("返回生成的 greeting 领域响应")
+    }
+}
+```
+
+生成代码负责 dispatch、endpoint 构造、类型擦除和 factory 注册。业务方法始终
+使用领域类型。只有实现必须显式保留 Runtime Failure，并将它与预期 Domain Error
+区分时，才返回 `PluginResult<T, DomainError>`。
+
+一个内聚的 Plugin 可以在同一个注解中提供多个 Capability：
+
+```rust
+#[provides(greeting::Greeting, health::Health)]
+impl GreetingPlugin {
+    // 在这里实现两个 Capability 生成的 operations。
+}
+```
+
+## 4. 只在拥有资源时添加生命周期
+
+Plugin 自己拥有连接、worker 或其他必须随 App Generation 准备、激活和释放的
+资源时，使用 `#[plugin(lifecycle)]` 并实现 `Lifecycle`。如果只需要随 Generation
+管理后台任务，而不需要自定义阶段，添加 `#[tasks] tasks: ManagedTasks` 字段。
+
+## 5. 从 Host 暴露生成的 factory
+
+宏会注册一个 linked factory。Host 通过原生 registry 让这些 Plugin 可用：
+
+```rust
+let registry = NativePluginRegistry::new().with_linked_factories();
+```
+
+可用不等于激活。Host Catalog 与 App 的 Plugin Root 仍然决定 Instance 是否存在、
+依赖的 Capability 如何绑定。下一步参见[向 App 添加 Plugin](/docs/zh/core/plugin-composition)。
+
+## 6. 证明业务行为
+
+运行 owner repository 的格式化、检查和测试。至少覆盖一次成功调用、所有预期
+Domain Error、非法配置、必需 Port 的绑定、适用时的取消，以及两个 Generation
+之间的全新生命周期状态。如果同一个 Plugin 有多个实现，用同一组行为用例运行
+每个实现。

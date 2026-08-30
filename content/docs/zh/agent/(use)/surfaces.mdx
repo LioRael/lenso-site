@@ -1,0 +1,44 @@
+---
+title: 选择 Agent Surface
+description: 在不创建第二个组合 Authority 的前提下使用 TUI、Headless CLI、Web Surface 或聊天 Channel。
+---
+
+Surface 持有人或系统如何与 Agent 交换 Turn。产品行为仍来自 Host 选择的 Plugin
+Inventory。
+
+| Surface | 适合场景 | 交互边界 |
+| --- | --- | --- |
+| **TUI** | 交互式本地工作 | 支持受审查命令、Skill 与有边界的 `ask_user` 问题。 |
+| **Headless CLI** | 单次自动化与测试 | 无法交互时立即返回，不会假装等待用户。 |
+| **Web** | 把 Agent 嵌入另一个产品 | 嵌入 Host 持有授权与所选 Plugin。 |
+| **Channel** | Telegram 或 Discord 入口 | 使用显式 Chat/Channel Allowlist 与环境变量 Token。 |
+
+## TUI 与 Headless
+
+```sh
+cargo run -p lenso-agent-tui
+cargo run -p lenso-agent-cli -- "Summarize this workspace README."
+```
+
+TUI 可以暂停 Turn 并提出有边界的问题。除非嵌入 Surface 提供 User Interaction
+Adapter，否则 Headless 与 Channel Surface 不会假装自己可以交互。
+
+## 独立 Web Surface
+
+```sh
+LENSO_AGENT_CONTROL_TOKEN=replace-with-a-local-control-token \
+  cargo run -p lenso-agent-web -- \
+  --listen 127.0.0.1:8788 \
+  --tool-policy ~/.lenso/agent/console-agent-tool-policy.json
+```
+
+Control Route 只接受匹配的 Bearer Token。Tool Policy 更新带 Revision，会根据当前
+Plan 绑定的 Catalog 校验，先持久化再激活，并且只影响之后接纳的 Turn。
+
+## 聊天 Channel
+
+Channel Distribution 支持经过审查的 Telegram 与 Discord 配置。安装 CLI 不会安装
+所有 Surface；每个可执行程序只链接自己需要的 Surface Plugin Inventory。
+
+请在用户工作流清晰后再选择 Surface。增加 Web Shell 或 Chat Transport 不会创建
+另一套 Composition Authority，也不会把 Plugin 选择权移出 Host。

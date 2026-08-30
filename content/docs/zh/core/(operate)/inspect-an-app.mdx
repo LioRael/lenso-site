@@ -1,0 +1,104 @@
+---
+title: 检查与排障 App
+description: 使用 doctor、list、show、check 与 JSON 输出区分 Host 设置、组合和运行时故障。
+---
+
+从失败的边界开始。“App 无法运行”可能代表不同问题，因此 Lenso 提供了多种检查命令：
+
+| 问题 | 命令 |
+| --- | --- |
+| Host Artifact、所选 Runtime Tool 与 App Resolution 是否可用？ | `lenso doctor` |
+| Derived App 中有哪些 Plugin Instance，来自哪里？ | `lenso plugins list` |
+| 解析出了哪些准确 Capability Binding 与 Plan Key？ | `lenso app show` |
+| 当前 Host 与 Plugin Root 能否派生一个有效 App？ | `lenso app check` |
+| 复制的 Host 能否启动该 Derived App？ | `lenso run` |
+
+所有命令都接受 `--root <app-directory>`；检查命令还提供稳定 `--json` Report，供
+脚本使用。
+
+## 1. 检查 Workspace 边界
+
+```sh
+lenso doctor --root ./my-app
+lenso doctor --root ./my-app --json
+```
+
+`doctor` 会检查：
+
+- `.lenso/host-catalog.json` 是 Regular File，并且可以解析 App；
+- 需要 `lenso run` 时，`.lenso/host` 是 Regular Executable；
+- Plugin Root 可以派生完整 App；
+- Execution Class 选择的外部 Runtime（例如 Bun）可用。
+
+只做只读 Composition Check 时，缺少 Host Executable 会显示为 Skipped；但
+`lenso run` 仍然需要它。
+
+## 2. 对比 Intent 与 Derived App
+
+Filesystem 显示 Intent，命令显示已接纳结果：
+
+```sh
+find ./my-app/plugins -maxdepth 3 -type f
+lenso plugins list --root ./my-app
+lenso app show --root ./my-app
+```
+
+不要从手写 Plan File 开始排障——App Owner Workflow 中没有这种文件。Identity 来自
+`plugins/<plugin-id>/<instance>.toml`；Plugin 与 Host Artifact 提供 Schema、Slot、
+Execution Choice 与 Binding Rule。
+
+移除 Instance Difference 后如果 Host Default 重新出现，`plugins list` 与
+`app show` 会显示该来源。结果存在歧义或 Required Capability 没有实现时，解析会
+失败，而不是选择 Fallback。
+
+## 3. 正确理解 Mutation Failure
+
+`plugins add`、`configure`、`disable`、`enable`、`remove`、`install`、`update` 与
+`rollback` 会暂存最小编辑，并在提交前验证完整 Candidate。Mutation 失败后，之前
+接纳的 Plugin Root 应保持不变。
+
+| Failure | 首先检查什么 |
+| --- | --- |
+| Host Catalog 缺失或来自其他 Build | 使用准确 Host/Catalog Pair 重新创建 App Workspace |
+| 未知 Plugin 或非法 Replacement | `app show` 中的 Host Slot 与 Replacement Policy |
+| 无效或未知配置字段 | 所选 Plugin 的生成 Schema 与 Instance TOML |
+| Capability Binding 缺失或歧义 | Consumer Requirement 与 Candidate Provider Instance |
+| Bundle 被拒绝 | 准确 Archive Byte、Plugin ID/Version、Manifest 与 Digest Evidence |
+| Catalog Update 不可用 | 请求的准确 Version 与保留的本地 History；不存在隐式 Latest |
+
+不要把失败的 Staged Edit 手工复制到 `plugins/`。应修正源配置，或选择允许该行为的
+Host。
+
+## 4. 区分 Composition 与 Runtime Failure
+
+```sh
+lenso app check --root ./my-app
+lenso run --root ./my-app
+```
+
+如果 `app check` 失败，问题仍在 Host/Plugin Root Derivation。如果它通过但 `run`
+失败，则检查 Host Process Exit、所选 Runtime Driver、Execution Adapter、外部
+Runtime、Readiness 与产品日志。
+
+Kernel 不会安装缺失 Plugin、改变 Binding，也不会在启动后退回另一个 Implementation。
+后续 Plugin Root 改动必须派生并通过新的 Candidate，Host 才能应用 Plan Transition
+或切换 App Generation。
+
+## 5. 收集有效 Evidence
+
+可复现报告应包含：
+
+```sh
+lenso --version
+lenso doctor --root ./my-app --json
+lenso plugins list --root ./my-app --json
+lenso app show --root ./my-app --json
+lenso app check --root ./my-app --json
+```
+
+不要包含 Secret Value 或私有 Plugin Resource。报告应能识别 Host/Plugin 关系，但
+不能让日志变成另一套配置 Authority。
+
+完整 Happy Path 见[修改第一个 App](/docs/zh/core/first-app-change)；Activate、
+Readiness、Transition、Drain 与 Shutdown 语义见
+[Runtime 生命周期](/docs/zh/core/runtime-lifecycle)。

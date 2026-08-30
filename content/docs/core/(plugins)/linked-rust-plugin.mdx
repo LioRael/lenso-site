@@ -1,0 +1,114 @@
+---
+title: Linked Rust Plugin
+description: Implement a native Rust Plugin that is compiled into a product Host.
+---
+
+Use this path when you own the Host binary and the Plugin needs a Capability,
+configuration, lifecycle, or state model that the ordinary CLI scaffold does
+not provide. This is the deepest Rust authoring path.
+
+## 1. Add the facade and Capability crates
+
+The Plugin crate depends on the public `lenso` facade and on the generated
+Capability crates it provides or requires. Use the exact Git revision or
+released versions already selected by the owner repository; do not mix
+independently updated framework packages.
+
+```toml title="Cargo.toml"
+[dependencies]
+lenso = { version = "0.2", features = ["host"] }
+serde = { version = "1", features = ["derive"] }
+example-greeting-contract = { version = "1" }
+example-profile-contract = { version = "1" }
+```
+
+The package names above illustrate ownership. Replace the example Capability
+packages with the generated packages used by your Host.
+
+## 2. Define configuration and requirements
+
+```rust title="src/lib.rs"
+use example_greeting_contract as greeting;
+use example_profile_contract as profile;
+use lenso::prelude::*;
+
+#[derive(Clone, Debug, serde::Deserialize, PluginConfig)]
+struct GreetingConfig {
+    #[lenso(default = "Hello")]
+    prefix: String,
+}
+
+#[plugin]
+#[derive(Clone, Debug)]
+struct GreetingPlugin {
+    #[config]
+    config: GreetingConfig,
+    profile: Port<profile::ProfileClient>,
+}
+```
+
+`PluginConfig` derives the closed configuration Schema and defaults. A
+`Port<Client>` declares exactly one required provider; use `ManyPort<Client>`
+only when the Capability contract genuinely accepts several providers.
+
+Stateless Plugins omit `#[config]`. The generated contract then accepts only
+an empty object.
+
+## 3. Provide behavior
+
+```rust title="src/lib.rs"
+#[provides(greeting::Greeting)]
+impl GreetingPlugin {
+    async fn greet(
+        &self,
+        ctx: Ctx,
+        request: greeting::GreetRequest,
+    ) -> Result<greeting::GreetResponse, greeting::GreetError> {
+        // Call the generated client directly through Port's Deref implementation.
+        let _ = (&self.profile, &self.config.prefix, ctx, request);
+        todo!("return the generated greeting domain response")
+    }
+}
+```
+
+Generated lowering owns dispatch, endpoint construction, type erasure, and
+factory registration. The method stays in domain types. Return
+`PluginResult<T, DomainError>` only when the implementation must deliberately
+preserve a Runtime Failure separately from an expected Domain Error.
+
+One cohesive Plugin may list several Capabilities in the same annotation:
+
+```rust
+#[provides(greeting::Greeting, health::Health)]
+impl GreetingPlugin {
+    // Implement the generated operations for both Capabilities here.
+}
+```
+
+## 4. Add lifecycle only when behavior owns it
+
+Use `#[plugin(lifecycle)]` and implement `Lifecycle` when the Plugin owns a
+connection, worker, or another resource that must be prepared, activated, and
+released with one App Generation. For generation-owned background tasks that
+need no custom phases, add a `#[tasks] tasks: ManagedTasks` field.
+
+## 5. Expose the generated factory from the Host
+
+The macro registers a linked factory. The Host makes linked Plugins available
+through its native registry:
+
+```rust
+let registry = NativePluginRegistry::new().with_linked_factories();
+```
+
+Availability is not activation. The Host Catalog and the App's Plugin Root
+still decide whether an Instance exists and how its required Capabilities are
+bound. Follow [Add Plugins to an App](/docs/core/plugin-composition) for that step.
+
+## 6. Prove the behavior
+
+Run the owner repository's formatter, checks, and tests. At minimum, exercise
+one successful operation, each expected Domain Error, configuration rejection,
+required-port binding, cancellation where applicable, and fresh lifecycle
+state across two generations. If the Plugin has multiple implementations,
+run the same behavior cases through each one.

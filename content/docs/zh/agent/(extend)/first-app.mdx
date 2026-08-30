@@ -1,0 +1,165 @@
+---
+title: 为 Agent 添加一个 Tool
+description: 构建、安装、运行、停用并移除一个真实的 Agent Tool Plugin。
+---
+
+本教程会为 Lenso Agent Host 添加一个 `uppercase` Tool。你将只编写一次行为，
+通过真实 Execution Adapter 运行它，把它打包并安装进 App，让 Agent 调用它，
+最后再把它移除。
+
+当前公共 CLI 负责脚手架化 Plugin，并不生成通用产品 Host。因此本教程使用持续
+维护的 Agent Harness 作为具体 Host。
+
+## 你将实现什么
+
+```text
+company.uppercase Plugin
+  提供 lenso.agent.tool-provider@2
+  同时打包 Wasm 与可信 Process 实现
+  安装到 ~/.lenso/agent/plugins/
+  成为 Agent App 中的 uppercase Tool
+```
+
+## 1. 安装 authoring 工具
+
+你需要 Rust 1.94 或更新版本、Wasm target、Git，以及任意一种 Lenso CLI
+发行方式：
+
+```sh
+rustup target add wasm32-unknown-unknown
+npm install -g @lenso/cli
+# 或：cargo install lenso-cli
+```
+
+先确认本机版本实际提供的工作流：
+
+```sh
+lenso --version
+lenso plugin new --help
+```
+
+## 2. 创建 Plugin
+
+在一个空的教程目录中运行：
+
+```sh
+lenso plugin new company.uppercase
+cd company.uppercase
+```
+
+默认 Rust 项目只有一个需要编辑的 `src/lib.rs`。同一份源码会生成一个可移植
+Wasm 实现和一个可信原生 Process 实现，两者属于同一个 Plugin Contract。
+
+将生成的 `execute` 函数体替换为大写转换行为：
+
+```rust title="src/lib.rs"
+fn execute(arguments: Arguments) -> Result<ExecuteResponse, ExecuteError> {
+    if arguments.text.is_empty() {
+        return Err(ExecuteError::InvalidArguments);
+    }
+
+    Ok(ExecuteResponse {
+        content: arguments.text.to_uppercase(),
+        content_type: ContentType::Text,
+        metadata_json: r#"{"operation":"uppercase"}"#
+            .try_into()
+            .expect("static metadata is valid JSON"),
+    })
+}
+```
+
+保留脚手架生成的 `#[lenso::plugin]`、`#[tool_provider]` 与 `#[tool]` 注解；
+它们负责 Plugin descriptor 和 Agent Tool 投影。
+
+## 3. 打包前先运行
+
+```sh
+lenso plugin check
+lenso plugin dev \
+  --implementation auto \
+  --operation execute \
+  --request-json '{"name":"company.uppercase","arguments_json":"{\"text\":\"hello lenso\"}"}'
+```
+
+结果中会出现 `HELLO LENSO`。对于多输出 Rust 项目，`auto` 使用声明过的最快
+本地实现。需要针对实现提供证据时，分别运行 `--implementation wasm` 和
+`--implementation process`。
+
+编辑期间可以用同一个请求自动重新运行：
+
+```sh
+lenso plugin dev --watch \
+  --operation execute \
+  --request-json '{"name":"company.uppercase","arguments_json":"{\"text\":\"hello lenso\"}"}'
+```
+
+## 4. 打包一个 Release
+
+```sh
+lenso plugin pack
+```
+
+该命令创建并重新打开
+`dist/company.uppercase-0.1.0.lenso-plugin`。归档包含两个实现和一个共享
+Contract。
+
+进入 Host checkout 前先保存 Bundle 的绝对路径：
+
+```sh
+PLUGIN_BUNDLE="$PWD/dist/company.uppercase-0.1.0.lenso-plugin"
+```
+
+## 5. 启动 Agent Host
+
+回到教程父目录，克隆持续维护的 Host，并完成一次 Agent 认证：
+
+```sh
+cd ..
+git clone https://github.com/LioRael/lenso-agent-harness.git
+cd lenso-agent-harness
+cargo run -p lenso-agent-cli -- auth login
+cargo run -p lenso-agent-cli -- contexts
+```
+
+`contexts` 命令会启动 Host，但不会发起 model Turn，并发布与该 Build 匹配的 Host
+Catalog。App owner 只修改 `~/.lenso/agent/plugins/` 下可见的 Plugin Root。
+
+## 6. 将 Plugin 加入 App
+
+```sh
+lenso plugins add "$PLUGIN_BUNDLE" --root "$HOME/.lenso/agent"
+lenso plugins list --root "$HOME/.lenso/agent"
+lenso app check --root "$HOME/.lenso/agent"
+```
+
+`plugins add` 会验证收到的 Bundle，根据 Host Catalog 与 Plugin Root 派生候选
+App，并且只在候选状态有效时提交文件。
+
+## 7. 使用新行为
+
+在 Agent Harness checkout 中运行：
+
+```sh
+cargo run -p lenso-agent-cli -- \
+  "Use company.uppercase to convert 'hello lenso' to uppercase."
+```
+
+可观察结果是 Agent Turn 调用 `company.uppercase` 并返回 `HELLO LENSO`。此时
+Plugin 已经成为 App 行为，而不只是一个能在本地调用的软件包。
+
+## 8. 停用、重新启用并移除
+
+```sh
+lenso plugins disable company.uppercase default --root "$HOME/.lenso/agent"
+lenso plugins enable company.uppercase default --root "$HOME/.lenso/agent"
+lenso plugins remove company.uppercase --root "$HOME/.lenso/agent"
+lenso app check --root "$HOME/.lenso/agent"
+```
+
+停用会保留软件包和配置。`remove` 省略 Instance key 时会删除整个 Plugin 目录，
+并将它移入 App 中可恢复的 `.lenso/trash/`。两者都会让 Host 解析新的不可变 App
+Generation；已经开始的工作继续使用它启动时的 Generation。
+
+至此，你已经走完完整的开发者工作流。下一个行为不是 Agent Tool 时，继续阅读
+[选择 Plugin 开发路径](/docs/zh/core/choose-plugin-path)；需要配置、资源与 Catalog
+操作时，阅读[向 App 添加 Plugin](/docs/zh/core/plugin-composition)。

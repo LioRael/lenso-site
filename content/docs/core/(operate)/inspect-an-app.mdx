@@ -1,0 +1,109 @@
+---
+title: Inspect and troubleshoot an App
+description: Use doctor, list, show, check, and JSON output to separate Host setup, composition, and runtime failures.
+---
+
+Start with the boundary that failed. Lenso exposes several inspection commands
+because “the App does not run” can mean different things:
+
+| Question | Command |
+| --- | --- |
+| Are the Host artifacts, selected runtime tools, and App resolution available? | `lenso doctor` |
+| Which Plugin Instances are in the derived App, and where did they come from? | `lenso plugins list` |
+| What exact Capability bindings and Plan keys were resolved? | `lenso app show` |
+| Does the current Host plus Plugin Root derive one valid App? | `lenso app check` |
+| Can the copied Host start that derived App? | `lenso run` |
+
+Each command accepts `--root <app-directory>`. Inspection commands also expose
+stable `--json` reports for scripts.
+
+## 1. Check the workspace boundary
+
+```sh
+lenso doctor --root ./my-app
+lenso doctor --root ./my-app --json
+```
+
+`doctor` checks:
+
+- `.lenso/host-catalog.json` is a regular file and can resolve the App;
+- `.lenso/host` is a regular executable when `lenso run` is required;
+- the Plugin Root derives a complete App; and
+- external runtimes selected by execution classes, such as Bun, are available.
+
+A missing Host executable is reported as skipped for read-only composition
+checks, but `lenso run` still requires it.
+
+## 2. Compare intent with the derived App
+
+The filesystem shows intent; the commands show the accepted result:
+
+```sh
+find ./my-app/plugins -maxdepth 3 -type f
+lenso plugins list --root ./my-app
+lenso app show --root ./my-app
+```
+
+Do not debug from a hand-written Plan file—there is none in the App-owner
+workflow. Identity comes from `plugins/<plugin-id>/<instance>.toml`; Plugin and
+Host artifacts supply Schemas, Slots, execution choices, and binding rules.
+
+If a Host default remains after you remove an Instance difference, `plugins
+list` and `app show` make that source visible. If the result is ambiguous or a
+required Capability has no provider, resolution fails instead of choosing a
+fallback.
+
+## 3. Read mutation failures correctly
+
+`plugins add`, `configure`, `disable`, `enable`, `remove`, `install`, `update`,
+and `rollback` stage the smallest edit and validate the complete candidate
+before committing it. A failed mutation should leave the previously accepted
+Plugin Root intact.
+
+| Failure | First thing to inspect |
+| --- | --- |
+| Host Catalog missing or from another build | Recreate the App workspace with the exact Host/Catalog pair |
+| Unknown Plugin or illegal replacement | Host Slots and replacement policy in `app show` |
+| Invalid or unknown configuration field | The selected Plugin's generated Schema and Instance TOML |
+| Missing or ambiguous Capability binding | Consumer requirement and candidate provider Instances |
+| Bundle rejected | Exact archive bytes, Plugin ID/version, manifest, and digest evidence |
+| Catalog update unavailable | Requested exact version and retained local history; there is no implicit latest |
+
+Do not manually copy a failed staged edit into `plugins/`. Correct the source
+configuration or select a Host that admits the intended behavior.
+
+## 4. Separate composition from runtime failure
+
+```sh
+lenso app check --root ./my-app
+lenso run --root ./my-app
+```
+
+If `app check` fails, the problem is still Host/Plugin Root derivation. If it
+passes but `run` fails, inspect the Host process exit, selected Runtime Driver,
+Execution Adapters, external runtimes, readiness, and product-specific logs.
+
+The Kernel does not install missing Plugins, change bindings, or fall back to a
+different implementation after startup. A later Plugin Root change must derive
+and pass a new candidate before a Host may apply a Plan Transition or switch
+App Generation.
+
+## 5. Capture useful evidence
+
+For a reproducible report, include:
+
+```sh
+lenso --version
+lenso doctor --root ./my-app --json
+lenso plugins list --root ./my-app --json
+lenso app show --root ./my-app --json
+lenso app check --root ./my-app --json
+```
+
+Do not include secret values or private Plugin resources. The reports should
+identify the Host/Plugin relationship without turning logs into another
+configuration authority.
+
+Return to [Change your first App](/docs/core/first-app-change) for the complete
+happy path, or [Runtime lifecycle](/docs/core/runtime-lifecycle) for activation,
+readiness, transition, draining, and shutdown semantics.

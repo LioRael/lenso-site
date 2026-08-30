@@ -1,0 +1,94 @@
+---
+title: 配置 Plugin
+description: 理解配置层、Instance TOML、Resource、Secret、校验与发布。
+---
+
+Plugin Package 定义哪些内容可以配置。App 持有每个已配置 Instance 的差异。Host
+把两者与自身策略合并，并在配置能够进入 Generation 前校验最终结果。
+
+## 三层配置
+
+配置按以下顺序合并：
+
+1. **Package default** — Plugin 作者随包发布的安全默认值。
+2. **Host configuration** — Host Build 选择的产品级配置。
+3. **Instance patch** — App 在可见 Plugin Root 中持有的 TOML。
+
+后面的层覆盖前面的层。合并结果必须满足 Plugin 的最终配置 Schema。Patch 不是一套
+独立 Schema；即使 TOML 语法正确，也不能凭空增加未知字段。
+
+## 一个 Instance 的文件
+
+```text
+plugins/
+└── example.echo/
+    ├── plugin.lenso-plugin/   # 可选的打包实现
+    ├── default.toml           # Instance "default" 的值
+    ├── default/               # 该 Instance 的结构化 Resource
+    │   └── prompt.md
+    └── default.disabled       # 可选禁用 Marker
+```
+
+不同输入使用不同表达方式：
+
+| 输入 | 位置 | 示例 |
+| --- | --- | --- |
+| 小型强类型值 | `<instance>.toml` | 限制、模型 ID、路径、功能策略 |
+| 结构化或较大内容 | `<instance>/` | Prompt、模板、证书、映射 |
+| Secret 值 | 外部 Provider | 环境变量、Keychain、加密文件、Secret Manager |
+
+TOML 中只保存 Secret reference 或映射。Secret 值不能进入 Plugin Root、Resolved
+Plan、诊断或 Session fact。
+
+## 一步一步配置本地 App
+
+假设 `example.echo/default` 接受以下 Patch：
+
+```toml title="echo.toml"
+prefix = "Agent: "
+max_characters = 4096
+```
+
+通过 CLI 应用配置：
+
+```sh
+lenso plugins configure example.echo default --file ./echo.toml --root ./my-app
+lenso plugins list --root ./my-app
+lenso app show --root ./my-app
+lenso app check --root ./my-app
+```
+
+`plugins configure` 会先根据确定的 Host Catalog 构建 Candidate App。无效字段、缺少
+Required Binding 或 Provider 歧义都会在提交可见文件前失败。`plugins list` 显示
+App-owned 差异；`app show` 解释包含 Host default 在内的完整 derived App。
+
+当 Contract 声明 Resource 时，把它放在 Instance Patch 旁边：
+
+```text
+my-app/plugins/example.echo/default/prompt.md
+```
+
+Resource 目录与同一个 App Snapshot 一起被捕获。不要让 Plugin 指向别处的可变文件，
+再假定它们拥有相同的 Generation 语义。
+
+## 修改或移除差异
+
+```sh
+lenso plugins disable example.echo default --root ./my-app
+lenso plugins enable example.echo default --root ./my-app
+lenso plugins remove example.echo default --root ./my-app
+lenso app check --root ./my-app
+```
+
+移除 Instance 只会删除 App-owned Patch 与 Resource，因此 Host default 可能重新可见。
+移除整个 Plugin 会经过可恢复的 `.lenso/trash/` 路径。
+
+## 本地与托管发布使用同一套模型
+
+直接编辑本地文件是默认 Authoring Workflow。Host 也可以在同一 Plugin Root 前放置
+Configuration Authority，让管理员审查 Proposal、通过 revision fencing 发布、保留
+历史，或连接远程控制面。Authority 最终仍必须在本地物化完整 Desired Plugin Root，
+不能直接向 Kernel 发送 Plan。
+
+有关 Agent 的本地、SQLite 与远程 authority 工作流，请继续阅读
+[配置 Agent](/docs/zh/agent/agent-configuration)。

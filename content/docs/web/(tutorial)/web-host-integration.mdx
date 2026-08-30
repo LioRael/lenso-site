@@ -1,0 +1,65 @@
+---
+title: Connect the Host and Ingress
+description: Link the Endpoint implementation, publish its Catalog binding, and configure the Web Ingress Instance.
+---
+
+The Endpoint provider is not reachable until the Host links it and the resolved
+App binds it to Ingress.
+
+## 1. Link the Plugin crate
+
+`#[lenso::plugin]` and `#[endpoint]` already generate the Descriptor, Capability
+lowering, and linked factory. The crate root only needs to compile the Endpoint
+module:
+
+```rust title="src/lib.rs"
+mod http;
+```
+
+Once the Host links this crate, `NativePluginRegistry::with_linked_factories()`
+discovers the generated factory. `NativePluginFactory` is a Host/Adapter
+extension seam, not the normal Web Plugin authoring API. `NativeModuleFactory`
+is retired.
+
+## 2. Publish the Catalog relationship
+
+Publish the Endpoint Plugin and Web Ingress implementations in the Host Catalog. The Catalog
+must permit this binding:
+
+```text
+lenso.web-ingress/web
+  requires many lenso.http.endpoint@1
+    -> company.greetings-http/api
+```
+
+Registration makes an implementation available. The Host Catalog owns defaults,
+root Slots, and exact implementation policy. The App owner only configures or
+disables the resulting Instances in `plugins/`.
+
+## 3. Configure Ingress
+
+Patch the Host-declared Ingress Instance:
+
+```toml title="plugins/lenso.web-ingress/web.toml"
+bind_address = "127.0.0.1:8080"
+max_request_body_bytes = 1048576
+max_request_head_bytes = 16384
+max_concurrent_requests = 128
+request_timeout_millis = 30000
+```
+
+Inspect the resolved result:
+
+```sh
+lenso plugins list --root ./my-app
+lenso app show --root ./my-app
+lenso app check --root ./my-app
+```
+
+`app show` must contain the Ingress Instance, the Greetings Endpoint Instance,
+and the `many lenso.http.endpoint@1` binding between them. A TOML file cannot
+create a Catalog relationship that the Host does not publish.
+
+This step is complete when `app check` succeeds and the resolved App exposes
+the exact Instance and binding identities. Continue with
+[Prove the HTTP backend](/docs/web/web-testing).

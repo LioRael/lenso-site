@@ -1,0 +1,59 @@
+---
+title: 运行第一个 Agent Turn
+description: 先完成认证，启动维护中的 TUI，并运行一个 Headless Turn，再开始修改 Agent 产品。
+---
+
+这条路径会从源码运行维护中的 Agent Harness。你将完成一次认证，打开交互式终端
+Surface，并确认同一个 App 也可以运行非交互 Turn。
+
+## 1. 获取 Harness
+
+```sh
+git clone https://github.com/LioRael/lenso-agent-harness.git
+cd lenso-agent-harness
+```
+
+当前公开入口是仓库 Workspace。公共文档中的 Cargo 命令必须保持可移植；本地缓存与
+Worktree 路径属于维护者开发环境。
+
+## 2. 完成一次认证
+
+```sh
+cargo run -p lenso-agent-cli -- auth login
+```
+
+默认 App 使用 Direct Codex Model 与 `default` ChatGPT Profile。认证信息保存在全局
+Agent Home，不属于 Agent 当前要检查的项目。
+
+## 3. 启动 TUI
+
+```sh
+cargo run -p lenso-agent-tui
+```
+
+提交一个小型只读请求，例如：
+
+```text
+Summarize this workspace README.
+```
+
+此时你已经拥有一个完整 Agent App：Model、持久 Session、终端 Surface，以及由
+Host 持有的基础 Plugin 选择。
+
+## 4. 证明 Headless Surface
+
+```sh
+cargo run -p lenso-agent-cli -- \
+  "Summarize this workspace README."
+```
+
+TUI 与 Headless Command 是同一个 Agent 产品的两种 Surface。Surface 不会持有第二份
+Plugin 图。
+
+## 下一步
+
+<CardGroup>
+  <Card title="学习心智模型" href="/docs/zh/agent/mental-model" description="区分 Agent Home、Workspace、Profile、Session、Turn 与 Generation。" />
+  <Card title="选择 Profile" href="/docs/zh/agent/profiles-and-tools" description="安装 Coding Experience，并选择最小 Tool 权限。" />
+  <Card title="增加第一个 Tool" href="/docs/zh/agent/first-app" description="构建、安装、运行、禁用并移除一个 Tool Plugin。" />
+</CardGroup>

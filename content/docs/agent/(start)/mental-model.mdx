@@ -1,0 +1,52 @@
+---
+title: The Agent mental model
+description: Separate global Agent state, the current Workspace, Session choices, and immutable runtime Generations.
+---
+
+The Agent has two places and four units of running state. Keeping them separate
+prevents most configuration and Session surprises.
+
+## Two places
+
+```text
+Agent Home                         Workspace
+~/.lenso/agent/                   directory where the Agent starts
+├── plugins/      behavior/config  source files and project context
+├── profiles/     Session choices  AGENTS.md
+├── runtime/      Host state
+├── sessions.sqlite3
+└── memory.sqlite3
+```
+
+- **Agent Home** is global durable product state. Changing repository does not
+  change installed Plugins, Profiles, Sessions, memory, or runtime lineage.
+- **Workspace** is the current project directory visible to Workspace,
+  Process, Git, and suggestion Tools.
+
+Set `LENSO_AGENT_HOME` to another absolute path when you need an isolated Agent.
+
+## Four running units
+
+| Unit | What it decides |
+| --- | --- |
+| **Profile** | The exact configured Plugin Instances selected for one Session. |
+| **Session** | Durable conversation identity and history. |
+| **Turn** | One user request and its bounded model/tool work. |
+| **Generation** | The immutable resolved App used by admitted Turns. |
+
+A Profile contains selection, not copied Plugin configuration. A Turn stays on
+the Generation where it started. When Plugin state changes and passes
+readiness, later Turns can use the replacement without rewriting an in-flight
+Turn.
+
+## Tools are Plugin-provided behavior
+
+A Tool is model-visible behavior provided by a Plugin through the Agent Tool
+Capability. The Profile and per-Turn flags narrow which selected Tools are
+available; they do not turn arbitrary executables or the whole Host into Tools.
+
+<CardGroup>
+  <Card title="Profiles and Tools" href="/docs/agent/profiles-and-tools" description="Choose code, sandboxed code, or read-only planning authority." />
+  <Card title="Agent surfaces" href="/docs/agent/surfaces" description="Choose TUI, headless, Web, or chat channels without changing product ownership." />
+  <Card title="Core mental model" href="/docs/core/mental-model" description="See how a Plugin Root and Host Catalog resolve into one Generation." />
+</CardGroup>

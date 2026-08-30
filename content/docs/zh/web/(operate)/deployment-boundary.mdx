@@ -1,0 +1,79 @@
+---
+title: 为部署准备 Web Host
+description: 配置 Listener 与 Limit，并区分 Lenso Ingress 保证和 Host 持有的 TLS、打包及拓扑责任。
+---
+
+Lenso Web 提供面向生产的 HTTP 边界，但不提供通用 Deploy Command。Application
+Host 仍然持有 Executable/Container、TLS Termination、Process Manager、Environment、
+Rollout 与网络拓扑。
+
+## 从私有 Listener 开始
+
+Ingress 默认使用 Loopback 临时端口，适合测试与嵌入。部署的 Host 应显式选择固定
+Address：
+
+```toml title="plugins/lenso.web-ingress/web.toml"
+bind_address = "127.0.0.1:8080"
+max_request_body_bytes = 1048576
+max_request_head_bytes = 16384
+max_concurrent_requests = 128
+request_timeout_millis = 30000
+```
+
+在同机 Reverse Proxy 后使用 `127.0.0.1`。只有 Host 网络策略明确需要暴露 Listener
+时才绑定 `0.0.0.0`。Public Bind 是有效配置，但不能证明 Firewall、Tenancy 或 TLS
+Policy 正确。
+
+## 把 TLS 与拓扑放在 Host 环境
+
+当前维护的 Ingress 提供 HTTP/1.1 与 Cleartext HTTP/2 Prior Knowledge，不负责 TLS
+Termination。Reverse Proxy、Load Balancer、Service Mesh 或 Embedding Host 应持有
+Certificate 与外部 HTTPS Listener。
+
+```text
+Internet -> HTTPS Proxy/Load Balancer -> Cleartext Private Ingress -> Endpoint Plugins
+```
+
+Replica 与外部 Load Balancing 也由部署策略决定。在一个 Multi-lane App 内，Ingress
+会协调一个已绑定 Socket，并只向 Ready Replica 分发；不要让每个 Lane 独立绑定同一
+Port。
+
+## 理解 Readiness 证明什么
+
+App Ready Gate 打开前，Ingress 会从显式绑定的 Endpoint Provider 收集不可变 Route
+Table。重复的准确 Route 与语义 Path Shape Collision 会让启动失败。配置 Limit 也会
+在开始 Serving 前完成验证。
+
+对即将交付的准确 Plugin Root 执行组合检查：
+
+```sh
+lenso plugins list --root ./my-app
+lenso app show --root ./my-app
+lenso app check --root ./my-app
+```
+
+这些命令证明 Composition，不证明远端可达性。Lenso Web 不会自动加入通用
+`/health` Endpoint；Product Host 必须提供部署平台需要的 Health/Readiness Contract。
+
+## 保留 Shutdown 与 Request 边界
+
+Ingress 持有全局 Concurrency Admission、Request Body/Head Limit、单个 Endpoint
+Deadline、Disconnect Cancellation 与协作式 App Shutdown。超过配置边界的 Request
+会在 Transport 层失败，不会进入业务代码。
+
+Process Manager 应发送 Host 支持的 Graceful-shutdown Signal，并留出足够时间完成有
+边界的 Request Deadline。不要通过重启 Listener 来注册 Route：Route 变化应通过新的
+Ready Generation 生效。
+
+## 部署检查表
+
+- 交付的 Host Catalog 只包含预期 Endpoint Provider 与 Binding。
+- 使用生产 Plugin 配置时，`lenso app check` 通过。
+- Public Exposure、TLS、Forwarded-header Policy 与 Firewall Rule 由部署环境持有并测试。
+- Auth 与 Secrets 都是显式 Binding；Ingress 配置中没有 Credential。
+- Body、Head、Concurrency 与 Timeout Limit 符合真实工作负载。
+- 真实 Socket 测试覆盖成功、过载、超时、取消、Route Collision 与 Graceful Shutdown。
+- Rollout 平台拥有 Product 自己的 Health/Readiness Endpoint 与 Rollback Path。
+
+当前没有 Framework-owned Dockerfile、Kubernetes Chart 或通用 `lenso deploy` Workflow。
+这些 Artifact 应放在了解真实 Host、Registry、Secret 与拓扑的产品仓库中。

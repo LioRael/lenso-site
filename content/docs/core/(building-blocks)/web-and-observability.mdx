@@ -1,0 +1,41 @@
+---
+title: Web UI, Auth, and observability
+description: Compose optional product and operator concerns without turning them into Kernel features.
+---
+
+## Target-owned Web UI
+
+A target App can select a Web Shell, Browser Adapter, business Plugin, and one
+or more UI Contribution providers. The Shell binds `many`
+`lenso.ui.contribution@1` providers. Generated browser clients expose only the
+portable Capability requirements declared by each selected contribution and
+resolved before boot.
+
+UI code is trusted App code, not an isolation boundary. Installing or replacing
+it is a reviewable Composition and Plan change. An independent cross-App Console
+is a separate future App shape, not a runtime type automatically present in each
+target.
+
+This browser-side topology is separate from backend HTTP. Read
+[Web Capabilities](/docs/web/web-capabilities) for the implemented Endpoint,
+Ingress, Client, and Egress contracts and their configuration.
+
+## Auth
+
+Ingress Adapters turn protocol-specific input into Credential Evidence and call
+an ordinary Auth Capability. Auth Plugins issue short-lived, audience-limited
+Actor Assertions. The target Plugin verifies and projects an assertion into a
+typed domain Actor, then performs final authorization locally.
+
+There is no ambient System Actor, universal grants list, or automatic anonymous
+identity.
+
+## Observability
+
+Kernel diagnostics are bounded, non-blocking structural facts and exclude
+payloads, secrets, configuration, and Actor Assertions. The removable
+`lenso-otel-module` exports selected diagnostics and explicitly authored OTel
+signals. Export failure never changes App behavior.
+
+Telemetry is not durable business evidence. Audit, Story, Workflow, and Outbox
+semantics belong to optional Plugins when a product selects them.
