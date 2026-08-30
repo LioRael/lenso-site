@@ -1,0 +1,53 @@
+---
+title: Choose Profiles and Tool authority
+description: Install the official coding Profiles and grant only the Tool access needed for a Session or Turn.
+---
+
+A Profile selects configured Plugin Instances for one Session. Start with the
+maintained Profiles instead of assembling a Tool set from individual internal
+Plugins.
+
+## Install the coding experience
+
+```sh
+cargo run -p lenso-agent-cli -- profiles install coding
+```
+
+The installer creates inspectable Profile and Plugin configuration and refuses
+to overwrite files you customized.
+
+| Profile | Use it for | Process boundary |
+| --- | --- | --- |
+| `code` | Editing, bounded processes, Git, delegation, and inline approval | Trusted configured executables; not an OS sandbox |
+| `code-sandbox` | Coding with no network and OS-isolated processes | Seatbelt on macOS; `bwrap` and usable namespaces on Linux |
+| `plan` | Read-only investigation and planning | No write or process authority |
+
+Start the TUI with one Profile:
+
+```sh
+cargo run -p lenso-agent-tui -- --profile code
+```
+
+## Narrow one Turn further
+
+Use `--no-tools` to remove Tool access for one headless Turn, or repeat
+`--allow-tool` to select exact Tool names:
+
+```sh
+cargo run -p lenso-agent-cli -- \
+  --allow-tool read_text \
+  "Summarize the source tree."
+```
+
+Profile selection happens before Generation resolution. Per-Turn flags narrow
+the selected catalog; they do not add a Tool that the Host or Profile omitted.
+
+## Understand the sandbox claim
+
+The `code-sandbox` Profile is an integrity and egress boundary, not a VM or a
+confidentiality boundary. Sandboxed programs can still read host files exposed
+by policy. Readiness fails closed when the selected OS backend cannot provide
+the configured isolation.
+
+Continue with [Give the Agent a new Tool](/docs/agent/first-app) when the
+desired action does not already exist in the selected catalog.

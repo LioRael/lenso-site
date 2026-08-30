@@ -1,0 +1,50 @@
+---
+title: 选择 Profile 与 Tool 权限
+description: 安装官方 Coding Profile，并只为一个 Session 或 Turn 提供所需 Tool 权限。
+---
+
+Profile 会为一个 Session 选择已配置的 Plugin Instance。请先使用维护中的 Profile，
+不要从单个内部 Plugin 开始手工拼装 Tool 集合。
+
+## 安装 Coding Experience
+
+```sh
+cargo run -p lenso-agent-cli -- profiles install coding
+```
+
+安装器会创建可检查的 Profile 与 Plugin 配置，并拒绝覆盖已经自定义的文件。
+
+| Profile | 适用工作 | Process 边界 |
+| --- | --- | --- |
+| `code` | 编辑、受限进程、Git、委派与行内审批 | 可信的已配置可执行文件；不是 OS Sandbox |
+| `code-sandbox` | 无网络且 Process 受 OS 隔离的 Coding | macOS 使用 Seatbelt；Linux 使用 `bwrap` 与可用 Namespace |
+| `plan` | 只读调查与规划 | 不提供写入或 Process 权限 |
+
+使用一个 Profile 启动 TUI：
+
+```sh
+cargo run -p lenso-agent-tui -- --profile code
+```
+
+## 进一步缩小单个 Turn
+
+使用 `--no-tools` 移除一个 Headless Turn 的 Tool 权限，或重复使用 `--allow-tool`
+选择精确 Tool 名称：
+
+```sh
+cargo run -p lenso-agent-cli -- \
+  --allow-tool read_text \
+  "Summarize the source tree."
+```
+
+Profile 在 Generation 解析前完成选择。单次 Turn Flag 只能缩小已选择 Catalog，不会
+增加 Host 或 Profile 没有提供的 Tool。
+
+## 正确理解 Sandbox
+
+`code-sandbox` 是完整性与网络出口边界，不是 VM 或保密边界。Sandbox Process 仍可
+读取策略暴露的 Host 文件。当所选 OS Backend 无法提供配置中的隔离时，Readiness 会
+Fail Closed。
+
+当目标动作不在当前 Catalog 中时，继续阅读
+[为 Agent 添加一个 Tool](/docs/zh/agent/first-app)。

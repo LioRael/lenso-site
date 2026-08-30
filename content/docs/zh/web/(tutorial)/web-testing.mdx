@@ -1,0 +1,71 @@
+---
+title: 证明 HTTP 后端
+description: 通过真实 Web Ingress 验证成功请求、设计内失败、Route 冲突与移除行为。
+---
+
+直接 Endpoint 测试证明 Handler 行为。本步骤通过真实 Listener 证明组装后的后端。
+
+## 1. 运行成功路径
+
+使用目标 Host 的仓库命令启动它，然后创建 Greeting：
+
+```sh
+curl -i \
+  -H 'content-type: application/json' \
+  -d '{"name":"Lenso"}' \
+  http://127.0.0.1:8080/greetings
+```
+
+要求得到 `201`、JSON Content Type 与稳定 ID。读取资源：
+
+```sh
+curl -i http://127.0.0.1:8080/greetings/greeting-1
+```
+
+要求得到 `200`，以及相同的 ID 与 Message。
+
+## 2. 运行失败矩阵
+
+```sh
+curl -i -H 'content-type: application/json' -d '{"name":""}' \
+  http://127.0.0.1:8080/greetings
+curl -i -H 'content-type: application/json' -d '{bad json' \
+  http://127.0.0.1:8080/greetings
+curl -i http://127.0.0.1:8080/greetings/missing
+curl -i -X DELETE http://127.0.0.1:8080/greetings/greeting-1
+```
+
+| 请求 | 预期 Owner | 预期结果 |
+| --- | --- | --- |
+| 空 `name` | Endpoint Plugin | 有意设计的 `400` 与 `invalid_name`。 |
+| 无效 JSON | Endpoint Extractor | Handler 运行前返回 `400`。 |
+| 未知 ID | Endpoint Plugin | 带 `greeting_not_found` 的 `404`。 |
+| 不支持的方法 | Ingress | 带 `Allow` 的 `405`。 |
+
+## 3. 证明 Readiness 与移除
+
+增加一个 Integration Case，让第二个 Endpoint Provider 声明相同 Method 与
+Path。Activation 必须在 Readiness 前失败，Route 顺序不能静默选择 Winner。
+
+然后移除或禁用 `company.greetings-http/api`，Resolve 新 Generation，并证明两条
+Route 都已消失。这证明后端行为属于可移除 Plugin，而不是隐藏的 Host 代码。
+
+Owner Repository 维护的真实 Socket 证据是：
+
+```sh
+cargo test --locked -p lenso-web-ingress \
+  --test http_ingress sdk_authored_endpoint_routes_through_the_real_ingress
+```
+
+## 4. 有意识地增加生产能力
+
+- 使用 [Web Capabilities](/docs/zh/web/web-capabilities) 处理 Middleware、Limit、
+  Cancellation、稳定 Transport Error 与 HTTP Egress。
+- Route 需要认证 Evidence 时增加 [Auth](/docs/zh/web/auth-plugin)，目标业务 Plugin
+  仍持有最终 Authorization。
+- 只有需要文档时才增加 OpenAPI，并绑定准确的 Endpoint 子集。
+- 只为准确 Allowed Origin 授予 Egress；它不提供 Ambient Network Authority、
+  Redirect、Cookie、Proxy 或自动 Retry。
+
+成功与失败矩阵通过真实 Socket，重复 Route 阻止 Readiness，并且移除会从下一
+Generation 删除 Route 时，后端才算完成。

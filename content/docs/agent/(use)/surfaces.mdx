@@ -1,0 +1,48 @@
+---
+title: Choose an Agent surface
+description: Use the TUI, headless CLI, Web surface, or chat channels without creating a second composition authority.
+---
+
+Surfaces own how a person or system exchanges Turns with the Agent. Product
+behavior still comes from the Host-selected Plugin inventory.
+
+| Surface | Best for | Interaction boundary |
+| --- | --- | --- |
+| **TUI** | Interactive local work | Supports reviewed commands, Skills, and bounded `ask_user` questions. |
+| **Headless CLI** | One-shot automation and tests | Returns immediately when interactive input is unavailable. |
+| **Web** | Embedding the Agent in another product | The embedding Host owns authorization and selected Plugins. |
+| **Channel** | Telegram or Discord entry points | Uses explicit chat/channel allowlists and environment-held tokens. |
+
+## TUI and headless
+
+```sh
+cargo run -p lenso-agent-tui
+cargo run -p lenso-agent-cli -- "Summarize this workspace README."
+```
+
+The TUI can pause a Turn for bounded questions. Headless and channel surfaces
+do not pretend to be interactive unless the embedding surface supplies a User
+Interaction Adapter.
+
+## Standalone Web surface
+
+```sh
+LENSO_AGENT_CONTROL_TOKEN=replace-with-a-local-control-token \
+  cargo run -p lenso-agent-web -- \
+  --listen 127.0.0.1:8788 \
+  --tool-policy ~/.lenso/agent/console-agent-tool-policy.json
+```
+
+The control route accepts the matching bearer token. Tool policy updates are
+revisioned, validated against the active Plan-bound catalog, persisted before
+activation, and affect only later admitted Turns.
+
+## Chat channels
+
+The channel distribution supports reviewed Telegram and Discord configuration.
+Installing the CLI does not install every surface; each executable links only
+the surface Plugin inventory it needs.
+
+Choose a surface after the user workflow is clear. Adding a Web shell or chat
+transport does not create another composition authority or move Plugin
+selection out of the Host.

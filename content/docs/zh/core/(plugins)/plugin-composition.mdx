@@ -1,0 +1,76 @@
+---
+title: 向 App 添加 Plugin
+description: 通过可见 Plugin Root 与 Host Catalog 组合一个 App。
+---
+
+受审查的 Authoring Authority 是可见 `plugins/` 目录。匹配的 Host Build 发布
+`.lenso/host-catalog.json`；解析器合并 Host Default 与 Plugin Root 差异，生成完整、
+不可变的 App Plan。
+
+使用这些命令前，先取得可执行 Host Build，以及从这个确定 Build 生成的
+`host-catalog.json`。它们定义产品实际支持的 linked Plugin、Slot、Execution
+Adapter 与默认值；通用 CLI 无法自行发明这些信息。
+
+## 1. 理解 App 文件
+
+```text
+my-app/
+├── .lenso/
+│   ├── host
+│   └── host-catalog.json
+└── plugins/
+    └── example.echo/
+        ├── plugin.lenso-plugin/
+        ├── default.toml
+        ├── default/
+        │   └── prompt.md
+        └── old.disabled
+```
+
+- `plugin.lenso-plugin/` 是验证后解出的 Bundle；
+- `<instance>.toml` 添加或配置 Keyed Instance；
+- `<instance>/` 保存该配置 Instance 的不可变 Resource；
+- `<instance>.disabled` 是禁用已有 Instance 的空 Marker。
+
+## 2. 通过 CLI 修改 App
+
+使用 CLI 保持这些不变量：
+
+```sh
+lenso app init --host ./host --host-catalog ./host-catalog.json --root ./my-app
+lenso plugins add ./example.echo/dist/example.echo-0.1.0.lenso-plugin --root ./my-app
+lenso plugins configure example.echo default --file ./echo.toml --root ./my-app
+lenso plugins disable example.echo default --root ./my-app
+lenso plugins enable example.echo default --root ./my-app
+lenso plugins remove example.echo default --root ./my-app
+lenso plugins remove example.echo --root ./my-app
+lenso app check --root ./my-app
+lenso app show --root ./my-app
+```
+
+每次修改都会先使用 Host Catalog 解析 Candidate Snapshot。无效配置、缺少 Required
+Slot、未知 Plugin 与歧义 Binding 会在文件提交前失败。运行中的产品 Host 另行暂存
+Generation、通过 Ready Gate、切换 Route、Drain 旧 Generation，并可在运行失败时回滚。
+
+向 `remove` 传入 Instance key 只会删除该 App-owned 差异；省略 key 会通过可恢复的
+`.lenso/trash/` 路径移除整个 Plugin 目录。
+
+`plugins list` 显示每个 Derived Plugin Instance 及其来源。`app show` 解释包含 Host
+Default 与 Capability Binding 在内的完整 Derived App。人工审查或合并后，
+`app check` 是最短的验证。
+
+## 3. 使用确定的 Catalog Release
+
+```sh
+lenso plugins search tool
+lenso plugins install example.tool --version 1.2.0
+lenso plugins update example.tool --version 1.3.0
+lenso plugins history example.tool
+lenso plugins rollback example.tool --version 1.2.0
+```
+
+不存在隐式“latest”。Catalog 与 Bundle Schema 是严格的；网络下载绑定 Digest；保留
+版本保持不可变。在真正存在可下载 Bundle 前，官方 Catalog 可以如实为空。
+
+Kernel 从不读取该目录，也不安装 Package；它只接收某个 App Generation 选择的
+Resolved Plan。

@@ -1,0 +1,94 @@
+---
+title: 连接 MCP Server
+description: 添加一个 stdio 或 Streamable HTTP MCP Instance，并向选定 Profile 暴露 Tool、Prompt 与 Resource。
+---
+
+MCP Server 是可选 Plugin Instance，不是特殊 Agent 模式。一个配置好的
+`lenso.agent.mcp-client` Instance 只拥有一个 Transport、Server Identity、Namespace、
+Lifecycle 与有边界的 Catalog。
+
+## 1. 选择一个 Transport
+
+本地 stdio Server 需要固定准确 Executable 与可见环境：
+
+```toml title="plugins/lenso.agent.mcp-client/filesystem.toml"
+transport = "stdio"
+program = "/absolute/path/to/node"
+arguments = ["/absolute/path/to/mcp-filesystem-server", "/workspace"]
+working_directory = "/workspace"
+environment_allowlist = ["PATH", "HOME"]
+protocol = "auto"
+tool_namespace = "filesystem"
+startup_timeout_ms = 5000
+request_timeout_ms = 30000
+allow_elicitation = true
+allow_sampling = false
+continuation_max_rounds = 4
+max_sampling_tokens = 4096
+```
+
+远程 Server 使用 MCP Streamable HTTP。Credential 只指定环境变量名称，不进入
+Plugin TOML：
+
+```toml title="plugins/lenso.agent.mcp-client/team.toml"
+transport = "streamable_http"
+endpoint = "https://mcp.example.test/mcp"
+authorization_environment = "MCP_AUTHORIZATION"
+protocol = "modern"
+tool_namespace = "team"
+startup_timeout_ms = 5000
+request_timeout_ms = 30000
+allow_elicitation = false
+allow_sampling = false
+continuation_max_rounds = 4
+max_sampling_tokens = 4096
+```
+
+远程只接纳 HTTPS 或明确的 Loopback HTTP。stdio Process 是清空环境后只注入
+Allowlist 的可信原生程序，不是 Sandbox。
+
+## 2. 只为需要的 Profile 选择 Instance
+
+```toml title="profiles/code.toml"
+description = "Code agent with filesystem MCP"
+instances = ["lenso.agent.mcp-client/filesystem"]
+```
+
+远程 Tool 名称经 lowercase snake_case 规范化后成为
+`mcp__filesystem__<tool_name>`。Catalog 冲突或无效 Schema 会阻止 Ready Gate。
+移除 Instance 会同时移除其 Process、Protocol State、Context Source 与投影 Tool。
+
+## 3. 分开 MCP 各类能力的权限
+
+| MCP 能力 | Harness Surface | 谁来选择 |
+| --- | --- | --- |
+| Tool | Tool Provider | Model，但受 Profile Policy 限制 |
+| Prompt | Context Source | 用户为单个 Task 选择 |
+| Resource | Context Source | Application 或用户附加 |
+| Elicitation | User Interaction Continuation | 仅启用后由用户决定 |
+| Sampling | Model Continuation | 默认禁用；启用时必须指定准确 Model |
+
+Prompt 不会成为 Session 级 System Instruction；Resource 也不会成为 Workspace
+文件权限。
+
+## 4. 附加 Prompt 与 Resource Context
+
+先列出 Context Source，再为一个 Turn 显式选择：
+
+```sh
+lenso-agent-cli contexts --profile code
+
+lenso-agent-cli \
+  --profile code \
+  --context-prompt filesystem/review \
+  --context-arguments '{"focus":"safety"}' \
+  --context-resource 'filesystem=file:///workspace/README.md' \
+  "Review this project."
+```
+
+TUI 会在 `/` 补全中显示无参数 Prompt 与文本 Resource。Version 1 会拒绝 Binary
+MCP 内容，而不是静默丢弃。Tool Catalog 变化会在下一个 Turn 可见；当前 Turn 继续
+使用已接纳的不可变 Catalog。
+
+扩大 Server 权限前，回到[Profile 与 Tool](/docs/zh/agent/profiles-and-tools)，确认
+究竟哪个 Profile 需要这个 Instance。

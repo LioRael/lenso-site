@@ -1,0 +1,62 @@
+---
+title: Run your first Agent Turn
+description: Authenticate, start the maintained TUI, and run one headless Turn before changing the Agent product.
+---
+
+This path runs the maintained Agent Harness from source. You will authenticate
+once, open the interactive terminal surface, and confirm the same App can run a
+non-interactive Turn.
+
+## 1. Get the Harness
+
+```sh
+git clone https://github.com/LioRael/lenso-agent-harness.git
+cd lenso-agent-harness
+```
+
+The current public entry point is the repository workspace. Keep public Cargo
+commands portable; local development caches and worktree paths are maintainer
+concerns.
+
+## 2. Authenticate once
+
+```sh
+cargo run -p lenso-agent-cli -- auth login
+```
+
+The default App uses the direct Codex Model with the `default` ChatGPT profile.
+Authentication is stored under the global Agent Home, not the project you are
+currently asking the Agent to inspect.
+
+## 3. Start the TUI
+
+```sh
+cargo run -p lenso-agent-tui
+```
+
+Submit a small read-only request such as:
+
+```text
+Summarize this workspace README.
+```
+
+You now have a complete Agent App: model access, a durable Session, a terminal
+surface, and the base Plugin selection owned by the Host.
+
+## 4. Prove the headless surface
+
+```sh
+cargo run -p lenso-agent-cli -- \
+  "Summarize this workspace README."
+```
+
+The TUI and headless command are two surfaces over the same Agent product. A
+surface does not own a second Plugin graph.
+
+## Next
+
+<CardGroup>
+  <Card title="Learn the mental model" href="/docs/agent/mental-model" description="Separate Agent Home, Workspace, Profile, Session, Turn, and Generation." />
+  <Card title="Choose a Profile" href="/docs/agent/profiles-and-tools" description="Install the coding experience and select the smallest Tool authority." />
+  <Card title="Add your first Tool" href="/docs/agent/first-app" description="Build, install, run, disable, and remove one Tool Plugin." />
+</CardGroup>

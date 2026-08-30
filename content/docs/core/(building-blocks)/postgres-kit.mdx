@@ -1,0 +1,114 @@
+---
+title: PostgreSQL Kit
+description: Give a stateful Plugin an explicit lifecycle for its own PostgreSQL schema.
+---
+
+`lenso-postgres-kit` is a lifecycle kit for one Plugin-owned PostgreSQL schema.
+It is not a shared State Plugin, generic SQL Capability, repository abstraction,
+or ORM. The owning Plugin still defines its data model, queries, transaction
+boundaries, backup and retention policy, and dedicated database role.
+
+## Define and set up the schema
+
+Keep SQL in the owning Plugin's `migrations/` directory. Rust retains only the
+explicit version, name, and file order:
+
+```text
+orders-module/
+├── migrations/
+│   ├── 001_create_orders.sql
+│   └── 002_add_order_status.sql
+└── src/lib.rs
+```
+
+```sql title="migrations/001_create_orders.sql"
+CREATE TABLE orders (
+    id bigint PRIMARY KEY,
+    total_cents bigint NOT NULL
+);
+```
+
+```rust
+use lenso_postgres_kit::{
+    Migration, OwnedPostgres, SchemaOperator, SchemaPlan, sql_migrations,
+};
+
+const MIGRATIONS: &[Migration] = sql_migrations![
+    (1, "create-orders", "migrations/001_create_orders.sql"),
+    (2, "add-order-status", "migrations/002_add_order_status.sql"),
+];
+
+async fn install(database_url: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let plan = SchemaPlan::new("orders_module", MIGRATIONS)?;
+    SchemaOperator::connect(database_url, plan.clone()).await?.setup().await?;
+    Ok(())
+}
+
+async fn prepare(database_url: &str) -> Result<OwnedPostgres, Box<dyn std::error::Error>> {
+    let plan = SchemaPlan::new("orders_module", MIGRATIONS)?;
+    // Runtime preparation verifies the exact schema and never migrates it.
+    Ok(OwnedPostgres::prepare(database_url, plan).await?)
+}
+```
+
+Paths are relative to the owning crate's `Cargo.toml`. `sql_migrations!` uses
+`include_str!` to embed SQL at compile time: a missing file is a compile error,
+and an edit triggers recompilation; no directory is scanned at runtime. Versions
+and names stay explicit, preserving deterministic order, contiguous-version
+validation, and checksum drift detection.
+
+Run `install` as an explicit installation or deployment operation, never from
+Plugin `prepare`. After `OwnedPostgres::prepare`, use `postgres.pool()` with normal SQLx queries
+and transactions. The pool selects the owned schema as its `search_path`.
+
+## Upgrade deliberately
+
+Append a new SQL file and declaration without editing an applied file. The new Plugin generation first
+returns `PostgresKitError::UpgradeRequired`; stop the owning Plugin, run the
+operator action, then prepare the new generation:
+
+```rust
+let plan = SchemaPlan::new("orders_module", MIGRATIONS)?;
+let outcome = SchemaOperator::connect(database_url, plan)
+    .await?
+    .upgrade()
+    .await?;
+println!("{outcome:?}");
+```
+
+Setup and upgrade use an advisory lock and one atomic migration transaction.
+The private ledger records version, name, and checksum.
+
+| Failure | Meaning |
+| --- | --- |
+| `SetupRequired` | The managed schema has not been installed. |
+| `UpgradeRequired` | The linked Plugin has pending migrations. |
+| `UnmanagedSchema` | A schema exists without the kit's ledger; it is never adopted. |
+| `HistoryDiverged` | Applied name, version, or SQL checksum changed. |
+| `SchemaAhead` | The database is newer than this Plugin generation. |
+| `OwnershipMismatch` | The current database role does not own the schema. |
+
+`setup` is idempotent: it returns `Created` once and `AlreadyCurrent` after
+that. Failures roll back the schema and ledger together.
+
+## Enforce isolation in PostgreSQL
+
+`search_path` is query convenience, not a security boundary. Give each Plugin
+a dedicated non-superuser role that owns only its schema, and restrict database
+grants accordingly. Sharing one physical cluster does not authorize direct
+access to another Plugin's tables.
+
+Cross-Plugin workflows use Capability calls and application-level coordination,
+not shared SQL transactions. Resolve a database URL through the
+[Secrets Plugin](/docs/core/secrets-plugin), but never place the URL itself in the
+Resolved App Plan.
+
+## Verify the kit
+
+```sh
+cargo fmt --all -- --check
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked --all-features
+LENSO_POSTGRES_TEST_URL=postgres://... \
+  cargo test --locked --test postgres_acceptance -- --ignored
+```

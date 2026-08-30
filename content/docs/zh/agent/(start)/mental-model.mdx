@@ -1,0 +1,48 @@
+---
+title: Agent 心智模型
+description: 区分全局 Agent 状态、当前 Workspace、Session 选择与不可变 Runtime Generation。
+---
+
+Agent 包含两个位置与四个运行状态单元。把它们分清，可以避免大多数配置与 Session
+方面的意外。
+
+## 两个位置
+
+```text
+Agent Home                         Workspace
+~/.lenso/agent/                   Agent 启动时所在的目录
+├── plugins/      行为与配置       源码与项目上下文
+├── profiles/     Session 选择     AGENTS.md
+├── runtime/      Host 状态
+├── sessions.sqlite3
+└── memory.sqlite3
+```
+
+- **Agent Home** 是全局持久产品状态。切换仓库不会改变已安装 Plugin、Profile、
+  Session、Memory 或 Runtime Lineage。
+- **Workspace** 是 Workspace、Process、Git 与 Suggestion Tool 可以看到的当前项目目录。
+
+需要一个隔离 Agent 时，把 `LENSO_AGENT_HOME` 设置为另一个绝对路径。
+
+## 四个运行单元
+
+| 单元 | 决定什么 |
+| --- | --- |
+| **Profile** | 为一个 Session 选择精确的已配置 Plugin Instance。 |
+| **Session** | 持久的对话身份与历史。 |
+| **Turn** | 一次用户请求及其有边界的 Model/Tool 工作。 |
+| **Generation** | 已接纳 Turn 使用的不可变 Resolved App。 |
+
+Profile 只包含选择，不会复制 Plugin 配置。Turn 固定在启动时的 Generation。Plugin
+状态改变并通过 Readiness 后，后续 Turn 可以使用替代版本，而不会重写进行中的 Turn。
+
+## Tool 是 Plugin 提供的行为
+
+Tool 是 Plugin 通过 Agent Tool Capability 提供给模型的可见行为。Profile 与单次
+Turn Flag 会缩小可用 Tool 集合；它们不会把任意可执行文件或整个 Host 变成 Tool。
+
+<CardGroup>
+  <Card title="Profile 与 Tool" href="/docs/zh/agent/profiles-and-tools" description="在 Coding、隔离 Coding 与只读规划权限之间选择。" />
+  <Card title="Agent Surface" href="/docs/zh/agent/surfaces" description="在不改变产品所有权的前提下选择 TUI、Headless、Web 或聊天 Channel。" />
+  <Card title="核心框架心智模型" href="/docs/zh/core/mental-model" description="理解 Plugin Root 与 Host Catalog 如何解析为一个 Generation。" />
+</CardGroup>

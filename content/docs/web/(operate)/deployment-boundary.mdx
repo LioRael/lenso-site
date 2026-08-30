@@ -1,0 +1,90 @@
+---
+title: Prepare a Web Host for deployment
+description: Configure the listener and limits, then separate Lenso Ingress guarantees from Host-owned TLS, packaging, and topology.
+---
+
+Lenso Web provides a production-oriented HTTP boundary, not a universal deploy
+command. The application Host still owns the executable or container, TLS
+termination, process manager, environment, rollout, and network topology.
+
+## Start from a private listener
+
+The default Ingress address is loopback with an ephemeral port, which is useful
+for tests and embedding. Choose a fixed address explicitly for a deployed Host:
+
+```toml title="plugins/lenso.web-ingress/web.toml"
+bind_address = "127.0.0.1:8080"
+max_request_body_bytes = 1048576
+max_request_head_bytes = 16384
+max_concurrent_requests = 128
+request_timeout_millis = 30000
+```
+
+Use `127.0.0.1` behind a same-host reverse proxy. Bind `0.0.0.0` only when the
+Host's network policy intentionally exposes the listener. A public bind is
+valid configuration; it is not proof that firewall, tenancy, or TLS policy is
+correct.
+
+## Put TLS and topology in the Host environment
+
+The maintained Ingress serves HTTP/1.1 and cleartext HTTP/2 prior knowledge. It
+does not currently terminate TLS. A reverse proxy, load balancer, service mesh,
+or embedding Host should own certificates and the external HTTPS listener.
+
+```text
+Internet -> HTTPS proxy/load balancer -> cleartext private Ingress -> Endpoint Plugins
+```
+
+Deployment policy also decides replicas and external load balancing. In one
+multi-lane App, Ingress coordinates one bound socket and dispatches only to
+ready replicas; do not make every lane bind the same port independently.
+
+## Know what readiness proves
+
+Before the App Ready Gate opens, Ingress gathers the immutable route tables
+from its explicitly bound Endpoint providers. Duplicate exact routes and
+semantic path-shape collisions fail startup. Configuration limits are also
+validated before serving.
+
+Run the composition checks against the exact Plugin Root that will ship:
+
+```sh
+lenso plugins list --root ./my-app
+lenso app show --root ./my-app
+lenso app check --root ./my-app
+```
+
+These commands prove composition, not remote reachability. Lenso Web does not
+add a universal `/health` endpoint; the product Host must expose the health and
+readiness contract expected by its platform.
+
+## Preserve shutdown and request bounds
+
+Ingress owns global concurrency admission, request body/head limits, one
+Endpoint deadline, disconnect cancellation, and cooperative App shutdown. A
+request that exceeds its configured limit fails at the transport boundary
+instead of reaching business code.
+
+Your process manager should send the Host's supported graceful-shutdown signal
+and allow enough time for its bounded request deadline. Do not kill and restart
+the listener as a route-registration mechanism: route changes enter through a
+new ready Generation.
+
+## Deployment checklist
+
+- The shipped Host Catalog contains only the intended Endpoint providers and
+  bindings.
+- `lenso app check` passes with production Plugin configuration.
+- Public exposure, TLS, forwarded-header policy, and firewall rules are owned
+  and tested by the deployment environment.
+- Auth and Secrets are explicit bindings; no credential is embedded in Ingress
+  configuration.
+- Body, head, concurrency, and timeout limits match the real workload.
+- Real-socket tests cover success, overload, timeout, cancellation, route
+  collision, and graceful shutdown.
+- The rollout platform has a product-owned health/readiness endpoint and a
+  rollback path.
+
+There is currently no framework-owned Dockerfile, Kubernetes chart, or generic
+`lenso deploy` workflow. Add those artifacts in the product repository where
+the actual Host, registry, secrets, and topology are known.

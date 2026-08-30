@@ -1,0 +1,127 @@
+---
+title: Core framework
+description: Create replaceable product behavior, then learn how Plugins, Capabilities, Hosts, Plans, and the portable Kernel fit together.
+---
+
+## Start with one result
+
+<CardGroup>
+  <Card title="Create your first Plugin" href="/docs/core/quickstart" description="Install the CLI, run one typed Plugin, and verify its distributable Bundle." />
+  <Card title="Learn the mental model" href="/docs/core/mental-model" description="Understand Apps, Plugins, Capabilities, Hosts, Plans, and the Kernel through one example." />
+  <Card title="Change your first App" href="/docs/core/first-app-change" description="Initialize one Host workspace, add the Bundle, inspect the derived App, run it, and remove the change." />
+</CardGroup>
+
+## Build products from replaceable Plugins
+
+Lenso is a local-first, language-independent runtime for products whose
+behavior must be added, replaced, and removed without turning composition into
+hidden framework magic.
+
+Define product roles as typed Capabilities, implement them as Plugins, and let
+each Host resolve one exact application before it boots. Humans and coding
+agents work against the same inspectable Plugin Root, while the runtime keeps
+lifecycle, failure, and execution choices explicit.
+
+Lenso is designed for long-lived business systems, developer tools,
+automation products, and Agent applications. It is not a Web framework or a
+distributed control plane.
+
+<CardGroup>
+  <Card title="Create your first Plugin" href="/docs/core/quickstart" description="Install the CLI, run one typed Plugin, and verify its distributable Bundle." />
+  <Card title="See what is implemented" href="/docs/core/status-and-scope" description="Review stable, early-access, and deliberately deferred capabilities." />
+</CardGroup>
+
+## Why Lenso exists
+
+In a long-lived product, a feature rarely stays in one file. Its configuration,
+state, permissions, background work, and failure policy spread across the
+application. Removing or replacing it then becomes risky, and coding agents
+have to infer boundaries that the system never recorded.
+
+Lenso makes those product boundaries executable:
+
+- **Plugins own behavior.** Removing a Plugin removes its product complexity.
+- **Capabilities define collaboration.** Consumers depend on typed roles, not
+  a provider's private code or transport.
+- **The Plugin Root shows intent.** An App owner changes visible Plugin
+  selections and configuration instead of hand-authoring a runtime graph.
+- **Resolution fails before boot.** Incompatible or ambiguous selections do
+  not become partially running applications.
+
+Lenso separates those concerns:
+
+- **Composition** selects Plugins, binds Capabilities, and produces the Plan.
+- **The Kernel** validates and executes the Plan with portable lifecycle rules.
+- **Runtime Drivers** provide scheduling, clocks, cancellation, and shutdown.
+- **Execution Adapters** connect the Kernel to concrete Plugin implementations.
+- **Plugins** own product behavior behind typed Capability Interfaces.
+
+This separation makes application structure inspectable before execution and
+keeps host-specific mechanisms out of the portable core.
+
+## The runtime model
+
+```mermaid
+flowchart TD
+  C[App Composition] --> A[Authoring and package tools]
+  A --> P[Resolved App Plan]
+  P --> K[Portable Kernel]
+  D[Runtime Driver] --> K
+  K --> E[Execution Adapters]
+  E --> M[Plugin Instances]
+  M --> Q[Capabilities: request, stream, event]
+```
+
+The Plan is the complete execution input. It records Plugin identities,
+Capability bindings, execution classes, connections, policies, and the data
+needed to admit the application. Once resolved, the Plan is immutable; the
+Kernel does not discover or rewrite the graph while booting.
+
+The Kernel owns graph validation, staged lifecycle, readiness, invocation,
+cancellation, supervision, and bounded diagnostics. It does **not** own network,
+filesystem, database, process, Auth, telemetry, Console, or business semantics.
+
+## Core concepts
+
+| Concept | Responsibility |
+| --- | --- |
+| **App Composition** | Declares the application and selects compatible implementations. |
+| **Resolved App Plan** | Provides the canonical, immutable input accepted by the runtime. |
+| **Capability** | Defines a versioned Interface with request, stream, or event Operations. |
+| **Plugin** | Implements product behavior and declares the Capabilities it provides or requires. |
+| **Kernel** | Owns portable admission, lifecycle, invocation, cancellation, and diagnostics. |
+| **Runtime Driver** | Supplies host scheduling, time, task joining, cancellation, and shutdown. |
+| **Execution Adapter** | Runs a Plugin implementation in a concrete environment or transport. |
+
+## Portable does not mean environment-free
+
+The same Kernel semantics can be compiled for native, browser JavaScript, and
+WASIp2 host profiles. Each profile still needs a Driver and compatible
+Execution Adapters. Portability means the Kernel does not absorb those host
+mechanisms; it does not imply that every Plugin runs unchanged in every
+environment.
+
+## Current implementation boundary
+
+- `lenso-app-plan` owns the serializable execution input.
+- `lenso-kernel` owns portable runtime semantics and deterministic conformance.
+- `lenso-runtime-conformance` owns product-neutral runtime proofs.
+- Drivers, Execution Adapters, protocols, optional Plugins, authoring, and
+  examples live in separate owner repositories.
+- Runtime discovery, hot graph mutation, distributed placement, automatic
+  replicas, and an independent Console product are not current runtime promises.
+
+See [Status and scope](/docs/core/status-and-scope) for the precise implemented,
+early-access, and deliberately deferred boundaries.
+
+## Where to go next
+
+<CardGroup>
+  <Card title="Choose a Plugin path" href="/docs/core/choose-plugin-path" description="Compare portable Rust, linked Rust, and Bun without confusing authoring paths with interaction shapes." />
+  <Card title="Add Plugins to an App" href="/docs/core/plugin-composition" description="Change one visible Plugin Root and inspect the exact resolved result." />
+  <Card title="Author a Capability" href="/docs/core/capability-authoring" description="Define Request, Stream, and Event contracts and generate each owned language projection." />
+  <Card title="Understand the runtime" href="/docs/core/architecture" description="Study the ownership boundaries between Composition, Kernel, Driver, and Adapter." />
+  <Card title="Inspect a failing App" href="/docs/core/inspect-an-app" description="Use doctor, list, show, and check to locate setup, composition, and runtime failures." />
+  <Card title="Build a Web backend" href="/docs/web" description="Follow the separate Web path from Endpoint Plugin to a real socket." />
+  <Card title="Build an Agent product" href="/docs/agent" description="Run the maintained Agent, choose a Profile, and add one Tool." />
+</CardGroup>

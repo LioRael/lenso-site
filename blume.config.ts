@@ -1,5 +1,42 @@
 import { defineConfig } from "blume";
 
+const movedDocumentRoutes = [
+  ["/quickstart", "/core/quickstart"],
+  ["/agent-skills", "/core/agent-skills"],
+  ["/plugins-and-capabilities", "/core/plugins-and-capabilities"],
+  ["/choose-plugin-path", "/core/choose-plugin-path"],
+  ["/plugin-authoring", "/core/plugin-authoring"],
+  ["/linked-rust-plugin", "/core/linked-rust-plugin"],
+  ["/bun-plugin-authoring", "/core/bun-plugin-authoring"],
+  ["/plugin-configuration", "/core/plugin-configuration"],
+  ["/plugin-composition", "/core/plugin-composition"],
+  ["/capability-authoring", "/core/capability-authoring"],
+  ["/architecture", "/core/architecture"],
+  ["/project-and-plan", "/core/project-and-plan"],
+  ["/runtime-lifecycle", "/core/runtime-lifecycle"],
+  ["/execution-adapters", "/core/execution-adapters"],
+  ["/secrets-plugin", "/core/secrets-plugin"],
+  ["/postgres-kit", "/core/postgres-kit"],
+  ["/web-and-observability", "/core/web-and-observability"],
+  ["/repository-map", "/core/repository-map"],
+  ["/status-and-scope", "/core/status-and-scope"],
+  ["/architecture-decisions", "/core/architecture-decisions"],
+  ["/web-backend", "/web"],
+  ["/web-endpoint-plugin", "/web/web-endpoint-plugin"],
+  ["/web-host-integration", "/web/web-host-integration"],
+  ["/web-testing", "/web/web-testing"],
+  ["/web-capabilities", "/web/web-capabilities"],
+  ["/auth-plugin", "/web/auth-plugin"],
+  ["/agent-development", "/agent"],
+  ["/first-app", "/agent/first-app"],
+  ["/agent-configuration", "/agent/agent-configuration"],
+] as const;
+
+const redirects = movedDocumentRoutes.flatMap(([from, to]) => [
+  { from, to },
+  { from: `/zh${from}`, to: `/zh${to}` },
+]);
+
 export default defineConfig({
   title: "Lenso",
   description:
@@ -29,10 +66,16 @@ export default defineConfig({
     ],
   },
   navigation: {
+    tabs: [
+      { label: { en: "Framework", zh: "核心框架" }, path: "/core" },
+      { label: { en: "Web", zh: "Web" }, path: "/web" },
+      { label: { en: "Agent", zh: "Agent" }, path: "/agent" },
+    ],
     sidebar: {
       display: "group",
     },
   },
+  redirects,
   search: {
     provider: "orama",
   },

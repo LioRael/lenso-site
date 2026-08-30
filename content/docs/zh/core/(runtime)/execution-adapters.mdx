@@ -1,0 +1,35 @@
+---
+title: Driver 与 Adapter
+description: 实现宿主 Profile，同时不把宿主或传输策略引入可移植 Kernel。
+---
+
+## Runtime Driver 检查表
+
+真实 Driver 提供调度、wakeup、单调 timer、join、协作式取消与关闭转换。只通过
+目标编译不是运行时证明；每个 Profile 都需要 scheduler、timer、readiness、
+cancellation 与 shutdown smoke evidence。
+
+## Execution Adapter 检查表
+
+Adapter 持有：
+
+- 提供给 Plan 校验的 execution-class 标识；
+- Plugin factory 或 process generation；
+- 强类型 endpoint 与 Adapter 特定 dispatch；
+- framing、isolation 和资源所有权；
+- 失败分类和 restart cleanup；
+- 对已发布 Runtime Interface 的 conformance。
+
+## 当前所有者
+
+| 实现 | 仓库 |
+| --- | --- |
+| Tokio Runner、Native Adapter、Browser 与 WASIp2 Driver | `LioRael/lenso-runtime-rust` |
+| Bun 子进程 Adapter 与跨运行时 fixtures | `LioRael/lenso-bun-adapter` |
+| Descriptor codegen 与可移植 value conformance | `LioRael/lenso-protocols` |
+
+Bun Adapter 在正式路径使用 JSON-RPC over HTTP，并实现 Request、双向 Stream
+与易失性 Event Dispatch。这些是 Adapter / Wire 选择，不是 Capability 或 Kernel
+语义。Plugin Author 使用公开的 `@lenso/bun` Server 与
+`lenso plugin dev`，不自行实现 Handshake 或 Process Protocol。完整
+Scaffold 与开发路径见[编写 Bun Plugin](/docs/zh/core/bun-plugin-authoring)。

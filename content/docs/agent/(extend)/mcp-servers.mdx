@@ -1,0 +1,98 @@
+---
+title: Connect an MCP server
+description: Add one stdio or Streamable HTTP MCP Instance and expose its Tools, Prompts, and Resources to selected Profiles.
+---
+
+An MCP server is an opt-in Plugin Instance, not a special Agent mode. One
+configured `lenso.agent.mcp-client` Instance owns one transport, server
+identity, namespace, lifecycle, and bounded catalog.
+
+## 1. Choose one transport
+
+For a local stdio server, pin the exact executable and its visible environment:
+
+```toml title="plugins/lenso.agent.mcp-client/filesystem.toml"
+transport = "stdio"
+program = "/absolute/path/to/node"
+arguments = ["/absolute/path/to/mcp-filesystem-server", "/workspace"]
+working_directory = "/workspace"
+environment_allowlist = ["PATH", "HOME"]
+protocol = "auto"
+tool_namespace = "filesystem"
+startup_timeout_ms = 5000
+request_timeout_ms = 30000
+allow_elicitation = true
+allow_sampling = false
+continuation_max_rounds = 4
+max_sampling_tokens = 4096
+```
+
+For a remote server, use MCP Streamable HTTP. The credential names an
+environment variable and does not enter Plugin TOML:
+
+```toml title="plugins/lenso.agent.mcp-client/team.toml"
+transport = "streamable_http"
+endpoint = "https://mcp.example.test/mcp"
+authorization_environment = "MCP_AUTHORIZATION"
+protocol = "modern"
+tool_namespace = "team"
+startup_timeout_ms = 5000
+request_timeout_ms = 30000
+allow_elicitation = false
+allow_sampling = false
+continuation_max_rounds = 4
+max_sampling_tokens = 4096
+```
+
+Only HTTPS and explicit loopback HTTP endpoints are admitted. Stdio processes
+are trusted native programs with a cleared environment plus the allowlist;
+they are not a sandbox.
+
+## 2. Select the Instance for one Profile
+
+```toml title="profiles/code.toml"
+description = "Code agent with filesystem MCP"
+instances = ["lenso.agent.mcp-client/filesystem"]
+```
+
+Remote Tool names become `mcp__filesystem__<tool_name>` after lowercase
+snake-case normalization. Catalog collisions or invalid Schemas fail the Ready
+Gate. Removing the Instance removes its process, protocol state, Context
+Sources, and projected Tools.
+
+## 3. Keep MCP feature authority separate
+
+| MCP feature | Harness surface | Who selects it |
+| --- | --- | --- |
+| Tool | Tool Provider | Model, within Profile policy |
+| Prompt | Context Source | User for one task |
+| Resource | Context Source | Application/user attachment |
+| Elicitation | User Interaction continuation | User, only when enabled |
+| Sampling | Model continuation | Disabled by default; exact model required when enabled |
+
+Prompts do not become Session-wide System Instructions, and Resources do not
+become Workspace file authority.
+
+## 4. Attach Prompt and Resource context
+
+List available Context Sources, then select them explicitly for one Turn:
+
+```sh
+lenso-agent-cli contexts --profile code
+
+lenso-agent-cli \
+  --profile code \
+  --context-prompt filesystem/review \
+  --context-arguments '{"focus":"safety"}' \
+  --context-resource 'filesystem=file:///workspace/README.md' \
+  "Review this project."
+```
+
+The TUI exposes no-argument Prompts and text Resources in `/` completion.
+Version 1 rejects binary MCP content instead of silently dropping it. Tool
+catalog changes appear on the next Turn; the current Turn keeps its immutable
+admitted catalog.
+
+Before granting the server more authority, return to
+[Profiles and Tools](/docs/agent/profiles-and-tools) and confirm which Profile
+actually needs the Instance.

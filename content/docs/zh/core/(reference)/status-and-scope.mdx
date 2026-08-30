@@ -1,0 +1,57 @@
+---
+title: 实现状态
+description: 基于当前源码列出现在能运行的内容、需要手动集成的内容，以及尚未实现的内容。
+---
+
+本页把运行时行为、Package 状态与开发体验分开。“源码已实现”不代表每一种
+Interaction 或完整生产 App 都已有高层 Starter。
+
+## 核心与 Authoring
+
+| 领域 | 现在可用 | 当前限制 |
+| --- | --- | --- |
+| App Plan | 规范校验、显式 Plugin / Binding / Execution Class / Lane / Admission Policy | 没有 Runtime Discovery 或 Graph Mutation |
+| Kernel | Request、Stream、Event、Lifecycle、Deadline、取消、诊断与确定性 Conformance | 不持有 HTTP、数据库、Auth、进程或产品策略 |
+| 契约工具 | JSON Descriptor 独立生成 Rust 或 TypeScript、漂移检查、兼容性 Lint、可移植值 Runtime | 各语言生成物由分发它的 Package 提交 |
+| `lenso` Authoring | `plugin new|check|dev|pack`、Bun / Rust Scaffold、Watch Mode、App Bootstrap、严格 Plugin Root 修改、精确 Catalog Install / Update / History / Rollback 与 `doctor` | 官方 Catalog 在真实可下载 Release 发布前保持为空 |
+
+## 运行时实现
+
+| 路径 | Request | Stream | Event | 当前运行方式 |
+| --- | --- | --- | --- | --- |
+| 原生 Rust | 已实现 | 已实现 | 已实现 | App Binary 统一收集生成的 Linked Factory |
+| Bun / TypeScript | 公开类型化 SDK 与 CLI Scaffold | 仅 Adapter Conformance | 仅 Adapter Conformance | Agent Host 注册 `lenso.bun-process@1`；正式 Wire 是 Loopback HTTP 上的 JSON-RPC |
+| Browser JavaScript Driver | 有 Scheduler / Lifecycle Smoke Evidence | 使用 Kernel 语义 | 使用 Kernel 语义 | Host Profile；不提供敌对代码隔离 |
+| WASIp2 Driver | 有 Scheduler / Lifecycle Smoke Evidence | 使用 Kernel 语义 | 使用 Kernel 语义 | Host Profile；Component Packaging 还不是 Starter Workflow |
+
+Bun 路径不是实验性后备方案。它已有有界 Frame 与 Queue、Handshake / Session
+检查、Deadline 与取消传递、类型化 Domain / Runtime Outcome、进程清理和跨运行时
+Fixture。公开的 `@lenso/bun` Package 持有 Plugin 侧 Server，CLI 可以生成
+完整类型化项目并启动 Fresh-plan 开发循环。0.1 版本开放 Request Provider；虽然
+底层 Adapter 已有 Stream 与 Event Conformance，公开 SDK 仍对两者 Fail-closed。
+
+## 可选 Capability 与 Plugin
+
+| 组件 | 已实现源码 | Package / 使用边界 |
+| --- | --- | --- |
+| Auth | `lenso.auth@1`、Rust Assertion SDK、PostgreSQL API Token Provider、撤销 | API Token Plugin Crate 暂时保持私有；缺少 Bun 公开验证器 Helper |
+| Secrets | `lenso.secrets@1` 与 Allowlist Environment Provider | Registry 发布暂停；不含生产 Cloud Provider |
+| 后端 Web | HTTP Endpoint / Ingress 与 HTTP Client / Egress Capability 和 Plugin；opt-in OpenAPI 3.1 文档 Plugin | 维护中的 provider 是 linked Rust Plugin；OpenAPI 必须显式选择 Instance 与 binding，且不包含 UI |
+| PostgreSQL Kit | 自有 schema setup / upgrade、漂移检测与已验证 SQLx pool | 基础设施 kit，不是共享 State Plugin 或跨 Plugin SQL 边界 |
+| OpenTelemetry | 可移除的 Native Plugin，以及 Rust / Bun Trace Propagation Fixture | Tracing 是可选 Composition，不是 Kernel 行为 |
+| Web UI | 显式 Shell、Browser Adapter 与 UI Contribution Role，已有 Target-owned Composition Evidence | 不是通用远程代码 Sandbox，也不是独立 Console 产品 |
+
+[Auth Plugin](/docs/zh/web/auth-plugin)列出了准确的已实现 Provider 与缺失项；
+[编写 Bun Plugin](/docs/zh/core/bun-plugin-authoring)给出当前可执行路径，不需要从仓库名
+猜测支持程度。[Web Capabilities](/docs/zh/web/web-capabilities)、
+[Secrets Plugin](/docs/zh/core/secrets-plugin)与
+[PostgreSQL Kit](/docs/zh/core/postgres-kit)给出具体 contract 与 lifecycle 边界。
+
+## 尚未实现
+
+Lenso 当前不提供任意 Runtime Discovery、Distributed Placement、Automatic
+Replica、敌对浏览器代码隔离、
+独立 Console 产品、OAuth / Password Auth Provider 或生产 Cloud Secrets Provider。
+
+保留的术语与架构接缝不是功能证据。只有 Owner Repository 中存在行为与验证路径，
+才会进入上面的已实现表格。

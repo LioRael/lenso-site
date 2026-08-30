@@ -1,0 +1,91 @@
+---
+title: Sessions, context, and Memory
+description: Resume durable Sessions, understand compaction, and keep cross-Session Memory separate from conversation history.
+---
+
+Three features can look like “the Agent remembers,” but they solve different
+problems:
+
+| Feature | Scope | Durable source of truth |
+| --- | --- | --- |
+| Session | One conversation across many Turns | Append-only Session events |
+| Context compaction | Bounded model input for a long Session | A checkpoint derived from the Session; the original log stays intact |
+| Memory | Reusable context across Sessions | A separately configured Memory Plugin |
+
+Do not use Memory as a replacement for Session history, and do not treat a
+compaction summary as the canonical transcript.
+
+## Resume a Session
+
+The default Session Adapter writes transactional history to
+`~/.lenso/agent/sessions.sqlite3`. Start or resume through the same Profile:
+
+```sh
+lenso-agent --profile code
+lenso-agent --profile code --session <session-id>
+lenso-agent-cli --profile code --session <session-id> \
+  "Continue the review."
+```
+
+Inspect which immutable Generation admitted its Turns:
+
+```sh
+lenso-agent-cli sessions provenance --session <session-id>
+```
+
+Session storage fails closed. If the selected durable store is unavailable,
+the Host does not silently continue with an in-memory transcript.
+
+## Choose another Session Adapter
+
+SQLite is the default. Use the file Adapter when transparent files or a small
+fixture are more useful than concurrent transactional storage:
+
+```toml title="plugins/lenso.agent.session.file/local.toml"
+directory = "/absolute/path/to/.lenso/agent/sessions"
+```
+
+```toml title="profiles/file-sessions.toml"
+description = "File-backed sessions"
+instances = ["lenso.agent.session.file/local"]
+```
+
+Migration is an explicit operator action through `sessions export`,
+`sessions import`, or `sessions migrate`; selecting another Adapter does not
+implicitly copy or overwrite histories.
+
+## Keep long Sessions usable
+
+Context compaction reduces model input without deleting the canonical Session
+log. The bundled offline Adapter keeps a bounded extractive summary and recent
+Turns:
+
+```toml title="plugins/lenso.agent.context-compaction/context-compactor.toml"
+max_input_characters = 1048576
+max_summary_characters = 8192
+retain_recent_turns = 8
+```
+
+The Agent Loop decides when to compact and records the checkpoint as durable
+Session facts. A replacement compactor changes the projection algorithm, not
+Session ownership.
+
+## Add cross-Session Memory deliberately
+
+The default local Memory Adapter uses SQLite and FTS5. Give each experience a
+clear scope instead of sharing every recalled item globally:
+
+```toml title="plugins/lenso.agent.memory.sqlite/memory.toml"
+database = "/absolute/path/to/.lenso/agent/code-memory.sqlite3"
+scope = "code"
+max_records = 10000
+max_item_characters = 16384
+max_recall_items = 8
+max_recall_characters = 16384
+```
+
+Recalled Memory is lower-authority request context. It cannot rewrite the
+Session-wide System Instruction or grant new Tool authority.
+
+Continue with [Choose Profiles and Tool authority](/docs/agent/profiles-and-tools)
+to isolate storage and Memory Instances per experience.

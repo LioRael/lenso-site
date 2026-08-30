@@ -9,35 +9,50 @@ const failures = [];
 
 const requiredCurrentPages = [
   "index.mdx",
-  "(start)/agent-skills.mdx",
-  "(start)/quickstart.mdx",
-  "(agent)/agent-development.mdx",
-  "(agent)/first-app.mdx",
-  "(agent)/agent-configuration.mdx",
-  "(web)/web-backend.mdx",
-  "(web)/web-endpoint-plugin.mdx",
-  "(web)/web-host-integration.mdx",
-  "(web)/web-testing.mdx",
-  "(web)/web-capabilities.mdx",
-  "(web)/auth-plugin.mdx",
-  "(concepts)/architecture.mdx",
-  "(concepts)/project-and-plan.mdx",
-  "(concepts)/runtime-lifecycle.mdx",
-  "(plugins)/plugins-and-capabilities.mdx",
-  "(plugins)/choose-plugin-path.mdx",
-  "(plugins)/plugin-authoring.mdx",
-  "(plugins)/linked-rust-plugin.mdx",
-  "(plugins)/bun-plugin-authoring.mdx",
-  "(plugins)/plugin-configuration.mdx",
-  "(plugins)/plugin-composition.mdx",
-  "(guides)/capability-authoring.mdx",
-  "(guides)/secrets-plugin.mdx",
-  "(operations)/postgres-kit.mdx",
-  "(operations)/execution-adapters.mdx",
-  "(operations)/web-and-observability.mdx",
-  "(reference)/repository-map.mdx",
-  "(reference)/status-and-scope.mdx",
-  "(reference)/architecture-decisions.mdx",
+  "core/index.mdx",
+  "core/(start)/mental-model.mdx",
+  "core/(start)/first-app-change.mdx",
+  "core/(operate)/inspect-an-app.mdx",
+  "core/(contribute)/agent-skills.mdx",
+  "core/(start)/quickstart.mdx",
+  "agent/index.mdx",
+  "agent/(start)/first-turn.mdx",
+  "agent/(start)/mental-model.mdx",
+  "agent/(use)/profiles-and-tools.mdx",
+  "agent/(use)/sessions-and-memory.mdx",
+  "agent/(use)/subagents.mdx",
+  "agent/(use)/surfaces.mdx",
+  "agent/(extend)/first-app.mdx",
+  "agent/(extend)/mcp-servers.mdx",
+  "agent/(configure)/agent-configuration.mdx",
+  "web/index.mdx",
+  "web/(understand)/architecture.mdx",
+  "web/(tutorial)/web-endpoint-plugin.mdx",
+  "web/(tutorial)/web-host-integration.mdx",
+  "web/(tutorial)/web-testing.mdx",
+  "web/(guides)/protect-an-endpoint.mdx",
+  "web/(guides)/call-upstream-api.mdx",
+  "web/(guides)/web-capabilities.mdx",
+  "web/(guides)/auth-plugin.mdx",
+  "web/(operate)/deployment-boundary.mdx",
+  "core/(runtime)/architecture.mdx",
+  "core/(runtime)/project-and-plan.mdx",
+  "core/(runtime)/runtime-lifecycle.mdx",
+  "core/(plugins)/plugins-and-capabilities.mdx",
+  "core/(plugins)/choose-plugin-path.mdx",
+  "core/(plugins)/plugin-authoring.mdx",
+  "core/(plugins)/linked-rust-plugin.mdx",
+  "core/(plugins)/bun-plugin-authoring.mdx",
+  "core/(plugins)/plugin-configuration.mdx",
+  "core/(plugins)/plugin-composition.mdx",
+  "core/(capabilities)/capability-authoring.mdx",
+  "core/(building-blocks)/secrets-plugin.mdx",
+  "core/(building-blocks)/postgres-kit.mdx",
+  "core/(runtime)/execution-adapters.mdx",
+  "core/(building-blocks)/web-and-observability.mdx",
+  "core/(reference)/repository-map.mdx",
+  "core/(reference)/status-and-scope.mdx",
+  "core/(reference)/architecture-decisions.mdx",
 ];
 
 function read(file) {
@@ -83,6 +98,18 @@ for (const retiredMarker of ["versions:", "openapi:", 'path: "/api"']) {
     failures.push(`blume.config.ts: retired configuration ${JSON.stringify(retiredMarker)}`);
   }
 }
+for (const requiredMarker of [
+  'path: "/core"',
+  'path: "/web"',
+  'path: "/agent"',
+  '["/quickstart", "/core/quickstart"]',
+  '["/web-backend", "/web"]',
+  '["/agent-development", "/agent"]',
+]) {
+  if (!config.includes(requiredMarker)) {
+    failures.push(`blume.config.ts: missing navigation marker ${JSON.stringify(requiredMarker)}`);
+  }
+}
 
 const currentFiles = walkFiles(docsRoot).filter((file) => /\.(?:md|mdx|ts)$/.test(file));
 const documentPaths = currentFiles
@@ -114,6 +141,10 @@ for (const file of currentFiles) {
     ["retired current API link", /href="\/docs\/(?:zh\/)?api"/g],
     ["retired hand-written Bun server", /implements the selected production JSON-RPC wire without importing Rust/g],
     ["retired missing Bun server SDK claim", /(?:stable high-level `@lenso\/bun`|尚未发布高层 `@lenso\/bun`)/g],
+    ["retired App Definition term", /App Definition/g],
+    ["retired app resolve command", /lenso app resolve/g],
+    ["retired definition flag", /--definition/g],
+    ["retired plugin verify command", /lenso plugin verify/g],
   ]) {
     if (expression.test(text)) failures.push(`${relative(root, file)}: ${label}`);
   }
@@ -123,9 +154,9 @@ for (const file of currentFiles) {
 }
 
 const invariantFiles = [
-  "content/docs/index.mdx",
-  "content/docs/(concepts)/architecture.mdx",
-  "content/docs/(reference)/status-and-scope.mdx",
+  "content/docs/core/index.mdx",
+  "content/docs/core/(runtime)/architecture.mdx",
+  "content/docs/core/(reference)/status-and-scope.mdx",
 ];
 for (const marker of ["Resolved App Plan", "Runtime Driver", "Execution Adapter"]) {
   if (!invariantFiles.some((file) => read(file).includes(marker))) {
@@ -134,7 +165,35 @@ for (const marker of ["Resolved App Plan", "Runtime Driver", "Execution Adapter"
 }
 
 for (const [file, markers] of [
-  ["content/docs/(start)/agent-skills.mdx", [
+  ["content/docs/core/(start)/first-app-change.mdx", [
+    "lenso app init",
+    "lenso plugins add",
+    "lenso doctor",
+    "lenso run",
+    "lenso plugins remove",
+  ]],
+  ["content/docs/zh/core/(start)/first-app-change.mdx", [
+    "lenso app init",
+    "lenso plugins add",
+    "lenso doctor",
+    "lenso run",
+    "lenso plugins remove",
+  ]],
+  ["content/docs/core/(operate)/inspect-an-app.mdx", [
+    "lenso doctor",
+    "lenso plugins list",
+    "lenso app show",
+    "lenso app check",
+    "lenso run",
+  ]],
+  ["content/docs/zh/core/(operate)/inspect-an-app.mdx", [
+    "lenso doctor",
+    "lenso plugins list",
+    "lenso app show",
+    "lenso app check",
+    "lenso run",
+  ]],
+  ["content/docs/core/(contribute)/agent-skills.mdx", [
     "lenso-app-configuration",
     "Start with a bounded request",
     "Require source inspection before implementation",
@@ -142,7 +201,7 @@ for (const [file, markers] of [
     "Control how far the agent may deliver",
     "Recover when the agent goes in the wrong direction",
   ]],
-  ["content/docs/zh/(start)/agent-skills.mdx", [
+  ["content/docs/zh/core/(contribute)/agent-skills.mdx", [
     "lenso-app-configuration",
     "从一个有边界的请求开始",
     "实现前必须检查源码",
@@ -150,7 +209,7 @@ for (const [file, markers] of [
     "控制 Agent 可以交付到哪里",
     "Agent 方向错误时如何纠正",
   ]],
-  ["content/docs/(web)/web-backend.mdx", [
+  ["content/docs/web/index.mdx", [
     "POST /greetings",
     "Current authoring boundary",
     "Write the Endpoint Plugin",
@@ -158,7 +217,7 @@ for (const [file, markers] of [
     "Prove the HTTP backend",
     "Definition of done",
   ]],
-  ["content/docs/zh/(web)/web-backend.mdx", [
+  ["content/docs/zh/web/index.mdx", [
     "POST /greetings",
     "当前 Authoring 边界",
     "编写 Endpoint Plugin",
@@ -166,41 +225,41 @@ for (const [file, markers] of [
     "证明 HTTP 后端",
     "完成条件",
   ]],
-  ["content/docs/(web)/web-endpoint-plugin.mdx", [
+  ["content/docs/web/(tutorial)/web-endpoint-plugin.mdx", [
     "#[endpoint]",
     "EndpointProvider",
     "endpoint_attributes",
     "Connect the Host and Ingress",
   ]],
-  ["content/docs/zh/(web)/web-endpoint-plugin.mdx", [
+  ["content/docs/zh/web/(tutorial)/web-endpoint-plugin.mdx", [
     "#[endpoint]",
     "EndpointProvider",
     "endpoint_attributes",
     "连接 Host 与 Ingress",
   ]],
-  ["content/docs/(web)/web-host-integration.mdx", [
+  ["content/docs/web/(tutorial)/web-host-integration.mdx", [
     "NativeModuleFactory",
     "plugins/lenso.web-ingress/web.toml",
     "many lenso.http.endpoint@1",
     "Prove the HTTP backend",
   ]],
-  ["content/docs/zh/(web)/web-host-integration.mdx", [
+  ["content/docs/zh/web/(tutorial)/web-host-integration.mdx", [
     "NativeModuleFactory",
     "plugins/lenso.web-ingress/web.toml",
     "many lenso.http.endpoint@1",
     "证明 HTTP 后端",
   ]],
-  ["content/docs/(web)/web-testing.mdx", [
+  ["content/docs/web/(tutorial)/web-testing.mdx", [
     "sdk_authored_endpoint_routes_through_the_real_ingress",
     "failure matrix",
     "duplicate routes block readiness",
   ]],
-  ["content/docs/zh/(web)/web-testing.mdx", [
+  ["content/docs/zh/web/(tutorial)/web-testing.mdx", [
     "sdk_authored_endpoint_routes_through_the_real_ingress",
     "失败矩阵",
     "重复 Route 阻止 Readiness",
   ]],
-  ["content/docs/(agent)/first-app.mdx", [
+  ["content/docs/agent/(extend)/first-app.mdx", [
     "lenso plugin new company.uppercase",
     "lenso plugin pack",
     "lenso plugins add",
@@ -208,7 +267,7 @@ for (const [file, markers] of [
     "cargo run -p lenso-agent-cli",
     "lenso plugins remove company.uppercase --root",
   ]],
-  ["content/docs/zh/(agent)/first-app.mdx", [
+  ["content/docs/zh/agent/(extend)/first-app.mdx", [
     "lenso plugin new company.uppercase",
     "lenso plugin pack",
     "lenso plugins add",
@@ -216,35 +275,107 @@ for (const [file, markers] of [
     "cargo run -p lenso-agent-cli",
     "lenso plugins remove company.uppercase --root",
   ]],
-  ["content/docs/(plugins)/choose-plugin-path.mdx", [
+  ["content/docs/agent/(use)/sessions-and-memory.mdx", [
+    "sessions.sqlite3",
+    "sessions provenance",
+    "Context compaction",
+    "cross-Session Memory",
+  ]],
+  ["content/docs/zh/agent/(use)/sessions-and-memory.mdx", [
+    "sessions.sqlite3",
+    "sessions provenance",
+    "Context Compaction",
+    "跨 Session Memory",
+  ]],
+  ["content/docs/agent/(use)/subagents.mdx", [
+    "delegate",
+    "list_subagents",
+    "review_worktree",
+    "integrate_worktree",
+  ]],
+  ["content/docs/zh/agent/(use)/subagents.mdx", [
+    "delegate",
+    "list_subagents",
+    "review_worktree",
+    "integrate_worktree",
+  ]],
+  ["content/docs/agent/(extend)/mcp-servers.mdx", [
+    'transport = "stdio"',
+    'transport = "streamable_http"',
+    "mcp__filesystem__<tool_name>",
+    "lenso-agent-cli contexts",
+  ]],
+  ["content/docs/zh/agent/(extend)/mcp-servers.mdx", [
+    'transport = "stdio"',
+    'transport = "streamable_http"',
+    "mcp__filesystem__<tool_name>",
+    "lenso-agent-cli contexts",
+  ]],
+  ["content/docs/web/(guides)/protect-an-endpoint.mdx", [
+    "AuthClient",
+    "AuthenticatedHttpActor",
+    "orders.api@1:read",
+    "WWW-Authenticate",
+  ]],
+  ["content/docs/zh/web/(guides)/protect-an-endpoint.mdx", [
+    "AuthClient",
+    "AuthenticatedHttpActor",
+    "orders.api@1:read",
+    "WWW-Authenticate",
+  ]],
+  ["content/docs/web/(guides)/call-upstream-api.mdx", [
+    "allowed_origins",
+    "lenso.http.client@1",
+    "ClientClient",
+    "destination_not_allowed",
+  ]],
+  ["content/docs/zh/web/(guides)/call-upstream-api.mdx", [
+    "allowed_origins",
+    "lenso.http.client@1",
+    "ClientClient",
+    "destination_not_allowed",
+  ]],
+  ["content/docs/web/(operate)/deployment-boundary.mdx", [
+    "cleartext HTTP/2",
+    "lenso app check",
+    "graceful-shutdown",
+    "no framework-owned Dockerfile",
+  ]],
+  ["content/docs/zh/web/(operate)/deployment-boundary.mdx", [
+    "Cleartext HTTP/2",
+    "lenso app check",
+    "Graceful-shutdown",
+    "Framework-owned Dockerfile",
+  ]],
+  ["content/docs/core/(plugins)/choose-plugin-path.mdx", [
     "Portable Rust Plugin",
     "Linked Rust Plugin",
     "Bun Plugin",
     "Interaction shape",
     "Execution class",
   ]],
-  ["content/docs/zh/(plugins)/choose-plugin-path.mdx", [
+  ["content/docs/zh/core/(plugins)/choose-plugin-path.mdx", [
     "可移植 Rust Plugin",
     "Linked Rust Plugin",
     "Bun Plugin",
     "交互形态",
     "Execution Class",
   ]],
-  ["content/docs/(agent)/agent-development.mdx", [
+  ["content/docs/agent/index.mdx", [
     "Agent Home",
     "Choose the smallest change",
     "profiles install coding",
     "Configure an Agent",
     "Give the Agent a new Tool",
   ]],
-  ["content/docs/zh/(agent)/agent-development.mdx", [
+  ["content/docs/zh/agent/index.mdx", [
     "Agent Home",
     "选择最小改动",
     "profiles install coding",
     "配置 Agent",
     "为 Agent 添加一个 Tool",
   ]],
-  ["content/docs/(agent)/agent-configuration.mdx", [
+  ["content/docs/agent/(configure)/agent-configuration.mdx", [
     "Direct local Plugin Root",
     "SQLite managed authority",
     "Injected authority",
@@ -254,7 +385,7 @@ for (const [file, markers] of [
     "rollback-proposals",
     "materialize the complete desired state",
   ]],
-  ["content/docs/zh/(agent)/agent-configuration.mdx", [
+  ["content/docs/zh/agent/(configure)/agent-configuration.mdx", [
     "直接本地 Plugin Root",
     "SQLite 托管 Authority",
     "注入 Authority",
@@ -264,58 +395,58 @@ for (const [file, markers] of [
     "rollback-proposals",
     "完整 Desired State",
   ]],
-  ["content/docs/(plugins)/plugin-configuration.mdx", [
+  ["content/docs/core/(plugins)/plugin-configuration.mdx", [
     "Package defaults",
     "Host configuration",
     "Instance patch",
     "lenso plugins configure",
     "Secret values must not enter",
   ]],
-  ["content/docs/zh/(plugins)/plugin-configuration.mdx", [
+  ["content/docs/zh/core/(plugins)/plugin-configuration.mdx", [
     "Package default",
     "Host configuration",
     "Instance patch",
     "lenso plugins configure",
     "Secret 值不能进入",
   ]],
-  ["content/docs/(start)/quickstart.mdx", [
+  ["content/docs/core/(start)/quickstart.mdx", [
     "self-contained",
     "--implementation auto",
     "completes this",
   ]],
-  ["content/docs/zh/(start)/quickstart.mdx", [
+  ["content/docs/zh/core/(start)/quickstart.mdx", [
     "自包含",
     "--implementation auto",
     "本 Quickstart 已完成",
   ]],
-  ["content/docs/(plugins)/plugin-composition.mdx", [
+  ["content/docs/core/(plugins)/plugin-composition.mdx", [
     "lenso app init",
     "lenso plugins add ./example.echo/dist/example.echo-0.1.0.lenso-plugin --root ./my-app",
     "lenso app check",
   ]],
-  ["content/docs/zh/(plugins)/plugin-composition.mdx", [
+  ["content/docs/zh/core/(plugins)/plugin-composition.mdx", [
     "lenso app init",
     "lenso plugins add ./example.echo/dist/example.echo-0.1.0.lenso-plugin --root ./my-app",
     "lenso app check",
   ]],
-  ["content/docs/(web)/web-capabilities.mdx", [
+  ["content/docs/web/(guides)/web-capabilities.mdx", [
     "lenso-openapi",
     "There is deliberately no `enabled` field.",
     "Only that bound subset appears",
     '"document_path": "/openapi.json"',
   ]],
-  ["content/docs/zh/(web)/web-capabilities.mdx", [
+  ["content/docs/zh/web/(guides)/web-capabilities.mdx", [
     "lenso-openapi",
     "这里有意不提供 `enabled` 字段。",
     "只包含这个显式绑定的子集",
     '"document_path": "/openapi.json"',
   ]],
-  ["content/docs/(plugins)/bun-plugin-authoring.mdx", [
+  ["content/docs/core/(plugins)/bun-plugin-authoring.mdx", [
     "lenso plugin new example.echo --runtime bun",
     "lenso plugin dev --watch",
     "@lenso/bun",
   ]],
-  ["content/docs/zh/(plugins)/bun-plugin-authoring.mdx", [
+  ["content/docs/zh/core/(plugins)/bun-plugin-authoring.mdx", [
     "lenso plugin new example.echo --runtime bun",
     "lenso plugin dev --watch",
     "@lenso/bun",
@@ -330,8 +461,8 @@ for (const [file, markers] of [
 }
 
 for (const file of [
-  "content/docs/(start)/quickstart.mdx",
-  "content/docs/zh/(start)/quickstart.mdx",
+  "content/docs/core/(start)/quickstart.mdx",
+  "content/docs/zh/core/(start)/quickstart.mdx",
 ]) {
   const text = read(file);
   for (const forbidden of ["/path/to/", "lenso plugins search", "lenso plugins install"]) {
@@ -342,8 +473,8 @@ for (const file of [
 }
 
 for (const file of [
-  "content/docs/(start)/quickstart.mdx",
-  "content/docs/zh/(start)/quickstart.mdx",
+  "content/docs/core/(start)/quickstart.mdx",
+  "content/docs/zh/core/(start)/quickstart.mdx",
 ]) {
   requireOrderedMarkers(file, [
     "### Rust",
