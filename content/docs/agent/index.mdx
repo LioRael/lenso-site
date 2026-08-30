@@ -40,12 +40,12 @@ Agent's installed Plugins, Profiles, Session history, or runtime lineage. Set
 
 ## 1. Run the maintained Host
 
-Clone the Agent Harness, authenticate once, and start either an interactive or
+Clone the Lenso Agent, authenticate once, and start either an interactive or
 headless surface:
 
 ```sh
-git clone https://github.com/LioRael/lenso-agent-harness.git
-cd lenso-agent-harness
+git clone https://github.com/LioRael/lenso-agent.git
+cd lenso-agent
 cargo run -p lenso-agent-cli -- auth login
 cargo run -p lenso-agent-tui
 ```
@@ -102,7 +102,7 @@ after it passes readiness.
 
 ## 5. Add a product surface only when needed
 
-The Harness ships terminal, headless CLI, and embeddable Web surfaces. Product
+Lenso Agent ships terminal, headless CLI, and embeddable Web surfaces. Product
 behavior still comes from the Host-selected Plugin inventory. A Web shell does
 not become a second composition authority, and a remote configuration system
 does not send executable Plans to the Kernel.

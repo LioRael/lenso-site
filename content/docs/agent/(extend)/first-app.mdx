@@ -8,7 +8,7 @@ will write the behavior once, run it through a real Execution Adapter, package
 it, install it into an App, ask the Agent to use it, and remove it again.
 
 The current public CLI scaffolds Plugins; it does not scaffold a generic
-product Host. This tutorial therefore uses the maintained Agent Harness as the
+product Host. This tutorial therefore uses the maintained Lenso Agent as the
 concrete Host.
 
 ## What you will build
@@ -118,8 +118,8 @@ the Agent once:
 
 ```sh
 cd ..
-git clone https://github.com/LioRael/lenso-agent-harness.git
-cd lenso-agent-harness
+git clone https://github.com/LioRael/lenso-agent.git
+cd lenso-agent
 cargo run -p lenso-agent-cli -- auth login
 cargo run -p lenso-agent-cli -- contexts
 ```
@@ -142,7 +142,7 @@ valid.
 
 ## 7. Use the new behavior
 
-From the Agent Harness checkout:
+From the Lenso Agent checkout:
 
 ```sh
 cargo run -p lenso-agent-cli -- \

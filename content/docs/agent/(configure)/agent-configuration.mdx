@@ -16,7 +16,7 @@ They are not different runtime models.
 | SQLite managed authority | Opt-in, shipped in Agent Web | One Host needs durable proposals, publication history, recovery, and rollback proposals |
 | Injected authority | Supported Host integration port | Your embedding Host already has a remote configuration service or control plane |
 
-The Harness does **not** ship a first-party distributed configuration service.
+Lenso Agent does **not** ship a first-party distributed configuration service.
 SQLite is a single-Host store. The injected port makes a remote adapter
 possible, but its service, authentication, tenancy, and rollout policy belong
 to the embedding Host.
@@ -93,7 +93,7 @@ Provider; only references or mappings belong in TOML. See
 
 ## 3. Start the managed configuration API
 
-From the Agent Harness checkout, enable Plugin control and choose the durable
+From the Lenso Agent checkout, enable Plugin control and choose the durable
 SQLite authority:
 
 ```sh
