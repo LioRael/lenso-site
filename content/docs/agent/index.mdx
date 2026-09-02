@@ -40,20 +40,21 @@ Agent's installed Plugins, Profiles, Session history, or runtime lineage. Set
 
 ## 1. Run the maintained Host
 
-Clone the Lenso Agent, authenticate once, and start either an interactive or
-headless surface:
+Install Lenso Agent, authenticate once, check the App, and start either an
+interactive or headless surface. The pinned installer command is in
+[Run your first Agent Turn](/docs/agent/first-turn).
 
 ```sh
-git clone https://github.com/LioRael/lenso-agent.git
-cd lenso-agent
-cargo run -p lenso-agent-cli -- auth login
-cargo run -p lenso-agent-tui
+lenso-agent-cli auth login
+lenso-agent-cli profiles install coding
+lenso-agent-cli doctor --json
+lenso-agent --profile code
 ```
 
 For one non-interactive Turn:
 
 ```sh
-cargo run -p lenso-agent-cli -- "Summarize this workspace README."
+lenso-agent-cli --profile code "Summarize this workspace README."
 ```
 
 At this point you have a complete Agent application. Do not fork the Agent Loop
@@ -77,8 +78,8 @@ The official coding experience installs inspectable Plugin configuration and
 three Profiles:
 
 ```sh
-cargo run -p lenso-agent-cli -- profiles install coding
-cargo run -p lenso-agent-tui -- --profile code
+lenso-agent-cli profiles install coding
+lenso-agent --profile code
 ```
 
 Use `code` for editing and bounded processes, `code-sandbox` for an isolated

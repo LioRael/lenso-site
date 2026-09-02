@@ -1,34 +1,43 @@
 ---
 title: 运行第一个 Agent Turn
-description: 先完成认证，启动维护中的 TUI，并运行一个 Headless Turn，再开始修改 Agent 产品。
+description: 安装 Lenso Agent、完成认证、检查本地 App，并运行交互式与 Headless Turn。
 ---
 
-这条路径会从源码运行维护中的 Lenso Agent。你将完成一次认证，打开交互式终端
-Surface，并确认同一个 App 也可以运行非交互 Turn。
+这条路径直接使用已发布的 Lenso Agent Binary。你将完成一次认证，检查已安装的
+App，打开交互式终端 Surface，再通过同一个 App 运行非交互 Turn；不需要 Rust
+Toolchain。
 
-## 1. 获取 Lenso Agent
+## 1. 安装 Lenso Agent
 
-```sh
-git clone https://github.com/LioRael/lenso-agent.git
-cd lenso-agent
-```
-
-当前公开入口是仓库 Workspace。公共文档中的 Cargo 命令必须保持可移植；本地缓存与
-Worktree 路径属于维护者开发环境。
-
-## 2. 完成一次认证
+下载固定版本的安装器，检查内容后安装交互式 Agent 与管理 CLI。`0.1.0` 支持
+macOS 15 或更新版本的 Apple Silicon，以及 x86-64 Linux：
 
 ```sh
-cargo run -p lenso-agent-cli -- auth login
+curl --fail --location \
+  https://github.com/LioRael/lenso-agent/releases/download/v0.1.0/install.sh \
+  --output /tmp/lenso-agent-install.sh
+less /tmp/lenso-agent-install.sh
+sh /tmp/lenso-agent-install.sh --version 0.1.0
 ```
 
-默认 App 使用 Direct Codex Model 与 `default` ChatGPT Profile。认证信息保存在全局
-Agent Home，不属于 Agent 当前要检查的项目。
+## 2. 认证并检查 App
+
+```sh
+lenso-agent-cli auth login
+lenso-agent-cli profiles install coding
+lenso-agent-cli doctor --json
+```
+
+默认 App 使用 Direct Codex Model 与 `default` ChatGPT Profile。认证信息与持久状态
+保存在全局 Agent Home，不属于 Agent 当前要检查的 Workspace。`doctor --json` 会在
+第一个 Turn 前报告可操作的 Setup 失败。
 
 ## 3. 启动 TUI
 
+在希望 Agent 使用的 Workspace 中运行：
+
 ```sh
-cargo run -p lenso-agent-tui
+lenso-agent --profile code
 ```
 
 提交一个小型只读请求，例如：
@@ -40,20 +49,32 @@ Summarize this workspace README.
 此时你已经拥有一个完整 Agent App：Model、持久 Session、终端 Surface，以及由
 Host 持有的基础 Plugin 选择。
 
-## 4. 证明 Headless Surface
+## 4. 运行 Headless Turn
 
 ```sh
-cargo run -p lenso-agent-cli -- \
-  "Summarize this workspace README."
+lenso-agent-cli --profile code "Summarize this workspace README."
 ```
 
 TUI 与 Headless Command 是同一个 Agent 产品的两种 Surface。Surface 不会持有第二份
 Plugin 图。
 
+## 开发 Agent 本身
+
+只有需要修改 Agent 的 Rust 实现时，才克隆并构建仓库：
+
+```sh
+git clone https://github.com/LioRael/lenso-agent.git
+cd lenso-agent
+cargo test --workspace
+```
+
+仓库 [README](https://github.com/LioRael/lenso-agent#readme)说明了源码开发 Surface 与
+Release Lifecycle。
+
 ## 下一步
 
 <CardGroup>
   <Card title="学习心智模型" href="/docs/zh/agent/mental-model" description="区分 Agent Home、Workspace、Profile、Session、Turn 与 Generation。" />
-  <Card title="选择 Profile" href="/docs/zh/agent/profiles-and-tools" description="安装 Coding Experience，并选择最小 Tool 权限。" />
+  <Card title="选择 Profile" href="/docs/zh/agent/profiles-and-tools" description="为当前工作选择最小 Tool 权限。" />
   <Card title="增加第一个 Tool" href="/docs/zh/agent/first-app" description="构建、安装、运行、禁用并移除一个 Tool Plugin。" />
 </CardGroup>

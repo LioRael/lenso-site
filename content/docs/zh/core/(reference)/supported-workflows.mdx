@@ -1,0 +1,62 @@
+---
+title: 受支持的工作流
+description: 为 Plugin Authoring、App Composition、Web 后端或 Agent 产品选择持续维护的 Lenso 路径。
+---
+
+先选择想得到的结果。下面每条路径都指向一套完整工作流，并在开始前说明真正相关的
+运行环境边界。
+
+## 创建可移除的产品行为
+
+使用公开的 `lenso` CLI 创建、运行并打包类型化 Plugin。Portable Rust 可以生成
+Wasm 与可信 Process 实现；Linked Rust 适用于有意把实现编译进自身 Binary 的
+Host。Bun / TypeScript 已有公开的 Request Provider 工作流，但公开 SDK 目前不提供
+Stream 或 Event Provider。
+
+先完成[创建第一个 Plugin](/docs/zh/core/quickstart)；当语言或执行位置会影响选择时，
+再[选择 Plugin 路径](/docs/zh/core/choose-plugin-path)。
+
+## 组合并检查 App
+
+通过可见的 Plugin Root 选择 Plugin 与配置。Host 启动前，Lenso 会把这些意图解析为
+一份不可变的 Resolved App Plan。Kernel 持有可移植 Lifecycle 语义，Runtime Driver
+与 Execution Adapter 提供运行环境所需的调度和执行机制。
+
+按照[修改第一个 App](/docs/zh/core/first-app-change)完成一次可逆的安装与移除；当
+Setup、Composition 或 Runtime Admission 失败时，使用
+[检查失败的 App](/docs/zh/core/inspect-an-app)。
+
+## 构建 Web 后端
+
+持续维护的 Web 路径使用类型化 HTTP Endpoint Plugin、Linked Rust Host，并通过真实
+Socket 接入 Web Ingress。HTTP Client / Egress、可选 OpenAPI 3.1 文档 Plugin、
+PostgreSQL 自有 Schema、API Token Auth 与 OpenTelemetry 都是显式 Composition 选项。
+
+先从[构建 Web 后端](/docs/zh/web)开始。把 Host 暴露到本地开发环境之外前，阅读
+[保护 Endpoint](/docs/zh/web/protect-an-endpoint)了解受支持的 Auth Provider，并确认
+[部署边界](/docs/zh/web/deployment-boundary)。
+
+## 运行或扩展 Agent
+
+安装维护中的 Lenso Agent Binary，即可通过同一个 App 使用 TUI、Headless、ACP、
+Web 或 Channel Surface。Profile 选择 Model 与 Tool Policy；Session 与 Memory 不随
+当前 Workspace 改变。新的产品行为通过 Agent 可见的 `plugins/` Root 加入。
+
+先[运行第一个 Agent Turn](/docs/zh/agent/first-turn)，再
+[为 Agent 添加一个 Tool](/docs/zh/agent/first-app)。
+
+## 平台与安全边界
+
+- Native Rust 通过 Linked Factory 支持 Request、Stream 与 Event Interaction。
+- Bun / TypeScript Authoring 目前公开 Request Provider。底层 Adapter 已通过
+  Conformance，并不代表 Stream 或 Event 已成为公开 Authoring 承诺。
+- Browser JavaScript 与 WASIp2 是 Host Profile，不提供敌对代码隔离；WASIp2
+  Component Packaging 目前也不是 Starter Workflow。
+- 当前维护的 Auth 路径是 PostgreSQL 支持的 API Token 验证，不包含 OAuth 或密码
+  Provider。
+- Secrets 可由 Environment Allowlist Provider 提供，但不包含生产 Cloud Secrets
+  Provider。
+
+Lenso 不承诺任意 Runtime Discovery、Hot Graph Mutation、Distributed Placement、
+Automatic Replica、敌对浏览器代码隔离或独立 Console 产品。这些是明确的产品边界，
+不是使用上述工作流之前还要等待通过的内部关卡。
