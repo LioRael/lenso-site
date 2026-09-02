@@ -54,8 +54,9 @@ role.
   proof sequence.
 - Plugin guides separate portable Rust, linked Rust, and Bun authoring paths.
 - Concept pages define a term once and link back to concrete workflows.
-- Reference pages hold status matrices, repository ownership, and architecture
-  decisions; tutorials should not make readers traverse them to finish a task.
+- Reference pages hold compatibility and platform boundaries, repository
+  ownership, and architecture decisions; tutorials should not make readers
+  traverse them to finish a task.
 - Verification appears at the end of the behavior it proves. It is completion
   evidence, not the subject of the page.
 - Commands and public APIs must come from current `--help`, package source, or

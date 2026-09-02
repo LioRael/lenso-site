@@ -10,6 +10,15 @@ description: 构建、安装、运行、停用并移除一个真实的 Agent Too
 当前公共 CLI 负责脚手架化 Plugin，并不生成通用产品 Host。因此本教程使用持续
 维护的 Lenso Agent 作为具体 Host。
 
+请先完成[运行第一个 Agent Turn](/docs/zh/agent/first-turn)。本教程从已安装、已认证的
+Host 及其可见 Plugin Root 开始：
+
+```sh
+lenso-agent-cli doctor --json
+mkdir -p "$HOME/.lenso/agent/plugins"
+lenso plugins list --root "$HOME/.lenso/agent"
+```
+
 ## 你将实现什么
 
 ```text
@@ -103,22 +112,16 @@ lenso plugin pack
 `dist/company.uppercase-0.1.0.lenso-plugin`。归档包含两个实现和一个共享
 Contract。
 
-进入 Host checkout 前先保存 Bundle 的绝对路径：
+离开 Plugin 目录前先保存 Bundle 的绝对路径：
 
 ```sh
 PLUGIN_BUNDLE="$PWD/dist/company.uppercase-0.1.0.lenso-plugin"
 ```
 
-## 5. 启动 Agent Host
-
-回到教程父目录，克隆持续维护的 Host，并完成一次 Agent 认证：
+## 5. 加载已安装 Host 的 Catalog
 
 ```sh
-cd ..
-git clone https://github.com/LioRael/lenso-agent.git
-cd lenso-agent
-cargo run -p lenso-agent-cli -- auth login
-cargo run -p lenso-agent-cli -- contexts
+lenso-agent-cli contexts --profile code
 ```
 
 `contexts` 命令会启动 Host，但不会发起 model Turn，并发布与该 Build 匹配的 Host
@@ -137,10 +140,10 @@ App，并且只在候选状态有效时提交文件。
 
 ## 7. 使用新行为
 
-在 Lenso Agent checkout 中运行：
+在希望 Agent 工作的任意 Workspace 中运行：
 
 ```sh
-cargo run -p lenso-agent-cli -- \
+lenso-agent-cli --profile code \
   "Use company.uppercase to convert 'hello lenso' to uppercase."
 ```
 
@@ -163,3 +166,6 @@ Generation；已经开始的工作继续使用它启动时的 Generation。
 至此，你已经走完完整的开发者工作流。下一个行为不是 Agent Tool 时，继续阅读
 [选择 Plugin 开发路径](/docs/zh/core/choose-plugin-path)；需要配置、资源与 Catalog
 操作时，阅读[向 App 添加 Plugin](/docs/zh/core/plugin-composition)。
+
+只有需要修改 Host 的 Rust 实现时，才克隆 Agent 仓库。源码开发路径见 Agent
+[README](https://github.com/LioRael/lenso-agent#readme)。

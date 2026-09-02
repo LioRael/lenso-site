@@ -1,37 +1,45 @@
 ---
 title: Run your first Agent Turn
-description: Authenticate, start the maintained TUI, and run one headless Turn before changing the Agent product.
+description: Install Lenso Agent, authenticate, check the local App, and run interactive and headless Turns.
 ---
 
-This path runs the maintained Lenso Agent from source. You will authenticate
-once, open the interactive terminal surface, and confirm the same App can run a
-non-interactive Turn.
+This path uses the released Lenso Agent binaries. You will authenticate once,
+check the installed App, open the interactive terminal surface, and run the same
+App non-interactively. A Rust toolchain is not required.
 
-## 1. Get Lenso Agent
+## 1. Install Lenso Agent
 
-```sh
-git clone https://github.com/LioRael/lenso-agent.git
-cd lenso-agent
-```
-
-The current public entry point is the repository workspace. Keep public Cargo
-commands portable; local development caches and worktree paths are maintainer
-concerns.
-
-## 2. Authenticate once
+Download the pinned installer, review it, then install the interactive Agent and
+management CLI. Version `0.1.0` supports Apple silicon on macOS 15 or later and
+x86-64 Linux:
 
 ```sh
-cargo run -p lenso-agent-cli -- auth login
+curl --fail --location \
+  https://github.com/LioRael/lenso-agent/releases/download/v0.1.0/install.sh \
+  --output /tmp/lenso-agent-install.sh
+less /tmp/lenso-agent-install.sh
+sh /tmp/lenso-agent-install.sh --version 0.1.0
 ```
 
-The default App uses the direct Codex Model with the `default` ChatGPT profile.
-Authentication is stored under the global Agent Home, not the project you are
-currently asking the Agent to inspect.
+## 2. Authenticate and check the App
+
+```sh
+lenso-agent-cli auth login
+lenso-agent-cli profiles install coding
+lenso-agent-cli doctor --json
+```
+
+The default App uses the direct Codex Model with the `default` ChatGPT Profile.
+Authentication and durable state live under the global Agent Home, not the
+Workspace you ask the Agent to inspect. `doctor --json` reports actionable setup
+failures before the first Turn.
 
 ## 3. Start the TUI
 
+Run this command from the Workspace you want the Agent to use:
+
 ```sh
-cargo run -p lenso-agent-tui
+lenso-agent --profile code
 ```
 
 Submit a small read-only request such as:
@@ -43,20 +51,33 @@ Summarize this workspace README.
 You now have a complete Agent App: model access, a durable Session, a terminal
 surface, and the base Plugin selection owned by the Host.
 
-## 4. Prove the headless surface
+## 4. Run a headless Turn
 
 ```sh
-cargo run -p lenso-agent-cli -- \
-  "Summarize this workspace README."
+lenso-agent-cli --profile code "Summarize this workspace README."
 ```
 
 The TUI and headless command are two surfaces over the same Agent product. A
 surface does not own a second Plugin graph.
 
+## Develop the Agent itself
+
+Clone and build the repository only when you need to change the Agent's Rust
+implementation:
+
+```sh
+git clone https://github.com/LioRael/lenso-agent.git
+cd lenso-agent
+cargo test --workspace
+```
+
+The repository [README](https://github.com/LioRael/lenso-agent#readme) documents
+the source-development surfaces and release lifecycle.
+
 ## Next
 
 <CardGroup>
   <Card title="Learn the mental model" href="/docs/agent/mental-model" description="Separate Agent Home, Workspace, Profile, Session, Turn, and Generation." />
-  <Card title="Choose a Profile" href="/docs/agent/profiles-and-tools" description="Install the coding experience and select the smallest Tool authority." />
+  <Card title="Choose a Profile" href="/docs/agent/profiles-and-tools" description="Select the smallest Tool authority for the work." />
   <Card title="Add your first Tool" href="/docs/agent/first-app" description="Build, install, run, disable, and remove one Tool Plugin." />
 </CardGroup>

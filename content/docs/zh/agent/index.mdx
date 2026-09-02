@@ -39,19 +39,20 @@ Agent Home                         Workspace
 
 ## 1. 运行维护中的 Host
 
-克隆 Lenso Agent，完成一次认证，然后启动交互式或 headless surface：
+安装 Lenso Agent，完成一次认证，检查 App，然后启动交互式或 Headless Surface。
+固定版本的安装命令见[运行第一个 Agent Turn](/docs/zh/agent/first-turn)。
 
 ```sh
-git clone https://github.com/LioRael/lenso-agent.git
-cd lenso-agent
-cargo run -p lenso-agent-cli -- auth login
-cargo run -p lenso-agent-tui
+lenso-agent-cli auth login
+lenso-agent-cli profiles install coding
+lenso-agent-cli doctor --json
+lenso-agent --profile code
 ```
 
 运行一个非交互 Turn：
 
 ```sh
-cargo run -p lenso-agent-cli -- "Summarize this workspace README."
+lenso-agent-cli --profile code "Summarize this workspace README."
 ```
 
 此时你已经拥有一个完整 Agent 应用。不要为了增加一个命令、存储后端、Prompt
@@ -74,8 +75,8 @@ cargo run -p lenso-agent-cli -- "Summarize this workspace README."
 官方 coding experience 会安装可检查的 Plugin 配置与三个 Profile：
 
 ```sh
-cargo run -p lenso-agent-cli -- profiles install coding
-cargo run -p lenso-agent-tui -- --profile code
+lenso-agent-cli profiles install coding
+lenso-agent --profile code
 ```
 
 `code` 用于编辑和受限进程，`code-sandbox` 使用无网络的隔离进程 Provider，`plan`

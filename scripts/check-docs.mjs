@@ -51,7 +51,7 @@ const requiredCurrentPages = [
   "core/(runtime)/execution-adapters.mdx",
   "core/(building-blocks)/web-and-observability.mdx",
   "core/(reference)/repository-map.mdx",
-  "core/(reference)/status-and-scope.mdx",
+  "core/(reference)/supported-workflows.mdx",
   "core/(reference)/architecture-decisions.mdx",
 ];
 
@@ -156,7 +156,7 @@ for (const file of currentFiles) {
 const invariantFiles = [
   "content/docs/core/index.mdx",
   "content/docs/core/(runtime)/architecture.mdx",
-  "content/docs/core/(reference)/status-and-scope.mdx",
+  "content/docs/core/(reference)/supported-workflows.mdx",
 ];
 for (const marker of ["Resolved App Plan", "Runtime Driver", "Execution Adapter"]) {
   if (!invariantFiles.some((file) => read(file).includes(marker))) {
@@ -263,16 +263,16 @@ for (const [file, markers] of [
     "lenso plugin new company.uppercase",
     "lenso plugin pack",
     "lenso plugins add",
-    "cargo run -p lenso-agent-cli -- contexts",
-    "cargo run -p lenso-agent-cli",
+    "lenso-agent-cli contexts --profile code",
+    "lenso-agent-cli --profile code",
     "lenso plugins remove company.uppercase --root",
   ]],
   ["content/docs/zh/agent/(extend)/first-app.mdx", [
     "lenso plugin new company.uppercase",
     "lenso plugin pack",
     "lenso plugins add",
-    "cargo run -p lenso-agent-cli -- contexts",
-    "cargo run -p lenso-agent-cli",
+    "lenso-agent-cli contexts --profile code",
+    "lenso-agent-cli --profile code",
     "lenso plugins remove company.uppercase --root",
   ]],
   ["content/docs/agent/(use)/sessions-and-memory.mdx", [

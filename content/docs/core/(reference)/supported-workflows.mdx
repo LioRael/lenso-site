@@ -1,0 +1,70 @@
+---
+title: Supported workflows
+description: Choose a maintained Lenso path for Plugin authoring, App composition, Web backends, or Agent products.
+---
+
+Choose the result you want first. Each path below links to a complete workflow
+and states the environment boundary that matters before you begin.
+
+## Create removable product behavior
+
+Use the public `lenso` CLI to create, run, and package a typed Plugin. Portable
+Rust can produce Wasm and trusted Process implementations; linked Rust is for a
+Host that intentionally compiles the implementation into its binary. Bun /
+TypeScript has a public Request Provider workflow. Its public SDK does not yet
+offer Stream or Event Providers.
+
+Start with [Create your first Plugin](/docs/core/quickstart), then
+[choose a Plugin path](/docs/core/choose-plugin-path) when language or execution
+placement matters.
+
+## Compose and inspect an App
+
+Use a visible Plugin Root to select Plugins and configuration. Lenso resolves
+that intent into one immutable Resolved App Plan before the Host boots. The
+Kernel owns portable lifecycle semantics; a Runtime Driver and Execution
+Adapter supply environment-specific scheduling and execution.
+
+Follow [Change your first App](/docs/core/first-app-change) for a reversible
+install and removal, or [Inspect a failing App](/docs/core/inspect-an-app) when
+setup, composition, or runtime admission fails.
+
+## Build a Web backend
+
+The maintained Web path uses typed HTTP Endpoint Plugins, a linked Rust Host,
+and Web Ingress over a real socket. HTTP Client/Egress, an optional OpenAPI 3.1
+document Plugin, PostgreSQL-owned schemas, API-token Auth, and OpenTelemetry
+integration are available as explicit composition choices.
+
+Start with [Build a Web backend](/docs/web). Read
+[Protect an endpoint](/docs/web/protect-an-endpoint) for the supported Auth
+provider and [Deployment boundary](/docs/web/deployment-boundary) before exposing
+a Host outside local development.
+
+## Run or extend an Agent
+
+Install the maintained Lenso Agent binary to run TUI, headless, ACP, Web, or
+channel surfaces over the same App. Profiles select model and Tool policy;
+Sessions and memory remain independent of the current Workspace. Add behavior
+through the Agent's visible `plugins/` root.
+
+Start with [Run your first Agent Turn](/docs/agent/first-turn), then
+[give the Agent a new Tool](/docs/agent/first-app).
+
+## Platform and security boundaries
+
+- Native Rust supports Request, Stream, and Event interactions through linked
+  factories.
+- Bun / TypeScript authoring currently exposes Request Providers. Lower-level
+  Adapter conformance does not make Stream or Event a public authoring promise.
+- Browser JavaScript and WASIp2 are Host profiles. They do not provide hostile
+  code isolation, and WASIp2 component packaging is not yet a starter workflow.
+- The maintained Auth path is API-token verification backed by PostgreSQL.
+  OAuth and password providers are not included.
+- Environment-backed Secrets are available through an allowlisted provider.
+  A production cloud Secrets provider is not included.
+
+Lenso does not promise arbitrary runtime discovery, hot graph mutation,
+distributed placement, automatic replicas, hostile browser-code isolation, or
+an independent Console product. These are explicit product boundaries, not
+steps you must wait to pass before using the workflows above.

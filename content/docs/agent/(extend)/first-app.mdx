@@ -11,6 +11,15 @@ The current public CLI scaffolds Plugins; it does not scaffold a generic
 product Host. This tutorial therefore uses the maintained Lenso Agent as the
 concrete Host.
 
+Complete [Run your first Agent Turn](/docs/agent/first-turn) first. This tutorial
+starts from an installed, authenticated Host and its visible Plugin Root:
+
+```sh
+lenso-agent-cli doctor --json
+mkdir -p "$HOME/.lenso/agent/plugins"
+lenso plugins list --root "$HOME/.lenso/agent"
+```
+
 ## What you will build
 
 ```text
@@ -105,23 +114,16 @@ The command creates and reopens
 `dist/company.uppercase-0.1.0.lenso-plugin`. That archive contains both
 implementations and one shared Contract.
 
-Keep the absolute bundle path before moving to the Host checkout:
+Keep the absolute bundle path before leaving the Plugin directory:
 
 ```sh
 PLUGIN_BUNDLE="$PWD/dist/company.uppercase-0.1.0.lenso-plugin"
 ```
 
-## 5. Start the Agent Host
-
-In the parent tutorial directory, clone the maintained Host and authenticate
-the Agent once:
+## 5. Load the installed Host Catalog
 
 ```sh
-cd ..
-git clone https://github.com/LioRael/lenso-agent.git
-cd lenso-agent
-cargo run -p lenso-agent-cli -- auth login
-cargo run -p lenso-agent-cli -- contexts
+lenso-agent-cli contexts --profile code
 ```
 
 The `contexts` command boots the Host without starting a model Turn and
@@ -142,10 +144,10 @@ valid.
 
 ## 7. Use the new behavior
 
-From the Lenso Agent checkout:
+From any Workspace where you want the Agent to work:
 
 ```sh
-cargo run -p lenso-agent-cli -- \
+lenso-agent-cli --profile code \
   "Use company.uppercase to convert 'hello lenso' to uppercase."
 ```
 
@@ -171,3 +173,7 @@ You have now completed the full author workflow. Continue with
 [Choose a Plugin path](/docs/core/choose-plugin-path) when the next behavior is not
 an Agent Tool, or [Add Plugins to an App](/docs/core/plugin-composition) for
 configuration, resources, and Catalog operations.
+
+Clone the Agent repository only when you need to change the Host's Rust
+implementation. The source-development path is documented in the Agent
+[README](https://github.com/LioRael/lenso-agent#readme).
