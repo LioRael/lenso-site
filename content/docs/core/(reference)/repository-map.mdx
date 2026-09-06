@@ -7,7 +7,7 @@ description: Route changes to the repository that owns the Interface and its evi
 | --- | --- |
 | `LioRael/lenso` | App Plan, portable Kernel, Kernel conformance, canonical ADRs |
 | `LioRael/lenso-runtime-rust` | host-side Drivers, Runner, and native Execution Adapter |
-| `LioRael/lenso-bun-adapter` | Bun child-process Adapter and cross-runtime wire evidence |
+| `LioRael/lenso-bun-adapter` | Bun SDK, child-process Adapter, and `lenso-host-runtime` |
 | `LioRael/lenso-protocols` | Descriptor codegen, portable contract runtime, value conformance |
 | `LioRael/lenso-cli` | authoring, project checks, Plan resolution, transition CLI |
 | `LioRael/lenso-examples` | executable examples and product-neutral fixtures |
@@ -28,3 +28,7 @@ import one of these concrete owners is usually at the wrong seam.
 - Product behavior, state, Auth, secrets, telemetry, or UI: ordinary Plugin.
 - Package edits, lock inspection, schema/codegen freshness, or Plan resolution:
   authoring tooling.
+
+The CLI declares and prepares TypeScript/Bun Hosts; `lenso-host-runtime`
+assembles the Rust Kernel and Bun/Process Adapters. See [TypeScript Host](/docs/core/typescript-host)
+for the entrypoint and current limits.

@@ -1,0 +1,82 @@
+---
+title: Select named Plugin dependencies
+description: Bind separate uses of the same Capability to exact provider Instances.
+---
+
+A sync Plugin can depend on two Document Stores: `source` reads and `destination`
+writes. Both use the same Capability, with distinct stable requirement IDs local
+to the consumer Contract. They may select different Instances or explicitly use
+one Instance for both roles. Renaming a private field does not migrate a saved
+public requirement identity.
+
+## Declare and consume dependencies
+
+This excerpt comes from the [document-sync example](https://github.com/LioRael/lenso-examples/tree/main/fixtures/vnext-plugin-authoring-v2).
+`DOCUMENT_STORE_CONTRACT` is the project's generated Contract:
+
+```ts
+const source = dependency({ id: "source", contract: DOCUMENT_STORE_CONTRACT });
+const destination = dependency({ id: "destination", contract: DOCUMENT_STORE_CONTRACT });
+```
+
+Declare `dependencies: { source, destination }` in `definePlugin` and receive
+its generated clients in `create({ dependencies })`. Rust generated clients can
+use `dependencies.requirement("source")` for the corresponding dependency view.
+The Host authorizes candidates and the Resolver records exact choices in the
+immutable Plan. Plugin code does not discover providers or choose accounts at call time.
+
+## Select providers for an existing App
+
+These commands assume the Host permits both requirements of
+`company.copy/default` to select the configured Store Instances. Host-fixed
+bindings and Host-ordered `many` requirements cannot be overridden this way.
+
+```sh
+lenso plugins bind company.copy source company.store --provider-instance source --root ./my-app
+lenso plugins bind company.copy destination company.store --provider-instance destination --root ./my-app
+lenso app check --root ./my-app
+lenso app show --root ./my-app --json
+```
+
+For an optional dependency, save explicit absence with
+`lenso plugins bind company.copy cache --absent --root ./my-app`.
+Adding a compatible provider preserves existing choices. A missing, disabled,
+incompatible, or forbidden selected provider fails validation without choosing
+a different account automatically.
+
+## Resolve several choices or migrate names together
+
+When both dependencies are ambiguous, submit a complete choice file to avoid an
+invalid intermediate state:
+
+```json title="dependency-choices.json"
+{
+  "schema_version": 1,
+  "choices": [
+    {
+      "consumer": { "plugin_id": "company.copy", "instance_key": "default" },
+      "requirement_id": "source",
+      "provider": { "plugin_id": "company.store", "instance_key": "source" }
+    },
+    {
+      "consumer": { "plugin_id": "company.copy", "instance_key": "default" },
+      "requirement_id": "destination",
+      "provider": { "plugin_id": "company.store", "instance_key": "destination" }
+    }
+  ]
+}
+```
+
+```sh
+lenso plugins bind --file dependency-choices.json --preview --root ./my-app
+lenso plugins bind --file dependency-choices.json --root ./my-app
+```
+
+The file is the complete choice set and replaces stale saved requirement IDs;
+positional `bind` changes one key. Preview reports provider transitions and
+validation problems without publishing. Choices live in `plugins/.dependencies.json`.
+Startup and inspection are read-only; configuration operations own explicit
+migration and transaction recovery. Publishing configuration and replacing the
+running Generation are separate steps; inspect runtime state through the Host.
+
+[Complete Host selection rules](https://github.com/LioRael/lenso-cli/blob/main/docs/typescript-host-authoring.md#select-named-dependencies).

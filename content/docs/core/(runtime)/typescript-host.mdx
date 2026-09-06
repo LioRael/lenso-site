@@ -1,0 +1,86 @@
+---
+title: Build a Host in TypeScript
+description: Declare a Host, prepare an offline directory, and understand its Bun and Rust runtime boundary.
+---
+
+Lenso has a TypeScript/Bun Host path. Declare the Host through `@lenso/cli/host`;
+the generated `host.js` manages startup, while Rust `lenso-host-runtime` assembles
+the Kernel, Bun child-process Adapter, and native Process Adapter. This differs
+from writing a Bun Plugin: it composes the product that runs those Plugins.
+The Kernel remains Rust.
+
+## Prepare the inputs
+
+Install the npm CLI and supply already packed, target-compatible `.lenso-plugin`
+Bundles. `app build` extracts static declarations; it does not compile arbitrary
+Plugin source or execute imported business modules.
+
+```sh
+bun add --dev @lenso/cli@0.16.1
+```
+
+```ts title="app.ts"
+import { defineHost, pluginBundle } from "@lenso/cli/host";
+
+export default defineHost({
+  id: "company.notes-app",
+  plugins: [pluginBundle("./dist/company.notes-1.0.0.lenso-plugin")],
+});
+```
+
+This example assumes the Bundle's default configuration and dependencies resolve
+without additional choices. Paths are relative to the declaring file. Execution
+defaults to `bun`; select a prebuilt Rust Process with
+`pluginBundle(path, { execution: "process" })`. Unsupported, ambiguous, or
+incompatible implementations fail without an execution fallback.
+
+## Build and inspect
+
+```sh
+bun --bun run lenso app build --source app.ts --target aarch64-apple-darwin --out build/dev
+bun --bun run lenso app check --root build/dev
+bun --bun run lenso app show --root build/dev --json
+```
+
+This example targets macOS ARM64; use a target supported by both the Bundle and
+preparation tools. Build output contains Host authority and verified Bundles,
+not a runnable runtime. `lenso run` cannot start that output. Use a fresh output
+directory for each build.
+
+## Prepare and start the offline directory
+
+`app prepare` requires explicit precompiled artifacts from a compatible release
+cohort and third-party notices:
+
+```sh
+bun --bun run lenso app prepare \
+  --build build/dev \
+  --target aarch64-apple-darwin \
+  --runtime /absolute/path/lenso-host-runtime \
+  --owner /absolute/path/lenso-process-owner \
+  --resolver /absolute/path/lenso \
+  --bun /absolute/path/bun \
+  --notices /absolute/path/THIRD_PARTY_NOTICES.txt \
+  --out dist/notes-macos-arm64
+
+./dist/notes-macos-arm64/host.js --root /absolute/path/to/app
+```
+
+Replace the artifact paths with actual inputs; preparation does not download them.
+The entrypoint verifies file digests in `.lenso/distribution.lock.json` before
+startup. The mutable Plugin Root lives outside the distribution. The runtime owns
+the Ready Gate, shutdown, and recovery of the same exact Generation.
+
+## Current support boundary
+
+- The Host declaration profile accepts Request Capabilities and at most 256
+  Instances/Slots. Bun SDK Stream/Event support does not expand this build profile.
+- Hosts are closed by default. Extensions require exact Bundles, Slots, Instance
+  limits, and any additional configuration constraints.
+- Hosts authorize named dependency candidates and defaults; Apps select within them.
+- Bun and Process execute trusted code. Configuration constraints are not an OS sandbox.
+
+As of 2026-09-06, the npm CLI has release acceptance and Host build, preparation,
+and runtime implementations exist. The CLI delivery documentation still requires
+explicit target artifacts. This is not an automatic runtime download or one-command
+deployment promise. See the [Host guide and delivery boundary](https://github.com/LioRael/lenso-cli/blob/main/docs/typescript-host-authoring.md).

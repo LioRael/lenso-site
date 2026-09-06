@@ -1,0 +1,78 @@
+---
+title: 使用 TypeScript 构建 Host
+description: 声明 Host、准备离线目录，并理解 Bun 与 Rust 的运行边界。
+---
+
+Lenso 已有 TypeScript/Bun Host 路径。用 `@lenso/cli/host` 声明 Host，生成的
+`host.js` 管理启动；Rust `lenso-host-runtime` 装配 Kernel、Bun 子进程和原生
+Process Adapter。这里的 Bun Host 不是用 TypeScript 重写 Kernel，也不同于
+单独编写一个 Bun Plugin。
+
+## 准备输入
+
+安装 npm CLI，并准备已经打包、与目标兼容的 `.lenso-plugin` Bundle。
+`app build` 提取静态声明，不编译任意 Plugin 源码，也不执行被导入的业务模块。
+
+```sh
+bun add --dev @lenso/cli@0.16.1
+```
+
+```ts title="app.ts"
+import { defineHost, pluginBundle } from "@lenso/cli/host";
+
+export default defineHost({
+  id: "company.notes-app",
+  plugins: [pluginBundle("./dist/company.notes-1.0.0.lenso-plugin")],
+});
+```
+
+示例假设 Bundle 的默认配置和依赖能够独立解析。路径相对声明所在文件解析，
+默认 execution 为 `bun`。已有 Rust Process Bundle 可显式指定
+`pluginBundle(path, { execution: "process" })`。不支持、歧义或不兼容的实现会被拒绝，
+不会回退到其他执行方式。
+
+## 构建并检查
+
+```sh
+bun --bun run lenso app build --source app.ts --target aarch64-apple-darwin --out build/dev
+bun --bun run lenso app check --root build/dev
+bun --bun run lenso app show --root build/dev --json
+```
+
+这里以 macOS ARM64 为例，必须使用 Bundle 和准备工具实际支持的目标。
+构建输出包含 Host authority 和已校验 Bundle，不包含可启动运行时；此时不能用
+`lenso run` 直接启动。每次构建使用新的输出目录。
+
+## 准备与启动离线目录
+
+`app prepare` 需要显式提供同一兼容发布组的预编译文件和第三方 notices：
+
+```sh
+bun --bun run lenso app prepare \
+  --build build/dev \
+  --target aarch64-apple-darwin \
+  --runtime /absolute/path/lenso-host-runtime \
+  --owner /absolute/path/lenso-process-owner \
+  --resolver /absolute/path/lenso \
+  --bun /absolute/path/bun \
+  --notices /absolute/path/THIRD_PARTY_NOTICES.txt \
+  --out dist/notes-macos-arm64
+
+./dist/notes-macos-arm64/host.js --root /absolute/path/to/app
+```
+
+路径是需要替换的输入，`app prepare` 不会自动下载它们。生成的入口在启动前验证
+`.lenso/distribution.lock.json` 中的文件摘要。可变 Plugin Root 在发布目录之外；
+运行时负责 Ready Gate、关闭以及恢复同一精确 Generation。
+
+## 当前支持范围
+
+- Host 声明 Profile 目前接受 Request Capability，最多 256 个 Instance/Slot；
+  Bun Plugin SDK 支持 Stream/Event 不会自动扩大这个 Host 构建 Profile。
+- Host 默认封闭。扩展必须声明确切 Bundle、Slot、Instance 上限及可选配置约束。
+- Host 可以为命名依赖规定候选和默认值；App 只能在授权范围内选择。
+- Bun 和 Process 运行可信代码，配置约束不提供文件系统或网络沙箱。
+
+截至 2026-09-06，npm CLI 已有发布验收，Host 构建、准备与运行时实现也已存在。
+但 CLI 的交付说明仍要求显式目标文件，不能把这些实现描述成自动下载完整运行环境的
+一键部署产品。参见[Host 使用与交付边界](https://github.com/LioRael/lenso-cli/blob/main/docs/typescript-host-authoring.md)。

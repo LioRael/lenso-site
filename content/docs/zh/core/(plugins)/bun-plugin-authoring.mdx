@@ -30,7 +30,7 @@ example.echo/
 ```
 
 只编辑 `src/plugin.ts`。初始脚手架实现生成的
-`lenso.agent.tool-provider@1` Provider，并暴露一个 Tool。预期业务结果返回生成的
+`lenso.agent.tool-provider@2` Provider，并暴露一个 Tool。预期业务结果返回生成的
 Domain Error；抛出的异常仍是 Runtime Failure。
 
 ## 2. 实现 Provider
@@ -113,8 +113,50 @@ Archive 选择 `lenso.bun-process@1`。兼容的产品 Host 必须链接 Bun Ada
 每个 Provided Capability 注册生成的 Rust Codec；Agent Host 已包含这条集成。
 运行 Host 的机器必须能找到 `bun`。
 
-公开高层 SDK 当前支持 Request Capability。尽管底层 Adapter 已有 Stream 与 Event
-Conformance，Authoring Surface 仍保持 Fail-closed；不要从内部测试推断公开支持。
+当前 Bun Authoring V2 支持 Request、双向 Stream、Event Provider，以及这三种交互的
+生成式出站依赖客户端。`@lenso/bun 0.5.1` 和 `@lenso/bun-plugin 0.4.1` 是已记录的
+发布版本；文档中的早期“仅 Request”限制不再适用于这组 SDK。
 
 类型化 SDK 见 [`@lenso/bun`](https://www.npmjs.com/package/@lenso/bun)，进程边界见
 [`lenso-bun-adapter`](https://github.com/LioRael/lenso-bun-adapter)。
+
+
+## 使用生成的 Capability 编写有状态 Plugin
+
+上面的 `providers`/`bind*Provider` 形式仍是兼容入口。新代码优先通过生成的
+Capability 值、`provides` 和 `create` 表达 Provider 与生命周期。
+以下结构示例假设项目已从自己的 Contract 生成 `Conversation` 和 `Store`，
+并定义了对应的 `chat`/`get` 操作：
+
+```ts
+import { definePlugin } from "@lenso/bun";
+import { Conversation } from "./generated/conversation.ts";
+import { Store } from "./generated/store.ts";
+
+export default definePlugin({
+  provides: [Conversation],
+  dependencies: { store: Store.required() },
+  async create({ dependencies }) {
+    return {
+      async *chat(_context, request) {
+        const greeting = await dependencies.store.get(request.room);
+        yield { text: greeting ?? "Hello" };
+      },
+    };
+  },
+});
+```
+
+
+依赖字段名默认成为稳定 requirement ID；`required()`、`optional()` 和 `many()`
+适用于所有三种交互。`create` 按 Instance 构造，`stop` 在托管关闭中最多执行一次。
+无 Provider、只消费依赖或持有生命周期工作的 Plugin 也有效。
+
+服务端输出 Stream 可返回 async generator；双向消息、独立 half-close 或终结业务
+错误使用生成的 `StreamSession`。Event handler 可返回 `void` 或 `Promise<void>`，
+发布等待处理完成，Promise 拒绝映射为 Runtime Failure。出站客户端只调用 Plan 选择的
+Provider，并保留取消、消息顺序及有界准入语义。
+
+具体生成接口见 [Bun SDK](https://github.com/LioRael/lenso-bun-adapter/blob/main/packages/lenso-bun-plugin/README.md)。
+继续阅读[命名依赖](/docs/zh/core/named-dependencies)、[完整同步示例](/docs/zh/core/document-sync)
+或[构建 TypeScript Host](/docs/zh/core/typescript-host)。Host 的构建 Profile 有独立限制。

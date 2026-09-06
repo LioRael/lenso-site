@@ -13,7 +13,7 @@ Lenso 只有一种 Plugin 产品模型，并不会为每个 Runtime 再定义一
 | --- | --- | --- | --- |
 | [可移植 Rust Plugin](/docs/zh/core/plugin-authoring) | 添加一个需要打包、安装的 Agent Tool | Wasm、可信 Process，或两者 | `lenso plugin new` 当前只脚手架化 Agent Tool Provider Capability |
 | [Linked Rust Plugin](/docs/zh/core/linked-rust-plugin) | 你拥有产品 Host，需要深层、有状态或提供多个 Capability 的实现 | 链接进 Host 的原生 Rust | Host 二进制必须包含生成的 factory |
-| [Bun Plugin](/docs/zh/core/bun-plugin-authoring) | 希望用 TypeScript 实现强类型 Request provider | 可信 Bun 子进程 | 公共 SDK 当前只开放 Request Capability |
+| [Bun Plugin](/docs/zh/core/bun-plugin-authoring) | 希望用 TypeScript 实现强类型 Provider | 可信 Bun 子进程 | Authoring V2 支持 Request、Stream、Event |
 
 普通 Agent Tool 优先从可移植 Rust 开始。Plugin 需要产品资源、生命周期、多个
 Capability，或者 CLI 尚未脚手架化的 Capability 时，选择 Linked Rust。目标 Host

@@ -26,7 +26,7 @@ An Adapter owns:
 | Implementation | Repository |
 | --- | --- |
 | Tokio Runner, native Adapter, browser and WASIp2 Drivers | `LioRael/lenso-runtime-rust` |
-| Bun child-process Adapter and cross-runtime fixtures | `LioRael/lenso-bun-adapter` |
+| Bun SDK, child-process Adapter, and prepared Host runtime | `LioRael/lenso-bun-adapter` |
 | Descriptor code generation and portable value conformance | `LioRael/lenso-protocols` |
 
 The Bun Adapter uses JSON-RPC over HTTP in production and implements Request,
@@ -36,3 +36,7 @@ choices, not Capability or Kernel semantics. Plugin authors use the published
 the handshake or process protocol. See
 [Bun Plugin authoring](/docs/core/bun-plugin-authoring) for the complete scaffold and
 development path.
+
+The CLI declares and prepares TypeScript/Bun Hosts; `lenso-host-runtime`
+assembles the Rust Kernel and Bun/Process Adapters. See [TypeScript Host](/docs/core/typescript-host)
+for the entrypoint and current limits.

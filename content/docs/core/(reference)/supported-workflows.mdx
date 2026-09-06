@@ -11,8 +11,8 @@ and states the environment boundary that matters before you begin.
 Use the public `lenso` CLI to create, run, and package a typed Plugin. Portable
 Rust can produce Wasm and trusted Process implementations; linked Rust is for a
 Host that intentionally compiles the implementation into its binary. Bun /
-TypeScript has a public Request Provider workflow. Its public SDK does not yet
-offer Stream or Event Providers.
+TypeScript Authoring V2 supports Request, Stream, and Event Providers and
+generated outbound clients.
 
 Start with [Create your first Plugin](/docs/core/quickstart), then
 [choose a Plugin path](/docs/core/choose-plugin-path) when language or execution
@@ -55,8 +55,8 @@ Start with [Run your first Agent Turn](/docs/agent/first-turn), then
 
 - Native Rust supports Request, Stream, and Event interactions through linked
   factories.
-- Bun / TypeScript authoring currently exposes Request Providers. Lower-level
-  Adapter conformance does not make Stream or Event a public authoring promise.
+- Bun / TypeScript Authoring V2 supports Request, Stream, and Event Providers
+  and outbound clients. The TypeScript Host declaration profile remains Request-only.
 - Browser JavaScript and WASIp2 are Host profiles. They do not provide hostile
   code isolation, and WASIp2 component packaging is not yet a starter workflow.
 - The maintained Auth path is API-token verification backed by PostgreSQL.
@@ -68,3 +68,11 @@ Lenso does not promise arbitrary runtime discovery, hot graph mutation,
 distributed placement, automatic replicas, hostile browser-code isolation, or
 an independent Console product. These are explicit product boundaries, not
 steps you must wait to pass before using the workflows above.
+
+
+## Declare a Host from TypeScript
+
+Use `defineHost`, `app build`, and `app prepare` to compose prebuilt Plugins and
+produce a startup directory backed by the Rust runtime. See [TypeScript Host](/docs/core/typescript-host)
+for explicit target-artifact requirements and [document-sync](/docs/core/document-sync)
+for the Rust/Bun invocation proof.
