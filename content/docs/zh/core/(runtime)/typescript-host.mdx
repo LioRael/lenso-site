@@ -1,78 +1,246 @@
 ---
 title: 使用 TypeScript 构建 Host
-description: 声明 Host、准备离线目录，并理解 Bun 与 Rust 的运行边界。
+description: 准备真实运行文件，验证 Host 生命周期，并识别 Bun Plugin 当前阻塞。
 ---
 
-Lenso 已有 TypeScript/Bun Host 路径。用 `@lenso/cli/host` 声明 Host，生成的
-`host.js` 管理启动；Rust `lenso-host-runtime` 装配 Kernel、Bun 子进程和原生
-Process Adapter。这里的 Bun Host 不是用 TypeScript 重写 Kernel，也不同于
-单独编写一个 Bun Plugin。
+Lenso 已有 TypeScript/Bun Host：`@lenso/cli/host` 描述组合，生成的 `host.js`
+管理生命周期，Rust `lenso-host-runtime` 装配 Kernel 与 Bun/Process Adapter。
+Host 控制 API 提供 `start`、`inspect`、`stop`，业务入口由 Plugin 持有。
 
-## 准备输入
+## 验证状态与前置条件
 
-安装 npm CLI，并准备已经打包、与目标兼容的 `.lenso-plugin` Bundle。
-`app build` 提取静态声明，不编译任意 Plugin 源码，也不执行被导入的业务模块。
+2026-09-07 在 macOS ARM64 上从新目录验证的结果如下。当前不能把它当作带 Bun
+Plugin 的一键启动教程；先用空 Host 验证真实生命周期，再检查下面的 Plugin 阻塞。
+
+| 路径 | 本次结果 |
+| --- | --- |
+| Bun Plugin scaffold、check、pack | 通过，生成 Bundle 4 |
+| 将该 Bundle 加入 TypeScript Host | 被运行 Profile 准入拒绝 |
+| 空 Host build、check、show、prepare | 通过 |
+| 生成入口的 start、inspect、stop、再次 start | 通过，恢复同一个 Generation |
+| 物理退出 | `termination: confirmed`，但 `forced: true` |
+| CLI `plugin dev` 执行业务调用 | 运行时嵌套错误，未成功调用 |
+
+需要 Git、Rust 工具链、Bun 和 macOS ARM64；下列命令在新目录中执行。此次 Bun
+版本为 `1.4.1-canary.1`，这不是对其他平台或所有 Bun 版本的验证。
 
 ```sh
+mkdir host-walkthrough
+cd host-walkthrough
 bun add --dev @lenso/cli@0.16.1
+```
+
+
+## 获取可运行文件
+
+npm CLI 自带当前平台的 resolver 和生成控制库，不自带完整 Host 运行环境。
+下面固定源代码与 lockfile 来构建此次验证使用的两个二进制，不依赖同名的全局 CLI：
+
+```sh
+git clone https://github.com/LioRael/lenso-bun-adapter.git runtime-source
+git -C runtime-source checkout 3c1f2f011f4f9d496db337f296ad686ab0a985e0
+cargo build --locked --manifest-path runtime-source/Cargo.toml -p lenso-host-runtime
+
+git clone https://github.com/LioRael/lenso-runtime-rust.git owner-source
+git -C owner-source checkout 1e3915a
+cargo build --locked --manifest-path owner-source/Cargo.toml \
+  -p lenso-runner --bin lenso-process-owner --features process-owner
+```
+
+
+| prepare 输入 | 来源 |
+| --- | --- |
+| `--runtime` | `runtime-source/target/debug/lenso-host-runtime`，版本 0.1.5 |
+| `--owner` | `owner-source/target/debug/lenso-process-owner`，由 `lenso-runner 0.2.13` 提供 |
+| `--resolver` | `node_modules/@lenso/cli/vendor/darwin-arm64/lenso` |
+| 控制库 | 通过 npm launcher 自动传入；不要单独调用系统中的旧 `lenso` |
+| `--bun` | 有 Bun 实现时必需，提供目标平台的真实可执行文件 |
+| `--notices` | 对所分发文件适用的第三方声明文件，必须非空 |
+
+如果配置了 `CARGO_TARGET_DIR`，二进制会位于该目录，而不是以上默认路径。
+本地空 Host 演示可以用源仓库许可证作为 notices 输入：
+
+```sh
+cp runtime-source/LICENSE THIRD_PARTY_NOTICES.txt
+```
+
+
+这只是本地演示输入，不是对整个运行环境的完整再分发声明。交付给他人前，应收集
+实际二进制、依赖和 Bun 的适用声明，并使用对应目标的发布构建。
+
+## 构建一个空 Host
+
+下面的 `empty-host.ts` 不需要虚构或另行下载的示例 Bundle。它用于验证控制路径，
+不执行任何业务 Plugin。
+
+```ts title="empty-host.ts"
+import { defineHost } from "@lenso/cli/host";
+export default defineHost({ id: "example.empty-host", plugins: [] });
+```
+
+```sh
+bun --bun run lenso app build --source empty-host.ts --target aarch64-apple-darwin --out build/empty
+bun --bun run lenso app check --root build/empty
+bun --bun run lenso app show --root build/empty --json
+```
+
+
+预期输出包含零个 Instance 和 binding。每次构建/prepare 都需要新的输出目录。
+构建输出只有 authority 与 Bundle inventory；`lenso run` 不能启动它。
+
+## 准备与启动
+
+```sh
+bun --bun run lenso app prepare \
+  --build build/empty --target aarch64-apple-darwin \
+  --runtime runtime-source/target/debug/lenso-host-runtime \
+  --owner owner-source/target/debug/lenso-process-owner \
+  --resolver node_modules/@lenso/cli/vendor/darwin-arm64/lenso \
+  --notices THIRD_PARTY_NOTICES.txt --out dist/empty
+mkdir -p state/app
+```
+
+
+空 Host 不需要 `--bun`。有 Bun 实现时还须把精确 Bun 可执行文件交给 prepare。
+分发目录中的 lock 校验每个不可变文件；不要修改文件后重写摘要来绕过失败。
+可变 App Root 使用 `state/app`，不要把 `build/empty` 当成运行 Root，也不要把另一份
+Host authority 复制进去。
+
+创建以下脚本，通过生成入口等待 Ready、检查结构并关闭：
+
+```ts title="lifecycle.ts"
+import { start } from "./dist/empty/host.js";
+
+const app = await start({ root: `${import.meta.dir}/state/app` });
+try {
+  console.log(JSON.stringify(await app.inspect()));
+} finally {
+  const outcome = await app.stop();
+  console.log(JSON.stringify(outcome));
+  if (outcome.shutdown !== "suspended" ||
+      outcome.ownership.termination !== "confirmed") {
+    process.exitCode = 1;
+  }
+}
+```
+
+```sh
+bun lifecycle.ts
+bun lifecycle.ts
+```
+
+
+`start` 返回表示 Ready Gate 已打开。检查结果包含 `revision`、`generation`、
+`instances`、`diagnostics`；第二次启动应恢复同一个 Generation，revision 可以变化。
+本次实际结果为 `shutdown: suspended`、`termination: confirmed`、`forced: true`。
+前两项分别说明已持久化挂起与确认进程终止；`forced` 表示发生强制清理，不能称为完全
+优雅退出。脚本不会隐藏这个字段。
+
+常驻运行可用 `bun dist/empty/host.js --root "$PWD/state/app"`，通过 Ctrl+C/SIGTERM
+请求关闭。默认 ownership registry 在 Root 旁边的 `.lenso-owners`。重复启动必须使用
+同一 registry；不要为绕过所有权冲突而换目录或删除锁。`start` 还接受 `registry`、
+`startupMs`、`stopMs`、`confirmationMs`，它们控制等待预算，不保证强制终止等同于业务关闭。
+
+## 添加真实 Bun Plugin：目前的阻塞
+
+以下命令能生成并打包真实 Bundle，替代没有来源的 `company.notes`：
+
+```sh
+bun --bun run lenso plugin new example.host-echo --runtime bun
+bun --bun run lenso plugin check --repo-root example.host-echo --json
+bun --bun run lenso plugin pack --repo-root example.host-echo --output echo.lenso-plugin --json
 ```
 
 ```ts title="app.ts"
 import { defineHost, pluginBundle } from "@lenso/cli/host";
-
 export default defineHost({
-  id: "company.notes-app",
-  plugins: [pluginBundle("./dist/company.notes-1.0.0.lenso-plugin")],
+  id: "example.echo-host",
+  plugins: [pluginBundle("./echo.lenso-plugin")],
 });
 ```
 
-示例假设 Bundle 的默认配置和依赖能够独立解析。路径相对声明所在文件解析，
-默认 execution 为 `bun`。已有 Rust Process Bundle 可显式指定
-`pluginBundle(path, { execution: "process" })`。不支持、歧义或不兼容的实现会被拒绝，
-不会回退到其他执行方式。
-
-## 构建并检查
-
 ```sh
-bun --bun run lenso app build --source app.ts --target aarch64-apple-darwin --out build/dev
-bun --bun run lenso app check --root build/dev
-bun --bun run lenso app show --root build/dev --json
+bun --bun run lenso app build --source app.ts --target aarch64-apple-darwin --out build/echo
 ```
 
-这里以 macOS ARM64 为例，必须使用 Bundle 和准备工具实际支持的目标。
-构建输出包含 Host authority 和已校验 Bundle，不包含可启动运行时；此时不能用
-`lenso run` 直接启动。每次构建使用新的输出目录。
 
-## 准备与启动离线目录
+在已验证的 CLI 版本上，最后一步报错 `V4 Bundle has no implementation admitted by Host policy`。
+该 Bundle 声明 `lenso.bun-authoring@2`，而当前 Host builder 的 V2 准入使用
+`lenso.plugin-authoring@2`。改成 `--target javascript-bun` 也不能解决这次 Profile 拒绝。
+不要修改 Bundle manifest、伪造摘要或使用空 Host 的成功来替代真实 Plugin 验收。
 
-`app prepare` 需要显式提供同一兼容发布组的预编译文件和第三方 notices：
+业务调用仍应通过 Plugin 的公开入口，或开发期 `plugin dev` 验证；`app.inspect()`
+只查看结构，没有 `app.invoke()`。本次 `plugin dev --operation execute` 出现
+`Cannot start a runtime from within a runtime`，所以尚未获得成功业务返回。
+[document-sync](/docs/zh/core/document-sync)的独立测试 Host 证据也不等于此分发路径已跑通。
+
 
 ```sh
-bun --bun run lenso app prepare \
-  --build build/dev \
-  --target aarch64-apple-darwin \
-  --runtime /absolute/path/lenso-host-runtime \
-  --owner /absolute/path/lenso-process-owner \
-  --resolver /absolute/path/lenso \
-  --bun /absolute/path/bun \
-  --notices /absolute/path/THIRD_PARTY_NOTICES.txt \
-  --out dist/notes-macos-arm64
-
-./dist/notes-macos-arm64/host.js --root /absolute/path/to/app
+bun --bun run lenso plugin dev --repo-root example.host-echo \
+  --operation execute \
+  --request-json '{"name":"example.host-echo","arguments_json":"{\"text\":\"hello\"}"}'
 ```
 
-路径是需要替换的输入，`app prepare` 不会自动下载它们。生成的入口在启动前验证
-`.lenso/distribution.lock.json` 中的文件摘要。可变 Plugin Root 在发布目录之外；
-运行时负责 Ready Gate、关闭以及恢复同一精确 Generation。
+## 多 Instance、扩展与配置
 
-## 当前支持范围
+下面是配置结构示例，依赖项目自己提供的、已被目标 Profile 接纳的 Store/Copy Bundle；
+不是上面 echo 示例的可执行续篇。假设 Store 声明 `store` Slot、Copy 有两个命名依赖。
 
-- Host 声明 Profile 目前接受 Request Capability，最多 256 个 Instance/Slot；
-  Bun Plugin SDK 支持 Stream/Event 不会自动扩大这个 Host 构建 Profile。
-- Host 默认封闭。扩展必须声明确切 Bundle、Slot、Instance 上限及可选配置约束。
-- Host 可以为命名依赖规定候选和默认值；App 只能在授权范围内选择。
-- Bun 和 Process 运行可信代码，配置约束不提供文件系统或网络沙箱。
+```ts
+import { defineHost, pluginBundle } from "@lenso/cli/host";
+const store = pluginBundle("./store.lenso-plugin");
+export default defineHost({
+  id: "company.copy-host",
+  plugins: [
+    { plugin: store, instance: "source", configuration: { namespace: "source" } },
+    { plugin: store, instance: "destination", configuration: { namespace: "dest" } },
+    pluginBundle("./copy.lenso-plugin"),
+  ],
+  slots: [{ id: "store", cardinality: "many" }],
+  dependencies: [
+    {
+      consumer: { plugin: "company.copy" }, requirement: "source",
+      allow: [{ plugin: "company.store", instance: "source" }],
+      default: { plugin: "company.store", instance: "source" },
+    },
+    {
+      consumer: { plugin: "company.copy" }, requirement: "destination",
+      allow: [{ plugin: "company.store", instance: "destination" }],
+      default: { plugin: "company.store", instance: "destination" },
+    },
+  ],
+});
+```
 
-截至 2026-09-06，npm CLI 已有发布验收，Host 构建、准备与运行时实现也已存在。
-但 CLI 的交付说明仍要求显式目标文件，不能把这些实现描述成自动下载完整运行环境的
-一键部署产品。参见[Host 使用与交付边界](https://github.com/LioRael/lenso-cli/blob/main/docs/typescript-host-authoring.md)。
+
+Host 默认封闭：现有配置必须通过 Plugin Schema，新增 Instance 和替换版本需要明确
+授权。可扩展 Slot 使用 `allow: [pluginBundle(...)]` 和 `maxInstances`（1–256）；
+`one` Slot 的替换还需要 `replaceable: true`。`configurationSchema` 约束合并后的
+配置，不能替代 Plugin 自己的 Schema，也不是 OS 沙箱。完整授权示例与支持的 Schema
+关键字见[Host 声明参考](https://github.com/LioRael/lenso-cli/blob/080e7fc/docs/typescript-host-authoring.md#admit-extensions-and-constrain-configuration)。
+
+路径相对声明文件解析。声明支持静态对象、数组、常量和相对默认导入，不执行环境读取、
+动态导入、spread、任意函数或业务模块。Host 声明 Profile 目前只接纳 Request，最多
+256 个 Instance/Slot；Bun SDK 的 Stream/Event 支持不会自动扩大它。
+
+## 恢复、升级与排错
+
+正常停止后保留外部 Root 与共享 registry，使用原始未修改分发目录重启。当前证据证明
+同一精确 Generation 的恢复，不代表任意版本升级。升级使用新的 build/prepare 目录，
+先确认旧进程已终止，再验证目标分发与持久状态兼容；备份 Root 和持久数据。没有公开的
+通用热升级命令，不应直接覆盖运行目录或修改 lock。
+
+| 现象 | 检查与处理 |
+| --- | --- |
+| `Host Catalog is unavailable` | 先确认 build 成功；不要继续检查未生成的输出 |
+| `V4 Bundle has no implementation admitted by Host policy` | 比对 execution class、runtime profile 和目标；当前 echo 有上述已复现阻塞 |
+| `Cannot start a runtime from within a runtime` | 当前 CLI dev 已复现；增加超时不能解决，应修复运行时集成后复验 |
+| `prepared Host needs the generated npm control library` | 通过项目 npm launcher 调用 prepare，避免旧的全局二进制 |
+| `distribution target ... does not support ...` | 平台/架构不匹配，重新提供正确目标的文件 |
+| `failed integrity` / `not a regular file` | 恢复原始文件，检查符号链接与内容；不要绕过校验 |
+| ownership 冲突 | 检查原进程和共享 registry；不要删除锁或另建 registry 强行并发 |
+| startup timeout | Ready 未确认；检查 Profile、Bundle 和 Root，不能把进程存在当作可用 |
+| `shutdown: failed`、终止未确认或 `forced: true` | 分别保留业务关闭和物理退出结果；不能统一记录为优雅成功 |
+
+此次验证只覆盖声明检查、真实空 Host 生命周期和上述失败路径，没有证明带 Bun Plugin
+的完整分发，也没有验证崩溃注入或跨版本升级。后续修复后应重跑相同流程，更新这份状态表。

@@ -76,3 +76,7 @@ Use `defineHost`, `app build`, and `app prepare` to compose prebuilt Plugins and
 produce a startup directory backed by the Rust runtime. See [TypeScript Host](/docs/core/typescript-host)
 for explicit target-artifact requirements and [document-sync](/docs/core/document-sync)
 for the Rust/Bun invocation proof.
+
+Verification on 2026-09-07 reached the empty TypeScript Host lifecycle, but
+the CLI-generated Bun Bundle was rejected by Host profile admission and
+`plugin dev` failed. See the [Host verification status](/docs/core/typescript-host#verification-status-and-prerequisites).

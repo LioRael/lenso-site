@@ -67,3 +67,7 @@ Automatic Replica、敌对浏览器代码隔离或独立 Console 产品。这些
 使用 `defineHost`、`app build` 和 `app prepare` 组合已打包 Plugin，并生成由
 Rust 运行时执行的启动目录。见[TypeScript Host](/docs/zh/core/typescript-host)了解显式目标文件要求，
 以及[document-sync](/docs/zh/core/document-sync)的 Rust/Bun 调用验收。
+
+2026-09-07 实测：空 TypeScript Host 生命周期可执行，但当前 CLI 生成的 Bun Bundle
+被 Host Profile 准入拒绝，`plugin dev` 也有已复现错误。完整结果见
+[Host 验证状态](/docs/zh/core/typescript-host#验证状态与前置条件)。
