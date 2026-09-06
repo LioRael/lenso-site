@@ -1,0 +1,272 @@
+---
+title: Build a Host in TypeScript
+description: Prepare real runtime inputs, verify the Host lifecycle, and identify current Bun Plugin blockers.
+---
+
+Lenso's TypeScript/Bun Host uses `@lenso/cli/host` for composition, generated
+`host.js` for lifecycle control, and Rust `lenso-host-runtime` for the Kernel and
+Bun/Process Adapters. The Host API exposes `start`, `inspect`, and `stop`;
+Plugins own business entrypoints.
+
+## Verification status and prerequisites
+
+The following results were obtained from a fresh directory on macOS ARM64 on
+2026-09-07. This is not yet a working end-to-end Bun Plugin Host quickstart.
+First verify the real lifecycle with an empty Host, then check the Plugin blocker below.
+
+| Path | Observed result |
+| --- | --- |
+| Bun Plugin scaffold, check, pack | Passed; produced Bundle 4 |
+| Add that Bundle to a TypeScript Host | Runtime profile admission rejected it |
+| Empty Host build, check, show, prepare | Passed |
+| Generated entrypoint start, inspect, stop, start again | Passed; recovered the same Generation |
+| Physical termination | `termination: confirmed`, but `forced: true` |
+| Business invocation through CLI `plugin dev` | Failed with a nested runtime error |
+
+You need Git, the Rust toolchain, Bun, and macOS ARM64. Run these commands in a
+fresh directory. Validation used Bun `1.4.1-canary.1`; it does not establish support
+for every Bun version or another platform.
+
+```sh
+mkdir host-walkthrough
+cd host-walkthrough
+bun add --dev @lenso/cli@0.16.1
+```
+
+
+## Obtain the runtime inputs
+
+The npm CLI ships a platform resolver and generated control library, not the
+complete Host runtime. Build the two binaries from the pinned sources and
+lockfiles used in this verification, rather than relying on a global CLI:
+
+```sh
+git clone https://github.com/LioRael/lenso-bun-adapter.git runtime-source
+git -C runtime-source checkout 3c1f2f011f4f9d496db337f296ad686ab0a985e0
+cargo build --locked --manifest-path runtime-source/Cargo.toml -p lenso-host-runtime
+
+git clone https://github.com/LioRael/lenso-runtime-rust.git owner-source
+git -C owner-source checkout 1e3915a
+cargo build --locked --manifest-path owner-source/Cargo.toml \
+  -p lenso-runner --bin lenso-process-owner --features process-owner
+```
+
+
+| Preparation input | Source |
+| --- | --- |
+| `--runtime` | `runtime-source/target/debug/lenso-host-runtime`, version 0.1.5 |
+| `--owner` | `owner-source/target/debug/lenso-process-owner`, from `lenso-runner 0.2.13` |
+| `--resolver` | `node_modules/@lenso/cli/vendor/darwin-arm64/lenso` |
+| Control library | Passed by the npm launcher; do not substitute an older global `lenso` |
+| `--bun` | Required when selecting Bun implementations; supply a real target executable |
+| `--notices` | Nonempty third-party notices applicable to the files you distribute |
+
+If `CARGO_TARGET_DIR` is set, use that output directory instead of the default
+paths above. For this local empty-Host demonstration, use the source license as
+the notices input:
+
+```sh
+cp runtime-source/LICENSE THIRD_PARTY_NOTICES.txt
+```
+
+
+This is a local demonstration input, not a complete redistribution notice for
+the runtime. Before shipping to others, collect applicable notices for the actual
+binaries, dependencies, and Bun, and use release builds for the intended target.
+
+## Build an empty Host
+
+This `empty-host.ts` needs no hypothetical example Bundle. It verifies the control
+path and intentionally runs no business Plugin.
+
+```ts title="empty-host.ts"
+import { defineHost } from "@lenso/cli/host";
+export default defineHost({ id: "example.empty-host", plugins: [] });
+```
+
+```sh
+bun --bun run lenso app build --source empty-host.ts --target aarch64-apple-darwin --out build/empty
+bun --bun run lenso app check --root build/empty
+bun --bun run lenso app show --root build/empty --json
+```
+
+
+Expect zero Instances and bindings. Each build/prepare needs a fresh output
+directory. Build output only contains authority and the Bundle inventory;
+`lenso run` cannot start it.
+
+## Prepare and start
+
+```sh
+bun --bun run lenso app prepare \
+  --build build/empty --target aarch64-apple-darwin \
+  --runtime runtime-source/target/debug/lenso-host-runtime \
+  --owner owner-source/target/debug/lenso-process-owner \
+  --resolver node_modules/@lenso/cli/vendor/darwin-arm64/lenso \
+  --notices THIRD_PARTY_NOTICES.txt --out dist/empty
+mkdir -p state/app
+```
+
+
+The empty Host does not need `--bun`. A distribution selecting Bun implementations
+must also supply its exact Bun executable. The distribution lock verifies every
+immutable file; do not rewrite hashes to bypass verification failures.
+Use `state/app` as the mutable Root. Do not run against `build/empty` or copy a
+competing Host authority into the Root.
+
+Create this script to wait for readiness, inspect the App, and stop through the
+generated entrypoint:
+
+```ts title="lifecycle.ts"
+import { start } from "./dist/empty/host.js";
+
+const app = await start({ root: `${import.meta.dir}/state/app` });
+try {
+  console.log(JSON.stringify(await app.inspect()));
+} finally {
+  const outcome = await app.stop();
+  console.log(JSON.stringify(outcome));
+  if (outcome.shutdown !== "suspended" ||
+      outcome.ownership.termination !== "confirmed") {
+    process.exitCode = 1;
+  }
+}
+```
+
+```sh
+bun lifecycle.ts
+bun lifecycle.ts
+```
+
+
+`start` returns after the Ready Gate opens. Inspection includes `revision`,
+`generation`, `instances`, and `diagnostics`. Restart should recover the same
+Generation; revision can change. The observed outcome was `shutdown: suspended`,
+`termination: confirmed`, and `forced: true`. The first two establish durable
+suspension and confirmed process termination. `forced` means cleanup escalated;
+this is not fully graceful exit. The script preserves that field in its output.
+
+For a long-running session, use `bun dist/empty/host.js --root "$PWD/state/app"`;
+Ctrl+C/SIGTERM requests shutdown. The default ownership registry is `.lenso-owners`
+next to the Root. Repeated starts must share that registry; do not change it or
+delete locks to bypass ownership conflicts. `start` also accepts `registry`,
+`startupMs`, `stopMs`, and `confirmationMs`. These bound waiting, not business
+shutdown guarantees.
+
+## Add a real Bun Plugin: current blocker
+
+These commands generate and pack a real Bundle instead of referencing a
+nonexistent `company.notes` artifact:
+
+```sh
+bun --bun run lenso plugin new example.host-echo --runtime bun
+bun --bun run lenso plugin check --repo-root example.host-echo --json
+bun --bun run lenso plugin pack --repo-root example.host-echo --output echo.lenso-plugin --json
+```
+
+```ts title="app.ts"
+import { defineHost, pluginBundle } from "@lenso/cli/host";
+export default defineHost({
+  id: "example.echo-host",
+  plugins: [pluginBundle("./echo.lenso-plugin")],
+});
+```
+
+```sh
+bun --bun run lenso app build --source app.ts --target aarch64-apple-darwin --out build/echo
+```
+
+
+On the verified CLI version, the final command reports
+`V4 Bundle has no implementation admitted by Host policy`. The Bundle declares
+`lenso.bun-authoring@2`, while the current builder's V2 admission uses
+`lenso.plugin-authoring@2`. Selecting `--target javascript-bun` does not fix this
+profile rejection. Do not edit the manifest, forge digests, or use empty-Host
+success as a substitute for Plugin acceptance.
+
+Business calls belong to the Plugin's public entrypoint or development-time
+`plugin dev`; `app.inspect()` only reads structure and there is no `app.invoke()`.
+The verified `plugin dev --operation execute` attempt failed with
+`Cannot start a runtime from within a runtime`, so no successful business return
+was obtained. The separate [document-sync](/docs/core/document-sync) test Host is not proof
+that this distribution path works.
+
+
+```sh
+bun --bun run lenso plugin dev --repo-root example.host-echo \
+  --operation execute \
+  --request-json '{"name":"example.host-echo","arguments_json":"{\"text\":\"hello\"}"}'
+```
+
+## Multiple Instances, extensions, and configuration
+
+This is a declaration example requiring your own admitted Store/Copy Bundles;
+it is not an executable continuation of the echo example. Assume Store offers
+the `store` Slot and Copy declares both named dependencies.
+
+```ts
+import { defineHost, pluginBundle } from "@lenso/cli/host";
+const store = pluginBundle("./store.lenso-plugin");
+export default defineHost({
+  id: "company.copy-host",
+  plugins: [
+    { plugin: store, instance: "source", configuration: { namespace: "source" } },
+    { plugin: store, instance: "destination", configuration: { namespace: "dest" } },
+    pluginBundle("./copy.lenso-plugin"),
+  ],
+  slots: [{ id: "store", cardinality: "many" }],
+  dependencies: [
+    {
+      consumer: { plugin: "company.copy" }, requirement: "source",
+      allow: [{ plugin: "company.store", instance: "source" }],
+      default: { plugin: "company.store", instance: "source" },
+    },
+    {
+      consumer: { plugin: "company.copy" }, requirement: "destination",
+      allow: [{ plugin: "company.store", instance: "destination" }],
+      default: { plugin: "company.store", instance: "destination" },
+    },
+  ],
+});
+```
+
+
+Hosts are closed by default. Existing configuration must pass the Plugin Schema;
+new Instances and replacement Releases need explicit authorization. Extensible
+Slots use `allow: [pluginBundle(...)]` and `maxInstances` (1–256). Replacing a
+`one` Slot also needs `replaceable: true`. `configurationSchema` constrains the
+merged configuration in addition to the Plugin Schema; it is not an OS sandbox.
+See the [Host declaration reference](https://github.com/LioRael/lenso-cli/blob/080e7fc/docs/typescript-host-authoring.md#admit-extensions-and-constrain-configuration)
+for full authorization examples and supported Schema keywords.
+
+Paths resolve relative to the declaration file. Declarations support static
+objects, arrays, constants, and relative default imports. They do not evaluate
+environment reads, dynamic imports, spreads, arbitrary calls, or business modules.
+The Host declaration profile accepts Request and at most 256 Instances/Slots;
+Bun SDK Stream/Event support does not expand it.
+
+## Recovery, upgrades, and troubleshooting
+
+After stopping, retain the external Root and shared registry and restart the
+unchanged distribution. The evidence establishes exact-Generation recovery, not
+arbitrary version upgrades. Build/prepare an upgrade into a new directory, confirm
+the old process has terminated, and verify compatibility with durable state;
+back up the Root and persistent data. There is no public generic hot-upgrade
+command. Do not overwrite a running distribution or edit its lock.
+
+| Symptom | Check and action |
+| --- | --- |
+| `Host Catalog is unavailable` | Confirm build succeeded; do not inspect output that was never produced |
+| `V4 Bundle has no implementation admitted by Host policy` | Compare execution class, runtime profile, and target; echo has the reproduced blocker above |
+| `Cannot start a runtime from within a runtime` | Reproduced in CLI dev; longer timeouts cannot fix the runtime integration |
+| `prepared Host needs the generated npm control library` | Invoke prepare through the project's npm launcher |
+| `distribution target ... does not support ...` | Supply artifacts matching the actual platform/architecture |
+| `failed integrity` / `not a regular file` | Restore original files and check symlinks/content; do not bypass verification |
+| Ownership conflict | Inspect the original process and shared registry; do not delete locks or switch registries to force concurrency |
+| Startup timeout | Ready was not confirmed; inspect profiles, Bundles, and Root, not just process existence |
+| `shutdown: failed`, unconfirmed termination, or `forced: true` | Preserve business shutdown and physical termination separately; do not report graceful success |
+
+This verification covers declaration checks, real empty-Host lifecycle, and the
+reported failures. It does not establish a complete Bun Plugin distribution,
+crash injection, or cross-version upgrades. Rerun the same workflow and update
+the status table after the integration is corrected.

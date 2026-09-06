@@ -10,8 +10,8 @@ description: 为 Plugin Authoring、App Composition、Web 后端或 Agent 产品
 
 使用公开的 `lenso` CLI 创建、运行并打包类型化 Plugin。Portable Rust 可以生成
 Wasm 与可信 Process 实现；Linked Rust 适用于有意把实现编译进自身 Binary 的
-Host。Bun / TypeScript 已有公开的 Request Provider 工作流，但公开 SDK 目前不提供
-Stream 或 Event Provider。
+Host。Bun / TypeScript Authoring V2 已支持 Request、Stream、Event Provider
+及生成式出站客户端。
 
 先完成[创建第一个 Plugin](/docs/zh/core/quickstart)；当语言或执行位置会影响选择时，
 再[选择 Plugin 路径](/docs/zh/core/choose-plugin-path)。
@@ -48,8 +48,8 @@ Web 或 Channel Surface。Profile 选择 Model 与 Tool Policy；Session 与 Mem
 ## 平台与安全边界
 
 - Native Rust 通过 Linked Factory 支持 Request、Stream 与 Event Interaction。
-- Bun / TypeScript Authoring 目前公开 Request Provider。底层 Adapter 已通过
-  Conformance，并不代表 Stream 或 Event 已成为公开 Authoring 承诺。
+- Bun / TypeScript Authoring V2 支持 Request、Stream、Event Provider 与出站客户端。
+  TypeScript Host 声明 Profile 目前仍只接受 Request。
 - Browser JavaScript 与 WASIp2 是 Host Profile，不提供敌对代码隔离；WASIp2
   Component Packaging 目前也不是 Starter Workflow。
 - 当前维护的 Auth 路径是 PostgreSQL 支持的 API Token 验证，不包含 OAuth 或密码
@@ -60,3 +60,14 @@ Web 或 Channel Surface。Profile 选择 Model 与 Tool Policy；Session 与 Mem
 Lenso 不承诺任意 Runtime Discovery、Hot Graph Mutation、Distributed Placement、
 Automatic Replica、敌对浏览器代码隔离或独立 Console 产品。这些是明确的产品边界，
 不是使用上述工作流之前还要等待通过的内部关卡。
+
+
+## 从 TypeScript 声明 Host
+
+使用 `defineHost`、`app build` 和 `app prepare` 组合已打包 Plugin，并生成由
+Rust 运行时执行的启动目录。见[TypeScript Host](/docs/zh/core/typescript-host)了解显式目标文件要求，
+以及[document-sync](/docs/zh/core/document-sync)的 Rust/Bun 调用验收。
+
+2026-09-07 实测：空 TypeScript Host 生命周期可执行，但当前 CLI 生成的 Bun Bundle
+被 Host Profile 准入拒绝，`plugin dev` 也有已复现错误。完整结果见
+[Host 验证状态](/docs/zh/core/typescript-host#验证状态与前置条件)。

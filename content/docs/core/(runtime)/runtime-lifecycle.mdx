@@ -22,3 +22,34 @@ Native parallelism scales by replicating the single-owner Kernel across
 Plan-declared Execution Lanes. A Plugin Instance has one lane owner. Correctness does
 not require work stealing, runtime Instance migration, or shared mutable Plugin
 state for correctness.
+
+
+## Authoring V2 construction, cancellation, and cleanup
+
+Supporting Adapters run a distinct construction phase before activation.
+Abandoning a startup caller requests cancellation; late construction success
+still requires rollback and one stop. Cleanup shares a bounded deadline. Stop
+receives a fresh cleanup cancellation token and the remaining budget.
+
+A returned result, a caller timeout, and physical execution settlement are
+separate events. V2 execution permits are Driver-owned: caller cancellation or
+drop cannot release capacity early. Shutdown and replacement wait for tracked
+Request, Stream, and Event work to settle. Cleanup timeout retains the Generation
+and prevents overlapping replacement or a second stop.
+
+## Host-essential failure policy
+
+The Host/profile explicitly adopts `host_essential`. Initial readiness still
+requires every selected Instance to activate. After readiness, Host-essential
+Instances and their transitive `one` dependency closure determine whether
+exhausted recovery terminates the App. Nonessential Instances can remain
+unavailable while unrelated work continues. The runtime does not substitute
+providers, replay calls, or infer essential optional/many members. A domain
+error or one timeout alone does not establish runtime failure.
+
+Plan schema 3 carries requirement identity, authoring/profile metadata, and
+terminal policy; schema 2 has an explicit compatibility path. Executors that
+have not adopted a new profile reject it before activation. Do not extrapolate
+support from language alone or treat fault policy as process isolation.
+
+[Implementation evidence](https://github.com/LioRael/lenso/blob/main/docs/architecture/plugin-authoring-implementation-status.md).

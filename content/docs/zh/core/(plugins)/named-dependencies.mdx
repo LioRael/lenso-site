@@ -1,0 +1,75 @@
+---
+title: 选择 Plugin 的命名依赖
+description: 为同一 Capability 的多个用途分别选择 Provider。
+---
+
+一个同步 Plugin 可以同时依赖两个 Document Store：`source` 负责读取，`destination`
+负责写入。它们使用相同的 Capability，但拥有不同的、在消费者 Contract 内稳定的
+requirement ID。两个名字可以选择不同 Instance，也可以明确选择同一个 Instance。
+仅修改私有字段名不会迁移已保存的公共依赖身份。
+
+## 声明并使用依赖
+
+下面是 [document-sync 示例](https://github.com/LioRael/lenso-examples/tree/main/fixtures/vnext-plugin-authoring-v2)
+中依赖声明的节选。`DOCUMENT_STORE_CONTRACT` 是项目生成的 Contract：
+
+```ts
+const source = dependency({ id: "source", contract: DOCUMENT_STORE_CONTRACT });
+const destination = dependency({ id: "destination", contract: DOCUMENT_STORE_CONTRACT });
+```
+
+通过 `definePlugin` 的 `dependencies: { source, destination }` 声明它们，
+在 `create({ dependencies })` 中取得生成的客户端。Rust 生成客户端可以通过
+`dependencies.requirement("source")` 获得相应依赖视图。Plugin 不查询全局 Provider，
+也不在调用时决定账户；Host 授权候选，Resolver 将最终选择写进不可变 Plan。
+
+## 为已有 App 选择 Provider
+
+以下命令假设 Host 已允许 `company.copy/default` 的两个 requirement 在指定 Store
+Instance 之间选择，而且这些 Instance 已配置。固定绑定和 Host 排序的 `many`
+依赖不能用这些命令覆盖。
+
+```sh
+lenso plugins bind company.copy source company.store --provider-instance source --root ./my-app
+lenso plugins bind company.copy destination company.store --provider-instance destination --root ./my-app
+lenso app check --root ./my-app
+lenso app show --root ./my-app --json
+```
+
+可选依赖可明确保存为空，例如 `lenso plugins bind company.copy cache --absent --root ./my-app`。
+新增兼容 Provider 不会改变既有选择。已选 Provider 缺失、禁用、不兼容或超出授权时，
+校验失败，不会自动切换到账户不同的 Provider。
+
+## 一次解决多个歧义或迁移名称
+
+当两个依赖都还存在歧义时，使用完整选择文件，避免逐项修改产生无效的中间状态：
+
+```json title="dependency-choices.json"
+{
+  "schema_version": 1,
+  "choices": [
+    {
+      "consumer": { "plugin_id": "company.copy", "instance_key": "default" },
+      "requirement_id": "source",
+      "provider": { "plugin_id": "company.store", "instance_key": "source" }
+    },
+    {
+      "consumer": { "plugin_id": "company.copy", "instance_key": "default" },
+      "requirement_id": "destination",
+      "provider": { "plugin_id": "company.store", "instance_key": "destination" }
+    }
+  ]
+}
+```
+
+```sh
+lenso plugins bind --file dependency-choices.json --preview --root ./my-app
+lenso plugins bind --file dependency-choices.json --root ./my-app
+```
+
+文件是完整选择集，会替换旧的已保存 requirement ID；单项 `bind` 只改一个键。
+预览显示 Provider 变化与校验问题，不发布候选。选择保存在
+`plugins/.dependencies.json`。启动和检查只读，配置操作负责显式迁移与事务恢复。
+保存配置与替换运行中的 Generation 是不同步骤，运行状态应通过 Host 检查。
+
+[完整 Host 选择规则](https://github.com/LioRael/lenso-cli/blob/main/docs/typescript-host-authoring.md#select-named-dependencies).

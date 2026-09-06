@@ -7,7 +7,7 @@ description: 把变更路由到持有 Interface 与证据的仓库。
 | --- | --- |
 | `LioRael/lenso` | App Plan、可移植 Kernel、Kernel conformance、规范 ADR |
 | `LioRael/lenso-runtime-rust` | 宿主 Driver、Runner 与 Native Execution Adapter |
-| `LioRael/lenso-bun-adapter` | Bun 子进程 Adapter 与跨运行时 wire evidence |
+| `LioRael/lenso-bun-adapter` | Bun SDK、子进程 Adapter 与 `lenso-host-runtime` |
 | `LioRael/lenso-protocols` | Descriptor codegen、可移植 contract runtime、value conformance |
 | `LioRael/lenso-cli` | Authoring、项目检查、Plan resolve 与过渡 CLI |
 | `LioRael/lenso-examples` | 可执行示例与产品无关 fixtures |
@@ -25,3 +25,6 @@ description: 把变更路由到持有 Interface 与证据的仓库。
 - Plugin generation、process/wire endpoint 或隔离：Execution Adapter。
 - 产品行为、状态、Auth、Secrets、Telemetry 或 UI：普通 Plugin。
 - 包编辑、lock 检查、schema/codegen 新鲜度或 Plan resolve：Authoring 工具。
+
+TypeScript/Bun Host 由 CLI 声明和准备，`lenso-host-runtime` 装配 Rust Kernel 与
+Bun/Process Adapter。入口与当前限制见[TypeScript Host](/docs/zh/core/typescript-host)。

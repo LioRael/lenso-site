@@ -3,7 +3,7 @@ title: Architecture decisions
 description: Route normative questions to the accepted current ADR sequence.
 ---
 
-ADRs 0030–0064 in `LioRael/lenso` are normative for the current architecture. Start with these
+ADRs 0030–0074 in `LioRael/lenso` are normative for the current architecture. Start with these
 decision clusters:
 
 | Topic | ADRs |
@@ -21,3 +21,17 @@ remain historical evidence and are superseded by the current architecture.
 
 Use the [repository ADR index](https://github.com/LioRael/lenso/tree/main/docs/adr)
 for decision text and supersession links.
+
+
+| Additional topic | ADRs |
+| --- | --- |
+| Dynamic Plugin governance, source derivation, immutable transitions, configuration layers | 0065–0068 |
+| One Plugin model and Plugin Roots | 0069–0070 |
+| One Contract with multiple implementations | 0071 |
+| Separate Access Control from Organization | 0072 |
+| Named dependencies and persisted choices | 0073 |
+| Host-essential terminal failure scope | 0074 |
+
+Acceptance of an ADR does not mean every profile has implemented or released it.
+See the [first 0073/0074 implementation status](https://github.com/LioRael/lenso/blob/main/docs/architecture/plugin-authoring-implementation-status.md)
+and the [later Bun interaction support](https://github.com/LioRael/lenso-bun-adapter/blob/main/packages/lenso-bun-plugin/README.md).

@@ -25,7 +25,7 @@ Adapter 持有：
 | 实现 | 仓库 |
 | --- | --- |
 | Tokio Runner、Native Adapter、Browser 与 WASIp2 Driver | `LioRael/lenso-runtime-rust` |
-| Bun 子进程 Adapter 与跨运行时 fixtures | `LioRael/lenso-bun-adapter` |
+| Bun SDK、子进程 Adapter 与 prepared Host runtime | `LioRael/lenso-bun-adapter` |
 | Descriptor codegen 与可移植 value conformance | `LioRael/lenso-protocols` |
 
 Bun Adapter 在正式路径使用 JSON-RPC over HTTP，并实现 Request、双向 Stream
@@ -33,3 +33,6 @@ Bun Adapter 在正式路径使用 JSON-RPC over HTTP，并实现 Request、双�
 语义。Plugin Author 使用公开的 `@lenso/bun` Server 与
 `lenso plugin dev`，不自行实现 Handshake 或 Process Protocol。完整
 Scaffold 与开发路径见[编写 Bun Plugin](/docs/zh/core/bun-plugin-authoring)。
+
+TypeScript/Bun Host 由 CLI 声明和准备，`lenso-host-runtime` 装配 Rust Kernel 与
+Bun/Process Adapter。入口与当前限制见[TypeScript Host](/docs/zh/core/typescript-host)。

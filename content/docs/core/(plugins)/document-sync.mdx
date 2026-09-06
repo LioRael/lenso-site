@@ -1,0 +1,70 @@
+---
+title: Run the document-sync example
+description: Verify Rust Process and Bun implementations of one Contract with named dependencies.
+---
+
+This complete source example reads a document from `source` Store and writes it
+to `destination` Store. One Bundle contains replaceable Rust Process and
+TypeScript Bun implementations; the Host selects one. An Agent ToolProvider
+calls document-sync. Both Stores are Native providers in the test Host, not an
+additional storage service to deploy.
+
+## Get and build the example
+
+You need Git, Bun, the Rust toolchain, and npm/npx. Pin the accepted example
+revision below and retain its Cargo and Bun lockfiles. The first Request delivery
+and later interaction extensions use separate version cohorts.
+
+```sh
+git clone https://github.com/LioRael/lenso-examples.git
+cd lenso-examples
+git checkout c709647
+cd fixtures/vnext-plugin-authoring-v2
+bun install --cwd typescript --frozen-lockfile
+cargo test --locked --workspace
+npx --yes @lenso/cli@0.16.1 plugin check --repo-root . --json
+npx --yes @lenso/cli@0.16.1 plugin pack --repo-root . --output document-sync.lenso-plugin --json
+```
+
+`plugin check` verifies Contract agreement; `pack` creates a Bundle schema 4
+archive. The Rust Process artifact is target-specific. The installation proof
+below uses macOS ARM64; verify support before selecting another target.
+
+## Verify ordinary App installation
+
+```sh
+npx --yes @lenso/cli@0.16.1 app build \
+  --source acceptance/host.ts --target aarch64-apple-darwin --out /tmp/document-sync-host
+npx --yes @lenso/cli@0.16.1 plugins add document-sync.lenso-plugin --root /tmp/document-sync-host
+npx --yes @lenso/cli@0.16.1 app show --root /tmp/document-sync-host --json
+npx --yes @lenso/cli@0.16.1 plugins remove example.document-sync --root /tmp/document-sync-host
+npx --yes @lenso/cli@0.16.1 app check --root /tmp/document-sync-host
+```
+
+The output directory must not already exist. This verifies build, archive
+admission, installation, inspection, and removal. `app show` does not prove a sync
+was executed. The workspace's `process_sync` integration test calls the Agent
+ToolProvider's `catalog`/`execute`, observes one Store read and write, and shuts
+down the App.
+
+## Run the same call chain with Bun
+
+Extract `implementations/typescript-bun/plugin.js` from the generated Bundle and
+pass its absolute path to the integration test:
+
+```sh
+unzip -q document-sync.lenso-plugin "implementations/typescript-bun/*" -d /tmp/document-sync-bun
+LENSO_DOCUMENT_SYNC_BUN_ARTIFACT=/tmp/document-sync-bun/implementations/typescript-bun/plugin.js \
+  cargo test -p lenso-vnext-plugin-authoring-v2 --test process_sync \
+  typescript_bun_syncs_through_the_same_named_host_dependencies -- --ignored
+```
+
+This runs a Bun Plugin under the Rust test Host; it does not start a
+TypeScript-declared Host. Tests also swap the named bindings, bind both names to
+one Store, reject altered archive digests, and reject unsupported profiles.
+Failed construction, execution after cancellation, failed stop, and cleanup
+limits are covered by the owning runtime repositories, not all by this fixture.
+
+Continue with [named dependency selection](/docs/core/named-dependencies) and the
+[TypeScript Host](/docs/core/typescript-host). See [ACCEPTANCE.md](https://github.com/LioRael/lenso-examples/blob/c709647/fixtures/vnext-plugin-authoring-v2/ACCEPTANCE.md)
+for exact versions and evidence ownership.

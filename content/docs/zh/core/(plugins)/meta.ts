@@ -9,6 +9,8 @@ export default defineMeta({
     "plugin-authoring",
     "linked-rust-plugin",
     "bun-plugin-authoring",
+    "named-dependencies",
+    "document-sync",
     "plugin-configuration",
     "plugin-composition",
   ],

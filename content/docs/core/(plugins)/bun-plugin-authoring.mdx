@@ -31,7 +31,7 @@ example.echo/
 ```
 
 Edit only `src/plugin.ts`. The initial scaffold implements the generated
-`lenso.agent.tool-provider@1` Provider and exposes one Tool. Expected business
+`lenso.agent.tool-provider@2` Provider and exposes one Tool. Expected business
 outcomes return generated Domain Errors; thrown exceptions remain Runtime
 Failures.
 
@@ -118,10 +118,56 @@ the Bun Adapter and the generated Rust codec for every provided Capability;
 the Agent Host includes that integration. The machine running the Host must
 have `bun` available.
 
-The public high-level SDK currently supports Request Capabilities. Stream and
-Event authoring remains fail-closed even though lower-level Adapter conformance
-exists; do not infer a supported authoring surface from those internal tests.
+Current Bun Authoring V2 supports Request, bidirectional Stream, and Event
+Providers, plus generated outbound dependency clients for all three interactions.
+`@lenso/bun 0.5.1` and `@lenso/bun-plugin 0.4.1` are recorded released versions;
+the earlier Request-only limit no longer applies to that SDK cohort.
 
 See [`@lenso/bun`](https://www.npmjs.com/package/@lenso/bun) for the typed SDK
 and [`lenso-bun-adapter`](https://github.com/LioRael/lenso-bun-adapter) for the
 process boundary.
+
+
+## Author stateful Plugins with generated Capabilities
+
+The `providers`/`bind*Provider` example above remains a compatibility entrypoint.
+For new code, prefer generated Capability values, `provides`, and `create`.
+This structural example assumes your project generated `Conversation` and
+`Store` contracts with the corresponding `chat`/`get` operations:
+
+```ts
+import { definePlugin } from "@lenso/bun";
+import { Conversation } from "./generated/conversation.ts";
+import { Store } from "./generated/store.ts";
+
+export default definePlugin({
+  provides: [Conversation],
+  dependencies: { store: Store.required() },
+  async create({ dependencies }) {
+    return {
+      async *chat(_context, request) {
+        const greeting = await dependencies.store.get(request.room);
+        yield { text: greeting ?? "Hello" };
+      },
+    };
+  },
+});
+```
+
+
+Dependency keys default to stable requirement IDs. `required()`, `optional()`,
+and `many()` work across all three interactions. `create` constructs each
+Instance; managed shutdown calls `stop` at most once. Lifecycle-only Plugins
+with no provided Capability are valid too.
+
+Server-output Streams can return async generators. Use the generated
+`StreamSession` for bidirectional messages, independent half-close, or terminal
+domain errors. Event handlers return `void` or `Promise<void>`; publication
+waits for completion and rejection becomes Runtime Failure. Outbound clients
+use exact Plan-selected providers and preserve cancellation, ordering, and
+bounded admission semantics.
+
+See the [Bun SDK](https://github.com/LioRael/lenso-bun-adapter/blob/main/packages/lenso-bun-plugin/README.md)
+for generated interfaces. Continue with [named dependencies](/docs/core/named-dependencies),
+the [complete sync example](/docs/core/document-sync), or
+[TypeScript Host authoring](/docs/core/typescript-host). The Host build profile has separate limits.

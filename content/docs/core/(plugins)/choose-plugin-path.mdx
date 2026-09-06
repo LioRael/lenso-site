@@ -14,7 +14,7 @@ developed and loaded.
 | --- | --- | --- | --- |
 | [Portable Rust Plugin](/docs/core/plugin-authoring) | You are adding an Agent Tool that should be packaged and installed | Wasm, trusted Process, or both | `lenso plugin new` currently scaffolds the Agent Tool Provider Capability |
 | [Linked Rust Plugin](/docs/core/linked-rust-plugin) | You own the product Host and need a deep, stateful, or multi-Capability provider | linked native Rust | the Host binary must include the generated factory |
-| [Bun Plugin](/docs/core/bun-plugin-authoring) | You want to implement a typed Request provider in TypeScript | trusted Bun child process | the public SDK currently exposes Request Capabilities only |
+| [Bun Plugin](/docs/core/bun-plugin-authoring) | You want to implement typed providers in TypeScript | trusted Bun child process | Authoring V2 supports Request, Stream, and Event |
 
 Start with the portable Rust path for an ordinary Agent Tool. Choose linked
 Rust when the Plugin needs product-owned resources, lifecycle, several

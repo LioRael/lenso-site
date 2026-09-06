@@ -1,0 +1,62 @@
+---
+title: 运行 document-sync 示例
+description: 验证 Rust Process 与 Bun 实现共享命名依赖和同一个 Contract。
+---
+
+这个完整源码示例把同一个文档从 `source` Store 读出并写入 `destination` Store。
+一个 Bundle 包含 Rust Process 和 TypeScript Bun 两个可替换实现，由 Host 选择其中
+一个。Agent ToolProvider 调用 document-sync；两个 Store 是测试 Host 内的 Native
+Provider，并不是另一个需要部署的存储服务。
+
+## 获取并构建
+
+需要 Git、Bun、Rust 工具链和 npm/npx。下面固定到已验收的示例提交，保留其 Cargo
+和 Bun lockfile。首次 Request 交付与后续交互扩展使用不同版本组，不能混用版本表。
+
+```sh
+git clone https://github.com/LioRael/lenso-examples.git
+cd lenso-examples
+git checkout c709647
+cd fixtures/vnext-plugin-authoring-v2
+bun install --cwd typescript --frozen-lockfile
+cargo test --locked --workspace
+npx --yes @lenso/cli@0.16.1 plugin check --repo-root . --json
+npx --yes @lenso/cli@0.16.1 plugin pack --repo-root . --output document-sync.lenso-plugin --json
+```
+
+`plugin check` 检查两个实现的 Contract 一致，`pack` 生成 Bundle schema 4 归档。
+Rust Process 产物依赖本机目标；以下安装验收使用 macOS ARM64，其他目标须先核实支持。
+
+## 验证普通 App 安装流程
+
+```sh
+npx --yes @lenso/cli@0.16.1 app build \
+  --source acceptance/host.ts --target aarch64-apple-darwin --out /tmp/document-sync-host
+npx --yes @lenso/cli@0.16.1 plugins add document-sync.lenso-plugin --root /tmp/document-sync-host
+npx --yes @lenso/cli@0.16.1 app show --root /tmp/document-sync-host --json
+npx --yes @lenso/cli@0.16.1 plugins remove example.document-sync --root /tmp/document-sync-host
+npx --yes @lenso/cli@0.16.1 app check --root /tmp/document-sync-host
+```
+
+输出目录必须尚不存在。这里验证构建、归档准入、安装、检查和移除；`app show`
+不是执行同步的证明。真实执行由前面的 `process_sync` 集成测试覆盖，它通过 Agent
+ToolProvider 的 `catalog`/`execute` 调用，观察一次 Store 读取和一次写入，并关闭 App。
+
+## 运行同一条 Bun 调用链
+
+从生成的 Bundle 中解出 `implementations/typescript-bun/plugin.js`，将绝对路径传给测试：
+
+```sh
+unzip -q document-sync.lenso-plugin "implementations/typescript-bun/*" -d /tmp/document-sync-bun
+LENSO_DOCUMENT_SYNC_BUN_ARTIFACT=/tmp/document-sync-bun/implementations/typescript-bun/plugin.js \
+  cargo test -p lenso-vnext-plugin-authoring-v2 --test process_sync \
+  typescript_bun_syncs_through_the_same_named_host_dependencies -- --ignored
+```
+
+这一步仍由 Rust 测试 Host 启动 Bun Plugin，不等同于启动 TypeScript 声明的 Host。
+测试还覆盖交换 `source`/`destination`、两个名字绑定同一个 Store、归档摘要篡改和
+不支持的 Profile。失败构造、取消后仍在执行、stop 失败及清理边界的证据由各运行时
+仓库维护，不应声称本示例独自覆盖所有故障。
+
+继续阅读[命名依赖选择](/docs/zh/core/named-dependencies)和[TypeScript Host](/docs/zh/core/typescript-host)。
+完整版本与验收映射见 [ACCEPTANCE.md](https://github.com/LioRael/lenso-examples/blob/c709647/fixtures/vnext-plugin-authoring-v2/ACCEPTANCE.md)。

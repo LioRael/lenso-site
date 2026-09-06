@@ -48,6 +48,9 @@ const requiredCurrentPages = [
   "core/(capabilities)/capability-authoring.mdx",
   "core/(building-blocks)/secrets-plugin.mdx",
   "core/(building-blocks)/postgres-kit.mdx",
+  "core/(plugins)/named-dependencies.mdx",
+  "core/(plugins)/document-sync.mdx",
+  "core/(runtime)/typescript-host.mdx",
   "core/(runtime)/execution-adapters.mdx",
   "core/(building-blocks)/web-and-observability.mdx",
   "core/(reference)/repository-map.mdx",
@@ -148,7 +151,10 @@ for (const file of currentFiles) {
   ]) {
     if (expression.test(text)) failures.push(`${relative(root, file)}: ${label}`);
   }
-  if (retiredGenerationName.test(text)) {
+  // The accepted upstream fixture retains this exact directory/crate name.
+  // Keep rejecting retired terminology in prose while allowing runnable source references.
+  const terminologyText = text.replaceAll("vnext-plugin-authoring-v2", "plugin-authoring-fixture");
+  if (retiredGenerationName.test(terminologyText)) {
     failures.push(`${relative(root, file)}: retired generation terminology`);
   }
 }
