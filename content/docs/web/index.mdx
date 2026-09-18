@@ -9,7 +9,7 @@ This guide builds a small JSON backend with two routes:
 
 ```text
 POST /greetings
-GET  /greetings/{greeting_id}
+QUERY /greetings/search
 ```
 
 The work crosses two Plugin boundaries. The Endpoint Plugin owns the API and
@@ -25,9 +25,11 @@ flowchart LR
 
 ## Current authoring boundary
 
-The public CLI does not currently provide a generic
-`lenso plugin new --web` command. Work inside a Host workspace that already
-links the native Lenso runtime and can publish a Host Catalog.
+The public CLI supports `lenso plugin new <plugin-id> --web` for a linked native
+Rust Web Plugin scaffold. Its `lenso plugin dev` command can start a temporary
+development Host and real listener for local proof. Permanent deployment still
+requires a product Host to link the Plugin and publish the Host Catalog
+relationship described below.
 
 The current authoring surface is:
 
@@ -77,7 +79,8 @@ selected by its own lock.
 
 ## Definition of done
 
-The backend is complete when both routes run through the real Ingress, success
+The backend is complete when `POST /greetings` and `QUERY /greetings/search` run
+through the real Ingress, success
 and failure responses remain distinguishable, duplicate routes block readiness,
 the resolved App shows the exact binding, and removing the Endpoint Instance
 removes both routes from the next Generation.

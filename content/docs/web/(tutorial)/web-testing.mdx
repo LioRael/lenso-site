@@ -17,13 +17,16 @@ curl -i \
   http://127.0.0.1:8080/greetings
 ```
 
-Require `201`, a JSON content type, and a stable ID. Read the resource back:
+Require `201`, a JSON content type, and a stable ID. Query the created greeting through the search route:
 
 ```sh
-curl -i http://127.0.0.1:8080/greetings/greeting-1
+curl -i -X QUERY \
+  -H 'content-type: application/json' \
+  -d '{"term":"Lenso"}' \
+  http://127.0.0.1:8080/greetings/search
 ```
 
-Require `200` and the same ID and message.
+Require `200` and one row containing the same ID and message.
 
 ## 2. Run the failure matrix
 
@@ -32,15 +35,15 @@ curl -i -H 'content-type: application/json' -d '{"name":""}' \
   http://127.0.0.1:8080/greetings
 curl -i -H 'content-type: application/json' -d '{bad json' \
   http://127.0.0.1:8080/greetings
-curl -i http://127.0.0.1:8080/greetings/missing
-curl -i -X DELETE http://127.0.0.1:8080/greetings/greeting-1
+curl -i -X QUERY -H 'content-type: application/json' -d '{bad json' \
+  http://127.0.0.1:8080/greetings/search
+curl -i -X DELETE http://127.0.0.1:8080/greetings
 ```
 
 | Request | Expected owner | Expected result |
 | --- | --- | --- |
 | Empty `name` | Endpoint Plugin | Intentional `400` with `invalid_name`. |
-| Malformed JSON | Endpoint extractor | `400` before the handler runs. |
-| Unknown ID | Endpoint Plugin | `404` with `greeting_not_found`. |
+| Malformed JSON on either route | Endpoint extractor | `400` before the handler runs. |
 | Unsupported method | Ingress | `405` with `Allow`. |
 
 ## 3. Prove readiness and removal
@@ -50,8 +53,18 @@ method and path. Activation must fail before readiness; routing order must not
 silently choose a winner.
 
 Then remove or disable `company.greetings-http/api`, resolve a new Generation,
-and prove both routes are absent. This demonstrates that the backend behavior
-is owned by the removable Plugin rather than hidden Host code.
+and prove both routes are absent:
+
+```sh
+curl -i -H 'content-type: application/json' -d '{"name":"Lenso"}' \
+  http://127.0.0.1:8080/greetings
+curl -i -X QUERY -H 'content-type: application/json' -d '{"term":"Lenso"}' \
+  http://127.0.0.1:8080/greetings/search
+```
+
+Both requests must receive the Ingress not-found response. This demonstrates
+that the backend behavior is owned by the removable Plugin rather than hidden
+Host code.
 
 The maintained owner-repository socket proof is:
 
@@ -70,6 +83,6 @@ cargo test --locked -p lenso-web-ingress \
 - Grant Egress only to exact allowed origins; it supplies no ambient network
   authority, redirects, cookies, proxies, or automatic retries.
 
-The backend is complete when the success and failure matrix passes through the
-socket, duplicate routes block readiness, and removal deletes the routes from
-the next Generation.
+The backend is complete when the `POST /greetings` and `QUERY /greetings/search`
+success and failure matrix passes through the socket; duplicate routes block readiness,
+and removal deletes both routes from the next Generation.

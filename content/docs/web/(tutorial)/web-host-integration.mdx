@@ -9,11 +9,12 @@ App binds it to Ingress.
 ## 1. Link the Plugin crate
 
 `#[lenso::plugin]` and `#[endpoint]` already generate the Descriptor, Capability
-lowering, and linked factory. The crate root only needs to compile the Endpoint
-module:
+lowering, and linked factory. Keep the implementation from the previous lesson
+in the crate root at `src/lib.rs`; there is no separate `src/http.rs` module to
+declare:
 
 ```rust title="src/lib.rs"
-mod http;
+// GreetingsHttp and its #[endpoint] impl remain here.
 ```
 
 Once the Host links this crate, `NativePluginRegistry::with_linked_factories()`

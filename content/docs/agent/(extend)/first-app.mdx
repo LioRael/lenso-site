@@ -25,18 +25,16 @@ lenso plugins list --root "$HOME/.lenso/agent"
 ```text
 company.uppercase Plugin
   provides lenso.agent.tool-provider@2
-  packages Wasm + trusted Process implementations
+  packages a trusted Process implementation
   installs into ~/.lenso/agent/plugins/
   becomes the uppercase Tool in the Agent App
 ```
 
 ## 1. Install the authoring tools
 
-You need Rust 1.94 or newer, the Wasm target, Git, and either distribution of
-the Lenso CLI:
+You need Rust 1.94 or newer, Git, and either distribution of the Lenso CLI:
 
 ```sh
-rustup target add wasm32-unknown-unknown
 npm install -g @lenso/cli
 # or: cargo install lenso-cli
 ```
@@ -57,9 +55,8 @@ lenso plugin new company.uppercase
 cd company.uppercase
 ```
 
-The default Rust project has one editable `src/lib.rs`. It produces a portable
-Wasm implementation and a trusted native Process implementation of the same
-Plugin Contract.
+The default Rust project has one editable `src/lib.rs` and produces a trusted
+native Process implementation of the Plugin Contract.
 
 Replace the generated `execute` body with uppercase behavior:
 
@@ -92,9 +89,8 @@ lenso plugin dev \
   --request-json '{"name":"company.uppercase","arguments_json":"{\"text\":\"hello lenso\"}"}'
 ```
 
-The result contains `HELLO LENSO`. For a multi-output Rust project, `auto`
-uses the fastest declared local implementation. Run `--implementation wasm`
-and `--implementation process` when you need implementation-specific evidence.
+The result contains `HELLO LENSO`. With the default Process scaffold, `auto`
+selects the Process implementation.
 
 During editing, rerun automatically with the same request:
 
@@ -111,8 +107,8 @@ lenso plugin pack
 ```
 
 The command creates and reopens
-`dist/company.uppercase-0.1.0.lenso-plugin`. That archive contains both
-implementations and one shared Contract.
+`dist/company.uppercase-0.1.0.lenso-plugin`. That archive contains the Process
+implementation and one shared Contract.
 
 Keep the absolute bundle path before leaving the Plugin directory:
 
