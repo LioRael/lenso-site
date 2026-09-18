@@ -24,18 +24,16 @@ lenso plugins list --root "$HOME/.lenso/agent"
 ```text
 company.uppercase Plugin
   提供 lenso.agent.tool-provider@2
-  同时打包 Wasm 与可信 Process 实现
+  打包可信 Process 实现
   安装到 ~/.lenso/agent/plugins/
   成为 Agent App 中的 uppercase Tool
 ```
 
 ## 1. 安装 authoring 工具
 
-你需要 Rust 1.94 或更新版本、Wasm target、Git，以及任意一种 Lenso CLI
-发行方式：
+你需要 Rust 1.94 或更新版本、Git，以及任意一种 Lenso CLI 发行方式：
 
 ```sh
-rustup target add wasm32-unknown-unknown
 npm install -g @lenso/cli
 # 或：cargo install lenso-cli
 ```
@@ -56,8 +54,8 @@ lenso plugin new company.uppercase
 cd company.uppercase
 ```
 
-默认 Rust 项目只有一个需要编辑的 `src/lib.rs`。同一份源码会生成一个可移植
-Wasm 实现和一个可信原生 Process 实现，两者属于同一个 Plugin Contract。
+默认 Rust 项目只有一个需要编辑的 `src/lib.rs`，并生成 Plugin Contract 的
+可信原生 Process 实现。
 
 将生成的 `execute` 函数体替换为大写转换行为：
 
@@ -90,9 +88,8 @@ lenso plugin dev \
   --request-json '{"name":"company.uppercase","arguments_json":"{\"text\":\"hello lenso\"}"}'
 ```
 
-结果中会出现 `HELLO LENSO`。对于多输出 Rust 项目，`auto` 使用声明过的最快
-本地实现。需要针对实现提供证据时，分别运行 `--implementation wasm` 和
-`--implementation process`。
+结果中会出现 `HELLO LENSO`。对于默认 Process 脚手架，`auto` 会选择 Process
+实现。
 
 编辑期间可以用同一个请求自动重新运行：
 
@@ -109,7 +106,7 @@ lenso plugin pack
 ```
 
 该命令创建并重新打开
-`dist/company.uppercase-0.1.0.lenso-plugin`。归档包含两个实现和一个共享
+`dist/company.uppercase-0.1.0.lenso-plugin`。归档包含 Process 实现和一个共享
 Contract。
 
 离开 Plugin 目录前先保存 Bundle 的绝对路径：

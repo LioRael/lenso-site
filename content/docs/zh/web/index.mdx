@@ -9,7 +9,7 @@ description: 从一个强类型 Endpoint Plugin 开始，通过真实 Web Ingres
 
 ```text
 POST /greetings
-GET  /greetings/{greeting_id}
+QUERY /greetings/search
 ```
 
 实现跨越两个 Plugin 边界。Endpoint Plugin 持有 API 与面向业务的 HTTP
@@ -24,8 +24,10 @@ flowchart LR
 
 ## 当前 Authoring 边界
 
-公共 CLI 目前不提供通用 `lenso plugin new --web` 命令。请在一个已经链接
-Native Lenso Runtime、并且能够发布 Host Catalog 的 Host Workspace 中开发。
+公共 CLI 支持 `lenso plugin new <plugin-id> --web`，用于创建 Linked Native Rust
+Web Plugin 脚手架。它的 `lenso plugin dev` 命令可以启动临时 Development Host
+和真实 Listener，完成本地证明。永久部署仍需要产品 Host 链接 Plugin，并发布下文
+描述的 Host Catalog 关系。
 
 当前 Authoring Surface 包括：
 
@@ -73,7 +75,7 @@ Repository 使用 `lenso-capability-http-endpoint` 0.2.3 和
 
 ## 完成条件
 
-两条 Route 通过真实 Ingress 运行，成功与失败保持可区分，重复 Route 阻止
+`POST /greetings` 与 `QUERY /greetings/search` 通过真实 Ingress 运行，成功与失败保持可区分，重复 Route 阻止
 Readiness，Resolved App 显示准确 Binding，并且移除 Endpoint Instance 会从
 下一 Generation 移除两条 Route 时，后端才算完成。
 

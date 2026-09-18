@@ -6,7 +6,7 @@
     "build": "blume build",
     "check": "pnpm check:docs && blume build && pnpm check:published",
     "check:docs": "node scripts/check-docs.mjs && blume validate",
-    "check:docs:upstream": "node scripts/check-docs.mjs && blume validate",
+    "check:docs:upstream": "node scripts/check-docs.mjs && blume validate && blume build && node scripts/check-docs.mjs --upstream",
     "check:published": "node scripts/check-published-output.mjs",
     "worker:build": "blume build",
     "deploy": "pnpm build && wrangler deploy",

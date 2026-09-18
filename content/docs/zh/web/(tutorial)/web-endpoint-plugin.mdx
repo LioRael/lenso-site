@@ -6,6 +6,11 @@ description: 创建包含强类型 JSON Route 的 Linked Rust Plugin，并在打
 本步骤生成 `company.greetings-http`，它提供两条
 `lenso.http.endpoint@1` Route。完成本步骤后再连接 Ingress。
 
+| Operation | HTTP Method | Path |
+| --- | --- | --- |
+| `greetings.create` | `POST` | `/greetings` |
+| `greetings.search` | `QUERY` | `/greetings/search` |
+
 ## 1. 生成 Plugin
 
 从 CLI 的 Web Authoring Path 开始：
@@ -199,5 +204,5 @@ cargo test --locked -p lenso-capability-http-endpoint \
   --test endpoint_attributes
 ```
 
-Route Description 稳定，并且所有直接成功与失败断言通过时，本步骤完成。继续
+当 `POST /greetings` 与 `QUERY /greetings/search` 的 Route Description 稳定，并且所有直接成功与失败断言通过时，本步骤完成。继续
 [连接 Host 与 Ingress](/docs/zh/web/web-host-integration)。

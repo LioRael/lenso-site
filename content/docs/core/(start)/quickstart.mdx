@@ -7,12 +7,12 @@ In this self-contained quickstart, you will create one ordinary Plugin, invoke
 it through a real Execution Adapter, and produce a verified `.lenso-plugin`
 Bundle. You do not need a product Host or a catalog entry to complete it.
 
-Rust produces portable Wasm plus a trusted Process implementation from the
-same source. Bun uses the generated `@lenso/bun` runtime lowering.
+The default Rust scaffold produces a trusted Process implementation. Bun uses
+the generated `@lenso/bun` runtime lowering.
 
 ## Prerequisites
 
-- Rust stable with the `wasm32-unknown-unknown` target for the default scaffold;
+- Rust stable for the default Rust scaffold;
 - Bun 1.2.21 or newer only when selecting `--runtime bun`.
 
 Install the CLI from npm:

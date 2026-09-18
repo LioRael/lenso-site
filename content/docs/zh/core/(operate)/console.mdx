@@ -1,0 +1,108 @@
+---
+title: 启动并检查 Console
+description: 启动本地 Lenso Console，区分两个 Agent 身份，并通过 Plugin Root 检查 Selected App。
+---
+
+这条路径面向
+[`LioRael/lenso-console`](https://github.com/LioRael/lenso-console) 中的本地管理与
+Agent Workspace。每一步都产生一个可观察结果：Console 正在运行、当前 Agent 身份明确，
+以及 App 配置已经检查。Console Shell 持有导航与 Selected App Context；App 的 Plugin
+持有产品事实与最终授权。
+
+## 任务地图
+
+| 结果 | 前置条件 | 所有者与当前 Availability | 可观察成功 | 预期失败 | 下一页 |
+| --- | --- | --- | --- | --- | --- |
+| 启动 Console，并识别 App Agent 与 Console Agent | 本地 Console Checkout、Node/pnpm 依赖、`PATH` 上的 `lenso-agent-web` 与 `lenso-agent-console-web` 0.1.3 或更新版本，以及一个 App Workspace | Console 持有 React Shell、Agent Catalog、同源 Proxy 与 Identity Selection；当前是本地 Reference Host 路径 | 打开 `http://127.0.0.1:3030`，Selector 显示两个独立身份：`Lenso Agent` 与 `Console Agent` | Binary 缺失或不兼容、Host Catalog 不可用，或 Loopback Process 尚未就绪 | [检查 App](/docs/zh/core/inspect-an-app) |
+| 通过 Plugin Root 检查或配置 Selected App | 正在运行的 Console、Selected App Root，以及 0.5.2 或更新版本的 Lenso CLI | App Owner 修改可见 Plugin Root；所选业务 Plugin 与其配置 Authority 持有配置事实和最终授权；Console 集成该界面 | `lenso app check` 与 `lenso app show` 报告 Selected App，接受的变更在下次重启后出现 | Root/Catalog 不匹配、Capability 缺失，或 App Host 未显式提供 Configuration Control | [Plugin 组合](/docs/zh/core/plugin-composition) |
+
+源代码仓库与本地 Host 是这条路径的证据。它们本身不承诺 Hosted Console、Marketplace Release
+或跨 App 管理产品；这些仍属于待完成的产品工作。
+
+## 1. 启动本地 Console
+
+在干净的 Console Checkout 中安装依赖，并使用维护中的 Launcher：
+
+```sh
+pnpm install
+pnpm agent:web
+```
+
+Launcher 要求 `PATH` 上有 0.1.3 或更新版本的 `lenso-agent-web` 与
+`lenso-agent-console-web`。如果 Binary 位于其他位置，将
+`LENSO_AGENT_WEB_BIN` 与 `LENSO_CONSOLE_AGENT_WEB_BIN` 设为绝对路径。Launcher 会启动独立的
+Loopback App Agent 与 Console Agent Process，再通过 Console 的同源 API 暴露它们。生成的
+Host-only Control Token 会留在 Host 内。
+
+Launcher 报告 Service Ready 后，打开 `http://127.0.0.1:3030`。当前 Host 只绑定 Loopback；
+远程可达需要额外的 Identity 与 Authorization Plugin，不属于这条本地路径。
+
+## 2. 选择正确的 Agent 身份
+
+Console 会发现两个完整的 Agent 身份：
+
+| 身份 | 持有 | 选择它会改变什么 |
+| --- | --- | --- |
+| App Agent（`Lenso Agent`） | 自己的 Session、Profile、Tool、Task、Trajectory 与对话状态 | Selected App 的 Agent Workspace 与 App Agent 自己的 Policy |
+| Console Agent | 自己的 Session、Profile、Tool、Task、Trajectory 与对话状态 | Console 的检查与配置 Workspace |
+
+Selector 改变的是身份，而不是切换连接模式，也不会默默共享两个 Agent 的状态。Canonical
+Session URL 包含所属 Agent 身份。Console Agent 的 Instructions 要求它检查当前 Host 与
+Capability 状态、在发布前验证 Proposal，并且只有在用户明确请求后才 Apply。
+
+App Agent 的 Configuration Authority 通过
+`LENSO_AGENT_PLUGIN_CONFIGURATION_AUTHORITY` 显式选择。维护中的 Launcher 默认使用
+`sqlite_configuration_store`；也支持 `local_plugin_root` 与
+`remote_configuration_service`。Remote Configuration 需要 Service URL、App 与 Environment
+Identity，以及 `LENSO_PLUGIN_CONFIGURATION_REMOTE_TOKEN`。这些 Credential 留在 App Agent
+Host 内。Configuration Authority 不等于 Package Source Authority。
+
+## 3. 检查 Selected App
+
+Console Host 在启动 Kernel 前解析可见的 Plugin Root。默认 Root 是
+`~/.lenso/console/plugins/`；需要把 Console 状态放到其他位置时，将 `LENSO_CONSOLE_HOME`
+设为绝对路径。Host Catalog 发布在 `~/.lenso/console/.lenso/host-catalog.json`。
+
+需要直接、可复现的 Evidence 时，使用 CLI 检查同一个 App Root：
+
+```sh
+lenso app check --root ~/.lenso/console
+lenso app show --root ~/.lenso/console
+lenso plugins list --root ~/.lenso/console
+```
+
+`app check` 证明 Host 与 Plugin Root 可以派生一个有效 App。`app show` 报告已接纳的 Binding
+与 Plan Fact。`plugins list` 显示可见 Plugin Instance 及其来源。这些命令检查 App 的配置，
+不会取代 App 自己的业务授权。
+
+## 4. 修改一个可见的 Plugin 差异
+
+App Owner 使用普通 CLI 修改可见配置，并在下次 Console 重启时生效。例如，禁用 Welcome
+Workspace Instance 会产生一个可见的 Plugin Root 差异：
+
+```sh
+lenso plugins disable lenso.console.workspace.welcome default --root ~/.lenso/console
+```
+
+App Owner 不会手写 Plan 或 Binding File。Host Catalog 持有 WebIngress Instance 与私有
+Capability Binding；`plugins/` 只包含类型化 Instance 配置与启用差异。重启前重新运行
+`lenso app check` 与 `lenso app show`。如果解析失败，之前已接纳的 Plugin Root 仍然是恢复
+依据。
+
+只有 App Host 显式提供 `lenso.agent.plugin-configuration@1` 时，Console 才能暴露 Plugin
+Configuration Control。Catalog Membership 本身不授予 Control Authority。Console Agent 的
+Proposal、Compare-and-Swap 发布、History 与 Recovery State 属于其 Host；Web Shell 不持有
+这些状态。
+
+## 5. 理解集成边界
+
+Console 持有 Shell、Selected-App Context、Identity Catalog 与 Integration Point。业务 Plugin
+持有自己的数据、规则与最终授权。例如，独立的 Projects Workspace Plugin 会在现有 Shell
+内贡献 Projects 内容；它不会替换 Shell，也不会自动获得完整授权。关于这条边界，继续阅读
+[打开 Projects](/docs/zh/core/projects)。
+
+Marketplace 仍是等待首次实现的设计。跨 App Console 也不是当前产品承诺。在其所有者仓库
+提供已实现且验证过的路径前，不要把这两项写入操作 Runbook。
+
+如果故障超出 Console 边界，回到[检查与排障 App](/docs/zh/core/inspect-an-app)。它会先区分
+Host 设置、Plugin Root Resolution 与 Runtime Failure，再决定是否需要修改业务 Plugin。

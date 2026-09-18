@@ -95,16 +95,17 @@ runtime conditions.
 lenso plugin check
 lenso plugin dev \
   --operation execute \
-  --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+  --request-json '{"name":"company.uppercase","arguments_json":"{\"text\":\"hello\"}"}'
 lenso plugin dev --watch \
   --operation execute \
-  --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+  --request-json '{"name":"company.uppercase","arguments_json":"{\"text\":\"hello\"}"}'
 ```
 
 `check` type-checks, builds the Bun implementation, derives its portable
 Descriptor, materializes a standard Bundle, and verifies the closure. `dev`
 invokes the same authored Provider without asking authors to implement a test
-wire. Watch mode stays alive after a failed rebuild.
+wire. The response for the request above is `HELLO`. Watch mode stays alive
+after a failed rebuild.
 
 ## 4. Package and install
 

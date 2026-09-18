@@ -10,6 +10,155 @@ const outputRoot = process.env.BLUME_OUTPUT_ROOT
   : join(root, "dist");
 const failures = [];
 
+const siteOrigin = "https://lenso.dev";
+
+function output(file) {
+  const absolute = join(outputRoot, file);
+  if (!existsSync(absolute)) {
+    failures.push(`dist/${file}: missing`);
+    return "";
+  }
+  return readFileSync(absolute, "utf8");
+}
+
+function advertisedPageUrls(text) {
+  const urls = new Set();
+  const urlPattern = /https:\/\/lenso\.dev\/docs[^\s)>'"]*/g;
+  for (const match of text.matchAll(urlPattern)) {
+    const value = match[0].replace(/[.,;:]+$/u, "");
+    try {
+      const parsed = new URL(value);
+      if (parsed.origin === siteOrigin && parsed.pathname.startsWith("/docs")) {
+        urls.add(parsed.toString());
+      }
+    } catch {
+      failures.push(`catalog: invalid advertised page URL ${JSON.stringify(value)}`);
+    }
+  }
+  return urls;
+}
+
+function checkAdvertisedEndpoints(catalog, text) {
+  const linkPattern = /\]\((https?:\/\/[^\s)]+)|href=["'](https?:\/\/[^"']+)|^Source:\s*(https?:\/\/\S+)/gim;
+  for (const match of text.matchAll(linkPattern)) {
+    const value = match[1] ?? match[2] ?? match[3];
+    try {
+      const parsed = new URL(value);
+      if (/(?:^|\/)(?:mcp|webmcp)(?:\/|$)|ai\.(?:mcp|webmcp)|\.well-known\//iu.test(parsed.pathname)) {
+        failures.push(`dist/${catalog}: MCP endpoint is advertised at ${value}`);
+      }
+    } catch {
+      failures.push(`dist/${catalog}: invalid advertised URL ${JSON.stringify(value)}`);
+    }
+  }
+}
+
+function routeForAdvertisedUrl(value) {
+  const parsed = new URL(value);
+  const path = parsed.pathname.replace(/\/+$/u, "") || "/";
+  return path === "/docs" ? "/docs" : path;
+}
+
+function checkAgentCatalogs() {
+  const llms = output("llms.txt");
+  const llmsFull = output("llms-full.txt");
+  const readabilityText = output("agent-readability.json");
+  if (!llms || !llmsFull || !readabilityText) return;
+
+  let readability;
+  try {
+    readability = JSON.parse(readabilityText);
+  } catch {
+    failures.push("dist/agent-readability.json: invalid JSON");
+    return;
+  }
+  const advertised = new Map([
+    ["llms.txt", advertisedPageUrls(llms)],
+    ["llms-full.txt", advertisedPageUrls(llmsFull)],
+  ]);
+  checkAdvertisedEndpoints("llms.txt", llms);
+  checkAdvertisedEndpoints("llms-full.txt", llmsFull);
+  const allRoutes = new Set();
+  for (const [catalog, urls] of advertised) {
+    if (urls.size === 0) failures.push(`dist/${catalog}: no advertised documentation pages`);
+    for (const url of urls) {
+      const route = routeForAdvertisedUrl(url);
+      allRoutes.add(route);
+      const markdown = `${route.slice(1)}.md`;
+      if (!existsSync(join(outputRoot, markdown))) {
+        failures.push(`dist/${catalog}: advertised ${url} has no Markdown target dist/${markdown}`);
+      }
+      if (/(?:^|\/)(?:mcp|webmcp)(?:\/|$)|ai\.(?:mcp|webmcp)|\.well-known\//iu.test(url)) {
+        failures.push(`dist/${catalog}: MCP endpoint is advertised at ${url}`);
+      }
+    }
+  }
+
+  const english = new Set();
+  const chinese = new Set();
+  for (const route of allRoutes) {
+    const family = route.startsWith("/docs/zh") ? chinese : english;
+    family.add(route.replace(/^\/docs\/zh(?=\/|$)/u, "/docs"));
+  }
+  if (english.size === 0 || chinese.size === 0) {
+    failures.push("catalogs: both English and Simplified Chinese page families must be advertised");
+  }
+  const missingChinese = [...english].filter((route) => !chinese.has(route));
+  const missingEnglish = [...chinese].filter((route) => !english.has(route));
+  for (const route of missingChinese) failures.push(`catalogs: missing Chinese counterpart for ${route}`);
+  for (const route of missingEnglish) failures.push(`catalogs: missing English counterpart for ${route}`);
+
+  const sourceByRoute = new Map();
+  for (const file of walkFiles(docsRoot).filter((candidate) => candidate.endsWith(".mdx"))) {
+    sourceByRoute.set(routeForDocument(docsRoot, file), file);
+  }
+  const liveRoutes = new Set(
+    [...sourceByRoute].filter(([, source]) => !isDraftDocument(source)).map(([route]) => route),
+  );
+  for (const [catalog, urls] of advertised) {
+    const routes = new Set([...urls].map(routeForAdvertisedUrl));
+    for (const route of liveRoutes) {
+      if (!routes.has(route)) failures.push(`dist/${catalog}: live page ${route} is missing from the catalog`);
+    }
+  }
+  for (const route of allRoutes) {
+    const source = sourceByRoute.get(route);
+    if (!source) {
+      failures.push(`catalogs: advertised ${route} has no source document`);
+    } else if (isDraftDocument(source)) {
+      failures.push(`catalogs: advertised ${route} is sourced from draft ${relative(root, source)}`);
+    }
+  }
+
+  const artifacts = readability.artifacts ?? {};
+  const markdownPattern = artifacts.markdown?.pattern;
+  if (typeof markdownPattern !== "string" || !markdownPattern.includes("{route}")) {
+    failures.push("dist/agent-readability.json: markdown artifact pattern must contain {route}");
+  } else {
+    for (const route of allRoutes) {
+      const markdownUrl = markdownPattern.replace("{route}", route.slice(1));
+      try {
+        const parsed = new URL(markdownUrl);
+        if (parsed.origin !== siteOrigin || parsed.pathname !== `${route}.md`) {
+          failures.push(`dist/agent-readability.json: ${route} resolves to unexpected Markdown URL ${markdownUrl}`);
+        }
+      } catch {
+        failures.push(`dist/agent-readability.json: invalid Markdown URL ${markdownUrl}`);
+      }
+    }
+  }
+  for (const key of ["llmsTxt", "llmsFullTxt"]) {
+    const value = artifacts[key];
+    if (value !== `${siteOrigin}/${key === "llmsTxt" ? "llms.txt" : "llms-full.txt"}`) {
+      failures.push(`dist/agent-readability.json: ${key} does not point at the generated catalog`);
+    }
+  }
+  const serialized = JSON.stringify(readability);
+  if (/(?:^|\/)(?:mcp|webmcp)(?:\/|$)|ai\.(?:mcp|webmcp)|\.well-known\//iu.test(serialized)) {
+    failures.push("dist/agent-readability.json: MCP endpoint is advertised");
+  }
+}
+
 if (!existsSync(outputRoot)) throw new Error("dist is missing; run this check after blume build");
 
 if (existsSync(join(outputRoot, "index.html"))) {
@@ -19,6 +168,8 @@ if (existsSync(join(outputRoot, "index.html"))) {
 for (const file of ["blume-search.json", "llms.txt", "llms-full.txt", "sitemap.xml"]) {
   if (!existsSync(join(outputRoot, file))) failures.push(`dist/${file}: missing`);
 }
+
+checkAgentCatalogs();
 
 const smokePages = [
   ["docs/index.html", ["Lenso documentation", "What do you want to build?", "Learn the core framework"]],

@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { walkFiles } from "./docs-files.mjs";
@@ -13,6 +14,9 @@ const requiredCurrentPages = [
   "core/(start)/mental-model.mdx",
   "core/(start)/first-app-change.mdx",
   "core/(operate)/inspect-an-app.mdx",
+  "core/(operate)/console.mdx",
+  "core/(operate)/projects.mdx",
+  "core/(operate)/jobs.mdx",
   "core/(contribute)/agent-skills.mdx",
   "core/(start)/quickstart.mdx",
   "agent/index.mdx",
@@ -87,6 +91,151 @@ function requireCount(file, marker, expected) {
     failures.push(
       `${file}: expected ${expected} occurrence(s) of ${JSON.stringify(marker)}, found ${actual}`,
     );
+  }
+}
+
+function section(text, start, end) {
+  const startIndex = text.indexOf(start);
+  if (startIndex === -1) return "";
+  const endIndex = end ? text.indexOf(end, startIndex + start.length) : -1;
+  return text.slice(startIndex, endIndex === -1 ? text.length : endIndex);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function checkWebRouteRelationships(file) {
+  const text = read(file);
+  const definition = section(text, "| Operation |", "## 1. ");
+  const implementation = section(text, "## 2. ", "## 3. ");
+  const proof = section(text, "## 3. ");
+  const definitions = new Map();
+  const definitionPattern = /^\|\s*`?([^`|]+?)`?\s*\|\s*`?([A-Z]+)`?\s*\|\s*`?([^`|]+?)`?\s*\|/gm;
+  for (const match of definition.matchAll(definitionPattern)) {
+    definitions.set(match[1].trim(), {
+      method: match[2].trim().toLowerCase(),
+      path: match[3].trim(),
+    });
+  }
+  if (definitions.size !== 2) {
+    failures.push(`${file}: web route relationship definition must contain two operations`);
+    return;
+  }
+
+  const implementations = new Map();
+  const implementationPattern = /#\[(post|query|get|put|patch|delete)\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\)/g;
+  for (const match of implementation.matchAll(implementationPattern)) {
+    implementations.set(match[2], { method: match[1], path: match[3] });
+  }
+  for (const [operation, route] of definitions) {
+    const relationship = `${operation} definition -> implementation -> invocation/result`;
+    const implementationRoute = implementations.get(operation);
+    if (!implementationRoute) {
+      failures.push(`${file}: ${relationship} is missing the implementation identifier`);
+      continue;
+    }
+    if (implementationRoute.method !== route.method || implementationRoute.path !== route.path) {
+      failures.push(`${file}: ${relationship} changes method/path (${route.method.toUpperCase()} ${route.path} -> ${implementationRoute.method.toUpperCase()} ${implementationRoute.path})`);
+    }
+    const operationPattern = escapeRegExp(operation);
+    const invocation = new RegExp(`(?:const|let)\\s+(\\w+)\\s*=\\s*endpoint[\\s\\S]{0,280}?\\.request\\("${operationPattern}"\\)[\\s\\S]{0,280}?\\.send\\(\\)[\\s\\S]{0,80}?;`);
+    const invocationMatch = proof.match(invocation);
+    if (!invocationMatch) {
+      failures.push(`${file}: ${relationship} is missing a request invocation and terminal result`);
+      continue;
+    }
+    const resultName = invocationMatch[1];
+    const resultPattern = new RegExp(`\\b${escapeRegExp(resultName)}\\.(?:status|json)(?:\\:\\:)?(?:<[^\\n]*>)?\\s*\\(`);
+    if (!resultPattern.test(proof)) {
+      failures.push(`${file}: ${relationship} has no assertion against ${resultName}`);
+    }
+  }
+  for (const operation of implementations.keys()) {
+    if (operation !== "route.id" && !definitions.has(operation)) {
+      failures.push(`${file}: web route implementation ${JSON.stringify(operation)} is not defined in the route table`);
+    }
+  }
+}
+
+function checkBunToolRelationships(file) {
+  const text = read(file);
+  const definition = section(text, "const tool:", "## 3. ");
+  const invocation = section(text, "## 3. ", "## 4. ");
+  const result = section(text, "The response for the request above", "## 4. ") || section(text, "响应是", "## 4. ");
+  const toolMatch = definition.match(/\bname:\s*"([A-Za-z0-9._-]+)"/);
+  const toolName = toolMatch?.[1];
+  if (!toolName) {
+    failures.push(`${file}: Bun Tool relationship is missing the catalog identifier`);
+    return;
+  }
+  if (!new RegExp(`--request-json\\s+'?\\{"name":"${escapeRegExp(toolName)}"`).test(invocation)) {
+    failures.push(`${file}: Bun Tool ${toolName} definition -> invocation identifier mismatch`);
+  }
+  if (!invocation.includes("--operation execute")) {
+    failures.push(`${file}: Bun Tool ${toolName} invocation is missing the execute operation`);
+  }
+  if (!/HELLO/.test(result)) {
+    failures.push(`${file}: Bun Tool ${toolName} invocation -> result relationship is missing HELLO`);
+  }
+  if (!/lenso plugin check[\s\S]*lenso plugin dev[\s\S]*lenso plugin pack[\s\S]*lenso plugins add/.test(text)) {
+    failures.push(`${file}: Bun Tool lifecycle must run check -> dev -> pack -> install`);
+  }
+}
+
+function checkCapabilityFixtureRegression(file) {
+  const text = read(file);
+  for (const fixture of [
+    "https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/wit",
+    "https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/stream",
+    "https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/event",
+  ]) {
+    if (!text.includes(fixture)) {
+      failures.push(`${file}: repaired Capability fixture link missing ${fixture}`);
+    }
+  }
+}
+
+function checkCriticalJourneys() {
+  const journeys = [
+    {
+      name: "Bun Tool source contract (released SDK evidence)",
+      files: [
+        "content/docs/core/(plugins)/bun-plugin-authoring.mdx",
+        "content/docs/zh/core/(plugins)/bun-plugin-authoring.mdx",
+      ],
+      markers: ["@lenso/bun 0.5.1", "@lenso/bun-plugin 0.4.1", "HELLO"],
+    },
+    {
+      name: "Web endpoint source contract (locked test evidence)",
+      files: [
+        "content/docs/web/(tutorial)/web-endpoint-plugin.mdx",
+        "content/docs/zh/web/(tutorial)/web-endpoint-plugin.mdx",
+      ],
+      markers: ["EndpointTest", "cargo test --locked", "greetings.create", "greetings.search"],
+    },
+    {
+      name: "Agent first turn source contract (pinned release evidence)",
+      files: [
+        "content/docs/agent/(start)/first-turn.mdx",
+        "content/docs/zh/agent/(start)/first-turn.mdx",
+      ],
+      markers: ["v0.1.0", "lenso-agent-cli --profile code"],
+      alternatives: ["A Rust toolchain is not required", "不需要 Rust\nToolchain"],
+    },
+  ];
+  for (const journey of journeys) {
+    for (const file of journey.files) {
+      const text = read(file);
+      for (const marker of journey.markers) {
+        if (!text.includes(marker)) {
+          failures.push(`${file}: ${journey.name} is missing honest source evidence ${JSON.stringify(marker)}`);
+        }
+      }
+      if (journey.alternatives && !journey.alternatives.some((marker) => text.includes(marker))) {
+        failures.push(`${file}: ${journey.name} is missing honest platform evidence`);
+      }
+    }
   }
 }
 
@@ -214,6 +363,76 @@ for (const [file, markers] of [
     "构建 Web 后端",
     "控制 Agent 可以交付到哪里",
     "Agent 方向错误时如何纠正",
+  ]],
+  ["content/docs/core/(operate)/console.mdx", [
+    "Lenso Console",
+    "App Agent",
+    "Console Agent",
+    "pnpm agent:web",
+    "LENSO_AGENT_PLUGIN_CONFIGURATION_AUTHORITY",
+    "lenso app check",
+    "lenso app show",
+    "Plugin Root",
+    "marketplace",
+    "cross-App",
+  ]],
+  ["content/docs/zh/core/(operate)/console.mdx", [
+    "Lenso Console",
+    "App Agent",
+    "Console Agent",
+    "pnpm agent:web",
+    "LENSO_AGENT_PLUGIN_CONFIGURATION_AUTHORITY",
+    "lenso app check",
+    "lenso app show",
+    "Plugin Root",
+    "Marketplace",
+    "跨 App Console",
+  ]],
+  ["content/docs/core/(operate)/projects.mdx", [
+    "lenso.projects.web",
+    "workspace",
+    "Provider",
+    "membership",
+    "private-team",
+    "revisions",
+    "idempotency",
+    "Git-distributed",
+  ]],
+  ["content/docs/zh/core/(operate)/projects.mdx", [
+    "lenso.projects.web",
+    "Workspace",
+    "Provider",
+    "Membership",
+    "Private-Team",
+    "Revision",
+    "Idempotency",
+    "Git-distributed",
+  ]],
+  ["content/docs/core/(operate)/jobs.mdx", [
+    "lenso.jobs@1",
+    "enqueue",
+    "claim",
+    "renew",
+    "complete",
+    "fail",
+    "inspect",
+    "at-least-once",
+    "fencing",
+    "workflow graphs",
+    "Web/Console",
+  ]],
+  ["content/docs/zh/core/(operate)/jobs.mdx", [
+    "lenso.jobs@1",
+    "enqueue",
+    "claim",
+    "renew",
+    "complete",
+    "fail",
+    "inspect",
+    "At-least-once",
+    "Fencing",
+    "Workflow Graph",
+    "Web/Console",
   ]],
   ["content/docs/web/index.mdx", [
     "POST /greetings",
@@ -382,24 +601,60 @@ for (const [file, markers] of [
     "为 Agent 添加一个 Tool",
   ]],
   ["content/docs/agent/(configure)/agent-configuration.mdx", [
-    "Direct local Plugin Root",
-    "SQLite managed authority",
-    "Injected authority",
+    "Local Agent Home",
+    "Managed local control",
+    "Configuration service",
+    "absolute UTF-8 path",
     "configuration/proposals",
     "proposalDigest",
     "configuration/publications",
     "rollback-proposals",
-    "materialize the complete desired state",
+    "rejected with a conflict",
+    "materializes the managed Plugin Root",
   ]],
   ["content/docs/zh/agent/(configure)/agent-configuration.mdx", [
-    "直接本地 Plugin Root",
-    "SQLite 托管 Authority",
-    "注入 Authority",
+    "Local Agent Home",
+    "Managed local control",
+    "Configuration service",
+    "绝对的",
     "configuration/proposals",
     "proposalDigest",
     "configuration/publications",
     "rollback-proposals",
-    "完整 Desired State",
+    "拒绝并返回 Conflict",
+    "物化受管理的 Plugin Root",
+  ]],
+  ["content/docs/web/(guides)/auth-plugin.mdx", [
+    "What is available now",
+    "/auth/oidc/start",
+    "/auth/oidc/callback",
+    "/auth/logout",
+    "session_cookie_name",
+    "double-submit CSRF",
+    "target Plugin",
+  ]],
+  ["content/docs/zh/web/(guides)/auth-plugin.mdx", [
+    "当前可用内容",
+    "/auth/oidc/start",
+    "/auth/oidc/callback",
+    "/auth/logout",
+    "session_cookie_name",
+    "Double-submit CSRF",
+    "目标 Plugin",
+  ]],
+  ["content/docs/core/(reference)/supported-workflows.mdx", [
+    "browser OIDC Web",
+    "one explicit",
+    "revision-fenced proposals",
+    "multi-resource hosted",
+    "deferred",
+  ]],
+  ["content/docs/zh/core/(reference)/supported-workflows.mdx", [
+    "浏览器 OIDC Web Session",
+    "一个明确的",
+    "受 Revision Fence",
+    "多 Resource Hosted Control Plane",
+    "Deferred",
   ]],
   ["content/docs/core/(plugins)/plugin-configuration.mdx", [
     "Package defaults",
@@ -507,6 +762,26 @@ for (const file of [
   requireCount(file, "cd ..", 2);
 }
 
+for (const file of [
+  "content/docs/web/(tutorial)/web-endpoint-plugin.mdx",
+  "content/docs/zh/web/(tutorial)/web-endpoint-plugin.mdx",
+]) {
+  checkWebRouteRelationships(file);
+}
+for (const file of [
+  "content/docs/core/(plugins)/bun-plugin-authoring.mdx",
+  "content/docs/zh/core/(plugins)/bun-plugin-authoring.mdx",
+]) {
+  checkBunToolRelationships(file);
+}
+for (const file of [
+  "content/docs/core/(capabilities)/capability-authoring.mdx",
+  "content/docs/zh/core/(capabilities)/capability-authoring.mdx",
+]) {
+  checkCapabilityFixtureRegression(file);
+}
+checkCriticalJourneys();
+
 if (failures.length > 0) {
   console.error(`Documentation checks failed (${failures.length}):`);
   for (const failure of failures) console.error(`- ${failure}`);
@@ -514,3 +789,55 @@ if (failures.length > 0) {
 }
 
 console.log(`Documentation checks passed: ${requiredCurrentPages.length * 2} current pages.`);
+
+if (process.argv.includes("--upstream")) {
+  const audit = spawnSync(
+    "pnpm",
+    ["exec", "blume", "audit", "--external", "--only", "external", "--json"],
+    { cwd: root, encoding: "utf8" },
+  );
+  if (audit.error || audit.status === null) {
+    console.error(
+      "Upstream external-link validation unavailable: Blume audit could not be started. " +
+        "This requires the Blume 1.5.3 audit API and a completed build.",
+    );
+    process.exit(1);
+  }
+  let report;
+  try {
+    report = JSON.parse(audit.stdout);
+  } catch {
+    console.error(
+      "Upstream external-link validation unavailable: Blume audit did not return JSON. " +
+        "This requires the Blume 1.5.3 audit API; local documentation checks already passed.",
+    );
+    if (audit.stderr) console.error(audit.stderr.trim());
+    process.exit(1);
+  }
+  const diagnostics = Array.isArray(report.diagnostics) ? report.diagnostics : null;
+  if (!diagnostics) {
+    console.error(
+      "Upstream external-link validation unavailable: Blume audit JSON has no diagnostics array. " +
+        "Local documentation checks already passed.",
+    );
+    process.exit(1);
+  }
+  const networkFailures = diagnostics.filter((diagnostic) =>
+    /timed out|timeout|unreachable|enotfound|network|fetch failed|dns/i.test(
+      diagnostic.message ?? "",
+    ),
+  );
+  const brokenLinks = diagnostics.filter((diagnostic) => !networkFailures.includes(diagnostic));
+  if (networkFailures.length > 0 || brokenLinks.length > 0 || audit.status !== 0) {
+    if (brokenLinks.length > 0) {
+      console.error(`Upstream external-link validation found ${brokenLinks.length} broken link(s):`);
+      for (const diagnostic of brokenLinks) console.error(`- ${diagnostic.message ?? JSON.stringify(diagnostic)}`);
+    }
+    if (networkFailures.length > 0) {
+      console.error(`Upstream external-link validation encountered ${networkFailures.length} network failure(s):`);
+      for (const diagnostic of networkFailures) console.error(`- ${diagnostic.message ?? JSON.stringify(diagnostic)}`);
+    }
+    process.exit(1);
+  }
+  console.log("Upstream external-link validation passed: Blume audit --external reported no failures.");
+}

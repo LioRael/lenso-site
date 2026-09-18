@@ -1,0 +1,126 @@
+---
+title: Launch and inspect Console
+description: Start the local Lenso Console, distinguish its two Agent identities, and inspect the selected App through its Plugin Root.
+---
+
+This path is for the local management and Agent workspace in
+[`LioRael/lenso-console`](https://github.com/LioRael/lenso-console). It gives you
+one observable result at a time: a running Console, a known Agent identity, and
+an inspected App configuration. The Console Shell owns navigation and selected
+App context; the App's Plugins own product facts and final authorization.
+
+## Task map
+
+| Outcome | Prerequisites | Owner and current availability | Observable success | Expected failure | Next page |
+| --- | --- | --- | --- | --- | --- |
+| Launch Console and identify the App Agent and Console Agent | A local Console checkout, Node/pnpm dependencies, `lenso-agent-web` and `lenso-agent-console-web` 0.1.3 or later on `PATH`, and one App workspace | Console owns the React Shell, Agent catalog, same-origin proxy, and identity selection; this is a local reference Host path | `http://127.0.0.1:3030` opens and the selector shows `Lenso Agent` and `Console Agent` as separate identities | A missing or incompatible binary, unavailable Host Catalog, or a loopback process that is not ready | [Inspect an App](/docs/core/inspect-an-app) |
+| Inspect or configure the selected App through its Plugin Root | A running Console, the selected App Root, and Lenso CLI 0.5.2 or later | The App owner changes the visible Plugin Root; the selected business Plugin and its configured authority own configuration facts and final authorization; Console integrates the surface | `lenso app check` and `lenso app show` report the selected App, and an accepted change is visible after the next restart | A root/catalog mismatch, missing Capability, or an App Host that did not explicitly contribute configuration control | [Plugin composition](/docs/core/plugin-composition) |
+
+The source repository and the local Host are the evidence for this path. They
+do not by themselves promise a hosted Console, a marketplace release, or a
+cross-App administration product. Those remain pending product work.
+
+## 1. Start the local Console
+
+From a clean Console checkout, install its dependencies and use the maintained
+launcher:
+
+```sh
+pnpm install
+pnpm agent:web
+```
+
+The launcher requires `lenso-agent-web` and `lenso-agent-console-web` 0.1.3 or
+later on `PATH`. For binaries in another location, set
+`LENSO_AGENT_WEB_BIN` and `LENSO_CONSOLE_AGENT_WEB_BIN` to absolute paths. The
+launcher starts separate loopback App Agent and Console Agent processes and
+exposes them through Console's same-origin API. The generated Host-only control
+token stays inside the Host.
+
+Open `http://127.0.0.1:3030` after the launcher reports that the service is
+ready. The Host currently binds to loopback; remote reachability requires
+identity and authorization Plugins that are not part of this local path.
+
+## 2. Select the correct Agent identity
+
+Console discovers two complete Agent identities:
+
+| Identity | Owns | What selecting it changes |
+| --- | --- | --- |
+| App Agent (`Lenso Agent`) | Its Sessions, Profiles, Tools, Tasks, Trajectory, and conversation state | The selected App's Agent workspace and the App Agent's own policy |
+| Console Agent | Its own Sessions, Profiles, Tools, Tasks, Trajectory, and conversation state | Console's reviewed inspection and configuration workspace |
+
+The selector changes identity. It does not switch a connection mode or silently
+share one Agent's state with the other. Canonical Session URLs include the
+owning Agent identity. The Console Agent's instructions tell it to inspect
+current Host and Capability state, validate proposals before publication, and
+apply only after an explicit user request.
+
+The App Agent's configuration authority is selected explicitly with
+`LENSO_AGENT_PLUGIN_CONFIGURATION_AUTHORITY`. The maintained launcher defaults
+to `sqlite_configuration_store`; `local_plugin_root` and
+`remote_configuration_service` are also supported. Remote configuration needs
+the service URL, App and environment identities, and
+`LENSO_PLUGIN_CONFIGURATION_REMOTE_TOKEN`. These credentials remain inside the
+App Agent Host. Configuration authority does not imply package-source authority.
+
+## 3. Inspect the selected App
+
+The Console Host resolves the visible Plugin Root before starting its Kernel.
+The default root is `~/.lenso/console/plugins/`; set `LENSO_CONSOLE_HOME` to an
+absolute path when the Console state needs to live elsewhere. The Host Catalog
+is published at `~/.lenso/console/.lenso/host-catalog.json`.
+
+Use the CLI against the same App Root when you need direct, reproducible
+evidence:
+
+```sh
+lenso app check --root ~/.lenso/console
+lenso app show --root ~/.lenso/console
+lenso plugins list --root ~/.lenso/console
+```
+
+`app check` proves that the Host and Plugin Root derive one valid App. `app
+show` reports the accepted bindings and Plan facts. `plugins list` makes visible
+Plugin Instances and their source explicit. These commands inspect the App's
+configuration; they do not replace the App's own business authorization.
+
+## 4. Change one visible Plugin difference
+
+App-owned changes use the normal CLI and take effect on the next Console
+restart. For example, disabling the welcome Workspace instance stages a visible
+Plugin Root difference:
+
+```sh
+lenso plugins disable lenso.console.workspace.welcome default --root ~/.lenso/console
+```
+
+The App owner never writes a Plan or binding file. The Host Catalog owns the
+WebIngress instances and private Capability bindings; `plugins/` contains typed
+Instance configuration and enablement differences. Re-run `lenso app check` and
+`lenso app show` before restarting. If resolution fails, the previously accepted
+Plugin Root remains the evidence to recover from.
+
+Console can expose Plugin configuration control only when the App Host
+explicitly contributes `lenso.agent.plugin-configuration@1`. Catalog membership
+alone grants no control authority. The Console Agent's proposal, compare-and-
+swap publication, history, and recovery state belong to its Host; the Web Shell
+does not own that state.
+
+## 5. Understand the integration boundary
+
+Console owns the Shell, selected-App context, identity catalog, and integration
+points. Business Plugins own their data, rules, and final authorization. For
+example, the separate Projects Workspace Plugin contributes Projects content
+inside the existing Shell; it does not replace the Shell or receive a blanket
+authorization grant. Continue with [Open Projects](/docs/core/projects) for that
+boundary.
+
+The marketplace is still a design awaiting its first implementation. A
+cross-App Console is also not a current product promise. Keep both claims out
+of an operational runbook until their owner repositories provide an implemented
+and verified path.
+
+For a failure outside Console's boundary, return to [Inspect and troubleshoot
+an App](/docs/core/inspect-an-app). It separates Host setup, Plugin Root
+resolution, and runtime failures before a product Plugin is changed.

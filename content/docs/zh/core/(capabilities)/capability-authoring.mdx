@@ -94,7 +94,9 @@ Event Mailbox 上限。
 每个分发生成投影的 Package 都应运行 `lenso-contract-codegen check`。App Authoring
 消费最终 Plugin Descriptor 与 Bundle，不再维护第二份 `lenso.json` Contract Registry。
 
-可直接参考持续维护的完整 fixture：
-[Request](https://github.com/LioRael/lenso-cli/tree/main/crates/lenso-authoring/tests/fixtures/contracts/greeting)、
-[Stream](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/stream)
-和 [Event](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/event)。
+可直接参考持续维护的 [Request fixture](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/wit)。
+它使用 `example.greeting@1` 与 `echo` Operation，并包含 WIT Projection，因此它展示
+的是生成物布局，而不是可以直接替换本页 `greet` 的同名 fixture。持续维护的
+[Stream fixture](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/stream)
+和 [Event fixture](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/event)
+也可参考。

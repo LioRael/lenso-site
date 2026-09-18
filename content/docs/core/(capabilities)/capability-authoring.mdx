@@ -100,7 +100,10 @@ Run `lenso-contract-codegen check` in each package that distributes a generated
 projection. App authoring consumes the resulting Plugin Descriptor and Bundle;
 it does not use a second `lenso.json` contract registry.
 
-See the complete, maintained fixtures for
-[Request](https://github.com/LioRael/lenso-cli/tree/main/crates/lenso-authoring/tests/fixtures/contracts/greeting),
-[Stream](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/stream),
-and [Event](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/event).
+See the maintained [Request fixture](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/wit)
+for a complete request contract. It uses `example.greeting@1` with an `echo`
+operation and a WIT projection, so it demonstrates the generated layout rather
+than providing a drop-in `greet` fixture. The maintained
+[Stream fixture](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/stream)
+and [Event fixture](https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/event)
+are also available.

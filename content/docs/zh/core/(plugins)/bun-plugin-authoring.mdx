@@ -92,15 +92,15 @@ export default definePlugin({ providers: [bindToolProviderProvider(tool)] });
 lenso plugin check
 lenso plugin dev \
   --operation execute \
-  --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+  --request-json '{"name":"company.uppercase","arguments_json":"{\"text\":\"hello\"}"}'
 lenso plugin dev --watch \
   --operation execute \
-  --request-json '{"name":"example.echo","arguments_json":"{\"text\":\"hello\"}"}'
+  --request-json '{"name":"company.uppercase","arguments_json":"{\"text\":\"hello\"}"}'
 ```
 
 `check` 会类型检查、构建 Bun 实现、派生可移植 Descriptor、生成标准 Bundle 并
-验证其 Closure。`dev` 直接调用同一份 Provider，作者无需实现测试 Wire。Watch
-Mode 在一次构建失败后仍保持运行。
+验证其 Closure。`dev` 直接调用同一份 Provider，作者无需实现测试 Wire；上面请求
+的响应是 `HELLO`。Watch Mode 在一次构建失败后仍保持运行。
 
 ## 4. 打包并安装
 

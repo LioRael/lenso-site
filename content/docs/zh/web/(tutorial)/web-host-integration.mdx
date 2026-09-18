@@ -9,10 +9,11 @@ Host 链接 Endpoint Provider，并且 Resolved App 把它绑定到 Ingress 后�
 ## 1. 链接 Plugin Crate
 
 `#[lenso::plugin]` 与 `#[endpoint]` 已生成 Descriptor、Capability lowering 和
-Linked Factory。Crate 根只需要编译 Endpoint 模块：
+Linked Factory。保留上一节写入 Crate 根 `src/lib.rs` 的实现；这里没有需要声明的
+独立 `src/http.rs` 模块：
 
 ```rust title="src/lib.rs"
-mod http;
+// GreetingsHttp 与它的 #[endpoint] impl 继续放在这里。
 ```
 
 Host 把该 Crate 作为依赖链接后，`NativePluginRegistry::with_linked_factories()`

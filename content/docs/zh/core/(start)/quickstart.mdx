@@ -7,12 +7,12 @@ description: 创建、运行、打包并校验一个强类型 Lenso Plugin。
 调用它，并生成一个通过校验的 `.lenso-plugin` Bundle。完成这条路径不需要产品 Host，
 也不依赖 Catalog 条目。
 
-Rust 可由同一份源码生成可移植 Wasm 与可信 Process 实现；Bun 使用生成的
-`@lenso/bun` Runtime Lowering。
+默认 Rust 脚手架生成可信 Process 实现；Bun 使用生成的 `@lenso/bun` Runtime
+Lowering。
 
 ## 前置条件
 
-- 默认脚手架需要 Rust Stable 与 `wasm32-unknown-unknown` Target；
+- 默认 Rust 脚手架需要 Rust Stable；
 - 只有选择 `--runtime bun` 时才需要 Bun 1.2.21 或更新版本。
 
 从 npm 安装 CLI：

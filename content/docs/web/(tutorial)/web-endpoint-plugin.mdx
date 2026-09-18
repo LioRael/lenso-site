@@ -6,6 +6,11 @@ description: Create one linked Rust Plugin with typed JSON routes and prove its 
 This step produces `company.greetings-http`, a Plugin that provides two
 `lenso.http.endpoint@1` routes. Complete it before touching Ingress.
 
+| Operation | HTTP method | Path |
+| --- | --- | --- |
+| `greetings.create` | `POST` | `/greetings` |
+| `greetings.search` | `QUERY` | `/greetings/search` |
+
 ## 1. Generate the Plugin
 
 Start from the CLI's Web authoring path:
@@ -206,6 +211,7 @@ cargo test --locked -p lenso-capability-http-endpoint \
   --test endpoint_attributes
 ```
 
-This step is complete when route descriptions are stable and every direct
-success and failure assertion passes. Continue with
+This step is complete when the `POST /greetings` and `QUERY /greetings/search`
+route descriptions are stable and every direct success and failure assertion
+passes. Continue with
 [Connect the Host and Ingress](/docs/web/web-host-integration).
