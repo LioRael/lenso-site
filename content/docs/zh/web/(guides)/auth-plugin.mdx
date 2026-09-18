@@ -1,21 +1,116 @@
 ---
 title: Auth Plugin
-description: 认证 Adapter 选出的凭据，传递签名 ActorAssertion，并在目标 Plugin 内完成授权。
+description: 使用线性的 Auth Capability 处理 API Token，或组合当前支持的浏览器 OIDC Session 流程。
 ---
 
-Auth 是普通的、显式绑定的 Capability，不是 Kernel 里的环境中间件。当前契约是
-`lenso.auth@1`，只有一个 `authenticate` Request Operation。
+Lenso Auth 必须保持两层边界：
+
+1. `lenso.auth@1` 接收与协议无关的 Credential Evidence，并返回短期签名的
+   `ActorAssertion`。
+2. Ingress 与 Provider Plugin 把 Bearer 或浏览器 OIDC 等线协议适配到这个
+   Capability。
+
+最终授权仍由目标 Plugin 完成。目标必须在使用 Subject 或 Claims 前验证
+Assertion 的 Issuer、Ed25519 Proof、精确 Audience 与有效期。
 
 ```text
-Ingress Adapter -> CredentialEvidence -> Auth Plugin
+Ingress Adapter -> CredentialEvidence -> Auth Provider
                <- absent | signed ActorAssertion | Domain Error
 Target Plugin  <- verified, audience-limited assertion
 ```
 
-## 认证选出的凭据
+## 当前可用内容
 
-HTTP Adapter 可以选择 Bearer Token，但 Header 与 Cookie 不进入 Auth 契约。
-调用绑定的 Capability 时只传协议无关的 Evidence：
+| 路径 | 当前源码行为 | 所有权边界 |
+| --- | --- | --- |
+| API Token Auth | PostgreSQL 支持的 Opaque Token/Session Provider；显式 Setup、Issue 与 Revoke 操作 | Provider 持有 Token Digest 与撤销状态；目标 Plugin 持有授权判断 |
+| 浏览器 OIDC Session | External OIDC Client + Auth Web Session Adapter + Web Ingress Cookie/CSRF Policy | OIDC Provider 验证身份；Web Session 发送响应并签发 Cookie；Ingress 选择 Credential 并执行 CSRF |
+| Portable `lenso.auth@1` | 一个基于协议无关 Evidence 的 `authenticate` Operation | Cookie、Header、OAuth 或 Password 语义不进入该 Capability |
+| 通用 OAuth/Password/Cookie Provider、Organization/RBAC Policy 与 Console UI | 在本框架工作流中 Deferred | 应增加显式 Provider 或由所属产品持有，不要放进 Kernel |
+
+浏览器路径由外部 Relying Party Plugin（`lenso-auth-oidc-client-plugin`）与可移除的
+HTTP Adapter（`lenso-auth-web-session-plugin`）组合而成。它不同于把 Lenso App
+作为 OIDC Issuer 的 `lenso-auth-oidc-plugin`。
+
+## 浏览器 OIDC 登录
+
+在同一个 Ingress Origin 上组合一个 Federated Provider、Auth Web Session 与 Web
+Ingress。Provider 注册的 Redirect URI 必须解析到固定的
+`/auth/oidc/callback` Route。Federated Provider 与 Web Session 必须绑定同一个
+App Session Issuer，Adapter 才能撤销它收到的 Credential。
+
+### 配置浏览器边界
+
+Auth Web Session 接受两个配置字段：
+
+```text
+session_cookie_name = "__Host-lenso-session"
+csrf_cookie_name    = "__Host-lenso-csrf"
+```
+
+两个名字都必须是有效且不同的 `__Host-` Cookie Name。Web Ingress 必须使用同样的
+两个名字，并配置一个专用的 CSRF Request Header Name。源码会在 Plugin Prepare
+时校验这些名字，不接受相同名字或带 `Domain` Attribute 的 Cookie Name。
+
+Web Session Plugin 没有 Session Database。Account Auth 持有 Opaque Session Credential
+与撤销状态；Web Session 持有 Route 响应与 Cookie 签发；Web Ingress 负责 Cookie
+解析、Credential 选择、Authorization/Cookie 歧义检查，以及在 Endpoint 执行前的
+Double-submit CSRF 检查。
+
+### 按登录流程操作
+
+1. 从 App-local Path 开始：
+
+   ```sh
+   curl -i 'http://127.0.0.1:8788/auth/oidc/start?return_to=%2Fdashboard'
+   ```
+
+   `GET /auth/oidc/start` 会把 `return_to` 校验为 App-local Absolute Path，并返回
+   `302` 到配置的 Identity Provider。Federated Provider 创建一次性 Flow，并以 PKCE
+   完成 Authorization-code Exchange。不要把外部 URL 作为 `return_to`。
+
+2. 让 Identity Provider 把浏览器返回：
+
+   ```text
+   GET /auth/oidc/callback?code=<authorization-code>&state=<single-use-state>
+   ```
+
+   Callback 会拒绝缺失、无效、过期或已 Replay 的值。绑定的 OIDC Client 会校验
+   Issuer、Client Audience、JWKS Signature、Expiry、Issued-at Time 与 Nonce，然后从
+   绑定的 Directory 与 Credential Issuer 获取 Canonical Subject 和 Opaque Session。
+
+   成功时 Adapter 返回 `303`，设置带 `Secure`、`HttpOnly`、`SameSite=Lax`、`Path=/`
+   的 Opaque Session Cookie，再设置另一个可读的 `Secure`、`SameSite=Lax`、`Path=/`
+   CSRF Cookie，最后只重定向到已校验的本地 Path。
+
+3. 对每个由 Session Cookie 认证的 Unsafe Request，浏览器代码把可读 CSRF Cookie
+   复制到配置好的 Ingress CSRF Header：
+
+   ```sh
+   curl -i -b cookies.txt \
+     -H '<configured-csrf-header>: <csrf-cookie-value>' \
+     -X POST 'http://127.0.0.1:8788/example'
+   ```
+
+   Web Ingress 会在 Dispatch 前比较两个值，并在目标 Endpoint 收到协议无关的已选
+   Credential 前移除 Cookie 与 CSRF Header。
+
+4. 使用选中的 Session 登出：
+
+   ```sh
+   curl -i -b cookies.txt \
+     -H '<configured-csrf-header>: <csrf-cookie-value>' \
+     -X POST 'http://127.0.0.1:8788/auth/logout'
+   ```
+
+   `POST /auth/logout` 只接受选中的 `session` Credential，要求绑定的 Credential
+   Issuer 撤销该 Opaque Value，并使两个 Cookie 过期。没有 Credential 时清理并返回
+   `204`；Credential 不被识别时仍清理 Cookie，但返回 `401`，避免声称未确认的撤销。
+
+## API Token Evidence 与目标授权
+
+HTTP Adapter 可以选择一个 Bearer Credential，再把协议无关的 Evidence 传入 Auth
+Capability：
 
 ```rust
 use lenso_auth_sdk::{
@@ -32,197 +127,38 @@ let response = app
     .await??;
 
 match decode_auth_response(response)? {
-    AuthOutcome::Absent => { /* 保持匿名或拒绝请求 */ }
+    AuthOutcome::Absent => { /* 保持匿名或拒绝 */ }
     AuthOutcome::Authenticated(assertion) => {
-        // 只挂到这次需要授权的下游 Invocation。
         let context = assertion.attach(app.invocation_context(None, cancellation))?;
+        // 目标针对自己的 Operation 验证并投影 Assertion。
+        let _ = context;
     }
 }
 ```
 
-类型化 Domain Error 是 `invalid`、`expired`、`revoked` 和 `unsupported`。
-传输失败、Deadline 和 Provider 不可用仍属于 Runtime Failure。
+API Token Plugin 保存带 Key 的 Digest，在每次认证时检查持久化的 Token/Session 撤销，
+并签发短期 Ed25519 Assertion。Database Setup、Token Issue 与 Revoke 都是显式 Operator
+操作；App Boot 不会创建或迁移 Schema。当前源码 Crate 在依赖发布前保持 Private。
 
-完整的 HTTP Endpoint 流程，包括 `lenso-http-auth` helper、应用自有的
-`UserActor` / `AdminActor` extractor、`401` Problem Details、`WWW-Authenticate`、
-activate 阶段创建 client 和状态码映射，见
-[Web Capabilities](/docs/zh/web/web-capabilities/)。
+目标授权要求精确 Audience，例如 `orders.api@1:read`。目标只拿到公开验证密钥，不能
+拿到 Auth Signing Key。Typed Actor Projection 属于目标 Plugin。
 
-## 在目标 Rust Plugin 中授权
+## 故障排查与验证
 
-先定义目标真正需要的 Actor 类型，再验证 Issuer、Ed25519 Proof、Audience 与
-有效期，最后做类型投影：
+| 现象 | 检查 |
+| --- | --- |
+| `400 invalid_return_to` | 使用 `/dashboard` 这样的 App-local Absolute Path；不要传外部 URL。 |
+| `400 invalid_oidc_callback` | 确认 `code` 与 `state` 都存在、未超过 Route 限制，且 State 没有被消费过。 |
+| `401 oidc_authentication_rejected` | 检查绑定 OIDC Provider 对 Issuer、Audience、JWKS、Expiry、Issued-at 与 Nonce 的验证。 |
+| Callback 后没有 Cookie | 检查 Redirect URI、HTTPS/Secure-cookie 环境，以及两个 Plugin 是否使用不同的 `__Host-` Name。 |
+| Unsafe Request 在 Endpoint 前被拒绝 | 把可读 CSRF Cookie 复制到准确的 Ingress Header；名称和值都必须匹配。 |
+| Logout 返回 `401` | 选中的 Credential 不被绑定 Issuer 识别；Cookie 仍会被清除。 |
+| Login Start 不可用 | 检查 Federated Provider 与 Egress Dependency；Provider 不可用时 Adapter 返回 `503`。 |
 
-```rust
-use lenso_auth_sdk::{
-    ActorAssertion, ActorAssertionVerifier, ActorProjectionError, FixedClock,
-    TypedActor,
-};
+验证时必须经过真实 Web Ingress。成功的 Start 应返回 `302`；成功的 Callback 应返回
+`303` 与两个 `Set-Cookie` Header；缺少匹配 CSRF Evidence 的 Unsafe Cookie Request
+应在 Endpoint 前被拒绝；Logout 应撤销选中 Credential 并清除两个 Cookie。
 
-#[derive(Debug, Eq, PartialEq)]
-struct OrdersActor { user_id: String }
-
-impl TypedActor for OrdersActor {
-    fn from_assertion(
-        assertion: &ActorAssertion,
-    ) -> Result<Self, ActorProjectionError> {
-        if assertion.actor_kind() != "user" {
-            return Err(ActorProjectionError::UnexpectedActorKind {
-                expected: "user".into(),
-                actual: assertion.actor_kind().into(),
-            });
-        }
-        Ok(Self { user_id: assertion.subject().into() })
-    }
-}
-
-let verifier = ActorAssertionVerifier::from_public_key_base64(
-    "auth.api-token",
-    configured_public_key,
-)?;
-let actor = verifier.project_context::<OrdersActor>(
-    &context,
-    "orders.api@1",
-    "read",
-    &FixedClock::new(now),
-)?;
-```
-
-期望的 Audience 必须准确等于 `orders.api@1:read`。目标只接收公开验证密钥，
-绝不能拿到 Auth Signing Key。
-
-## 签发与撤销 API Token
-
-第一个具体 Provider 是 PostgreSQL API Token Plugin。Schema 初始化和 Token
-操作属于显式 Operator Workflow，不是 App 启动时的隐式副作用：
-
-```rust
-use std::collections::BTreeMap;
-use lenso_auth_api_token_module::{ApiTokenAuthOperator, IssueApiToken};
-use time::{Duration, OffsetDateTime};
-
-ApiTokenAuthOperator::setup(database_url, "auth_api").await?;
-let operator = ApiTokenAuthOperator::connect(database_url, "auth_api").await?;
-let issued = operator.issue(token_pepper, IssueApiToken {
-    subject: "user-123".into(),
-    actor_kind: "user".into(),
-    assurance: "api-token".into(),
-    audience: vec!["orders.api@1:read".into()],
-    claims: BTreeMap::new(),
-    expires_at: OffsetDateTime::now_utc() + Duration::days(30),
-}).await?;
-
-let token = issued.expose_secret(); // 只展示一次；Debug 会脱敏
-operator.revoke_session(issued.session_id()).await?;
-```
-
-数据库只保存带 Key 的 Token Digest，并在每次认证时检查持久化的 Token / Session
-撤销状态。
-
-## 自己实现 Auth Provider
-
-实现生成的 `AuthProvider::authenticate` Trait，并通过 `AuthEndpoint` 暴露。
-Provider 必须：
-
-1. 只接受自己明确支持的 Scheme；
-2. 没有选出 Evidence 时返回 `absent`；
-3. 把凭据结果映射到四种类型化 Domain Error；
-4. 只为准确的 Capability / Operation Audience 签发短期 Assertion；
-5. 私有保存 Credential Store、撤销状态与 Signing Material。
-
-OAuth、密码、Cookie 和 Organization/RBAC 目前都不是 `lenso.auth@1` 的已实现
-能力。它们应成为同一 Capability 后面的独立 Ingress 或 Provider Plugin，而不是
-新的 Kernel 行为。
-
-## Bun 目标 Plugin
-
-Bun Adapter 会原样传递密封的 Invocation Extension。Bun 目标在使用 `subject`
-或 Claims 之前，必须执行相同的 Issuer、Ed25519 Proof、Audience 与时间检查：
-
-```ts
-type WireExtension = {
-  key: string;
-  value: number[];
-  issuer?: string;
-  audience?: string[];
-  proof?: string;
-  sealed?: boolean;
-};
-type ActorAssertion = {
-  actor_kind: string;
-  assurance: string;
-  audience: string[];
-  claims?: Record<string, unknown>;
-  expires_at: string;
-  issued_at: string;
-  issuer: string;
-  parent_provenance?: string;
-  proof: string;
-  subject: string;
-};
-
-const base64url = (value: string) => new Uint8Array(Buffer.from(value, "base64url"));
-
-async function bindActor(
-  extensions: WireExtension[] | undefined,
-  publicKey: string,
-  issuer: string,
-  capabilityId: string,
-  operation: string,
-  now = new Date(),
-): Promise<ActorAssertion> {
-  const audience = `${capabilityId}:${operation}`;
-  const extension = extensions?.find((value) => value.key === "lenso.auth.actor-assertion");
-  if (!extension?.sealed || extension.issuer !== issuer
-    || !extension.audience?.includes(audience) || !extension.proof
-    || extension.value.length === 0) {
-    throw new Error("actor assertion is not target-bound");
-  }
-  const assertion = JSON.parse(
-    new TextDecoder().decode(new Uint8Array(extension.value)),
-  ) as ActorAssertion;
-  const issuedAt = Date.parse(assertion.issued_at);
-  const expiresAt = Date.parse(assertion.expires_at);
-  if (assertion.issuer !== issuer || assertion.proof !== extension.proof
-    || JSON.stringify(assertion.audience) !== JSON.stringify(extension.audience)
-    || !assertion.audience.includes(audience) || assertion.subject.length === 0
-    || assertion.actor_kind.length === 0 || assertion.assurance.length === 0
-    || !Number.isFinite(issuedAt) || !Number.isFinite(expiresAt)
-    || issuedAt >= expiresAt || now.getTime() < issuedAt || now.getTime() >= expiresAt) {
-    throw new Error("actor assertion is invalid");
-  }
-  const payload = JSON.stringify({
-    actor_kind: assertion.actor_kind,
-    assurance: assertion.assurance,
-    audience: assertion.audience,
-    claims: assertion.claims ?? null,
-    expires_at: assertion.expires_at,
-    issued_at: assertion.issued_at,
-    issuer: assertion.issuer,
-    parent_provenance: assertion.parent_provenance ?? null,
-    subject: assertion.subject,
-  });
-  const key = await crypto.subtle.importKey(
-    "raw", base64url(publicKey), { name: "Ed25519" }, false, ["verify"],
-  );
-  const valid = await crypto.subtle.verify(
-    "Ed25519", key, base64url(assertion.proof), new TextEncoder().encode(payload),
-  );
-  if (!valid) throw new Error("actor assertion proof is invalid");
-  return assertion;
-}
-```
-
-目前还没有发布 Bun Auth Helper，因此应集中维护并测试这段逻辑；不能只把
-`extensions[].value` 解成 JSON 就信任。
-当前 [Rust SDK](https://github.com/LioRael/lenso-auth-plugin/blob/main/crates/lenso-auth-sdk/src/lib.rs)
-是语义来源，Bun Helper 必须得到相同验证结果后才能成为公开 Package。
-
-## 当前可用性
-
-| 组件 | 源码状态 | Package 状态 |
-| --- | --- | --- |
-| `lenso-capability-auth` | 已生成 `lenso.auth@1` 契约 | 可发布 Crate |
-| `lenso-auth-sdk` | Assertion 签发、验证、收窄和类型投影 | 可发布 Crate |
-| API Token Auth Plugin | PostgreSQL Provider、Operator Workflow、撤销 | 源码已实现；Crate 暂时保持私有 |
-| Bun Auth Helper | 密封 Extension 已能跨 Adapter | 公开验证器 Package 尚未实现 |
+源码锚点：[Auth Plugin README](https://github.com/LioRael/lenso-auth-plugin/blob/main/README.md)、
+[Web Session Route 实现](https://github.com/LioRael/lenso-auth-plugin/blob/main/crates/lenso-auth-web-session-plugin/src/lib.rs)、
+[Web Session Plugin README](https://github.com/LioRael/lenso-auth-plugin/blob/main/crates/lenso-auth-web-session-plugin/README.md)。

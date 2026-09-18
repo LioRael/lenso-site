@@ -1,21 +1,127 @@
 ---
 title: Auth Plugin
-description: Authenticate adapter-selected credentials, propagate a signed ActorAssertion, and authorize inside the target Plugin.
+description: Use the wire-neutral Auth Capability for API tokens, or compose the supported browser OIDC session flow.
 ---
 
-Auth is an ordinary bound Capability, not ambient Kernel middleware. The current
-contract is `lenso.auth@1` with one `authenticate` Request Operation.
+Lenso Auth has two layers that must stay separate:
+
+1. `lenso.auth@1` accepts protocol-neutral credential evidence and returns a
+   short-lived, signed `ActorAssertion`.
+2. Ingress and provider Plugins adapt a wire protocol such as Bearer or
+   browser OIDC into that Capability.
+
+The target Plugin still performs the final authorization check. It verifies the
+assertion's issuer, Ed25519 proof, exact audience, and validity before it uses
+the subject or claims.
 
 ```text
-Ingress Adapter -> CredentialEvidence -> Auth Plugin
+Ingress Adapter -> CredentialEvidence -> Auth Provider
                <- absent | signed ActorAssertion | Domain Error
 Target Plugin  <- verified, audience-limited assertion
 ```
 
-## Authenticate selected evidence
+## What is available now
 
-An HTTP Adapter may select a bearer token, but headers and cookies do not enter
-the Auth contract. Invoke the bound Capability with protocol-neutral evidence:
+| Path | Current source behavior | Ownership boundary |
+| --- | --- | --- |
+| API-token Auth | PostgreSQL-backed opaque token/session provider; explicit setup, issue, and revoke operations | Provider owns token digest and revocation; target Plugin owns authorization |
+| Browser OIDC session | External OIDC Client + Auth Web Session Adapter + Web Ingress Cookie/CSRF policy | OIDC provider validates identity; Web Session emits responses and Cookies; Ingress selects credentials and enforces CSRF |
+| Portable `lenso.auth@1` | One `authenticate` operation over protocol-neutral evidence | No Cookie, header, OAuth, or password semantics enter the Capability |
+| Generic OAuth/password/cookie providers, Organization/RBAC policy, and Console UI | Deferred from this framework workflow | Add an explicit Provider or owning product surface; do not put it in the Kernel |
+
+The browser row is a composition of the external relying-party Plugin
+(`lenso-auth-oidc-client-plugin`) and the removable HTTP Adapter
+(`lenso-auth-web-session-plugin`). It is different from
+`lenso-auth-oidc-plugin`, which makes a Lenso App an OIDC issuer.
+
+## Browser OIDC login
+
+Compose one Federated provider, Auth Web Session, and Web Ingress on the same
+Ingress origin. The provider's registered redirect URI must resolve to the
+fixed `/auth/oidc/callback` route. The Federated provider and Web Session must
+bind the same App session issuer so that the Adapter can revoke the credential
+it receives.
+
+### Configure the browser boundary
+
+Auth Web Session accepts two configuration fields:
+
+```text
+session_cookie_name = "__Host-lenso-session"
+csrf_cookie_name    = "__Host-lenso-csrf"
+```
+
+Both names must be valid, distinct `__Host-` Cookie names. Configure Web
+Ingress with the same two names and one dedicated CSRF request-header name.
+The source validates these names when the Plugin is prepared; it does not
+accept a shared name or a Cookie name with a `Domain` attribute.
+
+The Web Session Plugin has no session database. Account Auth owns opaque
+session credentials and revocation. Web Session owns route responses and
+Cookie issuance. Web Ingress owns Cookie parsing, credential selection, the
+Authorization/Cookie ambiguity check, and double-submit CSRF enforcement before
+the Endpoint runs.
+
+### Follow the login flow
+
+1. Start from an App-local path:
+
+   ```sh
+   curl -i 'http://127.0.0.1:8788/auth/oidc/start?return_to=%2Fdashboard'
+   ```
+
+   `GET /auth/oidc/start` validates `return_to` as an App-local absolute path
+   and returns `302` to the configured identity provider. The Federated provider
+   creates the single-use flow and performs the authorization-code exchange
+   with PKCE. Do not use an external URL as `return_to`.
+
+2. Let the identity provider return the browser to:
+
+   ```text
+   GET /auth/oidc/callback?code=<authorization-code>&state=<single-use-state>
+   ```
+
+   The callback rejects missing, invalid, expired, or replayed values. The
+   bound OIDC Client validates the issuer, client audience, JWKS signature,
+   expiry, issued-at time, and nonce before it obtains the canonical subject
+   and opaque session from the bound Directory and Credential Issuer.
+
+   On success the Adapter returns `303`, sets an opaque session Cookie with
+   `Secure`, `HttpOnly`, `SameSite=Lax`, and `Path=/`, sets a separate readable
+   CSRF Cookie with `Secure`, `SameSite=Lax`, and `Path=/`, then redirects only
+   to the validated local path.
+
+3. For every unsafe request authenticated by the session Cookie, browser code
+   copies the readable CSRF Cookie into the configured Ingress CSRF header:
+
+   ```sh
+   curl -i -b cookies.txt \
+     -H '<configured-csrf-header>: <csrf-cookie-value>' \
+     -X POST 'http://127.0.0.1:8788/example'
+   ```
+
+   Web Ingress compares the two values before dispatch. It strips the Cookie
+   and CSRF header before the target Endpoint receives the protocol-neutral
+   selected credential.
+
+4. Log out with the selected session:
+
+   ```sh
+   curl -i -b cookies.txt \
+     -H '<configured-csrf-header>: <csrf-cookie-value>' \
+     -X POST 'http://127.0.0.1:8788/auth/logout'
+   ```
+
+   `POST /auth/logout` accepts only the selected `session` credential, asks the
+   bound Credential Issuer to revoke that exact opaque value, and expires both
+   Cookies. An absent credential is cleared with `204`; an unrecognized
+   credential is cleared but returns `401` so the Adapter never claims a
+   revocation it could not confirm.
+
+## API-token evidence and target authorization
+
+An HTTP Adapter can select one Bearer credential and pass only protocol-neutral
+evidence into the Auth Capability:
 
 ```rust
 use lenso_auth_sdk::{
@@ -34,199 +140,41 @@ let response = app
 match decode_auth_response(response)? {
     AuthOutcome::Absent => { /* continue anonymously or reject */ }
     AuthOutcome::Authenticated(assertion) => {
-        // Attach it only to the downstream invocation being authorized.
         let context = assertion.attach(app.invocation_context(None, cancellation))?;
+        // The target verifies and projects this assertion for its own operation.
+        let _ = context;
     }
 }
 ```
 
-The typed Domain Errors are `invalid`, `expired`, `revoked`, and `unsupported`.
-Transport failures, deadlines, and unavailable providers remain Runtime
-Failures.
+The API Token Plugin stores a keyed digest, checks durable token/session
+revocation on every authentication, and issues a short-lived Ed25519 assertion.
+Database setup, token issuance, and revocation are explicit operator work; App
+boot does not create or migrate the schema. The current source crate is kept
+private while its pinned dependencies are released.
 
-For a complete HTTP Endpoint flow, including the `lenso-http-auth` helper,
-application-owned `UserActor` / `AdminActor` extractors, `401` Problem Details,
-`WWW-Authenticate`, activation-time clients, and status mapping, see
-[Web Capabilities](/docs/web/web-capabilities/#authenticate-an-inbound-request).
+For target-side authorization, the expected audience is exact, for example
+`orders.api@1:read`. A target receives the public verification key and never
+the Auth signing key. Typed actor projection belongs to the target Plugin.
 
-## Authorize in the target Rust Plugin
+## Troubleshoot and verify
 
-Define the actor type the target actually needs, then verify issuer, Ed25519
-proof, audience, and validity before projection:
+| Symptom | Check |
+| --- | --- |
+| `400 invalid_return_to` | Use an App-local absolute path such as `/dashboard`; never pass an external URL. |
+| `400 invalid_oidc_callback` | Confirm both `code` and `state` are present, within the route limits, and that the state was not already consumed. |
+| `401 oidc_authentication_rejected` | Inspect the bound OIDC provider's issuer, audience, JWKS, expiry, issued-at, and nonce validation. |
+| Cookies are absent after callback | Check the redirect URI, HTTPS/secure-cookie context, and that both Plugins use distinct `__Host-` names. |
+| Unsafe request is rejected before the Endpoint | Copy the readable CSRF Cookie into the exact Ingress-configured header; the names and values must match. |
+| Logout returns `401` | The selected credential is not recognized by the bound issuer; Cookies are still cleared. |
+| Login start is unavailable | Check the Federated provider and its egress dependency. The Adapter returns `503` for provider unavailability. |
 
-```rust
-use lenso_auth_sdk::{
-    ActorAssertion, ActorAssertionVerifier, ActorProjectionError, FixedClock,
-    TypedActor,
-};
+Use the real Web Ingress in verification. A successful start should produce
+`302`; a successful callback should produce `303` and two `Set-Cookie` headers;
+an unsafe Cookie-authenticated request without matching CSRF evidence should be
+rejected before the Endpoint; and logout should revoke the selected credential
+and clear both Cookies.
 
-#[derive(Debug, Eq, PartialEq)]
-struct OrdersActor { user_id: String }
-
-impl TypedActor for OrdersActor {
-    fn from_assertion(
-        assertion: &ActorAssertion,
-    ) -> Result<Self, ActorProjectionError> {
-        if assertion.actor_kind() != "user" {
-            return Err(ActorProjectionError::UnexpectedActorKind {
-                expected: "user".into(),
-                actual: assertion.actor_kind().into(),
-            });
-        }
-        Ok(Self { user_id: assertion.subject().into() })
-    }
-}
-
-let verifier = ActorAssertionVerifier::from_public_key_base64(
-    "auth.api-token",
-    configured_public_key,
-)?;
-let actor = verifier.project_context::<OrdersActor>(
-    &context,
-    "orders.api@1",
-    "read",
-    &FixedClock::new(now),
-)?;
-```
-
-The expected audience is exactly `orders.api@1:read`. A target receives the
-public verification key, never the Auth signing key.
-
-## Issue and revoke API tokens
-
-The first concrete Provider is the PostgreSQL-backed API Token Plugin. Schema
-setup and token operations are explicit operator work, not App boot side
-effects:
-
-```rust
-use std::collections::BTreeMap;
-use lenso_auth_api_token_module::{ApiTokenAuthOperator, IssueApiToken};
-use time::{Duration, OffsetDateTime};
-
-ApiTokenAuthOperator::setup(database_url, "auth_api").await?;
-let operator = ApiTokenAuthOperator::connect(database_url, "auth_api").await?;
-let issued = operator.issue(token_pepper, IssueApiToken {
-    subject: "user-123".into(),
-    actor_kind: "user".into(),
-    assurance: "api-token".into(),
-    audience: vec!["orders.api@1:read".into()],
-    claims: BTreeMap::new(),
-    expires_at: OffsetDateTime::now_utc() + Duration::days(30),
-}).await?;
-
-let token = issued.expose_secret(); // show once; Debug redacts it
-operator.revoke_session(issued.session_id()).await?;
-```
-
-The database stores only a keyed token digest and checks durable token/session
-revocation on every authentication.
-
-## Implement another Auth Provider
-
-Implement the generated `AuthProvider::authenticate` trait and expose it through
-`AuthEndpoint`. A provider must:
-
-1. accept only schemes it explicitly supports;
-2. return `absent` when no evidence was selected;
-3. map credential outcomes to the four typed Domain Errors;
-4. issue a short-lived assertion for exact Capability/Operation audiences; and
-5. keep credential stores, revocation, and signing material private.
-
-OAuth, password, cookie, and Organization/RBAC behavior are not currently
-implemented by `lenso.auth@1`. They should be separate ingress or Provider
-Plugins behind this same Capability, not new Kernel behavior.
-
-## Bun target Plugins
-
-The Bun Adapter transports sealed invocation extensions unchanged. A Bun target
-must perform the same issuer, Ed25519 proof, audience, and time checks before it
-uses `subject` or claims. The essential target-side check is:
-
-```ts
-type WireExtension = {
-  key: string;
-  value: number[];
-  issuer?: string;
-  audience?: string[];
-  proof?: string;
-  sealed?: boolean;
-};
-type ActorAssertion = {
-  actor_kind: string;
-  assurance: string;
-  audience: string[];
-  claims?: Record<string, unknown>;
-  expires_at: string;
-  issued_at: string;
-  issuer: string;
-  parent_provenance?: string;
-  proof: string;
-  subject: string;
-};
-
-const base64url = (value: string) => new Uint8Array(Buffer.from(value, "base64url"));
-
-async function bindActor(
-  extensions: WireExtension[] | undefined,
-  publicKey: string,
-  issuer: string,
-  capabilityId: string,
-  operation: string,
-  now = new Date(),
-): Promise<ActorAssertion> {
-  const audience = `${capabilityId}:${operation}`;
-  const extension = extensions?.find((value) => value.key === "lenso.auth.actor-assertion");
-  if (!extension?.sealed || extension.issuer !== issuer
-    || !extension.audience?.includes(audience) || !extension.proof
-    || extension.value.length === 0) {
-    throw new Error("actor assertion is not target-bound");
-  }
-  const assertion = JSON.parse(
-    new TextDecoder().decode(new Uint8Array(extension.value)),
-  ) as ActorAssertion;
-  const issuedAt = Date.parse(assertion.issued_at);
-  const expiresAt = Date.parse(assertion.expires_at);
-  if (assertion.issuer !== issuer || assertion.proof !== extension.proof
-    || JSON.stringify(assertion.audience) !== JSON.stringify(extension.audience)
-    || !assertion.audience.includes(audience) || assertion.subject.length === 0
-    || assertion.actor_kind.length === 0 || assertion.assurance.length === 0
-    || !Number.isFinite(issuedAt) || !Number.isFinite(expiresAt)
-    || issuedAt >= expiresAt || now.getTime() < issuedAt || now.getTime() >= expiresAt) {
-    throw new Error("actor assertion is invalid");
-  }
-  const payload = JSON.stringify({
-    actor_kind: assertion.actor_kind,
-    assurance: assertion.assurance,
-    audience: assertion.audience,
-    claims: assertion.claims ?? null,
-    expires_at: assertion.expires_at,
-    issued_at: assertion.issued_at,
-    issuer: assertion.issuer,
-    parent_provenance: assertion.parent_provenance ?? null,
-    subject: assertion.subject,
-  });
-  const key = await crypto.subtle.importKey(
-    "raw", base64url(publicKey), { name: "Ed25519" }, false, ["verify"],
-  );
-  const valid = await crypto.subtle.verify(
-    "Ed25519", key, base64url(assertion.proof), new TextEncoder().encode(payload),
-  );
-  if (!valid) throw new Error("actor assertion proof is invalid");
-  return assertion;
-}
-```
-
-There is not yet a published Bun Auth helper, so keep this logic centralized and
-tested; do not trust `extensions[].value` by decoding JSON alone. The current
-[Rust SDK](https://github.com/LioRael/lenso-auth-plugin/blob/main/crates/lenso-auth-sdk/src/lib.rs)
-is the semantic source, and the Bun helper must produce the same verification
-result before becoming a public package.
-
-## Current availability
-
-| Component | Source status | Package status |
-| --- | --- | --- |
-| `lenso-capability-auth` | generated `lenso.auth@1` contract | publishable crate |
-| `lenso-auth-sdk` | assertion issue, verify, attenuation, typed projection | publishable crate |
-| API Token Auth Plugin | PostgreSQL provider, operator workflow, revocation | source implemented; crate intentionally private for now |
-| Bun Auth helper | sealed extensions cross the Adapter | public verifier package not implemented |
+Source anchors: [Auth Plugin README](https://github.com/LioRael/lenso-auth-plugin/blob/main/README.md),
+[Web Session route implementation](https://github.com/LioRael/lenso-auth-plugin/blob/main/crates/lenso-auth-web-session-plugin/src/lib.rs),
+and [Web Session Plugin README](https://github.com/LioRael/lenso-auth-plugin/blob/main/crates/lenso-auth-web-session-plugin/README.md).
