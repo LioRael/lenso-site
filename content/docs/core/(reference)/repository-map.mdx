@@ -14,6 +14,9 @@ description: Route changes to the repository that owns the Interface and its evi
 | `LioRael/lenso-web` | backend HTTP Endpoint/Client Capabilities, Ingress/Egress Plugins, and optional OpenAPI document Plugin |
 | `LioRael/lenso-auth-plugin` | portable Auth Capability and assertion SDK |
 | `LioRael/lenso-otel-plugin` | removable OpenTelemetry Plugin |
+| `LioRael/lenso-console` | local Console Shell, Agent identity catalog, selected-App context, same-origin integration, and the reference Console Host |
+| `LioRael/lenso-projects-web-plugin` | Projects Web Endpoint Plugin and optional native Console Workspace contribution; the Projects Provider owns business facts and authorization |
+| `LioRael/lenso-jobs-plugin` | durable single-step Jobs Capability, queue/lease/retry evidence, and the PostgreSQL persistence Adapter |
 | `LioRael/lenso-site` | this versioned public documentation |
 
 Dependencies point inward toward the portable core. A change that needs core to
@@ -26,6 +29,11 @@ import one of these concrete owners is usually at the wrong seam.
 - Scheduling, time, joins, or host shutdown: Runtime Driver.
 - Plugin generation, process/wire endpoint, or isolation: Execution Adapter.
 - Product behavior, state, Auth, secrets, telemetry, or UI: ordinary Plugin.
+- Console Shell, Agent identity selection, selected-App context, and integration: Console;
+  project or other business facts and final authorization: the owning business
+  Plugin and Provider.
+- Durable queue, lease fencing, retry, and inspection evidence: Jobs Plugin;
+  payload meaning and external-effect idempotency: the consuming business Module.
 - Package edits, lock inspection, schema/codegen freshness, or Plan resolution:
   authoring tooling.
 

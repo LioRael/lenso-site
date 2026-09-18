@@ -14,6 +14,9 @@ description: 把变更路由到持有 Interface 与证据的仓库。
 | `LioRael/lenso-web` | 后端 HTTP Endpoint / Client Capability、Ingress / Egress Plugin 与可选 OpenAPI 文档 Plugin |
 | `LioRael/lenso-auth-plugin` | 可移植 Auth Capability 与 assertion SDK |
 | `LioRael/lenso-otel-plugin` | 可移除 OpenTelemetry Plugin |
+| `LioRael/lenso-console` | 本地 Console Shell、Agent Identity Catalog、Selected-App Context、同源集成与 Reference Console Host |
+| `LioRael/lenso-projects-web-plugin` | Projects Web Endpoint Plugin 与可选的 Native Console Workspace Contribution；Projects Provider 持有业务事实与授权 |
+| `LioRael/lenso-jobs-plugin` | Durable Single-step Jobs Capability、Queue/Lease/Retry Evidence 与 PostgreSQL Persistence Adapter |
 | `LioRael/lenso-site` | 当前版本化公开文档 |
 
 依赖向内指向可移植核心。任何要求 core 导入上述具体所有者的变更，通常放错了接缝。
@@ -24,6 +27,10 @@ description: 把变更路由到持有 Interface 与证据的仓库。
 - 调度、时间、join 或宿主关闭：Runtime Driver。
 - Plugin generation、process/wire endpoint 或隔离：Execution Adapter。
 - 产品行为、状态、Auth、Secrets、Telemetry 或 UI：普通 Plugin。
+- Console Shell、Agent Identity Selection、Selected-App Context 与 Integration：Console；
+  Project 或其他业务事实与最终授权：对应的业务 Plugin 与 Provider。
+- Durable Queue、Lease Fencing、Retry 与 Inspection Evidence：Jobs Plugin；
+  Payload Meaning 与 External-effect Idempotency：消费它的业务 Module。
 - 包编辑、lock 检查、schema/codegen 新鲜度或 Plan resolve：Authoring 工具。
 
 TypeScript/Bun Host 由 CLI 声明和准备，`lenso-host-runtime` 装配 Rust Kernel 与
