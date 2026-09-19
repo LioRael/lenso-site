@@ -1,0 +1,119 @@
+---
+title: Local App development and Engine
+description: Build from local Plugin sources, select optional conventions, or use Engine without an App.
+---
+
+This guide describes the local implementation verified on 2026-09-20. Use a
+CLI build containing these commands or the supplied Console development kit.
+These additions have not been published by this work; installing the current
+npm package is not evidence that they are available. Run `lenso app --help`
+and `lenso engine --help` against the binary you intend to use.
+
+## Create an App without configuration
+
+```sh
+lenso app create my-app --runtime bun
+cd my-app
+lenso app dev
+# After stopping development:
+lenso app build
+lenso app start --from dist
+```
+
+`app/` holds App-owned Plugin sources. `plugins/` holds Instance configuration
+and disabled markers. A basic source App needs no `lenso.toml`, Host declaration,
+preset or activation flag. The default scaffold runtime is `process`; `bun`,
+`wasm`, `multi`, and `empty` are explicit alternatives. Rust source builds need
+the corresponding Rust toolchain; Bun-only Apps use a precompiled runtime.
+
+Add local discovery locations only when needed:
+
+```toml
+# Optional lenso.toml
+plugin_sources = ["../shared-plugins", "../packages/*"]
+```
+
+These are local discovery sources, not marketplace endpoints. Shared candidates
+are built/admitted only when selected through a Root entry such as
+`plugins/example.audit/default.toml`. App-owned Plugins get a disableable default
+Instance. Duplicate identities and unresolved requirements fail explicitly.
+
+```sh
+lenso app discover --json
+lenso app build --out dist-review
+lenso app check --root dist-review
+lenso app show --root dist-review --json
+lenso app start --from dist-review --check
+```
+
+Build writes a new output directory and refuses to overwrite an existing one.
+The distribution includes the selected Host, resolver, artifacts, Bun when
+needed, Root intent and integrity metadata. It runs without source, Cargo or
+Bun on PATH. Runtime packaging and a reproducible source archive are distinct.
+
+Development rebuilds and restarts generations. A build failure keeps the last
+running generation. A startup failure after a successful build is reported;
+zero-downtime replacement and automatic rollback are not promised.
+
+## Choose a development experience
+
+- [File conventions](/docs/core/file-conventions): CLI commands, Rust macros,
+  Agent Tools and optional package boundaries.
+- [App Console](/docs/core/app-console): pages, owner services and a development
+  kit that needs no Rust toolchain.
+- Local Capability generation: `lenso app contract new example.text` creates a
+  Descriptor/JSON Schema package and TypeScript projection under `contracts/`.
+  `--source rust` instead creates a Rust contract package and needs Cargo.
+  `app build` / `app dev` synchronize selected contracts before compiling
+  consumers. Production startup runs no generator. Continue with
+  [Capability authoring](/docs/core/capability-authoring) for role and version rules.
+
+Existing custom Hosts, Plugin SDKs, `plugin dev` and lower-level APIs remain
+available. Conventions lower into those same contracts and runtime boundaries.
+
+## Use Engine without an App
+
+Engine is an independently embeddable authoring layer in the `lenso-engine`
+repository. Rust packages live under `crates/`; the CLI consumes the libraries.
+The core handles immutable inputs, processing plans, dependency ordering,
+sessions and publication. App composition is an optional processor.
+
+```sh
+lenso engine inspect --source ./content --markdown
+lenso engine run --source ./content --markdown
+lenso engine dev --source ./content --markdown --output ./dist
+```
+
+This Markdown path needs no App, Cargo or Bun. A file such as `plugin.rs` has no
+meaning unless the corresponding support is selected. Processor behavior may
+read, parse, compile, transform or index; it is not limited to compilation.
+Rust, Bun, Python and other executable tools can implement the versioned JSON
+processor protocol. This does not add a business Plugin runtime Adapter.
+
+For custom processing, an `engine.json` workflow separates input sources from
+local processor sources and explicit activation:
+
+```json
+{
+  "schema": "lenso.engine-workflow.v1",
+  "sources": ["content"],
+  "plugin_sources": ["tools"],
+  "plugins": ["example.reader.v1"],
+  "presets": []
+}
+```
+
+The local `tools` directory must contain a valid `engine-plugin.json` for that
+identity and its existing executable/artifacts. Use Engine's maintained README
+and examples for the processor protocol before running:
+
+```sh
+lenso engine lock --workflow engine.json
+lenso engine run --workflow engine.json --output dist
+```
+
+Locking hashes existing selected tools, artifacts and configuration without
+installing or compiling. Execution verifies the host-local lock. Tool or config
+changes require re-locking; source documents remain editable. Bootstrap uses
+already executable processors, avoiding a dependency on their own source-file
+convention to load themselves.

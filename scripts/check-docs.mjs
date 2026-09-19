@@ -11,6 +11,9 @@ const failures = [];
 const requiredCurrentPages = [
   "index.mdx",
   "core/index.mdx",
+  "core/(start)/engine-dx.mdx",
+  "core/(plugins)/file-conventions.mdx",
+  "core/(operate)/app-console.mdx",
   "core/(start)/mental-model.mdx",
   "core/(start)/first-app-change.mdx",
   "core/(operate)/inspect-an-app.mdx",

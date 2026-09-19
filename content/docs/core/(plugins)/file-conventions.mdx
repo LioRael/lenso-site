@@ -1,0 +1,106 @@
+---
+title: Optional file conventions
+description: Author CLI commands and Agent Tools in Rust or TypeScript while keeping optional dependencies isolated.
+---
+
+Requires the local Engine-enabled CLI and matching support packages described
+in [Local App development](/docs/core/engine-dx). The examples here are implemented
+locally; they are not a registry release announcement.
+
+## A file takes effect when support is selected
+
+An application selects a support Plugin; that Plugin supplies filename matching
+and lowering. Other Plugins can include `cli.rs`, Console pages or Agent Tool
+entries without forcing every consumer to adopt those surfaces. Engine owns
+generic processing; each support Plugin owns its interpretation.
+
+A simple Plugin has one `Cargo.toml` or `package.json`. Heavy optional dependencies
+need independently buildable surface packages declared through `surfaces`
+metadata or a composite `plugin.json`. Unselected independent surfaces are not
+parsed, installed, compiled or bundled. Dependencies already imported by the
+core or included in its Cargo workspace remain in that build. File naming alone
+cannot remove a dependency that the core already requires.
+
+Generic Engine processors can handle other languages, but App runtime support
+still depends on the selected SDK, execution Adapter and Host admission.
+
+## CLI commands
+
+```sh
+lenso app create my-cli --cli
+cd my-cli
+lenso app dev -- hello --name Ada
+# After stopping development:
+lenso app build
+lenso app start --from dist -- hello --name Ada
+```
+
+The scaffold includes `app/local.hello/cli.ts`:
+
+```ts
+import { command } from '@lenso/cli';
+export default command({
+  name: 'hello',
+  description: 'Say hello',
+  args: { name: { type: 'string', default: 'world' } },
+  run({ args, output }) { output.text(`Hello, ${args.name}!`); },
+});
+```
+
+For an existing App, `lenso app add @lenso/cli` adopts the CLI support bundled
+with the executable. It is not a marketplace lookup. A bare App-local directory
+can contain only `cli.ts` or `cli.rs`; reusable packages should keep explicit
+identities. Generated path-based identities change when their paths change.
+
+Rust `cli.rs` can use the selected support's macro:
+
+```rust
+use lenso_cli_support::command;
+
+/// Say hello from Rust
+#[command(name = "hello-rust")]
+async fn hello(#[arg(long, default = "world")] name: String)
+    -> anyhow::Result<String>
+{
+    Ok(format!("Hello, {name}!"))
+}
+```
+
+One annotated function generates the entry factory. Typed arguments use
+`FromStr`; `Option<T>` is optional and `bool` is a flag. Rust source requires
+Cargo. Programmatic command builders and the underlying terminal Provider
+remain available. Exercise terminal Stream commands through the App, rather
+than standalone Request-only `plugin dev`.
+
+## Agent Tool entries
+
+After explicitly adopting matching Agent Tool convention support, a Plugin may
+provide `agent/tools.ts`:
+
+```ts
+import { tool, tools } from '@lenso/agent-tool-sdk';
+import * as schema from '@lenso/agent-tool-sdk/schema';
+
+export default tools([
+  tool({
+    name: 'greet', description: 'Greet a person.',
+    input: schema.object({ name: schema.string() }), output: schema.string(),
+  }, ({ name }) => ({ ok: true, value: `Hello, ${name}!` })),
+]);
+```
+
+The Agent repository owns `packages/agent-tool-convention` and executable
+`examples/app-tools` / `examples/app-tools-rust` fixtures. Rust entries use
+`#[lenso_agent_tool_sdk::tool_provider]` with `#[tool]` methods. Use the matching
+fixture for its exact SDK dependencies and generated registration.
+
+Compilation produces ordinary Tool providers. A consuming Agent must install
+and select the provider and explicitly grant tool policy. Discovery does not
+start an Agent, choose a Model or authorize execution. The local fixture proof
+covers a real Turn, allowed execution, denial before execution, and provider
+removal. It currently relies on a local Bun Adapter fix; public installation
+requires released dependencies containing that fix.
+
+For browser surfaces and backend service adapters, continue with
+[App Console](/docs/core/app-console). For an ordinary provider or consumer,
+keep using [Plugin authoring](/docs/core/plugin-authoring).

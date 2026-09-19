@@ -1,0 +1,94 @@
+---
+title: 可选文件 convention
+description: 用 Rust 或 TypeScript 编写 CLI 命令和 Agent Tool，并隔离可选依赖。
+---
+
+需要[本地 App 开发](/docs/zh/core/engine-dx)所述的 Engine CLI 和配套 support 包。
+以下是本地已实现的路径，不是 registry 发布公告。
+
+## 应用选择支持，文件才生效
+
+App 选择 support Plugin，由它定义文件名匹配和生成逻辑。其他 Plugin 可以携带
+`cli.rs`、Console 页面或 Agent Tool，而不强迫所有应用采用这些体验。
+Engine 负责通用处理，各 support Plugin 负责具体解释。
+
+简单 Plugin 只需要一个 `Cargo.toml` 或 `package.json`。重量级可选依赖需要独立可构建的
+surface 包，通过 `surfaces` 元数据或 composite `plugin.json` 声明。
+未选择的独立 surface 不解析、安装、编译或打包；已被核心导入或纳入其 Cargo workspace 的
+依赖仍参与构建。仅靠文件名不能消除核心已经需要的依赖。
+
+通用 Engine processor 支持其他语言工具，但 App 运行支持仍取决于 SDK、Adapter 和 Host 准入。
+
+## CLI 命令
+
+```sh
+lenso app create my-cli --cli
+cd my-cli
+lenso app dev -- hello --name Ada
+# 停止开发进程后：
+lenso app build
+lenso app start --from dist -- hello --name Ada
+```
+
+Scaffold 包含 `app/local.hello/cli.ts`：
+
+```ts
+import { command } from '@lenso/cli';
+export default command({
+  name: 'hello',
+  description: 'Say hello',
+  args: { name: { type: 'string', default: 'world' } },
+  run({ args, output }) { output.text(`Hello, ${args.name}!`); },
+});
+```
+
+已有 App 用 `lenso app add @lenso/cli` 采用可执行文件自带的支持，不是 marketplace 查询。
+App 本地裸目录可只放 `cli.ts` 或 `cli.rs`；可复用包应保留显式身份。
+自动生成的路径身份会随重命名变化。
+
+Rust `cli.rs` 可使用选中 support 提供的宏：
+
+```rust
+use lenso_cli_support::command;
+
+/// Say hello from Rust
+#[command(name = "hello-rust")]
+async fn hello(#[arg(long, default = "world")] name: String)
+    -> anyhow::Result<String>
+{
+    Ok(format!("Hello, {name}!"))
+}
+```
+
+一个带宏函数生成 entry factory。参数用 `FromStr` 转换，`Option<T>` 可选，`bool` 为 flag。
+Rust 源码需要 Cargo。程序化 command builder 和底层 terminal Provider 继续可用。
+Terminal 是 Stream，请通过 App 执行，不使用仅支持 Request 的独立 `plugin dev` 路径。
+
+## Agent Tool
+
+显式采用配套 Agent Tool convention support 后，可提供 `agent/tools.ts`：
+
+```ts
+import { tool, tools } from '@lenso/agent-tool-sdk';
+import * as schema from '@lenso/agent-tool-sdk/schema';
+
+export default tools([
+  tool({
+    name: 'greet', description: 'Greet a person.',
+    input: schema.object({ name: schema.string() }), output: schema.string(),
+  }, ({ name }) => ({ ok: true, value: `Hello, ${name}!` })),
+]);
+```
+
+Agent 仓库拥有 `packages/agent-tool-convention` 和
+`examples/app-tools` / `examples/app-tools-rust` 可执行示例。
+Rust 用 `#[lenso_agent_tool_sdk::tool_provider]` 和 `#[tool]` 方法；
+具体 SDK 依赖和生成注册方式以配套 fixture 为准。
+
+编译生成普通 Tool provider。消费它的 Agent 仍需安装并选择 provider，显式授予 Tool 策略。
+发现不会启动 Agent、选择 Model 或授权执行。本地 fixture 已通过真实 Turn 验证允许执行、
+越权调用在执行前拒绝，以及移除 provider。目前证明路径使用本地 Bun Adapter 修复；
+面向公开安装必须使用包含修复的发布依赖。
+
+浏览器页面与后端 adapter 见 [App Console](/docs/zh/core/app-console)。普通
+provider / consumer 继续使用 [Plugin 编写](/docs/zh/core/plugin-authoring)。

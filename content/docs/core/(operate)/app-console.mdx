@@ -1,0 +1,151 @@
+---
+title: Give your App a Console
+description: Start an App-owned Console and contribute pages and authorized services without an Agent.
+---
+
+This Console belongs to the application you build. It can run with no Agent.
+The [Agent-oriented Console workspace](/docs/core/console) is a separate launch
+path; `npx @lenso/agent web` does not add a Console to your application.
+
+## Start from the precompiled development kit
+
+Use the matching local Console development package and add its `bin` directory
+to PATH. It includes Engine CLI, Bun, the admitted native Host, embedded Shell,
+page compiler and SDK. App authors need no Cargo, rustc, Node, pnpm or Console
+source checkout. Initial dependency installation still needs registry access.
+
+```sh
+lenso app create my-app --console
+lenso app dev --root my-app
+# After stopping development:
+lenso app build --root my-app
+lenso app start --from my-app/dist
+```
+
+Open the HTTP address printed by the running Host. Development performs full
+rebuild/restart, not React Fast Refresh; a successful restart may print a new
+port. The scaffold records local kit paths in `development_host` and
+`plugin_sources` in `lenso.toml`. Update both if moving the kit.
+
+The local package was verified on macOS ARM64 on 2026-09-20. Linux native
+acceptance is pending; Windows is outside this POSIX package. No published
+multi-platform download or npm SDK release is implied. Native Rust additions
+need a compatible precompiled Host or a source build with Cargo; source identity,
+target and integrity mismatches fail without a silent Cargo fallback.
+
+## Contribute a page
+
+The generated `app/orders/console/` directory is a page contribution:
+
+```text
+console/
+├── page.tsx
+├── layout.tsx           # optional
+├── loading.tsx          # optional
+├── error.tsx            # optional
+├── not-found.tsx        # optional, root only
+├── services.ts          # optional, server only
+└── orders/[id]/page.tsx
+```
+
+```tsx
+import type { PageProps } from '@lenso/console-sdk';
+
+export default function Order({ params, navigation }: PageProps) {
+  return <section>
+    <h1>Order {String(params.id)}</h1>
+    <a href={navigation.href([])}>Back to workspace</a>
+  </section>;
+}
+```
+
+Pages use the Shell's React singleton and ordinary React hooks. Do not create a
+second React root. Navigation is scoped to the contribution's mount. The SDK
+also exports `definePage`, `LayoutProps`, `ErrorProps`, Contribution projections
+and Workspace Service projections.
+
+| Convention | Behavior |
+| --- | --- |
+| `[id]` | String parameter |
+| `[...path]` | Nonempty string-array parameter |
+| `[[...path]]` | String array, possibly empty |
+| `layout.tsx` | Wraps descendants through `children` |
+| `loading.tsx` | Suspense fallback |
+| `error.tsx` | Descendant render boundary with `error` and `reset` |
+| root `not-found.tsx` | Unmatched route fallback |
+
+Static routes precede dynamic routes. Catch-all segments must be terminal and
+ambiguous patterns fail compilation. Layout failures bubble to the parent
+boundary; navigation resets error state. All authored TS/TSX and component
+signatures are checked before bundling using an isolated strict configuration.
+A private `console/package.json` may declare frontend dependencies. These are
+specific supported semantics, not a promise of all Next.js features or SSR.
+
+## Register owner services
+
+Optional `console/services.ts` exports `defineServices(...)` using
+`@lenso/console-sdk/server`. Each `operation` supplies `parse`, `authorize` and
+`handle`; authorization must succeed before the handler runs. The kit's Orders
+example permits order 42 and rejects other IDs as an illustrative business rule,
+not production identity authentication.
+
+```ts
+import { defineServices, operation } from "@lenso/console-sdk/server";
+
+export default defineServices({
+  orders: {
+    capabilityId: "example.orders.query@1",
+    version: "1.0.0",
+    operations: {
+      read: operation({
+        parse(value: unknown) {
+          if (
+            typeof value !== "object" ||
+            value === null ||
+            !("id" in value) ||
+            typeof value.id !== "string"
+          ) {
+            throw new Error("An order ID is required");
+          }
+          return { id: value.id };
+        },
+        // Example business rule. Production authorization belongs here or in
+        // the domain provider this adapter invokes, never in page navigation.
+        authorize(_context, input) {
+          return input.id === "42";
+        },
+        handle(input) {
+          return { id: input.id, title: "Example order" };
+        },
+      }),
+    },
+  },
+});
+```
+
+A page invokes an admitted alias through its supplied SDK:
+
+```ts
+const order = await props.services.invoke<
+  { id: string }, { id: string; title: string }
+>('orders', 'read', { id: '42' }, { signal: props.signal });
+```
+
+The generated service adapter and contribution share one Plugin Instance.
+Aliases use the existing owner-scoped Plan contract; arbitrary upstream URLs
+are not service aliases. The compiler rejects server SDK and service-source
+imports in browser bundles. This helper currently exposes request operations;
+handwritten Workspace Service providers retain stream support.
+
+Domain Plugins retain their private state and final authorization. Access to
+another Plugin still requires explicit generated Capability dependencies.
+Adding a page, route or service alias grants no business permission or Agent
+Tool authority.
+
+## Remove the optional experience
+
+The scaffold selects Console with
+`plugins/lenso.console.web/default.toml`. Add an empty `default.disabled`
+beside it and rebuild into a fresh output directory to disable Console and page
+compilation. Verify both the selected and disabled App. The Shell can contain
+factories that are available but not activated by the App.
