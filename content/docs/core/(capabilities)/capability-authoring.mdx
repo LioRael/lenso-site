@@ -3,6 +3,8 @@ title: Capability authoring
 description: Define Request, Stream, and Event contracts and generate each language projection in its owning package.
 ---
 
+In the matching source-App workflow, `lenso app contract new example.text` or `--source rust` scaffolds a contract, and `app build` / `app dev` synchronize selected projections. See [local development](/docs/core/engine-dx). The role, contract and compatibility rules below still apply.
+
 A Capability is the contract between a consumer and a provider. Author it once;
 each Rust or Bun distribution generates only the projection it owns.
 

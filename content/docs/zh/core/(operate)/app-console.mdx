@@ -1,0 +1,139 @@
+---
+title: 为自己的 App 添加 Console
+description: 不依赖 Agent，启动 App 自有 Console 并贡献页面与授权服务。
+---
+
+这里的 Console 属于你构建的应用，可以完全没有 Agent。
+[面向 Agent 的 Console 工作台](/docs/zh/core/console)是另一条启动路径；
+`npx @lenso/agent web` 不会为你的应用添加 Console。
+
+## 使用预编译开发包
+
+使用配套本地 Console 开发包，将其 `bin` 加入 PATH。包内包含 Engine CLI、Bun、
+已准入 native Host、内嵌 Shell、页面 compiler 和 SDK。应用作者无需 Cargo、rustc、
+Node、pnpm 或 Console 源码；首次安装页面依赖仍需访问 registry。
+
+```sh
+lenso app create my-app --console
+lenso app dev --root my-app
+# 停止开发进程后：
+lenso app build --root my-app
+lenso app start --from my-app/dist
+```
+
+打开 Host 打印的 HTTP 地址。开发模式完整重建并重启，不是 React Fast Refresh；
+成功重启可能打印新端口。Scaffold 在 `lenso.toml` 的 `development_host` 和
+`plugin_sources` 中记录本地开发包位置，移动开发包时两处都需更新。
+
+截至 2026-09-20，本地包已验证 macOS ARM64；Linux 原生验收待执行，Windows 不属于
+此 POSIX 包的支持范围。这里不承诺已发布多平台下载或 npm SDK。
+新增 native Rust Plugin 需要兼容预编译 Host，或使用 Cargo 源码构建；目标、源码身份和
+完整性不匹配会报错，不会静默回退 Cargo。
+
+## 注册页面
+
+生成的 `app/orders/console/` 是页面贡献目录：
+
+```text
+console/
+├── page.tsx
+├── layout.tsx           # 可选
+├── loading.tsx          # 可选
+├── error.tsx            # 可选
+├── not-found.tsx        # 可选，仅根目录
+├── services.ts          # 可选，仅服务端
+└── orders/[id]/page.tsx
+```
+
+```tsx
+import type { PageProps } from '@lenso/console-sdk';
+
+export default function Order({ params, navigation }: PageProps) {
+  return <section>
+    <h1>Order {String(params.id)}</h1>
+    <a href={navigation.href([])}>Back to workspace</a>
+  </section>;
+}
+```
+
+页面使用 Shell 的 React 单例和普通 React hooks，无需另建 React root。
+导航限制在当前 contribution 的 mount 中。SDK 还导出 `definePage`、`LayoutProps`、
+`ErrorProps`、Contribution 和 Workspace Service 的生成投影。
+
+| Convention | 行为 |
+| --- | --- |
+| `[id]` | 字符串参数 |
+| `[...path]` | 非空字符串数组 |
+| `[[...path]]` | 可以为空的字符串数组 |
+| `layout.tsx` | 用 `children` 包裹后代 |
+| `loading.tsx` | Suspense fallback |
+| `error.tsx` | 后代渲染错误边界，提供 `error` 和 `reset` |
+| 根 `not-found.tsx` | 未匹配路由 fallback |
+
+静态路由优先于动态路由，catch-all 只能放末尾，歧义模式编译失败。
+Layout 自身错误交给父级边界，导航重置错误状态。打包前用隔离的严格配置检查全部
+TS/TSX 和组件签名；可用私有 `console/package.json` 声明前端依赖。
+这些是具体支持的语义，不等于全部 Next.js 功能，也不承诺 SSR。
+
+## 注册 owner service
+
+可选 `console/services.ts` 从 `@lenso/console-sdk/server` 导入并默认导出
+`defineServices(...)`。每个 `operation` 必须提供 `parse`、`authorize`、`handle`，
+授权成功后才执行 handler。开发包的 Orders 示例允许订单 42、拒绝其他 ID；
+这是演示业务规则，不是生产身份认证。
+
+```ts
+import { defineServices, operation } from "@lenso/console-sdk/server";
+
+export default defineServices({
+  orders: {
+    capabilityId: "example.orders.query@1",
+    version: "1.0.0",
+    operations: {
+      read: operation({
+        parse(value: unknown) {
+          if (
+            typeof value !== "object" ||
+            value === null ||
+            !("id" in value) ||
+            typeof value.id !== "string"
+          ) {
+            throw new Error("An order ID is required");
+          }
+          return { id: value.id };
+        },
+        // Example business rule. Production authorization belongs here or in
+        // the domain provider this adapter invokes, never in page navigation.
+        authorize(_context, input) {
+          return input.id === "42";
+        },
+        handle(input) {
+          return { id: input.id, title: "Example order" };
+        },
+      }),
+    },
+  },
+});
+```
+
+页面通过 SDK 调用已准入的 alias：
+
+```ts
+const order = await props.services.invoke<
+  { id: string }, { id: string; title: string }
+>('orders', 'read', { id: '42' }, { signal: props.signal });
+```
+
+生成的 service adapter 和 contribution 属于同一个 Plugin Instance。
+Alias 通过既有 owner-scoped Plan 合约绑定，不是任意上游 URL。
+Compiler 拒绝浏览器依赖图导入 server SDK 或 services 源码。
+该 helper 当前支持 request；手写 Workspace Service provider 仍可使用 stream。
+
+领域 Plugin 保留私有状态和最终授权。访问其他 Plugin 仍需显式生成的 Capability 依赖。
+添加页面、路由或 alias 不授予业务权限，也不授予 Agent Tool 权限。
+
+## 移除可选体验
+
+Scaffold 用 `plugins/lenso.console.web/default.toml` 选择 Console。
+在旁边增加空的 `default.disabled`，构建到新的输出目录，即可禁用 Console 及页面编译。
+分别验证选中和禁用后的 App。Host 可以包含可用 factory，但不表示 App 已激活它们。

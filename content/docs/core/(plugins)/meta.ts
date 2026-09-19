@@ -7,6 +7,7 @@ export default defineMeta({
     "plugins-and-capabilities",
     "choose-plugin-path",
     "plugin-authoring",
+    "file-conventions",
     "linked-rust-plugin",
     "bun-plugin-authoring",
     "named-dependencies",

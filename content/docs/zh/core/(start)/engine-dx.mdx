@@ -1,0 +1,102 @@
+---
+title: 本地 App 开发与 Engine
+description: 从本地 Plugin 源码开发 App，按需选择 convention，也可以脱离 App 使用 Engine。
+---
+
+本页描述截至 2026-09-20 已验证的本地实现。需要包含这些命令的 CLI 构建，
+或配套 Console 开发包。本轮工作尚未发布这些新增能力；安装当前 npm 包不代表
+已经具备它们。先用实际二进制的 `lenso app --help` 和 `lenso engine --help` 确认。
+
+## 无配置创建 App
+
+```sh
+lenso app create my-app --runtime bun
+cd my-app
+lenso app dev
+# 停止开发进程后：
+lenso app build
+lenso app start --from dist
+```
+
+`app/` 放 App 自有 Plugin 源码，`plugins/` 保留 Instance 配置和禁用标记。
+基础源码 App 无需 `lenso.toml`、Host 声明、preset 或激活开关。
+默认 scaffold runtime 为 `process`，也可显式选择 `bun`、`wasm`、`multi`、`empty`。
+Rust 源码需要相应工具链；纯 Bun App 使用预编译 runtime。
+
+只有需要额外本地发现目录时才添加配置：
+
+```toml
+# 可选的 lenso.toml
+plugin_sources = ["../shared-plugins", "../packages/*"]
+```
+
+这些是本地发现源，不是 marketplace 地址。共享候选需要
+`plugins/example.audit/default.toml` 等 Root 文件显式选择后才构建和准入；
+App 自有 Plugin 获得可禁用的 default Instance。重复身份或未满足的依赖明确报错。
+
+```sh
+lenso app discover --json
+lenso app build --out dist-review
+lenso app check --root dist-review
+lenso app show --root dist-review --json
+lenso app start --from dist-review --check
+```
+
+构建写入新目录，拒绝覆盖已存在的输出。产物包含选中的 Host、resolver、插件产物、
+需要时的 Bun、Root 意图和完整性元数据；运行不依赖源码、Cargo 或 PATH 上的 Bun。
+运行时完整包和源码可复现归档是不同产物。
+
+开发循环重建并重启 generation。构建失败保留上一个运行版本；构建成功后的启动失败
+会明确报告，并不保证零停机切换或自动回滚。
+
+## 选择开发体验
+
+- [文件 convention](/docs/zh/core/file-conventions)：CLI 命令、Rust 宏、Agent Tool 和可选依赖边界。
+- [App Console](/docs/zh/core/app-console)：页面、owner service 和无需 Rust 工具链的开发包。
+- Capability：`lenso app contract new example.text` 在 `contracts/` 创建 Descriptor/JSON Schema
+  包及 TypeScript 投影。`--source rust` 创建 Rust contract 包，需要 Cargo。
+  `app build` / `app dev` 在编译消费者前同步选中合约，生产启动不运行生成器。
+  角色和版本规则见 [Capability 编写](/docs/zh/core/capability-authoring)。
+
+现有自定义 Host、Plugin SDK、`plugin dev` 和底层 API 继续可用，convention 最终仍使用
+这些合约和运行边界。
+
+## 不开发 App，也能使用 Engine
+
+Engine 是独立 `lenso-engine` 仓库中的 authoring 层，Rust 包放在 `crates/`，CLI 消费其库。
+核心处理不可变输入、处理计划、依赖顺序、session 和结果发布；App 组合是可选 processor。
+
+```sh
+lenso engine inspect --source ./content --markdown
+lenso engine run --source ./content --markdown
+lenso engine dev --source ./content --markdown --output ./dist
+```
+
+Markdown 路径无需 App、Cargo 或 Bun。未选择对应支持时，`plugin.rs` 等文件没有特殊含义。
+Processor 可以读取、解析、编译、转换或索引，不局限于 compile。
+Rust、Bun、Python 等可执行程序可实现版本化 JSON processor 协议；这不等于新增了
+业务 Plugin 的运行时 Adapter。
+
+自定义 `engine.json` 分开声明输入、本地 processor 源及显式选择：
+
+```json
+{
+  "schema": "lenso.engine-workflow.v1",
+  "sources": ["content"],
+  "plugin_sources": ["tools"],
+  "plugins": ["example.reader.v1"],
+  "presets": []
+}
+```
+
+`tools` 必须提供对应身份的有效 `engine-plugin.json` 以及已有可执行文件和 artifacts。
+先参考 Engine README 和示例实现协议，再执行：
+
+```sh
+lenso engine lock --workflow engine.json
+lenso engine run --workflow engine.json --output dist
+```
+
+Lock 仅计算现有选中工具、产物和配置的哈希，不安装或编译；执行时校验本机 lock。
+工具或配置变化需要重新 lock，内容文件可以继续编辑。Bootstrap 使用已可执行的
+processor，因此发现自身不依赖先编译自身所定义的源码 convention。

@@ -3,6 +3,8 @@ title: 编写 Capability
 description: 定义 Request、Stream 与 Event 契约，并在各自负责的 Package 中生成语言投影。
 ---
 
+在配套源码 App 工作流中，`lenso app contract new example.text` 和 `--source rust` 可创建合约，`app build` / `app dev` 自动同步选中投影；见[本地开发](/docs/zh/core/engine-dx)。下文仍定义角色、合约与兼容性规则。
+
 Capability 是 Consumer 与 Provider 之间的契约。只定义一次；Rust 与 Bun
 各自在分发该语言的 Package 中生成自己的投影。
 
