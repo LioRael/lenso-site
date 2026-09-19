@@ -9,7 +9,7 @@ path; `npx @lenso/agent web` does not add a Console to your application.
 
 ## Start from the precompiled development kit
 
-Use the matching local Console development package and add its `bin` directory
+Use the Console development package matching your platform and add its `bin` directory
 to PATH. It includes Engine CLI, Bun, the admitted native Host, embedded Shell,
 page compiler and SDK. App authors need no Cargo, rustc, Node, pnpm or Console
 source checkout. Initial dependency installation still needs registry access.
@@ -27,11 +27,13 @@ rebuild/restart, not React Fast Refresh; a successful restart may print a new
 port. The scaffold records local kit paths in `development_host` and
 `plugin_sources` in `lenso.toml`. Update both if moving the kit.
 
-The local package was verified on macOS ARM64 on 2026-09-20. Linux native
-acceptance is pending; Windows is outside this POSIX package. No published
-multi-platform download or npm SDK release is implied. Native Rust additions
-need a compatible precompiled Host or a source build with Cargo; source identity,
-target and integrity mismatches fail without a silent Cargo fallback.
+As of 2026-09-20, macOS ARM64 and Linux x64 have passed native CI acceptance,
+including creation, build and startup from an extracted archive using only kit
+tools, plus real HTTP service allow/deny checks. Windows is outside this POSIX
+package. The Console SDK is included in the kit; this does not imply a separate
+npm SDK release. Native Rust additions need a compatible precompiled Host or a
+source build with Cargo; source identity, target and integrity mismatches fail
+without a silent Cargo fallback.
 
 ## Contribute a page
 

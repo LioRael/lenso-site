@@ -3,11 +3,12 @@ title: Local App development and Engine
 description: Build from local Plugin sources, select optional conventions, or use Engine without an App.
 ---
 
-This guide describes the local implementation verified on 2026-09-20. Use a
-CLI build containing these commands or the supplied Console development kit.
-These additions have not been published by this work; installing the current
-npm package is not evidence that they are available. Run `lenso app --help`
-and `lenso engine --help` against the binary you intend to use.
+Engine is independently delivered: `lenso-engine 0.1.1` and the optional App,
+Runtime, Authoring, Markdown, Worker and Host packages at `0.1.0` are published
+on crates.io. The generic Engine can be consumed directly as a library. CLI and
+Console development kits have separate release paths. Before using the App
+commands below, run `lenso app --help` and `lenso engine --help` against the
+installed binary; the Engine library version alone does not identify CLI features.
 
 ## Create an App without configuration
 

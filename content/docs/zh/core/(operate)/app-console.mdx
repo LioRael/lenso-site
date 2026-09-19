@@ -9,7 +9,7 @@ description: 不依赖 Agent，启动 App 自有 Console 并贡献页面与授�
 
 ## 使用预编译开发包
 
-使用配套本地 Console 开发包，将其 `bin` 加入 PATH。包内包含 Engine CLI、Bun、
+使用匹配平台的 Console 开发包，将其 `bin` 加入 PATH。包内包含 Engine CLI、Bun、
 已准入 native Host、内嵌 Shell、页面 compiler 和 SDK。应用作者无需 Cargo、rustc、
 Node、pnpm 或 Console 源码；首次安装页面依赖仍需访问 registry。
 
@@ -25,10 +25,11 @@ lenso app start --from my-app/dist
 成功重启可能打印新端口。Scaffold 在 `lenso.toml` 的 `development_host` 和
 `plugin_sources` 中记录本地开发包位置，移动开发包时两处都需更新。
 
-截至 2026-09-20，本地包已验证 macOS ARM64；Linux 原生验收待执行，Windows 不属于
-此 POSIX 包的支持范围。这里不承诺已发布多平台下载或 npm SDK。
-新增 native Rust Plugin 需要兼容预编译 Host，或使用 Cargo 源码构建；目标、源码身份和
-完整性不匹配会报错，不会静默回退 Cargo。
+截至 2026-09-20，macOS ARM64 和 Linux x64 均已通过原生 CI 验收，
+包括下载包解压后仅使用包内工具创建、构建、启动，以及真实 HTTP 服务的允许/拒绝检查。
+Windows 不属于此 POSIX 开发包。Console SDK 随开发包提供，不代表存在独立 npm 发布。
+新增原生 Rust Plugin 需要匹配的预编译 Host 或 Cargo 源码构建；源码身份、目标平台或
+完整性不匹配会明确失败，不会静默回退到 Cargo 编译。
 
 ## 注册页面
 
