@@ -13,6 +13,22 @@ description: 不依赖 Agent，启动 App 自有 Console 并贡献页面与授�
 已准入 native Host、内嵌 Shell、页面 compiler 和 SDK。应用作者无需 Cargo、rustc、
 Node、pnpm 或 Console 源码；首次安装页面依赖仍需访问 registry。
 
+从[当前开发包预发布](https://github.com/LioRael/lenso-console/releases/tag/console-dev-b50d10087226-35466769287)
+下载与平台匹配的压缩包和校验和。Apple silicon 使用 `aarch64-apple-darwin`，Linux x64
+使用 `x86_64-unknown-linux-gnu`；校验并解压后，再把其中的工具加入 shell：
+
+```sh
+kit_tag=console-dev-b50d10087226-35466769287
+target=aarch64-apple-darwin # Linux x64 改为 x86_64-unknown-linux-gnu
+archive="console-development-host-$target.tar.gz"
+base="https://github.com/LioRael/lenso-console/releases/download/$kit_tag"
+curl -fLO "$base/$archive"
+curl -fLO "$base/$archive.sha256"
+shasum -a 256 -c "$archive.sha256"
+tar -xzf "$archive"
+export PATH="$PWD/development-host/bin:$PATH"
+```
+
 ```sh
 lenso app create my-app --console
 lenso app dev --root my-app
