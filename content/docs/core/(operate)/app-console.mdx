@@ -14,6 +14,24 @@ to PATH. It includes Engine CLI, Bun, the admitted native Host, embedded Shell,
 page compiler and SDK. App authors need no Cargo, rustc, Node, pnpm or Console
 source checkout. Initial dependency installation still needs registry access.
 
+Download the matching archive and checksum from the
+[current development-kit prerelease](https://github.com/LioRael/lenso-console/releases/tag/console-dev-b50d10087226-35466769287).
+Choose `aarch64-apple-darwin` for Apple silicon or `x86_64-unknown-linux-gnu`
+for Linux x64, then verify and extract the archive before adding its tools to
+your shell:
+
+```sh
+kit_tag=console-dev-b50d10087226-35466769287
+target=aarch64-apple-darwin # or x86_64-unknown-linux-gnu
+archive="console-development-host-$target.tar.gz"
+base="https://github.com/LioRael/lenso-console/releases/download/$kit_tag"
+curl -fLO "$base/$archive"
+curl -fLO "$base/$archive.sha256"
+shasum -a 256 -c "$archive.sha256"
+tar -xzf "$archive"
+export PATH="$PWD/development-host/bin:$PATH"
+```
+
 ```sh
 lenso app create my-app --console
 lenso app dev --root my-app
