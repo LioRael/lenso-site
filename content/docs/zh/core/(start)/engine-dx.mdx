@@ -3,9 +3,10 @@ title: 本地 App 开发与 Engine
 description: 从本地 Plugin 源码开发 App，按需选择 convention，也可以脱离 App 使用 Engine。
 ---
 
-本页描述截至 2026-09-20 已验证的本地实现。需要包含这些命令的 CLI 构建，
-或配套 Console 开发包。本轮工作尚未发布这些新增能力；安装当前 npm 包不代表
-已经具备它们。先用实际二进制的 `lenso app --help` 和 `lenso engine --help` 确认。
+Engine 已作为独立项目交付；`lenso-engine 0.1.1` 和可选 App、Runtime、Authoring、
+Markdown、Worker、Host 包的 `0.1.0` 已发布到 crates.io。通用 Engine 可以直接作为库使用。
+CLI 和 Console 开发包有各自的发布流程；使用下面的 App 命令前，先对实际安装的二进制
+执行 `lenso app --help` 和 `lenso engine --help`，不要仅凭 Engine 库版本判断 CLI 功能。
 
 ## 无配置创建 App
 
