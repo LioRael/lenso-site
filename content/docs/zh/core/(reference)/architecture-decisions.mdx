@@ -3,7 +3,7 @@ title: 架构决策
 description: 将规范性问题路由到当前已接受的 ADR 序列。
 ---
 
-`LioRael/lenso` 中的 ADR 0030–0074 是当前架构规范。可以从以下决策组开始：
+`LioRael/lenso` 中的 ADR 0030–0077 是当前架构规范。可以从以下决策组开始：
 
 | 主题 | ADR |
 | --- | --- |
@@ -30,7 +30,10 @@ ADR 0001–0029 描述已退役的 v0.3 Service-oriented 架构。它们作为�
 | Access Control 与 Organization 分离 | 0072 |
 | 命名依赖与持久化选择 | 0073 |
 | Host-essential 终结故障范围 | 0074 |
+| 把本地 Source Discovery 作为生成的 Host 输入 | 0075 |
+| 区分 Execution Environment 与 Infrastructure Implementation | 0076 |
+| Rust Main-chain 仓库合并 | 0077 |
 
-ADR 接受不代表每个 Profile 都已实现或发布。0073/0074 的首次交付见
-[实现状态](https://github.com/LioRael/lenso/blob/main/docs/architecture/plugin-authoring-implementation-status.md)；
-后续 Bun 交互扩展见 [SDK 当前范围](https://github.com/LioRael/lenso-bun-adapter/blob/main/packages/lenso-bun-plugin/README.md)。
+ADR 接受不代表每个 Profile 都已实现或发布；准确发布证据以 Package Version 与
+Lockfile 为准。JavaScript SDK Surface 见
+[Bun 交互支持](https://github.com/LioRael/lenso-js/tree/main/packages/lenso-bun-plugin)。

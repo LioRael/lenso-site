@@ -69,9 +69,10 @@ Ingress 必须先由 Host Catalog 提供。
    `many lenso.http.endpoint@1` Requirement。
 5. 真实 Host 或 Integration Test 可以暴露 Listener Address。
 
-遇到缺失项时，在那里停下并与 Host Owner 解决。当前 `lenso-web` Owner
-Repository 使用 `lenso-capability-http-endpoint` 0.2.3 和
-`lenso-web-ingress` 0.3.3；其他 Host 应使用自身 Lock 选择的准确版本。
+遇到缺失项时，在那里停下并与 Host Owner 解决。当前 Web Capability 与 Transport
+Crate 由 `LioRael/lenso` Monorepo 持有；已发布 Cohort 使用
+`lenso-capability-http-endpoint` 0.2.3 和 `lenso-web-ingress` 0.3.3。其他 Host
+应使用自身 Lock 选择的准确版本。
 
 ## 完成条件
 

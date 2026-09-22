@@ -73,9 +73,10 @@ Confirm these conditions in the target repository:
 5. A real Host or integration test can expose the listener address.
 
 Stop at the first missing prerequisite and resolve it with the Host owner. The
-current `lenso-web` owner repository uses `lenso-capability-http-endpoint`
-0.2.3 and `lenso-web-ingress` 0.3.3. Another Host should use the exact versions
-selected by its own lock.
+current `LioRael/lenso` monorepo owns the Web Capability and transport crates.
+The published cohort used `lenso-capability-http-endpoint` 0.2.3 and
+`lenso-web-ingress` 0.3.3. Another Host should use the exact versions selected
+by its own lock.
 
 ## Definition of done
 

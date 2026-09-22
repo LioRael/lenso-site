@@ -24,9 +24,10 @@ Adapter 持有：
 
 | 实现 | 仓库 |
 | --- | --- |
-| Tokio Runner、Native Adapter、Browser 与 WASIp2 Driver | `LioRael/lenso-runtime-rust` |
-| Bun SDK、子进程 Adapter 与 prepared Host runtime | `LioRael/lenso-bun-adapter` |
-| Descriptor codegen 与可移植 value conformance | `LioRael/lenso-protocols` |
+| Tokio Runner、Native Adapter、Browser 与 WASIp2 Driver | `LioRael/lenso` |
+| Bun 子进程 Adapter 与 Prepared Host Runtime | `LioRael/lenso` |
+| Bun SDK 与 TypeScript Host Authoring | `LioRael/lenso-js` |
+| Descriptor Codegen 与可移植 Value Conformance | `LioRael/lenso` |
 
 Bun Adapter 在正式路径使用 JSON-RPC over HTTP，并实现 Request、双向 Stream
 与易失性 Event Dispatch。这些是 Adapter / Wire 选择，不是 Capability 或 Kernel

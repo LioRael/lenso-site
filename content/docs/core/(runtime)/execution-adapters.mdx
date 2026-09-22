@@ -25,9 +25,10 @@ An Adapter owns:
 
 | Implementation | Repository |
 | --- | --- |
-| Tokio Runner, native Adapter, browser and WASIp2 Drivers | `LioRael/lenso-runtime-rust` |
-| Bun SDK, child-process Adapter, and prepared Host runtime | `LioRael/lenso-bun-adapter` |
-| Descriptor code generation and portable value conformance | `LioRael/lenso-protocols` |
+| Tokio Runner, native Adapter, browser and WASIp2 Drivers | `LioRael/lenso` |
+| Bun child-process Adapter and prepared Host runtime | `LioRael/lenso` |
+| Bun SDK and TypeScript Host authoring | `LioRael/lenso-js` |
+| Descriptor code generation and portable value conformance | `LioRael/lenso` |
 
 The Bun Adapter uses JSON-RPC over HTTP in production and implements Request,
 bidirectional Stream, and volatile Event dispatch. Those are Adapter/wire

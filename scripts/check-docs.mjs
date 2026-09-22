@@ -201,9 +201,9 @@ function checkBunToolRelationships(file) {
 function checkCapabilityFixtureRegression(file) {
   const text = read(file);
   for (const fixture of [
-    "https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/wit",
-    "https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/stream",
-    "https://github.com/LioRael/lenso-protocols/tree/main/crates/lenso-contract-codegen/tests/fixtures/event",
+    "https://github.com/LioRael/lenso/tree/main/crates/lenso-contract-codegen/tests/fixtures/wit",
+    "https://github.com/LioRael/lenso/tree/main/crates/lenso-contract-codegen/tests/fixtures/stream",
+    "https://github.com/LioRael/lenso/tree/main/crates/lenso-contract-codegen/tests/fixtures/event",
   ]) {
     if (!text.includes(fixture)) {
       failures.push(`${file}: repaired Capability fixture link missing ${fixture}`);

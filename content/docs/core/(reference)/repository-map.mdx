@@ -3,17 +3,18 @@ title: Repository map
 description: Route changes to the repository that owns the Interface and its evidence.
 ---
 
-The local `lenso-engine` repository owns independent authoring/processing, with Rust packages under `crates/`; CLI consumes its libraries. Console owns its page SDK/compiler and Agent owns Tool conventions. See [Engine](/docs/core/engine-dx).
+The Rust platform has been consolidated into `LioRael/lenso`; JavaScript and
+TypeScript distribution surfaces live in `LioRael/lenso-js`. The former
+`lenso-engine`, `lenso-runtime-rust`, `lenso-bun-adapter`, `lenso-protocols`,
+`lenso-cli`, and `lenso-web` repositories are migration sources, not current
+ownership boundaries. Console owns its page SDK/compiler and Agent owns Tool
+conventions. See [Engine](/docs/core/engine-dx).
 
 | Repository | Current ownership |
 | --- | --- |
-| `LioRael/lenso` | App Plan, portable Kernel, Kernel conformance, canonical ADRs |
-| `LioRael/lenso-runtime-rust` | host-side Drivers, Runner, and native Execution Adapter |
-| `LioRael/lenso-bun-adapter` | Bun SDK, child-process Adapter, and `lenso-host-runtime` |
-| `LioRael/lenso-protocols` | Descriptor codegen, portable contract runtime, value conformance |
-| `LioRael/lenso-cli` | authoring, project checks, Plan resolution, transition CLI |
+| `LioRael/lenso` | Rust Core, Engine, Runtime Drivers and Adapters, Rust CLI, protocol tooling, Web integration, and canonical ADRs |
+| `LioRael/lenso-js` | Bun/Node SDKs, TypeScript Host authoring, npm CLI launcher, and generated Web client |
 | `LioRael/lenso-examples` | executable examples and product-neutral fixtures |
-| `LioRael/lenso-web` | backend HTTP Endpoint/Client Capabilities, Ingress/Egress Plugins, and optional OpenAPI document Plugin |
 | `LioRael/lenso-auth-plugin` | portable Auth Capability and assertion SDK |
 | `LioRael/lenso-otel-plugin` | removable OpenTelemetry Plugin |
 | `LioRael/lenso-console` | local Console Shell, Agent identity catalog, selected-App context, same-origin integration, and the reference Console Host |

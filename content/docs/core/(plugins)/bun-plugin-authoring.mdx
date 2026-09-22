@@ -124,9 +124,11 @@ Providers, plus generated outbound dependency clients for all three interactions
 `@lenso/bun 0.5.1` and `@lenso/bun-plugin 0.4.1` are recorded released versions;
 the earlier Request-only limit no longer applies to that SDK cohort.
 
-See [`@lenso/bun`](https://www.npmjs.com/package/@lenso/bun) for the typed SDK
-and [`lenso-bun-adapter`](https://github.com/LioRael/lenso-bun-adapter) for the
-process boundary.
+See [`@lenso/bun`](https://www.npmjs.com/package/@lenso/bun) and the
+[`lenso-js` source](https://github.com/LioRael/lenso-js/tree/main/packages/lenso-bun-plugin)
+for the typed SDK, and the
+[`lenso` Adapter](https://github.com/LioRael/lenso/tree/main/crates/lenso-bun-adapter)
+for the process boundary.
 
 
 ## Author stateful Plugins with generated Capabilities
@@ -168,7 +170,7 @@ waits for completion and rejection becomes Runtime Failure. Outbound clients
 use exact Plan-selected providers and preserve cancellation, ordering, and
 bounded admission semantics.
 
-See the [Bun SDK](https://github.com/LioRael/lenso-bun-adapter/blob/main/packages/lenso-bun-plugin/README.md)
+See the [Bun SDK](https://github.com/LioRael/lenso-js/tree/main/packages/lenso-bun-plugin)
 for generated interfaces. Continue with [named dependencies](/docs/core/named-dependencies),
 the [complete sync example](/docs/core/document-sync), or
 [TypeScript Host authoring](/docs/core/typescript-host). The Host build profile has separate limits.

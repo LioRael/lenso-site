@@ -3,10 +3,11 @@ title: Local App development and Engine
 description: Build from local Plugin sources, select optional conventions, or use Engine without an App.
 ---
 
-Engine is independently delivered: `lenso-engine 0.1.1` and the optional App,
+Engine remains independently consumable: `lenso-engine 0.1.1` and the optional App,
 Runtime, Authoring, Markdown, Worker and Host packages at `0.1.0` are published
-on crates.io. The generic Engine can be consumed directly as a library. CLI and
-Console development kits have separate release paths. Before using the App
+on crates.io. Their current Rust source is maintained in the consolidated
+`LioRael/lenso` repository. The generic Engine can be consumed directly as a
+library. CLI and Console development kits have separate release paths. Before using the App
 commands below, run `lenso app --help` and `lenso engine --help` against the
 installed binary; the Engine library version alone does not identify CLI features.
 
@@ -74,8 +75,9 @@ available. Conventions lower into those same contracts and runtime boundaries.
 
 ## Use Engine without an App
 
-Engine is an independently embeddable authoring layer in the `lenso-engine`
-repository. Rust packages live under `crates/`; the CLI consumes the libraries.
+Engine is an independently embeddable authoring layer in the consolidated
+`LioRael/lenso` repository. Rust packages live under `crates/`; the CLI consumes
+the libraries.
 The core handles immutable inputs, processing plans, dependency ordering,
 sessions and publication. App composition is an optional processor.
 

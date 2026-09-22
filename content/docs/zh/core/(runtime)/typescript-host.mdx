@@ -1,6 +1,6 @@
 ---
 title: 使用 TypeScript 构建 Host
-description: 准备真实运行文件，验证 Host 生命周期，并识别 Bun Plugin 当前阻塞。
+description: 准备真实运行文件，验证 Host 生命周期，并理解已发布 0.16.1 Cohort 的 Bun Plugin 限制。
 ---
 
 Lenso 已有 TypeScript/Bun Host：`@lenso/cli/host` 描述组合，生成的 `host.js`
@@ -9,8 +9,9 @@ Host 控制 API 提供 `start`、`inspect`、`stop`，业务入口由 Plugin 持
 
 ## 验证状态与前置条件
 
-2026-09-07 在 macOS ARM64 上从新目录验证的结果如下。当前不能把它当作带 Bun
-Plugin 的一键启动教程；先用空 Host 验证真实生命周期，再检查下面的 Plugin 阻塞。
+2026-09-07 在 macOS ARM64 上从新目录验证的结果如下。它描述的是已发布的
+`@lenso/cli@0.16.1` Cohort，不代表当前未发布的源码候选。它还不能作为带 Bun Plugin
+的一键启动教程；先用空 Host 验证真实生命周期，再阅读下面的 Cohort 限制。
 
 | 路径 | 本次结果 |
 | --- | --- |
@@ -33,15 +34,16 @@ bun add --dev @lenso/cli@0.16.1
 
 ## 获取可运行文件
 
-npm CLI 自带当前平台的 resolver 和生成控制库，不自带完整 Host 运行环境。
-下面固定源代码与 lockfile 来构建此次验证使用的两个二进制，不依赖同名的全局 CLI：
+npm CLI 自带当前平台的 Resolver 和生成控制库，不自带完整 Host 运行环境。当前 Rust
+所有权已经合并到 `LioRael/lenso`。要复现这个历史 Cohort，应分别使用合并进来的源码
+Revision 及其原始 Lockfile 构建两个二进制，不要依赖同名的全局 CLI：
 
 ```sh
-git clone https://github.com/LioRael/lenso-bun-adapter.git runtime-source
+git clone https://github.com/LioRael/lenso.git runtime-source
 git -C runtime-source checkout 3c1f2f011f4f9d496db337f296ad686ab0a985e0
 cargo build --locked --manifest-path runtime-source/Cargo.toml -p lenso-host-runtime
 
-git clone https://github.com/LioRael/lenso-runtime-rust.git owner-source
+git clone https://github.com/LioRael/lenso.git owner-source
 git -C owner-source checkout 1e3915a
 cargo build --locked --manifest-path owner-source/Cargo.toml \
   -p lenso-runner --bin lenso-process-owner --features process-owner
@@ -141,7 +143,7 @@ bun lifecycle.ts
 同一 registry；不要为绕过所有权冲突而换目录或删除锁。`start` 还接受 `registry`、
 `startupMs`、`stopMs`、`confirmationMs`，它们控制等待预算，不保证强制终止等同于业务关闭。
 
-## 添加真实 Bun Plugin：目前的阻塞
+## 添加真实 Bun Plugin：已发布 0.16.1 Cohort 的限制
 
 以下命令能生成并打包真实 Bundle，替代没有来源的 `company.notes`：
 
@@ -165,7 +167,7 @@ bun --bun run lenso app build --source app.ts --target aarch64-apple-darwin --ou
 
 
 在已验证的 CLI 版本上，最后一步报错 `V4 Bundle has no implementation admitted by Host policy`。
-该 Bundle 声明 `lenso.bun-authoring@2`，而当前 Host builder 的 V2 准入使用
+该 Bundle 声明 `lenso.bun-authoring@2`，而该已发布 Host Builder 的 V2 准入使用
 `lenso.plugin-authoring@2`。改成 `--target javascript-bun` 也不能解决这次 Profile 拒绝。
 不要修改 Bundle manifest、伪造摘要或使用空 Host 的成功来替代真实 Plugin 验收。
 
@@ -217,7 +219,7 @@ Host 默认封闭：现有配置必须通过 Plugin Schema，新增 Instance 和
 授权。可扩展 Slot 使用 `allow: [pluginBundle(...)]` 和 `maxInstances`（1–256）；
 `one` Slot 的替换还需要 `replaceable: true`。`configurationSchema` 约束合并后的
 配置，不能替代 Plugin 自己的 Schema，也不是 OS 沙箱。完整授权示例与支持的 Schema
-关键字见[Host 声明参考](https://github.com/LioRael/lenso-cli/blob/080e7fc/docs/typescript-host-authoring.md#admit-extensions-and-constrain-configuration)。
+关键字见[Host 声明参考](https://github.com/LioRael/lenso/blob/main/crates/lenso-cli/docs/typescript-host-authoring.md#admit-extensions-and-constrain-configuration)。
 
 路径相对声明文件解析。声明支持静态对象、数组、常量和相对默认导入，不执行环境读取、
 动态导入、spread、任意函数或业务模块。Host 声明 Profile 目前只接纳 Request，最多
