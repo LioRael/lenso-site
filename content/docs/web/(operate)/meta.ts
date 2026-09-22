@@ -1,7 +1,5 @@
-import { defineMeta } from "blume";
-
-export default defineMeta({
+export default {
   title: "Ship the Host",
   order: 3,
   pages: ["deployment-boundary"],
-});
+};

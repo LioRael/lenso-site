@@ -1,7 +1,5 @@
-import { defineMeta } from "blume";
-
-export default defineMeta({
+export default {
   title: "Capability",
   order: 3,
   pages: ["capability-authoring"],
-});
+};

@@ -1,6 +1,4 @@
-import { defineMeta } from "blume";
-
-export default defineMeta({
+export default {
   title: "Core framework",
   pages: [
     "index",
@@ -13,4 +11,4 @@ export default defineMeta({
     "(reference)",
     "(contribute)",
   ],
-});
+};

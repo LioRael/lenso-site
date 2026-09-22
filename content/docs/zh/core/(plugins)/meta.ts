@@ -1,6 +1,4 @@
-import { defineMeta } from "blume";
-
-export default defineMeta({
+export default {
   title: "Plugin",
   order: 2,
   pages: [
@@ -15,4 +13,4 @@ export default defineMeta({
     "plugin-configuration",
     "plugin-composition",
   ],
-});
+};

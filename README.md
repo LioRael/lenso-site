@@ -1,9 +1,10 @@
 # Lenso documentation
 
-The Lenso public documentation, built with
-[Blume](https://useblume.dev). Markdown and MDX under `content/docs` are the
-source of truth for readers, search, `llms.txt`, raw Markdown routes, and the
-MCP-ready content model.
+The Lenso public site and documentation, built with Next.js and Fumadocs.
+Markdown and MDX under `content/docs` are the source of truth for readers,
+search, `llms.txt`, and per-page Markdown routes. The site also owns the public
+Plugin browsing experience while catalog signing, publishing, and installation
+authority remain in the Marketplace and the adopting Host.
 
 The documentation tree describes the current Lenso architecture only. Retired product generations
 are intentionally excluded from the public site.
@@ -26,7 +27,7 @@ pnpm build
 pnpm preview
 ```
 
-The static build is written to `dist/`. `pnpm deploy:dry-run` verifies the
+The static build is written to `out/`. `pnpm deploy:dry-run` verifies the
 Cloudflare Workers static-assets package without publishing it.
 
 `pnpm check` validates the bilingual docs, all local links, the static
@@ -36,8 +37,16 @@ build, AI-readable catalogs, and draft exclusion.
 
 - `content/docs`: current Markdown and MDX documentation
 - `content/docs/**/meta.ts`: navigation order and group metadata
+- `app`: Next.js routes for the home page, Plugin browsing, docs, search, and
+  AI-readable output
+- `lib/source.ts`: Fumadocs content source and page tree
 - `public/lenso-assets`: brand and explanatory assets
-- `blume.config.ts`: navigation, search, SEO, and AI-readable output
+
+The Plugin page currently exposes an explicitly isolated registry candidate.
+It does not present that candidate as a signed Marketplace publication. The
+signed release-details API becomes the source for catalog results after its
+protocol package and Marketplace backend are published through their owning
+workflows.
 
 ## Documentation model
 

@@ -1,7 +1,5 @@
-import { defineMeta } from "blume";
-
-export default defineMeta({
+export default {
   title: "Reference",
   order: 7,
   pages: ["repository-map", "supported-workflows", "architecture-decisions"],
-});
+};

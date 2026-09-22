@@ -3,28 +3,40 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "blume build",
-    "check": "pnpm check:docs && blume build && pnpm check:published",
-    "check:docs": "node scripts/check-docs.mjs && blume validate",
-    "check:docs:upstream": "node scripts/check-docs.mjs && blume validate && blume build && node scripts/check-docs.mjs --upstream",
+    "build": "next build && node scripts/finalize-static-output.mjs",
+    "check": "pnpm check:docs && pnpm check:search && pnpm types:check && pnpm build && pnpm check:published",
+    "check:docs": "node scripts/check-docs.mjs",
+    "check:docs:upstream": "pnpm check && node scripts/check-external-links.mjs",
+    "check:search": "node scripts/check-search.mjs",
     "check:published": "node scripts/check-published-output.mjs",
-    "worker:build": "blume build",
+    "worker:build": "pnpm build",
     "deploy": "pnpm build && wrangler deploy",
     "deploy:dry-run": "pnpm build && wrangler deploy --dry-run",
-    "dev": "blume dev",
-    "preview": "blume preview",
-    "start": "blume preview"
+    "dev": "next dev",
+    "preview": "node scripts/preview.mjs",
+    "start": "node scripts/preview.mjs",
+    "types:check": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "blume": "1.5.3",
-    "gsap": "^3.15.0",
-    "lucide-react": "^1.20.0",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "fumadocs-core": "16.15.12",
+    "fumadocs-mdx": "15.4.3",
+    "fumadocs-ui": "npm:@fumadocs/base-ui@16.15.12",
+    "lucide-react": "^1.47.0",
+    "next": "16.3.5",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/mdx": "^2.0.14",
+    "@types/node": "^26.6.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
     "typescript": "7.0.2",
-    "wrangler": "^4.103.0"
+    "wrangler": "^4.103.0",
+    "zbsearch": "4.0.0"
   },
   "packageManager": "pnpm@11.7.0"
 }

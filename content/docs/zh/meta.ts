@@ -1,5 +1,3 @@
-import { defineMeta } from "blume";
-
-export default defineMeta({
+export default {
   pages: ["index", "core", "web", "agent"],
-});
+};

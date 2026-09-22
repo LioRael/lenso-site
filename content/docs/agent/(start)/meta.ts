@@ -1,7 +1,5 @@
-import { defineMeta } from "blume";
-
-export default defineMeta({
+export default {
   title: "Start here",
   order: 1,
   pages: ["first-turn", "mental-model"],
-});
+};

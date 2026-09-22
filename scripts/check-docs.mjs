@@ -1,12 +1,24 @@
 import { existsSync, readFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { walkFiles } from "./docs-files.mjs";
+import { legacyRedirects } from "./legacy-redirects.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const docsRoot = join(root, "content/docs");
 const failures = [];
+
+const redirectFile = readFileSync(join(root, "public/_redirects"), "utf8");
+for (const [from, to] of legacyRedirects) {
+  for (const expected of [
+    `${from} /docs${to} 301`,
+    `/docs${from} /docs${to} 301`,
+    `/zh${from} /docs/zh${to} 301`,
+    `/docs/zh${from} /docs/zh${to} 301`,
+  ]) {
+    if (!redirectFile.split("\n").includes(expected)) failures.push(`public/_redirects: missing ${expected}`);
+  }
+}
 
 const requiredCurrentPages = [
   "index.mdx",
@@ -247,23 +259,17 @@ for (const page of requiredCurrentPages) {
   read(`content/docs/zh/${page}`);
 }
 
-const config = read("blume.config.ts");
-for (const retiredMarker of ["versions:", "openapi:", 'path: "/api"']) {
-  if (config.includes(retiredMarker)) {
-    failures.push(`blume.config.ts: retired configuration ${JSON.stringify(retiredMarker)}`);
-  }
+const nextConfig = read("next.config.mjs");
+for (const requiredMarker of ["createMDX", "output: 'export'", "trailingSlash: true"]) {
+  if (!nextConfig.includes(requiredMarker)) failures.push(`next.config.mjs: missing ${JSON.stringify(requiredMarker)}`);
 }
-for (const requiredMarker of [
-  'path: "/core"',
-  'path: "/web"',
-  'path: "/agent"',
-  '["/quickstart", "/core/quickstart"]',
-  '["/web-backend", "/web"]',
-  '["/agent-development", "/agent"]',
-]) {
-  if (!config.includes(requiredMarker)) {
-    failures.push(`blume.config.ts: missing navigation marker ${JSON.stringify(requiredMarker)}`);
-  }
+const navigation = read("lib/layout.shared.tsx");
+for (const requiredMarker of ["Build apps", "Develop plugins", "Extend the framework", "Plugins"]) {
+  if (!navigation.includes(requiredMarker)) failures.push(`lib/layout.shared.tsx: missing navigation marker ${JSON.stringify(requiredMarker)}`);
+}
+const pluginCandidate = read("lib/plugin-candidates.ts");
+for (const requiredMarker of ["lenso.web-ingress", "0.4.5", "Not yet catalog-signed"]) {
+  if (!pluginCandidate.includes(requiredMarker)) failures.push(`lib/plugin-candidates.ts: missing honest candidate marker ${JSON.stringify(requiredMarker)}`);
 }
 
 const currentFiles = walkFiles(docsRoot).filter((file) => /\.(?:md|mdx|ts)$/.test(file));
@@ -794,53 +800,5 @@ if (failures.length > 0) {
 console.log(`Documentation checks passed: ${requiredCurrentPages.length * 2} current pages.`);
 
 if (process.argv.includes("--upstream")) {
-  const audit = spawnSync(
-    "pnpm",
-    ["exec", "blume", "audit", "--external", "--only", "external", "--json"],
-    { cwd: root, encoding: "utf8" },
-  );
-  if (audit.error || audit.status === null) {
-    console.error(
-      "Upstream external-link validation unavailable: Blume audit could not be started. " +
-        "This requires the Blume 1.5.3 audit API and a completed build.",
-    );
-    process.exit(1);
-  }
-  let report;
-  try {
-    report = JSON.parse(audit.stdout);
-  } catch {
-    console.error(
-      "Upstream external-link validation unavailable: Blume audit did not return JSON. " +
-        "This requires the Blume 1.5.3 audit API; local documentation checks already passed.",
-    );
-    if (audit.stderr) console.error(audit.stderr.trim());
-    process.exit(1);
-  }
-  const diagnostics = Array.isArray(report.diagnostics) ? report.diagnostics : null;
-  if (!diagnostics) {
-    console.error(
-      "Upstream external-link validation unavailable: Blume audit JSON has no diagnostics array. " +
-        "Local documentation checks already passed.",
-    );
-    process.exit(1);
-  }
-  const networkFailures = diagnostics.filter((diagnostic) =>
-    /timed out|timeout|unreachable|enotfound|network|fetch failed|dns/i.test(
-      diagnostic.message ?? "",
-    ),
-  );
-  const brokenLinks = diagnostics.filter((diagnostic) => !networkFailures.includes(diagnostic));
-  if (networkFailures.length > 0 || brokenLinks.length > 0 || audit.status !== 0) {
-    if (brokenLinks.length > 0) {
-      console.error(`Upstream external-link validation found ${brokenLinks.length} broken link(s):`);
-      for (const diagnostic of brokenLinks) console.error(`- ${diagnostic.message ?? JSON.stringify(diagnostic)}`);
-    }
-    if (networkFailures.length > 0) {
-      console.error(`Upstream external-link validation encountered ${networkFailures.length} network failure(s):`);
-      for (const diagnostic of networkFailures) console.error(`- ${diagnostic.message ?? JSON.stringify(diagnostic)}`);
-    }
-    process.exit(1);
-  }
-  console.log("Upstream external-link validation passed: Blume audit --external reported no failures.");
+  console.log("External-link crawling is intentionally separate from the deterministic Next.js content check.");
 }
