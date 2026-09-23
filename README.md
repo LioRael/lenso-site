@@ -65,8 +65,27 @@ fails the build. The generated data is ignored by Git. The directory hides
 expired results in the browser; prebuilt version pages remain readable with
 their build-time expiry and are not current installation authority. Renewal
 requires a new Site build. Site does not persist a catalog checkpoint across
-builds, so signature verification alone does not exclude a still-valid older
-revision. The directory searches both signed channels with the same filters
+builds automatically. For every signed build, provide an absolute
+`LENSO_MARKETPLACE_CHECKPOINT_OUTPUT` path outside the repository and exactly
+one of:
+
+- `LENSO_MARKETPLACE_CHECKPOINT_INPUT`: the operator-persisted output from the
+  previously accepted deployment, at a different absolute path; or
+- `LENSO_MARKETPLACE_CHECKPOINT_BOOTSTRAP=1`: an explicit first trusted build
+  only. Never use bootstrap to recover from a missing prior checkpoint.
+
+Site validates the previous Portable, release-details and linked Cargo
+checkpoints, including historical immutable release/document identities,
+revision rollback and same-revision equivocation. An omitted channel keeps
+its previous history. Only after static generation and published-output checks
+pass does the build atomically create (without overwriting) the **candidate**
+checkpoint output. The build does not promote or persist it: the operator must
+serialize deployments, retain the previous trusted checkpoint, and supply the
+new candidate as the next INPUT **only after the matching Site deployment
+succeeds**. Without that external continuity, including after an accidental
+bootstrap reset, no cross-deployment anti-rollback guarantee exists. Unsigned
+local builds need none of these settings and retain an empty signed directory.
+The directory searches both signed channels with the same filters
 and links each listed identity to an exact-version page,
 while labeling their different distribution and target evidence. A Portable
 base snapshot does not declare target compatibility or carry versioned
@@ -94,9 +113,8 @@ source. Site never adopts a Plugin on behalf of a local project. Run
 HTTPS Portable, release-details and linked fixtures and prove the shared
 directory, exact versions, and separate linked/Portable document page/API
 paths. This is fixture evidence, not a claim of a live production catalog or
-cross-deployment anti-rollback. Signed details can be amended additively by
-Market; Site needs a fresh build to display new revisions. No persistent
-details checkpoint is stored across Site deployments.
+operator checkpoint persistence. Signed details can be amended additively by
+Market; Site needs a fresh build to display new revisions.
 
 ## Documentation model
 

@@ -4,6 +4,7 @@ import { verifyLinkedCatalog } from './linked-catalog.mjs';
 import { documentSlug, ingestVerifiedDocuments } from './linked-documents.mjs';
 import { verifyPortableCatalog } from './portable-catalog.mjs';
 import { joinPortableReleaseDetails, verifyReleaseDetails } from './release-details.mjs';
+import { checkpointConfig, loadCheckpointBundle, nextCheckpointBundle, stageCheckpointBundle } from './catalog-checkpoint-files.mjs';
 
 const linkedUrl = process.env.LENSO_MARKETPLACE_LINKED_CARGO_URL;
 const portableUrl = process.env.LENSO_MARKETPLACE_PORTABLE_URL;
@@ -20,6 +21,9 @@ if ([linkedUrl, portableUrl, detailsUrl, ...trustValues].some(Boolean)
 }
 if (detailsUrl && !portableUrl) throw new Error('release details require the signed Portable base snapshot');
 const trust = { catalogId: trustValues[0], keyId: trustValues[1], publicKeyHex: trustValues[2] };
+const checkpoint = checkpointConfig(process.env, Boolean(linkedUrl || portableUrl));
+const previous = checkpoint ? await loadCheckpointBundle(checkpoint, trust.catalogId) : null;
+const now = Math.floor(Date.now() / 1000);
 
 async function fetchSnapshot(endpoint) {
   const url = new URL(endpoint);
@@ -42,11 +46,23 @@ async function fetchSnapshot(endpoint) {
 
 let catalog = { catalogId: null, revision: null, expiresAt: null, releases: [] };
 let portableCatalog = { catalogId: null, revision: null, expiresAt: null, detailsRevision: null, detailsExpiresAt: null, releases: [] };
-if (linkedUrl) catalog = verifyLinkedCatalog(await fetchSnapshot(linkedUrl), trust);
+const updates = {};
+if (linkedUrl) {
+  const linked = verifyLinkedCatalog(await fetchSnapshot(linkedUrl), trust, now, previous.bundle.linked_cargo);
+  updates.linked_cargo = linked.checkpoint;
+  catalog = { catalogId: linked.catalogId, revision: linked.revision,
+    expiresAt: linked.expiresAt, releases: linked.releases };
+}
 if (portableUrl) {
-  const portableBase = verifyPortableCatalog(await fetchSnapshot(portableUrl), trust);
-  portableCatalog = detailsUrl
-    ? joinPortableReleaseDetails(portableBase, verifyReleaseDetails(await fetchSnapshot(detailsUrl), trust))
+  const portableBase = verifyPortableCatalog(await fetchSnapshot(portableUrl), trust, now, previous.bundle.portable);
+  updates.portable = portableBase.checkpoint;
+  let details;
+  if (detailsUrl) {
+    details = verifyReleaseDetails(await fetchSnapshot(detailsUrl), trust, now, previous.bundle.release_details);
+    updates.release_details = details.checkpoint;
+  }
+  portableCatalog = details
+    ? joinPortableReleaseDetails(portableBase, details)
     : { catalogId: portableBase.catalogId, revision: portableBase.revision,
       expiresAt: portableBase.expiresAt, detailsRevision: null, detailsExpiresAt: null,
       releases: portableBase.releases.map((release) => ({ ...release, documentation: [] })) };
@@ -68,4 +84,6 @@ await mkdir(resolve(import.meta.dirname, '../lib/.generated'), { recursive: true
 await writeFile(resolve(import.meta.dirname, '../lib/.generated/linked-catalog.json'), `${JSON.stringify(catalog)}\n`);
 await writeFile(resolve(import.meta.dirname, '../lib/.generated/portable-catalog.json'), `${JSON.stringify(portableCatalog)}\n`);
 await writeFile(resolve(import.meta.dirname, '../lib/.generated/linked-documents.json'), `${JSON.stringify(documents)}\n`);
+if (checkpoint) await stageCheckpointBundle(checkpoint,
+  nextCheckpointBundle(previous.bundle, updates), previous.inputDigest);
 console.log(`Signed Site catalogs: linked ${catalog.catalogId ? `${catalog.catalogId} revision ${catalog.revision} (${catalog.releases.length} listed releases)` : 'not configured'}; portable ${portableCatalog.catalogId ? `${portableCatalog.catalogId} revision ${portableCatalog.revision} (${portableCatalog.releases.length} listed releases)` : 'not configured'}; details ${portableCatalog.detailsRevision ?? 'not configured'}; verified Markdown ${Object.keys(documents).length}.`);

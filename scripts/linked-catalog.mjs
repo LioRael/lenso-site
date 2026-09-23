@@ -1,4 +1,5 @@
 import { createPublicKey, verify } from 'node:crypto';
+import { linkedCheckpoint } from './catalog-checkpoints.mjs';
 import { documentSlug } from './linked-documents.mjs';
 
 const schema = 'lenso.marketplace.linked-cargo-snapshot.v1';
@@ -63,7 +64,7 @@ function base64(value) {
   return bytes;
 }
 
-export function verifyLinkedCatalog(raw, trust, now = Math.floor(Date.now() / 1000)) {
+export function verifyLinkedCatalog(raw, trust, now = Math.floor(Date.now() / 1000), previous = null) {
   if (!Buffer.isBuffer(raw) || raw.length > maxEnvelopeBytes) throw new Error('linked catalog envelope exceeds limit');
   const envelope = JSON.parse(raw.toString('utf8'));
   if (!exactKeys(envelope, ['key_id', 'payload_base64', 'signature_base64'])) throw new Error('invalid linked catalog envelope');
@@ -112,10 +113,12 @@ export function verifyLinkedCatalog(raw, trust, now = Math.floor(Date.now() / 10
     if (identities.has(identity)) throw new Error('duplicate linked catalog release');
     identities.add(identity);
   }
+  const checkpoint = linkedCheckpoint(snapshot, payload, previous);
   return {
     catalogId: snapshot.catalog_id,
     revision: snapshot.revision,
     expiresAt: snapshot.expires_at,
+    checkpoint,
     releases: snapshot.releases.filter((release) => release.availability === 'listed').map((release) => ({
       pluginId: release.plugin_id,
       version: release.version,

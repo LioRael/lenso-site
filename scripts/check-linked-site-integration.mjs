@@ -11,6 +11,9 @@ const root = resolve(import.meta.dirname, '..');
 const temporary = await mkdtemp(join(tmpdir(), 'lenso-linked-site-'));
 const keyPath = join(temporary, 'key.pem');
 const certificatePath = join(temporary, 'certificate.pem');
+const checkpointPath = join(temporary, 'checkpoint-candidate.json');
+const secondCheckpointPath = join(temporary, 'checkpoint-second.json');
+const failedCheckpointPath = join(temporary, 'checkpoint-failed.json');
 const { privateKey, publicKey } = generateKeyPairSync('ed25519');
 const keyId = 'fixture-key';
 const catalogId = 'fixture-catalog';
@@ -119,10 +122,11 @@ try {
       response.end(bytes);
       return;
     }
-    if (request.url === '/snapshot') {
+    if (request.url === '/snapshot' || request.url === '/snapshot-rollback') {
       const snapshot = {
         schema: 'lenso.marketplace.snapshot.v1', catalog_id: catalogId,
-        revision: 2, issued_at: now - 1, expires_at: now + 3600,
+        revision: request.url === '/snapshot-rollback' ? 1 : 2,
+        issued_at: now - 1, expires_at: now + 3600,
         releases: [portableRelease, sharedPortableRelease],
       };
       const bytes = envelope(snapshot);
@@ -157,8 +161,18 @@ try {
     LENSO_MARKETPLACE_KEY_ID: keyId,
     LENSO_MARKETPLACE_PUBLIC_KEY_HEX: publicKey.export({ type: 'spki', format: 'der' }).subarray(-32).toString('hex'),
     LENSO_MARKETPLACE_DOCUMENT_HOSTS: `127.0.0.1:${port}`,
+    LENSO_MARKETPLACE_CHECKPOINT_BOOTSTRAP: '1',
+    LENSO_MARKETPLACE_CHECKPOINT_OUTPUT: checkpointPath,
   };
   await run('pnpm', ['build'], environment);
+  const firstCheckpoint = JSON.parse(await readFile(checkpointPath, 'utf8'));
+  assert.equal(firstCheckpoint.schema, 'lenso.site.catalog-checkpoints.v1');
+  assert.equal(firstCheckpoint.portable.revision, 2);
+  assert.equal(firstCheckpoint.release_details.revision, 3);
+  assert.equal(firstCheckpoint.linked_cargo.revision, 1);
+  assert.ok(firstCheckpoint.portable.release_identities[`${portablePluginId}@${portableVersion}`]);
+  assert.ok(firstCheckpoint.release_details.document_identities[`${pluginId}@${version}/quickstart@rev-1`]);
+  assert.ok(firstCheckpoint.linked_cargo.document_identities[`${pluginId}@${version}/quickstart@rev-1`]);
   const slug = documentSlug(pluginId, version, document);
   const portableSlug = documentSlug(pluginId, version, portableDocument, 'portable');
   const echoPortableSlug = documentSlug(portablePluginId, portableVersion, portableDocument, 'portable');
@@ -200,7 +214,13 @@ try {
   assert.doesNotMatch(portablePage, /Version 1\.0\.0 uses a linked Host build/);
   assert.equal(portableMarkdown, portableBody.toString());
   assert.notEqual(portableMarkdown, markdown);
-  await run('pnpm', ['check:published'], environment);
+  const secondEnvironment = { ...environment,
+    LENSO_MARKETPLACE_CHECKPOINT_INPUT: checkpointPath,
+    LENSO_MARKETPLACE_CHECKPOINT_OUTPUT: secondCheckpointPath };
+  delete secondEnvironment.LENSO_MARKETPLACE_CHECKPOINT_BOOTSTRAP;
+  await run('pnpm', ['build'], secondEnvironment);
+  const secondCheckpoint = JSON.parse(await readFile(secondCheckpointPath, 'utf8'));
+  assert.deepEqual(secondCheckpoint, firstCheckpoint, 'same signed payload retains exact checkpoint');
   const metadataOnlyEnvironment = { ...environment };
   delete metadataOnlyEnvironment.LENSO_MARKETPLACE_RELEASE_DETAILS_URL;
   await run('node', ['scripts/ingest-linked-catalog.mjs'], metadataOnlyEnvironment);
@@ -210,7 +230,13 @@ try {
   assert.ok(metadataOnly.releases.every((release) => release.documentation.length === 0));
   assert.ok(Object.values(metadataOnlyDocuments).every((item) => item.channel === 'linked'));
   await run('node', ['scripts/ingest-linked-catalog.mjs'], environment);
-  console.log('Signed HTTPS fixtures proved exact Portable details/base join, separate same-ID/version linked and Portable Markdown page/API, and no candidate or cross-channel document fallback.');
+  const rollbackEnvironment = { ...secondEnvironment,
+    LENSO_MARKETPLACE_CHECKPOINT_INPUT: secondCheckpointPath,
+    LENSO_MARKETPLACE_CHECKPOINT_OUTPUT: failedCheckpointPath,
+    LENSO_MARKETPLACE_PORTABLE_URL: `https://127.0.0.1:${port}/snapshot-rollback` };
+  await assert.rejects(run('pnpm', ['build'], rollbackEnvironment));
+  await assert.rejects(readFile(failedCheckpointPath), { code: 'ENOENT' });
+  console.log('Signed HTTPS fixtures proved exact Portable details/base join, separate channel documents, checkpoint bootstrap/continuation, and no output on rollback failure.');
 } finally {
   if (server) await new Promise((success) => server.close(success));
   await rm(temporary, { recursive: true, force: true });

@@ -76,6 +76,8 @@ test('verifies the real Rust signer v1 fixture across the JS/Rust serialization 
   assert.equal(joined.releases[0].pluginId, 'example.notes');
   assert.equal(joined.releases[0].documentation[0].topic, 'Quickstart');
   assert.equal(joined.releases[0].documentation[0].digest, `sha256:${createHash('sha256').update('docs').digest('hex')}`);
+  assert.deepEqual(portable.checkpoint, fixture.base_checkpoint);
+  assert.deepEqual(verified.checkpoint, fixture.details_checkpoint);
 });
 
 test('rejects unsigned, changed, expired, future, and invalid signed details', () => {
@@ -123,4 +125,34 @@ test('ignores signed Cargo-only details for another identity without borrowing i
   const joined = joinPortableReleaseDetails(portable, verified);
   assert.equal(joined.releases.length, 1);
   assert.deepEqual(joined.releases[0].documentation, [document]);
+});
+
+test('details checkpoint preserves release and document identities after omission', () => {
+  const first = verifyReleaseDetails(detailSnapshot(), trust, 150);
+  const absent = verifyReleaseDetails(detailSnapshot({ revision: 4, releases: [] }), trust, 150, first.checkpoint);
+  assert.deepEqual(absent.checkpoint.release_identities, first.checkpoint.release_identities);
+  assert.deepEqual(absent.checkpoint.document_identities, first.checkpoint.document_identities);
+  assert.throws(() => verifyReleaseDetails(detailSnapshot({ revision: 2 }), trust, 150, absent.checkpoint), /rollback/);
+  assert.throws(() => verifyReleaseDetails(detailSnapshot({ releases: [] }), trust, 150, first.checkpoint), /equivocation/);
+  assert.throws(() => verifyReleaseDetails(detailSnapshot({ revision: 5, releases: [{ ...details,
+    distributions: [{ ...details.distributions[0], package: 'other' }] }] }), trust, 150, absent.checkpoint), /release details changed/);
+  assert.throws(() => verifyReleaseDetails(detailSnapshot({ revision: 5, releases: [{ ...details,
+    documentation: [{ ...document, topic: 'Rewritten guide' }] }] }), trust, 150, absent.checkpoint), /documentation changed/);
+});
+
+test('details checkpoint hashes typed Rust field order, not signed JSON property order', () => {
+  const first = verifyReleaseDetails(detailSnapshot(), trust, 150);
+  const reordered = {
+    documentation: [{ media_type: document.media_type, size: document.size,
+      digest: document.digest, url: document.url, topic: document.topic,
+      language: document.language, revision: document.revision, id: document.id }],
+    distributions: [{ artifact: { manifest_digest: artifact.manifest_digest,
+      size: artifact.size, digest: artifact.digest, url: artifact.url },
+    version: details.version, package: details.plugin_id, kind: 'portable_bundle', id: 'portable' }],
+    base_release_identity: details.base_release_identity,
+    version: details.version, plugin_id: details.plugin_id,
+  };
+  const next = verifyReleaseDetails(detailSnapshot({ revision: 4, releases: [reordered] }), trust, 150, first.checkpoint);
+  assert.deepEqual(next.checkpoint.release_identities, first.checkpoint.release_identities);
+  assert.deepEqual(next.checkpoint.document_identities, first.checkpoint.document_identities);
 });

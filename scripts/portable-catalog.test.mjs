@@ -65,3 +65,14 @@ test('rejects signed metadata that is not a valid Portable release', () => {
     assert.throws(() => verifyPortableCatalog(envelope({ ...snapshot, releases: [invalid] }), trust, 150));
   }
 });
+
+test('Portable checkpoint retains hidden history and rejects rollback, equivocation and rewritten reappearance', () => {
+  const first = verifyPortableCatalog(envelope(snapshot), trust, 150);
+  assert.ok(first.checkpoint.release_identities['example.echo@1.2.2'], 'yanked release remains in history');
+  const absent = verifyPortableCatalog(envelope({ ...snapshot, revision: 3, releases: [] }), trust, 150, first.checkpoint);
+  assert.deepEqual(absent.checkpoint.release_identities, first.checkpoint.release_identities);
+  assert.throws(() => verifyPortableCatalog(envelope({ ...snapshot, revision: 1 }), trust, 150, absent.checkpoint), /rollback/);
+  assert.throws(() => verifyPortableCatalog(envelope({ ...snapshot, releases: [] }), trust, 150, first.checkpoint), /equivocation/);
+  assert.throws(() => verifyPortableCatalog(envelope({ ...snapshot, revision: 4,
+    releases: [{ ...release, artifact: { ...release.artifact, size: 124 } }] }), trust, 150, absent.checkpoint), /identity changed/);
+});

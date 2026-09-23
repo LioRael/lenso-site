@@ -63,3 +63,18 @@ test('rejects untrusted, modified, expired, and duplicate catalogs', () => {
   assert.throws(() => verifyLinkedCatalog(Buffer.from(JSON.stringify(changed)), trust, 150));
   assert.throws(() => verifyLinkedCatalog(envelope({ ...snapshot, releases: [release, release] }), trust, 150));
 });
+
+test('linked checkpoint retains release and documentation history across omission', () => {
+  const first = verifyLinkedCatalog(envelope(snapshot), trust, 150);
+  assert.ok(first.checkpoint.release_identities['example.web@0.9.0'], 'yanked release is retained');
+  assert.ok(first.checkpoint.document_identities['example.web@1.0.0/quickstart@v1']);
+  const absent = verifyLinkedCatalog(envelope({ ...snapshot, revision: 3, releases: [] }), trust, 150, first.checkpoint);
+  assert.deepEqual(absent.checkpoint.release_identities, first.checkpoint.release_identities);
+  assert.deepEqual(absent.checkpoint.document_identities, first.checkpoint.document_identities);
+  assert.throws(() => verifyLinkedCatalog(envelope({ ...snapshot, revision: 1 }), trust, 150, absent.checkpoint), /rollback/);
+  assert.throws(() => verifyLinkedCatalog(envelope({ ...snapshot, releases: [] }), trust, 150, first.checkpoint), /equivocation/);
+  assert.throws(() => verifyLinkedCatalog(envelope({ ...snapshot, revision: 4,
+    releases: [{ ...release, title: 'Rewritten title' }] }), trust, 150, absent.checkpoint), /release changed/);
+  assert.throws(() => verifyLinkedCatalog(envelope({ ...snapshot, revision: 4,
+    releases: [{ ...release, documentation: [{ ...release.documentation[0], topic: 'Rewritten guide' }] }] }), trust, 150, absent.checkpoint), /documentation changed/);
+});

@@ -1,5 +1,5 @@
 {
-  "source": "lenso-plugin-catalog Rust sign/sign_release_details, deterministic SigningKey [7;32], pinned wire v1",
+  "source": "lenso-plugin-catalog Rust sign/sign_release_details/verify, deterministic SigningKey [7;32], pinned wire v1",
   "public_key_hex": "ea4a6c63e29c520abef5507b132ec5f9954776aebebe7b92421eea691446d22c",
   "base_envelope": {
     "key_id": "key",
@@ -10,5 +10,24 @@
     "key_id": "key",
     "payload_base64": "eyJzY2hlbWEiOiJsZW5zby5tYXJrZXRwbGFjZS5yZWxlYXNlLWRldGFpbHMudjEiLCJjYXRhbG9nX2lkIjoiY2F0YWxvZyIsInJldmlzaW9uIjoyLCJpc3N1ZWRfYXQiOjEwMCwiZXhwaXJlc19hdCI6MjAwLCJyZWxlYXNlcyI6W3sicGx1Z2luX2lkIjoiZXhhbXBsZS5ub3RlcyIsInZlcnNpb24iOiIxLjIuMyIsImJhc2VfcmVsZWFzZV9pZGVudGl0eSI6InNoYTI1NjoxZWQ3OWM1ODY5OGU5OWMwYTg3NTg2ZDM1ZWM5NjIxYjQyZDg0OTViODIxYzU2MDkwYzdhYWMxOWY0ZWE1OGYzIiwiZGlzdHJpYnV0aW9ucyI6W3siaWQiOiJwb3J0YWJsZSIsImtpbmQiOiJwb3J0YWJsZV9idW5kbGUiLCJwYWNrYWdlIjoiZXhhbXBsZS5ub3RlcyIsInZlcnNpb24iOiIxLjIuMyIsImFydGlmYWN0Ijp7InVybCI6Imh0dHBzOi8vZXhhbXBsZS50ZXN0L25vdGVzLmxlbnNvLXBsdWdpbiIsImRpZ2VzdCI6InNoYTI1NjoxZTZlZDY1ZDc3ZDYzNjRlZWFlZDVhNzQ1YmE1YzQ5ODVhZTJiNzAwZGQ4NWQ3Y2Y3ZjAyN2JkZjI5NGEzM2ZjIiwic2l6ZSI6NiwibWFuaWZlc3RfZGlnZXN0Ijoic2hhMjU2OjA1YjNhYmYyNTc5YTVlYjY2NDAzY2Q3OGJlNTU3ZmQ4NjA2MzNhMWZlMjEwM2M3NjQyMDMwZGVmZTMyYzY1N2YifSwidGFyZ2V0cyI6WyJ3YXNtMzItd2FzaXAyIl19XSwiZG9jdW1lbnRhdGlvbiI6W3siaWQiOiJxdWlja3N0YXJ0LWVuIiwicmV2aXNpb24iOiIxIiwibGFuZ3VhZ2UiOiJlbiIsInRvcGljIjoiUXVpY2tzdGFydCIsInVybCI6Imh0dHBzOi8vZG9jcy5leGFtcGxlLnRlc3Qvbm90ZXMvMS4yLjMvcXVpY2tzdGFydC5tZCIsImRpZ2VzdCI6InNoYTI1Njo0NmI0MmI0MjI5Y2Q3YTM5YzU2NGU3ODBiYjY2NWE4YmRlNGZkZjcyMjAwN2U4NDczZjE2N2ZlNTNlZDRiOTk1Iiwic2l6ZSI6NCwibWVkaWFfdHlwZSI6InRleHQvbWFya2Rvd24ifV19XX0=",
     "signature_base64": "WsB3uoHsDXu2jaDE7Zv4itg6duTkp6VRBAeHU0FjbyE7NnErd/EYFBHUDW2h+mdZOhlNmjhwu5msKpWMAoMcDg=="
+  },
+  "base_checkpoint": {
+    "catalog_id": "catalog",
+    "revision": 1,
+    "payload_digest": "sha256:9197d470b74b68356e091e86a28253395b2fd98d1de17f51904e61445c7cd145",
+    "release_identities": {
+      "example.notes@1.2.3": "sha256:1ed79c58698e99c0a87586d35ec9621b42d8495b821c56090c7aac19f4ea58f3"
+    }
+  },
+  "details_checkpoint": {
+    "catalog_id": "catalog",
+    "revision": 2,
+    "payload_digest": "sha256:1ae308a173b9bf7accc119eff51c6015b5e67dcc95c22429b3156b9fdd50aea4",
+    "release_identities": {
+      "example.notes@1.2.3": "sha256:cd058ed5c10f1efe5bdae8a682e9e2d6f464cd79e6eb777f4acdaf24b48823b7"
+    },
+    "document_identities": {
+      "example.notes@1.2.3/quickstart-en@1": "sha256:620d4253afa9228322847e7291ea08170d7bd30d5df85fa8c086d29fe27e3c14"
+    }
   }
 }

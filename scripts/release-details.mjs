@@ -1,4 +1,5 @@
 import { createPublicKey, verify } from 'node:crypto';
+import { detailsCheckpoint } from './catalog-checkpoints.mjs';
 
 // Mirrors lenso-plugin-catalog ReleaseDetailsSnapshot v1 for build-time
 // browsing only. The caller must independently verify the base snapshot.
@@ -95,7 +96,7 @@ function base64(value) {
   return bytes;
 }
 
-export function verifyReleaseDetails(raw, trust, now = Math.floor(Date.now() / 1000)) {
+export function verifyReleaseDetails(raw, trust, now = Math.floor(Date.now() / 1000), previous = null) {
   if (!Buffer.isBuffer(raw) || raw.length > maxEnvelopeBytes) throw new Error('release details envelope exceeds limit');
   const envelope = JSON.parse(raw.toString('utf8'));
   if (!exactKeys(envelope, ['key_id', 'payload_base64', 'signature_base64'])) throw new Error('invalid release details envelope');
@@ -127,8 +128,10 @@ export function verifyReleaseDetails(raw, trust, now = Math.floor(Date.now() / 1
     if (identities.has(identity)) throw new Error('duplicate signed release details identity');
     identities.add(identity);
   }
+  const checkpoint = detailsCheckpoint(snapshot, payload, previous);
   return { catalogId: snapshot.catalog_id, revision: snapshot.revision,
-    issuedAt: snapshot.issued_at, expiresAt: snapshot.expires_at, releases: snapshot.releases };
+    issuedAt: snapshot.issued_at, expiresAt: snapshot.expires_at,
+    releases: snapshot.releases, checkpoint };
 }
 
 export function joinPortableReleaseDetails(portable, details) {

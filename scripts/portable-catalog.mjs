@@ -1,4 +1,5 @@
-import { createHash, createPublicKey, verify } from 'node:crypto';
+import { createPublicKey, verify } from 'node:crypto';
+import { portableCheckpoint } from './catalog-checkpoints.mjs';
 
 // Mirrors the public lenso-plugin-catalog Snapshot v1 wire contract. This
 // verifies display data only; installation must verify the snapshot again.
@@ -95,7 +96,7 @@ function base64(value) {
   return bytes;
 }
 
-export function verifyPortableCatalog(raw, trust, now = Math.floor(Date.now() / 1000)) {
+export function verifyPortableCatalog(raw, trust, now = Math.floor(Date.now() / 1000), previous = null) {
   if (!Buffer.isBuffer(raw) || raw.length > maxEnvelopeBytes) throw new Error('portable catalog envelope exceeds limit');
   const envelope = JSON.parse(raw.toString('utf8'));
   if (!exactKeys(envelope, ['key_id', 'payload_base64', 'signature_base64'])) throw new Error('invalid portable catalog envelope');
@@ -127,19 +128,18 @@ export function verifyPortableCatalog(raw, trust, now = Math.floor(Date.now() / 
     if (identities.has(identity)) throw new Error('duplicate portable catalog release');
     identities.add(identity);
   }
+  const checkpoint = portableCheckpoint(snapshot, payload, previous);
   return {
     catalogId: snapshot.catalog_id,
     revision: snapshot.revision,
     expiresAt: snapshot.expires_at,
+    checkpoint,
     // Keep all identities only in build memory so signed details can be checked
     // against yanked/revoked history without displaying those releases.
     baseReleases: snapshot.releases.map((release) => ({
       pluginId: release.plugin_id,
       version: release.version,
-      identity: `sha256:${createHash('sha256').update(JSON.stringify([
-        release.publisher_id, release.source_url, release.source_revision,
-        release.artifact.digest, release.artifact.size, release.artifact.manifest_digest,
-      ])).digest('hex')}`,
+      identity: checkpoint.release_identities[`${release.plugin_id}@${release.version}`],
       artifactDigest: release.artifact.digest,
       artifactSize: release.artifact.size,
       manifestDigest: release.artifact.manifest_digest,
