@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { ArrowLeft, CircleAlert, ExternalLink, FileText, Gauge, Play, Settings, Trash2 } from 'lucide-react';
-import type { Metadata } from 'next';
 import { CopyCommand } from '@/components/copy-command';
 import { SiteHeader } from '@/components/site-header';
 import { candidateRelease as release } from '@/lib/plugin-candidates';
@@ -9,13 +8,7 @@ const sections = [
   ['Overview', FileText], ['Get started', Play], ['Configuration', Settings], ['Public interfaces', ExternalLink], ['Targets and limits', Gauge], ['Upgrade or remove', Trash2],
 ] as const;
 
-export const metadata: Metadata = {
-  title: `${release.pluginId} ${release.version}`,
-  description: `${release.summary} Candidate documentation; not yet catalog-signed.`,
-  robots: { index: false, follow: false },
-};
-
-export default function CandidateDocumentationPage() {
+export function CandidateDocumentation() {
   const dependency = `${release.package} = "=${release.version}"`;
   return (
     <div className="candidate-doc-shell">

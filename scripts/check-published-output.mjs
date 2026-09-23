@@ -6,6 +6,8 @@ import { isDraftDocument, routeForDocument, walkFiles } from './docs-files.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outputRoot = process.env.NEXT_OUTPUT_ROOT ? resolve(root, process.env.NEXT_OUTPUT_ROOT) : join(root, 'out');
 const docsRoot = join(root, 'content/docs');
+const signedCatalog = JSON.parse(readFileSync(join(root, 'lib/.generated/linked-catalog.json'), 'utf8'));
+const signedDocuments = JSON.parse(readFileSync(join(root, 'lib/.generated/linked-documents.json'), 'utf8'));
 const failures = [];
 
 function requireFile(path) {
@@ -18,13 +20,37 @@ for (const path of ['index.html', 'plugins/index.html', 'plugins/lenso.web-ingre
 
 for (const [path, markers] of [
   ['index.html', ['Build the system.', 'Choose the shortest path', 'Browse plugins']],
-  ['plugins/index.html', ['Candidate releases', 'lenso.web-ingress', 'Not yet catalog-signed']],
-  ['plugins/lenso.web-ingress/0.4.5/index.html', ['Candidate documentation', 'lenso-web-ingress-plugin', 'No implicit portable fallback']],
+  ['plugins/index.html', ['Candidate releases', 'lenso.web-ingress']],
   ['docs/index.html', ['Lenso documentation', 'What do you want to build?']],
   ['docs/zh/index.html', ['Lenso 文档', '你想构建什么？']],
 ]) {
   const html = requireFile(path);
   for (const marker of markers) if (!html.includes(marker)) failures.push(`out/${path}: missing ${JSON.stringify(marker)}`);
+}
+const candidateSigned = signedCatalog.releases.some((release) => release.pluginId === 'lenso.web-ingress' && release.version === '0.4.5');
+if (!candidateSigned) {
+  if (!requireFile('plugins/index.html').includes('Not yet catalog-signed')) failures.push('out/plugins/index.html: unsigned candidate marker missing');
+  const html = requireFile('plugins/lenso.web-ingress/0.4.5/index.html');
+  for (const marker of ['Candidate documentation', 'lenso-web-ingress-plugin', 'No implicit portable fallback']) {
+    if (!html.includes(marker)) failures.push(`out/plugins/lenso.web-ingress/0.4.5/index.html: missing ${JSON.stringify(marker)}`);
+  }
+}
+const pluginIndex = requireFile('plugins/index.html');
+const sitemap = requireFile('sitemap.xml');
+for (const release of signedCatalog.releases) {
+  const route = `plugins/${release.pluginId}/${release.version}`;
+  const html = requireFile(`${route}/index.html`);
+  if (!html.includes(release.title) || !html.includes(release.crateDigest)) failures.push(`out/${route}/index.html: signed release evidence missing`);
+  if (!pluginIndex.includes(`/${route}`)) failures.push(`out/plugins/index.html: signed release link missing for ${route}`);
+  if (!sitemap.includes(`/${route}`)) failures.push(`out/sitemap.xml: signed release missing for ${route}`);
+  for (const document of release.documentation) {
+    const documentRoute = `${route}/docs/${document.slug}`;
+    const page = requireFile(`${documentRoute}/index.html`);
+    const markdown = requireFile(`api/${documentRoute}/content.md`);
+    if (!page.includes(document.topic)) failures.push(`out/${documentRoute}/index.html: document topic missing`);
+    if (markdown !== signedDocuments[document.slug]?.content) failures.push(`out/api/${documentRoute}/content.md: verified Markdown mismatch`);
+    if (!sitemap.includes(`/${documentRoute}`)) failures.push(`out/sitemap.xml: signed document missing for ${documentRoute}`);
+  }
 }
 
 const llms = requireFile('llms.txt');

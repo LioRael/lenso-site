@@ -54,7 +54,15 @@ while an incomplete or invalid configuration fails the build. The generated
 data is ignored by Git. Static pages hide expired results in the browser, but
 renewal requires a new Site build. This is display evidence only: the adopting
 Host must independently verify the signed catalog, exact crate, and build.
-Portable and release-details browsing remains a separate integration step.
+Each listed linked release gets an exact version page. The page links only to
+Markdown revisions whose bytes and digests were verified during the same build;
+the public Markdown route is read-only. The local `lenso app add` example needs
+the actual signed snapshot, trust file, and matching `.crate` from an approved
+source. Site never adopts a Plugin on behalf of a local project. Run
+`pnpm check:linked-site-integration` to build against a temporary locally signed
+HTTPS fixture and prove the directory → version → document page/API path. This
+is fixture evidence, not a claim of a live production catalog. Portable and
+release-details browsing remains a separate integration step.
 
 ## Documentation model
 

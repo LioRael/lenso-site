@@ -31,6 +31,17 @@ function digest(value) {
   return typeof value === 'string' && /^sha256:[0-9a-f]{64}$/.test(value);
 }
 
+function pluginId(value) {
+  return typeof value === 'string' && value.length <= 253
+    && value.split('.').length >= 2
+    && value.split('.').every((label) => label.length <= 63 && /^[a-z](?:[a-z0-9-]*[a-z0-9])?$/.test(label));
+}
+
+function version(value) {
+  return typeof value === 'string' && value.length <= 128
+    && /^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(value);
+}
+
 function documentationValid(document) {
   return exactKeys(document, document?.target === undefined
     ? ['id', 'revision', 'language', 'topic', 'url', 'digest', 'size', 'media_type']
@@ -79,7 +90,7 @@ export function verifyLinkedCatalog(raw, trust, now = Math.floor(Date.now() / 10
     if (!exactKeys(release, release?.documentation === undefined
       ? ['plugin_id', 'version', 'publisher_id', 'title', 'summary', 'source_url', 'source_revision', 'license', 'package', 'registry_url', 'crate_digest', 'integration', 'targets', 'availability']
       : ['plugin_id', 'version', 'publisher_id', 'title', 'summary', 'source_url', 'source_revision', 'license', 'package', 'registry_url', 'crate_digest', 'integration', 'targets', 'availability', 'documentation'])
-      || !boundedText(release.plugin_id, 128) || !boundedText(release.version, 128)
+      || !pluginId(release.plugin_id) || !version(release.version)
       || !boundedText(release.publisher_id, 128) || !boundedText(release.title, 160)
       || !boundedText(release.summary, 640) || !boundedText(release.license, 128)
       || !httpsUrl(release.source_url) || !/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(release.source_revision)
@@ -110,7 +121,12 @@ export function verifyLinkedCatalog(raw, trust, now = Math.floor(Date.now() / 10
       version: release.version,
       title: release.title,
       summary: release.summary,
+      publisherId: release.publisher_id,
+      sourceUrl: release.source_url,
+      sourceRevision: release.source_revision,
+      license: release.license,
       package: release.package,
+      registryUrl: release.registry_url,
       integration: release.integration,
       targets: release.targets,
       crateDigest: release.crate_digest,

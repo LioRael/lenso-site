@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import ReactMarkdown from 'react-markdown';
 import { SiteHeader } from '@/components/site-header';
 import { signedLinkedCatalog } from '@/lib/plugin-candidates';
-import { linkedDocumentApiPath } from '@/lib/linked-document-paths';
+import { linkedDocumentApiPath, linkedReleasePath } from '@/lib/linked-document-paths';
 import { staticLinkedDocumentParams, verifiedLinkedDocuments } from '@/lib/linked-documents';
 
 type Params = Promise<{ pluginId: string; version: string; slug: string }>;
@@ -29,7 +29,7 @@ export default async function LinkedDocumentationPage({ params }: { params: Para
   return <div className="linked-doc-shell">
     <SiteHeader active="plugins" />
     <main className="linked-doc-main">
-      <nav aria-label="Breadcrumb" className="linked-doc-breadcrumb"><Link href="/plugins">Plugins</Link><span>/</span><span>{pluginId}</span><span>/</span><span>{version}</span></nav>
+      <nav aria-label="Breadcrumb" className="linked-doc-breadcrumb"><Link href="/plugins">Plugins</Link><span>/</span><Link href={linkedReleasePath(pluginId, version)}>{pluginId}@{version}</Link></nav>
       <header className="linked-doc-header">
         <p className="linked-doc-eyebrow">Verified versioned Markdown · {document.language}</p>
         <h1>{document.topic}</h1>

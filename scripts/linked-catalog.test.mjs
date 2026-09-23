@@ -46,6 +46,9 @@ test('rejects malformed signed release and document metadata', () => {
     { ...release, documentation: [{ ...release.documentation[0], url: 'http://example.test/doc' }] },
     { ...release, documentation: [...release.documentation, release.documentation[0]] },
     { ...release, targets: ['aarch64-apple-darwin', 'aarch64-apple-darwin'] },
+    { ...release, plugin_id: '../escape' },
+    { ...release, plugin_id: 'example/escape.web' },
+    { ...release, version: '../1.0.0' },
   ]) {
     assert.throws(() => verifyLinkedCatalog(envelope({ ...snapshot, releases: [invalid] }), trust, 150));
   }

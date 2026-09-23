@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Check, CircleAlert, ExternalLink, Search, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { candidateRelease, signedLinkedCatalog } from '@/lib/plugin-candidates';
-import { linkedDocumentPath } from '@/lib/linked-document-paths';
+import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
 
 export function PluginDirectory() {
   const [query, setQuery] = useState('');
@@ -34,14 +34,16 @@ export function PluginDirectory() {
       && (!distribution || distribution === 'Linked Rust')
       && (!catalogStatus || catalogStatus === 'Signed');
   });
+  const candidateSuperseded = currentSigned && signedLinkedCatalog.releases.some((release) =>
+    release.pluginId === candidateRelease.pluginId && release.version === candidateRelease.version);
   const visible = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     const matchesQuery = !normalized || [candidateRelease.pluginId, candidateRelease.package, candidateRelease.summary, 'http ingress web linked rust native']
       .some((value) => value.toLowerCase().includes(normalized));
-    return (!catalogStatus || catalogStatus === 'Candidate') && matchesQuery
+    return !candidateSuperseded && (!catalogStatus || catalogStatus === 'Candidate') && matchesQuery
       && (!target || target === candidateRelease.target)
       && (!distribution || distribution === candidateRelease.distribution);
-  }, [catalogStatus, distribution, query, target]);
+  }, [candidateSuperseded, catalogStatus, distribution, query, target]);
 
   const clearFilters = () => {
     setQuery('');
@@ -68,12 +70,13 @@ export function PluginDirectory() {
           <h2 id="signed-release-heading">Signed releases</h2>
           {signed.length === 0 && <p>{currentSigned ? 'No signed release matches the current filters.' : 'No current signed linked Cargo catalog is available. Candidate claims are separate.'}</p>}
           {signed.map((release) => <article className="signed-release" key={`${release.pluginId}@${release.version}`}>
-            <h3><code>{release.pluginId}</code> <span>{release.version}</span></h3>
+            <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.summary}</p>
             <dl><div><dt>Distribution</dt><dd>Linked Rust · {release.integration === 'host_provided' ? 'Host-provided integration' : 'linked Plugin'}</dd></div><div><dt>Package</dt><dd><code>{release.package}</code></dd></div><div><dt>Exact targets</dt><dd>{release.targets.join(', ')}</dd></div><div><dt>Catalog</dt><dd>Signed revision {signedLinkedCatalog.revision}</dd></div></dl>
             <p className="signed-release-note">{release.integration === 'host_provided'
               ? 'Requires a product Host-specific adapter; not a generic lenso app add candidate.'
               : <>Verify the signed catalog and exact crate digest in <code>lenso app add</code> before adoption. This Site listing does not install the package.</>}</p>
+            <Link href={linkedReleasePath(release.pluginId, release.version)}>Inspect exact signed version</Link>
             {release.documentation.length > 0 && <div className="signed-release-documents">
               <h4>Versioned documentation references</h4>
               <ul>{release.documentation.map((document) => <li key={`${document.id}@${document.revision}`}>
@@ -94,11 +97,11 @@ export function PluginDirectory() {
               <code data-label="Plugin ID" role="cell">{candidateRelease.pluginId}</code><span data-label="Description" role="cell">{candidateRelease.summary}</span><code data-label="Version" role="cell">{candidateRelease.version}</code><span data-label="Distribution" role="cell">{candidateRelease.distribution}</span><span data-label="Target" role="cell">{candidateRelease.target}</span><span data-label="Catalog status" role="cell">{candidateRelease.catalogStatus}</span>
               <span data-label="Action" role="cell"><Link className="button button-primary button-small" href="/plugins/lenso.web-ingress/0.4.5">Inspect candidate</Link></span>
             </div>
-          ) : <p className="no-results" role="status">No candidate matches the current search and filters.</p>}
+          ) : <p className="no-results" role="status">{candidateSuperseded ? 'This exact candidate has a current signed listing above.' : 'No candidate matches the current search and filters.'}</p>}
         </div>
         <p className="compatibility-note"><CircleAlert size={23} />Unknown compatibility is never treated as available.</p>
       </section>
-      <aside className="result-rail">
+      {!candidateSuperseded && <aside className="result-rail">
         <h2>Candidate evidence</h2>
         <ul>
           <li><ExternalLink size={21} /><a href={candidateRelease.registryUrl}>Published crate documentation</a></li>
@@ -108,7 +111,7 @@ export function PluginDirectory() {
         </ul>
         <Link className="button button-primary" href="/plugins/lenso.web-ingress/0.4.5">Open candidate docs</Link>
         <p className="candidate-isolation"><CircleAlert size={21} />Candidate claims remain separate from verified signed releases.</p>
-      </aside>
+      </aside>}
     </div>
   );
 }

@@ -5,7 +5,12 @@ export type SignedLinkedRelease = {
   version: string;
   title: string;
   summary: string;
+  publisherId: string;
+  sourceUrl: string;
+  sourceRevision: string;
+  license: string;
   package: string;
+  registryUrl: string;
   integration: 'linked_plugin' | 'host_provided';
   targets: string[];
   crateDigest: string;
