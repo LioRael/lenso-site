@@ -1,4 +1,5 @@
 import generated from './.generated/linked-catalog.json';
+import portableGenerated from './.generated/portable-catalog.json';
 
 export type SignedLinkedRelease = {
   pluginId: string;
@@ -33,7 +34,30 @@ export type SignedLinkedCatalog = {
   expiresAt: number | null;
   releases: SignedLinkedRelease[];
 };
-export const signedLinkedCatalog: SignedLinkedCatalog = generated;
+// Build-time ingestion validates the signed wire payload before writing this JSON.
+export const signedLinkedCatalog = generated as SignedLinkedCatalog;
+
+export type SignedPortableRelease = {
+  pluginId: string;
+  version: string;
+  title: string;
+  summary: string;
+  publisherId: string;
+  sourceUrl: string;
+  sourceRevision: string;
+  license: string;
+  artifactUrl: string;
+  artifactDigest: string;
+  artifactSize: number;
+  manifestDigest: string;
+};
+export type SignedPortableCatalog = {
+  catalogId: string | null;
+  revision: number | null;
+  expiresAt: number | null;
+  releases: SignedPortableRelease[];
+};
+export const signedPortableCatalog = portableGenerated as SignedPortableCatalog;
 
 export const candidateRelease = {
   pluginId: 'lenso.web-ingress',

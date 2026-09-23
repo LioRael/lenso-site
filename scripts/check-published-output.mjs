@@ -7,6 +7,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outputRoot = process.env.NEXT_OUTPUT_ROOT ? resolve(root, process.env.NEXT_OUTPUT_ROOT) : join(root, 'out');
 const docsRoot = join(root, 'content/docs');
 const signedCatalog = JSON.parse(readFileSync(join(root, 'lib/.generated/linked-catalog.json'), 'utf8'));
+const signedPortableCatalog = JSON.parse(readFileSync(join(root, 'lib/.generated/portable-catalog.json'), 'utf8'));
 const signedDocuments = JSON.parse(readFileSync(join(root, 'lib/.generated/linked-documents.json'), 'utf8'));
 const failures = [];
 
@@ -37,6 +38,11 @@ if (!candidateSigned) {
 }
 const pluginIndex = requireFile('plugins/index.html');
 const sitemap = requireFile('sitemap.xml');
+for (const release of signedPortableCatalog.releases) {
+  for (const marker of [release.pluginId, release.version, release.artifactDigest, 'Portable Bundle']) {
+    if (!pluginIndex.includes(marker)) failures.push(`out/plugins/index.html: signed Portable release missing ${JSON.stringify(marker)}`);
+  }
+}
 for (const release of signedCatalog.releases) {
   const route = `plugins/${release.pluginId}/${release.version}`;
   const html = requireFile(`${route}/index.html`);
@@ -105,4 +111,4 @@ if (failures.length) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
-console.log('Published-output checks passed: Next.js pages, candidate isolation, EN/ZH docs, search and AI-readable artifacts.');
+console.log('Published-output checks passed: Next.js pages, signed Portable and linked listings, candidate isolation, EN/ZH docs, search and AI-readable artifacts.');

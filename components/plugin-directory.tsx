@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Check, CircleAlert, ExternalLink, Search, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { candidateRelease, signedLinkedCatalog } from '@/lib/plugin-candidates';
+import { candidateRelease, signedLinkedCatalog, signedPortableCatalog } from '@/lib/plugin-candidates';
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
 
 export function PluginDirectory() {
@@ -11,30 +11,39 @@ export function PluginDirectory() {
   const [target, setTarget] = useState<string | undefined>();
   const [distribution, setDistribution] = useState<string | undefined>();
   const [catalogStatus, setCatalogStatus] = useState<string | undefined>();
-  const [currentSigned, setCurrentSigned] = useState(Boolean(signedLinkedCatalog.expiresAt));
+  const [currentSigned, setCurrentSigned] = useState({
+    linked: Boolean(signedLinkedCatalog.expiresAt),
+    portable: Boolean(signedPortableCatalog.expiresAt),
+  });
   useEffect(() => {
-    const expiresAt = signedLinkedCatalog.expiresAt;
-    if (!expiresAt) return;
     let timer: number | undefined;
-    const deadline = expiresAt * 1000;
     const update = () => {
-      const remaining = deadline - Date.now();
-      setCurrentSigned(remaining > 0);
       window.clearTimeout(timer);
-      if (remaining > 0) timer = window.setTimeout(update, Math.min(remaining, 2_147_483_647));
+      const now = Date.now();
+      const linkedRemaining = (signedLinkedCatalog.expiresAt ?? 0) * 1000 - now;
+      const portableRemaining = (signedPortableCatalog.expiresAt ?? 0) * 1000 - now;
+      setCurrentSigned({ linked: linkedRemaining > 0, portable: portableRemaining > 0 });
+      const next = [linkedRemaining, portableRemaining].filter((remaining) => remaining > 0);
+      if (next.length > 0) timer = window.setTimeout(update, Math.min(...next, 2_147_483_647));
     };
     update();
     document.addEventListener('visibilitychange', update);
-    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', update); };
+    return () => { window.clearTimeout(timer); document.removeEventListener('visibilitychange', update); };
   }, []);
-  const signed = signedLinkedCatalog.releases.filter((release) => {
+  const signedLinked = signedLinkedCatalog.releases.filter((release) => {
     const normalized = query.trim().toLowerCase();
-    return currentSigned && (!normalized || [release.pluginId, release.package, release.title, release.summary].some((value) => value.toLowerCase().includes(normalized)))
+    return currentSigned.linked && (!normalized || [release.pluginId, release.package, release.title, release.summary].some((value) => value.toLowerCase().includes(normalized)))
       && (!target || (target === 'Native' && release.targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value))))
       && (!distribution || distribution === 'Linked Rust')
       && (!catalogStatus || catalogStatus === 'Signed');
   });
-  const candidateSuperseded = currentSigned && signedLinkedCatalog.releases.some((release) =>
+  const signedPortable = signedPortableCatalog.releases.filter((release) => {
+    const normalized = query.trim().toLowerCase();
+    return currentSigned.portable && (!normalized || [release.pluginId, release.title, release.summary, release.publisherId].some((value) => value.toLowerCase().includes(normalized)))
+      && !target && (!distribution || distribution === 'Portable')
+      && (!catalogStatus || catalogStatus === 'Signed');
+  });
+  const candidateSuperseded = currentSigned.linked && signedLinkedCatalog.releases.some((release) =>
     release.pluginId === candidateRelease.pluginId && release.version === candidateRelease.version);
   const visible = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -53,7 +62,7 @@ export function PluginDirectory() {
   };
 
   return (
-    <div className="directory-layout">
+    <div className={visible ? 'directory-layout' : 'directory-layout directory-layout-signed-only'}>
       <section className="directory-main">
         <div className="directory-intro">
           <h1>Plugins</h1>
@@ -68,8 +77,15 @@ export function PluginDirectory() {
         </div>
         <section className="signed-release-state" aria-labelledby="signed-release-heading">
           <h2 id="signed-release-heading">Signed releases</h2>
-          {signed.length === 0 && <p>{currentSigned ? 'No signed release matches the current filters.' : 'No current signed linked Cargo catalog is available. Candidate claims are separate.'}</p>}
-          {signed.map((release) => <article className="signed-release" key={`${release.pluginId}@${release.version}`}>
+          {signedLinked.length === 0 && signedPortable.length === 0 && <p>{currentSigned.linked || currentSigned.portable ? 'No signed release matches the current filters.' : 'No current signed Portable or linked Cargo catalog is available. Candidate claims are separate.'}</p>}
+          {signedPortable.map((release) => <article className="signed-release" key={`portable:${release.pluginId}@${release.version}`}>
+            <h3><code>{release.pluginId}</code> <span>{release.version}</span></h3>
+            <p>{release.summary}</p>
+            <dl><div><dt>Distribution</dt><dd>Portable Bundle</dd></div><div><dt>Publisher</dt><dd>{release.publisherId}</dd></div><div><dt>Bundle SHA-256</dt><dd><code>{release.artifactDigest}</code></dd></div><div><dt>Source revision</dt><dd><code>{release.sourceRevision}</code></dd></div><div><dt>Catalog</dt><dd>Signed revision {signedPortableCatalog.revision}</dd></div></dl>
+            <p className="signed-release-note">This exact version is listed in a signed Portable snapshot verified when Site was built. Target compatibility is not declared here; verify the current snapshot and Bundle before installation. This listing does not install the Plugin.</p>
+            <a href={release.sourceUrl} rel="noopener noreferrer" target="_blank">Inspect signed source URL</a>
+          </article>)}
+          {signedLinked.map((release) => <article className="signed-release" key={`linked:${release.pluginId}@${release.version}`}>
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.summary}</p>
             <dl><div><dt>Distribution</dt><dd>Linked Rust · {release.integration === 'host_provided' ? 'Host-provided integration' : 'linked Plugin'}</dd></div><div><dt>Package</dt><dd><code>{release.package}</code></dd></div><div><dt>Exact targets</dt><dd>{release.targets.join(', ')}</dd></div><div><dt>Catalog</dt><dd>Signed revision {signedLinkedCatalog.revision}</dd></div></dl>
@@ -101,7 +117,7 @@ export function PluginDirectory() {
         </div>
         <p className="compatibility-note"><CircleAlert size={23} />Unknown compatibility is never treated as available.</p>
       </section>
-      {!candidateSuperseded && <aside className="result-rail">
+      {visible && <aside className="result-rail">
         <h2>Candidate evidence</h2>
         <ul>
           <li><ExternalLink size={21} /><a href={candidateRelease.registryUrl}>Published crate documentation</a></li>

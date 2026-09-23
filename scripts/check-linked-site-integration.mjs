@@ -16,6 +16,8 @@ const keyId = 'fixture-key';
 const catalogId = 'fixture-catalog';
 const pluginId = 'example.web';
 const version = '1.0.0';
+const portablePluginId = 'example.echo';
+const portableVersion = '2.3.4';
 const body = Buffer.from('# Verified quickstart\n\nVersion 1.0.0 uses a linked Host build.\n');
 const document = {
   id: 'quickstart', revision: 'rev-1', language: 'en', topic: 'Getting started',
@@ -23,6 +25,15 @@ const document = {
   size: body.length, media_type: 'text/markdown',
 };
 let server;
+
+function envelope(snapshot) {
+  const payload = Buffer.from(JSON.stringify(snapshot));
+  const signed = Buffer.concat([Buffer.from(`${snapshot.schema}\0${keyId}\0`), payload]);
+  return Buffer.from(JSON.stringify({
+    key_id: keyId, payload_base64: payload.toString('base64'),
+    signature_base64: sign(null, signed, privateKey).toString('base64'),
+  }));
+}
 
 async function run(command, args, environment) {
   await new Promise((success, failure) => {
@@ -60,14 +71,29 @@ try {
           documentation: [{ ...document, url }],
         }],
       };
-      const payload = Buffer.from(JSON.stringify(snapshot));
-      const signed = Buffer.concat([Buffer.from(`lenso.marketplace.linked-cargo-snapshot.v1\0${keyId}\0`), payload]);
-      const envelope = Buffer.from(JSON.stringify({
-        key_id: keyId, payload_base64: payload.toString('base64'),
-        signature_base64: sign(null, signed, privateKey).toString('base64'),
-      }));
-      response.writeHead(200, { 'content-type': 'application/json', 'content-length': envelope.length });
-      response.end(envelope);
+      const bytes = envelope(snapshot);
+      response.writeHead(200, { 'content-type': 'application/json', 'content-length': bytes.length });
+      response.end(bytes);
+      return;
+    }
+    if (request.url === '/snapshot') {
+      const snapshot = {
+        schema: 'lenso.marketplace.snapshot.v1', catalog_id: catalogId,
+        revision: 2, issued_at: now - 1, expires_at: now + 3600,
+        releases: [{
+          plugin_id: portablePluginId, version: portableVersion, publisher_id: 'example',
+          title: 'Example Echo', summary: 'Fixture Portable Plugin',
+          source_url: 'https://example.test/echo', source_revision: 'c'.repeat(40), license: 'MIT',
+          artifact: {
+            url: 'https://example.test/echo.bundle', digest: `sha256:${'d'.repeat(64)}`,
+            size: 123, manifest_digest: `sha256:${'e'.repeat(64)}`,
+          },
+          availability: 'listed',
+        }],
+      };
+      const bytes = envelope(snapshot);
+      response.writeHead(200, { 'content-type': 'application/json', 'content-length': bytes.length });
+      response.end(bytes);
       return;
     }
     response.writeHead(404).end();
@@ -78,6 +104,7 @@ try {
     ...process.env,
     NODE_EXTRA_CA_CERTS: certificatePath,
     LENSO_MARKETPLACE_LINKED_CARGO_URL: `https://127.0.0.1:${port}/linked-cargo`,
+    LENSO_MARKETPLACE_PORTABLE_URL: `https://127.0.0.1:${port}/snapshot`,
     LENSO_MARKETPLACE_CATALOG_ID: catalogId,
     LENSO_MARKETPLACE_KEY_ID: keyId,
     LENSO_MARKETPLACE_PUBLIC_KEY_HEX: publicKey.export({ type: 'spki', format: 'der' }).subarray(-32).toString('hex'),
@@ -90,6 +117,11 @@ try {
   const page = await readFile(join(root, `out/plugins/${pluginId}/${version}/docs/${slug}/index.html`), 'utf8');
   const markdown = await readFile(join(root, `out/api/plugins/${pluginId}/${version}/docs/${slug}/content.md`), 'utf8');
   assert.match(directory, /Inspect exact signed version/);
+  assert.match(directory, /example.echo/);
+  assert.match(directory, /2\.3\.4/);
+  assert.match(directory, /Fixture Portable Plugin/);
+  assert.match(directory, /Portable Bundle/);
+  assert.match(directory, /sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd/);
   assert.match(release, /Fixture linked ingress/);
   assert.match(release, /lenso app add example.web@1.0.0/);
   assert.match(release, /Getting started/);
@@ -98,7 +130,7 @@ try {
   assert.match(page, /<h2[^>]*>Verified quickstart<\/h2>/);
   assert.equal(markdown, body.toString());
   await run('pnpm', ['check:published'], environment);
-  console.log('Signed fixture proved Site directory → exact version → verified Markdown page and API.');
+  console.log('Signed fixtures proved shared Portable + linked directory and linked exact version → verified Markdown page and API.');
 } finally {
   if (server) await new Promise((success) => server.close(success));
   await rm(temporary, { recursive: true, force: true });

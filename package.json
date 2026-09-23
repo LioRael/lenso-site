@@ -5,7 +5,7 @@
   "scripts": {
     "build": "node scripts/ingest-linked-catalog.mjs && next build && node scripts/finalize-static-output.mjs",
     "check": "pnpm check:docs && pnpm check:search && pnpm check:linked-catalog && pnpm types:check && pnpm build && pnpm check:published",
-    "check:linked-catalog": "node --test scripts/linked-catalog.test.mjs scripts/linked-documents.test.mjs",
+    "check:linked-catalog": "node --test scripts/linked-catalog.test.mjs scripts/linked-documents.test.mjs scripts/portable-catalog.test.mjs",
     "check:linked-site-integration": "node scripts/check-linked-site-integration.mjs",
     "check:docs": "node scripts/check-docs.mjs",
     "check:docs:upstream": "pnpm check && node scripts/check-external-links.mjs",
