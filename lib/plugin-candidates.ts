@@ -9,6 +9,17 @@ export type SignedLinkedRelease = {
   integration: 'linked_plugin' | 'host_provided';
   targets: string[];
   crateDigest: string;
+  documentation: {
+    id: string;
+    revision: string;
+    language: string;
+    topic: string;
+    target?: string;
+    url: string;
+    digest: string;
+    size: number;
+    media_type: 'text/markdown';
+  }[];
 };
 export type SignedLinkedCatalog = {
   catalogId: string | null;

@@ -12,8 +12,9 @@ const release = {
   plugin_id: 'example.web', version: '1.0.0', publisher_id: 'example', title: 'Web',
   summary: 'Web ingress', source_url: 'https://example.test/web', source_revision: 'a'.repeat(40),
   license: 'MIT', package: 'example-web', registry_url: 'https://crates.io',
-  crate_digest: 'b'.repeat(64), integration: 'linked_plugin', targets: ['aarch64-apple-darwin'],
-  availability: 'listed', documentation: [],
+  crate_digest: `sha256:${'b'.repeat(64)}`, integration: 'linked_plugin', targets: ['aarch64-apple-darwin'],
+  availability: 'listed', documentation: [{ id: 'quickstart', revision: 'v1', language: 'en', topic: 'Getting started',
+    url: 'https://example.test/quickstart.md', digest: `sha256:${'c'.repeat(64)}`, size: 123, media_type: 'text/markdown' }],
 };
 function envelope(snapshot) {
   const payload = Buffer.from(JSON.stringify(snapshot));
@@ -31,6 +32,20 @@ const snapshot = {
 
 test('accepts exact signed current linked releases and excludes yanked versions', () => {
   assert.deepEqual(verifyLinkedCatalog(envelope(snapshot), trust, 150).releases.map((item) => item.version), ['1.0.0']);
+  assert.deepEqual(verifyLinkedCatalog(envelope(snapshot), trust, 150).releases[0].documentation, release.documentation);
+});
+
+test('rejects malformed signed release and document metadata', () => {
+  for (const invalid of [
+    { ...release, crate_digest: 'b'.repeat(64) },
+    { ...release, documentation: [{ ...release.documentation[0], size: 0 }] },
+    { ...release, documentation: null },
+    { ...release, documentation: [{ ...release.documentation[0], url: 'http://example.test/doc' }] },
+    { ...release, documentation: [...release.documentation, release.documentation[0]] },
+    { ...release, targets: ['aarch64-apple-darwin', 'aarch64-apple-darwin'] },
+  ]) {
+    assert.throws(() => verifyLinkedCatalog(envelope({ ...snapshot, releases: [invalid] }), trust, 150));
+  }
 });
 
 test('rejects untrusted, modified, expired, and duplicate catalogs', () => {

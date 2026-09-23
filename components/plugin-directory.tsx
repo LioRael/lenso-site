@@ -73,6 +73,14 @@ export function PluginDirectory() {
             <p className="signed-release-note">{release.integration === 'host_provided'
               ? 'Requires a product Host-specific adapter; not a generic lenso app add candidate.'
               : <>Verify the signed catalog and exact crate digest in <code>lenso app add</code> before adoption. This Site listing does not install the package.</>}</p>
+            {release.documentation.length > 0 && <div className="signed-release-documents">
+              <h4>Versioned documentation references</h4>
+              <ul>{release.documentation.map((document) => <li key={`${document.id}@${document.revision}`}>
+                <a href={document.url} rel="noopener noreferrer">{document.topic}</a> · {document.language} · {document.id}@{document.revision}
+                {document.target && <> · {document.target}</>}
+                <small>Signed reference: {document.digest}. Publisher content is not verified by this Site listing.</small>
+              </li>)}</ul>
+            </div>}
           </article>)}
         </section>
         <h2>Candidate releases</h2>
