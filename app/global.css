@@ -113,8 +113,8 @@ button, a, input, select { outline-offset: 3px; }
 .linked-doc-provenance dt { color: var(--muted); }
 .linked-doc-provenance dd { margin: 0; overflow-wrap: anywhere; }
 .linked-doc-body { margin-top: 44px; font-size: 17px; line-height: 1.7; overflow-wrap: anywhere; }
-.linked-doc-body h1, .linked-doc-body h2, .linked-doc-body h3 { margin: 1.6em 0 .5em; line-height: 1.2; letter-spacing: -.025em; }
-.linked-doc-body h1 { font-size: 34px; }.linked-doc-body h2 { font-size: 28px; }.linked-doc-body h3 { font-size: 22px; }
+.linked-doc-body h2, .linked-doc-body h3, .linked-doc-body h4, .linked-doc-body h5, .linked-doc-body h6 { margin: 1.6em 0 .5em; line-height: 1.2; letter-spacing: -.025em; }
+.linked-doc-body h2 { font-size: 28px; }.linked-doc-body h3 { font-size: 22px; }.linked-doc-body h4 { font-size: 19px; }.linked-doc-body h5, .linked-doc-body h6 { font-size: 17px; }
 .linked-doc-body p, .linked-doc-body ul, .linked-doc-body ol { margin: 0 0 1.15em; }
 .linked-doc-body ul, .linked-doc-body ol { padding-left: 1.5em; }
 .linked-doc-body pre { padding: 18px; overflow-x: auto; border: 1px solid var(--line); border-radius: 7px; background: var(--soft); font-size: 14px; }

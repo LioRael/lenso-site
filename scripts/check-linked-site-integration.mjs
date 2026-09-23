@@ -94,6 +94,8 @@ try {
   assert.match(release, /lenso app add example.web@1.0.0/);
   assert.match(release, /Getting started/);
   assert.match(page, /Version 1.0.0 uses a linked Host build/);
+  assert.equal((page.match(/<h1\b/g) ?? []).length, 1, 'publisher Markdown must not introduce another H1');
+  assert.match(page, /<h2[^>]*>Verified quickstart<\/h2>/);
   assert.equal(markdown, body.toString());
   await run('pnpm', ['check:published'], environment);
   console.log('Signed fixture proved Site directory → exact version → verified Markdown page and API.');

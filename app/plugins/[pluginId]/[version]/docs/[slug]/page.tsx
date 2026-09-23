@@ -47,6 +47,12 @@ export default async function LinkedDocumentationPage({ params }: { params: Para
           allowedElements={['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'blockquote', 'pre', 'code', 'a', 'hr', 'br']}
           skipHtml
           components={{
+            // The page title owns H1; publisher headings remain nested beneath it.
+            h1: ({ children }) => <h2>{children}</h2>,
+            h2: ({ children }) => <h3>{children}</h3>,
+            h3: ({ children }) => <h4>{children}</h4>,
+            h4: ({ children }) => <h5>{children}</h5>,
+            h5: ({ children }) => <h6>{children}</h6>,
             a: ({ href, children }) => {
               try {
                 const url = new URL(href ?? '');
