@@ -1,18 +1,18 @@
 ---
 title: Create a local Web App
-description: Preview the source-built App workflow and finish one browser greeting without a catalog release.
+description: Create a root-Cargo Web App, add a second linked Plugin, and check both routes locally.
 ---
 
-> **Local candidate preview.** `app create --web` is implemented in the current
-> `lenso-cli` source checkout, but this page does not claim that an npm/Cargo
+> **Local candidate preview.** The current `lenso-cli` source checkout implements
+> the default `app create` path, but this page does not claim that an npm/Cargo
 > release contains it or that every generated dependency is published. Use a
 > matching local CLI build. If a dependency is unavailable, stop and record its
 > exact version; a source scaffold is not a successful independent build.
 
-This path creates one App-owned Web Plugin, starts its generated Host, and uses
-the browser form to make a real `POST /greetings` request. It does not need a
-Marketplace listing. Human and coding-agent users follow the **same commands
-and completion check** below.
+This path creates a root-Cargo Web Plugin, uses its browser form to make a real
+`POST /greetings` request, then adds a second linked Web Plugin. It does not
+need a Marketplace listing. Human and coding-agent users follow the same
+commands and completion checks below.
 
 ## 1. Build the CLI from the matching source checkout
 
@@ -25,8 +25,9 @@ LENSO_CLI="$(pwd)/target/debug/lenso"
 "$LENSO_CLI" app create --help
 ```
 
-Confirm that help lists `--web`. The installed `lenso` on your `PATH` may be an
-older public release; use the absolute `LENSO_CLI` path for every step here.
+Confirm that `app create --help` succeeds. The installed `lenso` on your
+`PATH` may be an older public release; use the absolute `LENSO_CLI` path for
+every step here.
 The starter runs a Cargo check during creation, so its pinned dependencies
 must be available before this preview can continue.
 
@@ -37,14 +38,15 @@ framework checkout; choose your own empty parent instead for a durable App.
 
 ```sh
 APP_PARENT="$(mktemp -d)"
-"$LENSO_CLI" app create "$APP_PARENT/hello-web" --web
+"$LENSO_CLI" app create "$APP_PARENT/hello-web"
 cd "$APP_PARENT/hello-web"
 "$LENSO_CLI" app dev
 ```
 
-The App has an `app/local.starter/` Rust Plugin and a Plugin-owned
+The root Cargo package is the first App-owned Web Plugin and owns
 `public/index.html`. The generated Host supplies Web Ingress; you did not
-write a Host Catalog or Plan. Keep `app dev` running and open the exact
+write a Host Catalog or Plan. The explicit `--web` option remains available
+for a nested starter, but is not used here. Keep `app dev` running and open the
 `Listening on http://...` address printed by the Host. Do not assume a fixed
 port.
 
@@ -53,11 +55,44 @@ should show **Hello, Ada!** from the Plugin's `POST /greetings` endpoint.
 Inspect the browser console and network response if it does not. Seeing only
 the HTML page is not completion: the POST must succeed.
 
-## 3. Build and inspect the result
+## 3. Add a second linked Web Plugin
 
 Stop `app dev`, then run from `hello-web/`:
 
 ```sh
+"$LENSO_CLI" plugin new example.second-http --web --repo-root ./app
+```
+
+This creates `app/example.second-http/` with its own `Cargo.lock`. Its generated
+greeting route IDs and paths collide with the first Plugin. In the second
+Plugin, change `greetings.create` and `POST /greetings` to
+`second.greetings.create` and `POST /second/greetings`; change
+`greetings.search` and `POST /greetings/search` to
+`second.greetings.search` and `POST /second/greetings/search`. Update the
+generated tests to use those IDs and paths. Add
+`app/example.second-http/src/routes/home.rs` for a browser-visible second route:
+
+```rust
+#[get("second.home", "/second")]
+async fn home(&self) -> Result<HandleResponse, Problem> {
+    Ok(lenso_capability_http_endpoint::response::text(
+        StatusCode::OK,
+        "second Web Plugin",
+    ))
+}
+```
+
+The generated Plugin already imports the types used here. The Host rejects route
+collisions before Ready. See [Local App development](/docs/core/engine-dx) for
+the discovery and composition rules.
+
+## 4. Build and inspect the result
+
+From `hello-web/`, run:
+
+```sh
+"$LENSO_CLI" app discover --json
+cargo test --locked --manifest-path app/example.second-http/Cargo.toml
 "$LENSO_CLI" app build --out dist-review
 "$LENSO_CLI" app check --root dist-review
 "$LENSO_CLI" app show --root dist-review --json
@@ -67,7 +102,9 @@ Stop `app dev`, then run from `hello-web/`:
 `app build` refuses to overwrite an existing output directory. The check and
 show commands inspect the built distribution's Plugin Root and resolved result;
 `start --check` activates and shuts down. A successful source build is still
-not proof of a publicly downloadable release or deployment.
+not proof of a publicly downloadable release or deployment. To check live HTTP,
+run `"$LENSO_CLI" app start --from dist-review` and visit `/` and `/second` at
+the address it prints.
 
 ## Use a coding agent for these same steps
 
@@ -77,16 +114,19 @@ use this bounded request:
 ```text
 Create the local Web App using the manual commands in this page, with the
 source-built lenso CLI from this checkout. Keep the App outside the framework
-source tree. Use app create hello-web --web, then app dev. In a real browser,
-submit Ada and show the Hello, Ada! result and any console errors. After
-stopping dev, run app build, app check, app show and app start --check on the
-same App. Report the exact CLI revision, commands, output path, browser URL,
-and failures. If the pinned dependency cohort is unavailable, stop and report
-that boundary; do not substitute a different release or claim success.
+source tree. Use app create hello-web without --web, then app dev. In a real
+browser, submit Ada and show the Hello, Ada! result and any console errors.
+Stop dev, create example.second-http with plugin new --web --repo-root ./app,
+give its routes distinct IDs and paths, add the GET /second route, and update
+its tests. Run discover, the second Plugin's tests, build, check, show,
+start --check, and live GETs for / and /second. Report the exact CLI revision,
+commands, output path, browser URL, and failures. If the pinned dependency cohort is
+unavailable, stop and report that boundary; do not substitute another release.
 ```
 
-The agent may edit ordinary business code in `app/local.starter/`, but App
-selection and authority still come from the App's `plugins/` root and Host.
+The agent may edit ordinary business code in the root package and
+`app/example.second-http/`, but App selection and authority still come from
+the App's `plugins/` root and Host.
 The Site cannot operate your local files or approve installation for you.
 
 ## Add another Plugin only when it is real

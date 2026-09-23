@@ -1,15 +1,15 @@
 ---
 title: 创建本地 Web App
-description: 用源码构建的 CLI 预览 App 工作流，并在浏览器中完成一次真实问候。
+description: 创建根目录 Cargo Web App，添加第二个 Linked Plugin，并在本地检查两条路由。
 ---
 
-> **本地候选预览。** 当前 `lenso-cli` 源码已实现 `app create --web`，但本页不声称
-> npm/Cargo 已发布包含该命令的版本，也不声称生成项目的全部依赖均已发布。请使用
+> **本地候选预览。** 当前 `lenso-cli` 源码已实现默认的 `app create` 路径，但本页
+> 不声称 npm/Cargo 已发布包含该命令的版本，也不声称生成项目的全部依赖均已发布。请使用
 > 匹配源码构建的 CLI。若依赖不可用，应停下并记录精确版本；生成源码不等于独立构建成功。
 
-这条路径创建一个 App 自有的 Web Plugin，启动生成的 Host，再从浏览器表单发出真正的
-`POST /greetings` 请求。它不需要 Marketplace 条目。手工开发与 Coding Agent 使用
-**同一组命令和完成检查**。
+这条路径先创建根目录 Cargo Web Plugin，从浏览器表单发出真正的 `POST /greetings`
+请求，再添加第二个 Linked Web Plugin。它不需要 Marketplace 条目。手工开发与
+Coding Agent 使用同一组命令和完成检查。
 
 ## 1. 从匹配源码构建 CLI
 
@@ -21,8 +21,8 @@ LENSO_CLI="$(pwd)/target/debug/lenso"
 "$LENSO_CLI" app create --help
 ```
 
-确认帮助中出现 `--web`。`PATH` 中安装的 `lenso` 可能是旧公开版本；本页后续命令
-均使用绝对路径 `LENSO_CLI`。创建时脚手架会运行 Cargo check，因此要继续预览，
+确认 `app create --help` 能正常执行。`PATH` 中安装的 `lenso` 可能是旧公开版本；
+本页后续命令均使用绝对路径 `LENSO_CLI`。创建时脚手架会运行 Cargo check，因此要继续预览，
 它锁定的依赖必须可用。
 
 ## 2. 创建并运行同一个 App
@@ -32,25 +32,55 @@ LENSO_CLI="$(pwd)/target/debug/lenso"
 
 ```sh
 APP_PARENT="$(mktemp -d)"
-"$LENSO_CLI" app create "$APP_PARENT/hello-web" --web
+"$LENSO_CLI" app create "$APP_PARENT/hello-web"
 cd "$APP_PARENT/hello-web"
 "$LENSO_CLI" app dev
 ```
 
-App 包含 `app/local.starter/` Rust Plugin 和由 Plugin 持有的
-`public/index.html`。生成的 Host 提供 Web Ingress；你不需要手写 Host Catalog 或
-Plan。保持 `app dev` 运行，在浏览器中打开 Host 打印的精确
-`Listening on http://...` 地址，不要假定固定端口。
+根目录 Cargo 包是第一个 App 自有 Web Plugin，并持有 `public/index.html`。
+生成的 Host 提供 Web Ingress；你不需要手写 Host Catalog 或 Plan。显式的
+`--web` 仍可创建嵌套 starter，但本教程使用默认路径。保持 `app dev` 运行，
+在浏览器中打开 Host 打印的 `Listening on http://...` 地址，不要假定固定端口。
 
 在页面表单输入 **Ada**，点击 **Create greeting**。页面应显示来自 Plugin
 `POST /greetings` Endpoint 的 **Hello, Ada!**。若未出现，检查浏览器控制台与
 网络响应。仅看到 HTML 页面不算完成，POST 必须成功。
 
-## 3. 构建并检查结果
+## 3. 添加第二个 Linked Web Plugin
 
 停止 `app dev` 后，从 `hello-web/` 执行：
 
 ```sh
+"$LENSO_CLI" plugin new example.second-http --web --repo-root ./app
+```
+
+命令在 `app/example.second-http/` 生成源码和独立的 `Cargo.lock`。它的问候 Route ID
+及路径与第一个 Plugin 冲突。将第二个 Plugin 的 `greetings.create` 和
+`POST /greetings` 改为 `second.greetings.create` 和 `POST /second/greetings`；将
+`greetings.search` 和 `POST /greetings/search` 改为 `second.greetings.search` 和
+`POST /second/greetings/search`，并同步修改生成的测试。新增
+`app/example.second-http/src/routes/home.rs`，使第二个 Plugin 有可直接访问的路由：
+
+```rust
+#[get("second.home", "/second")]
+async fn home(&self) -> Result<HandleResponse, Problem> {
+    Ok(lenso_capability_http_endpoint::response::text(
+        StatusCode::OK,
+        "second Web Plugin",
+    ))
+}
+```
+
+生成的 Plugin 已导入这里使用的类型。Host 会在 Ready 前拒绝路由冲突。
+发现和组合规则见[本地 App 开发](/docs/zh/core/engine-dx)。
+
+## 4. 构建并检查结果
+
+从 `hello-web/` 执行：
+
+```sh
+"$LENSO_CLI" app discover --json
+cargo test --locked --manifest-path app/example.second-http/Cargo.toml
 "$LENSO_CLI" app build --out dist-review
 "$LENSO_CLI" app check --root dist-review
 "$LENSO_CLI" app show --root dist-review --json
@@ -59,7 +89,8 @@ Plan。保持 `app dev` 运行，在浏览器中打开 Host 打印的精确
 
 `app build` 不覆盖已有输出目录。check/show 检查构建后分发目录的 Plugin Root
 和解析结果；`start --check` 完成激活并关闭。源码构建成功仍不等于有公开可下载
-Release 或已部署。
+Release 或已部署。要检查真实 HTTP，运行 `"$LENSO_CLI" app start --from dist-review`，
+并在它打印的地址访问 `/` 和 `/second`。
 
 ## 让 Coding Agent 执行相同步骤
 
@@ -67,15 +98,17 @@ Release 或已部署。
 
 ```text
 按本页手工命令创建本地 Web App，使用这个 Checkout 源码构建的 lenso CLI。
-App 放在框架源码树外。运行 app create hello-web --web 和 app dev。
+App 放在框架源码树外。运行不带 --web 的 app create hello-web，再运行 app dev。
 在真实浏览器提交 Ada，展示 Hello, Ada! 结果与控制台错误。
-停止 dev 后，对同一个 App 运行 app build、app check、app show 和
-app start --check。报告精确 CLI Revision、命令、输出路径、浏览器 URL 与失败。
-若锁定的依赖组不可用，应停止并报告边界；不要换用其他 Release 或声称成功。
+停止 dev 后，用 plugin new --web --repo-root ./app 创建 example.second-http，
+修改冲突的 Route ID 和路径，添加 GET /second 路由，并更新测试。运行 discover、
+第二个 Plugin 的测试、build、check、show、start --check，再真实请求 `/` 和 `/second`。
+报告精确 CLI Revision、命令、输出路径、浏览器 URL 与失败。若锁定的依赖组
+不可用，应停止并报告边界；不要换用其他 Release 或声称成功。
 ```
 
-Agent 可以编辑 `app/local.starter/` 中的普通业务代码，但 App 选择与 Authority
-仍来自 App 的 `plugins/` Root 和 Host。Site 不能操作你的本地文件，也不能替你
+Agent 可以编辑根目录 Cargo 包和 `app/example.second-http/` 中的普通业务代码，
+但 App 选择与 Authority 仍来自 App 的 `plugins/` Root 和 Host。Site 不能操作你的本地文件，也不能替你
 批准安装。
 
 ## 仅在真实可用时采用其他 Plugin

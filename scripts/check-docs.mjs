@@ -335,7 +335,8 @@ for (const marker of ["Resolved App Plan", "Runtime Driver", "Execution Adapter"
 for (const [file, markers] of [
   ["content/docs/core/(start)/app-quickstart.mdx", [
     "Local candidate preview",
-    "app create hello-web --web",
+    'app create "$APP_PARENT/hello-web"',
+    "plugin new example.second-http --web --repo-root ./app",
     "app dev",
     "Hello, Ada!",
     "app build --out dist-review",
@@ -344,7 +345,8 @@ for (const [file, markers] of [
   ]],
   ["content/docs/zh/core/(start)/app-quickstart.mdx", [
     "本地候选预览",
-    "app create hello-web --web",
+    'app create "$APP_PARENT/hello-web"',
+    "plugin new example.second-http --web --repo-root ./app",
     "app dev",
     "Hello, Ada!",
     "app build --out dist-review",
