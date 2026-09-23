@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Provider } from '@/components/provider';
+import '@lenso/tokens/styles.css';
 import './global.css';
+import '@lenso/ui/styles.css';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://lenso.dev'),

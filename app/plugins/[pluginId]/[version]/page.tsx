@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import { DescriptionListDescription, DescriptionListItem, DescriptionListRoot, DescriptionListTerm } from '@lenso/ui/description-list';
 import { CandidateDocumentation } from '@/components/candidate-documentation';
 import { CopyCommand } from '@/components/copy-command';
 import { SiteHeader } from '@/components/site-header';
@@ -74,18 +76,18 @@ function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease
       <aside className="linked-doc-provenance">
         <strong>Catalog evidence, not an installation</strong>
         <p>This exact release was verified against the configured catalog public key when Site was built. The snapshot expires {signedLinkedCatalog.expiresAt ? new Date(signedLinkedCatalog.expiresAt * 1000).toISOString() : 'at an unknown time'}. Reverify it locally before adoption; a signed listing does not establish source-code safety or compatibility with your Host.</p>
-        <dl>
-          <div><dt>Plugin ID</dt><dd><code>{release.pluginId}</code></dd></div>
-          <div><dt>Version</dt><dd>{release.version}</dd></div>
-          <div><dt>Publisher ID</dt><dd>{release.publisherId}</dd></div>
-          <div><dt>Catalog</dt><dd>{signedLinkedCatalog.catalogId} · revision {signedLinkedCatalog.revision}</dd></div>
-          <div><dt>Distribution</dt><dd>Linked Cargo · {release.integration === 'host_provided' ? 'Host-provided integration' : 'linked Plugin'}</dd></div>
-          <div><dt>Package</dt><dd><code>{release.package}</code></dd></div>
-          <div><dt>Crate SHA-256</dt><dd><code>{release.crateDigest}</code></dd></div>
-          <div><dt>Declared targets</dt><dd>{release.targets.join(', ')}</dd></div>
-          <div><dt>Source revision</dt><dd><code>{release.sourceRevision}</code></dd></div>
-          <div><dt>License</dt><dd>{release.license}</dd></div>
-        </dl>
+        <ProvenanceFacts items={[
+          ['Plugin ID', <code>{release.pluginId}</code>],
+          ['Version', release.version],
+          ['Publisher ID', release.publisherId],
+          ['Catalog', <>{signedLinkedCatalog.catalogId} · revision {signedLinkedCatalog.revision}</>],
+          ['Distribution', <>Linked Cargo · {release.integration === 'host_provided' ? 'Host-provided integration' : 'linked Plugin'}</>],
+          ['Package', <code>{release.package}</code>],
+          ['Crate SHA-256', <code>{release.crateDigest}</code>],
+          ['Declared targets', release.targets.join(', ')],
+          ['Source revision', <code>{release.sourceRevision}</code>],
+          ['License', release.license],
+        ]} />
         <p><a href={release.sourceUrl} rel="noopener noreferrer" target="_blank">Source</a> · <a href={release.registryUrl} rel="noopener noreferrer" target="_blank">Registry</a></p>
       </aside>
       {portable && <PortableProvenance release={portable} />}
@@ -132,24 +134,31 @@ function PortableProvenance({ release }: { release: SignedPortableRelease }) {
   return <aside className="linked-doc-provenance">
     <strong>Signed Portable catalog evidence, not an installation</strong>
     <p>This exact release was verified against the configured catalog public key when Site was built. The snapshot expires {signedPortableCatalog.expiresAt ? new Date(signedPortableCatalog.expiresAt * 1000).toISOString() : 'at an unknown time'}. Reverify it locally before adoption; the base snapshot does not establish target compatibility.</p>
-    <dl>
-      <div><dt>Signed title</dt><dd>{release.title}</dd></div>
-      <div><dt>Signed summary</dt><dd>{release.summary}</dd></div>
-      <div><dt>Plugin ID</dt><dd><code>{release.pluginId}</code></dd></div>
-      <div><dt>Version</dt><dd>{release.version}</dd></div>
-      <div><dt>Publisher ID</dt><dd>{release.publisherId}</dd></div>
-      <div><dt>Catalog</dt><dd>{signedPortableCatalog.catalogId} · revision {signedPortableCatalog.revision}</dd></div>
-      <div><dt>Distribution</dt><dd>Portable Bundle</dd></div>
-      <div><dt>Bundle SHA-256</dt><dd><code>{release.artifactDigest}</code></dd></div>
-      <div><dt>Bundle size</dt><dd>{release.artifactSize} bytes</dd></div>
-      <div><dt>Manifest SHA-256</dt><dd><code>{release.manifestDigest}</code></dd></div>
-      <div><dt>Source revision</dt><dd><code>{release.sourceRevision}</code></dd></div>
-      <div><dt>License</dt><dd>{release.license}</dd></div>
-    </dl>
+    <ProvenanceFacts items={[
+      ['Signed title', release.title],
+      ['Signed summary', release.summary],
+      ['Plugin ID', <code>{release.pluginId}</code>],
+      ['Version', release.version],
+      ['Publisher ID', release.publisherId],
+      ['Catalog', <>{signedPortableCatalog.catalogId} · revision {signedPortableCatalog.revision}</>],
+      ['Distribution', 'Portable Bundle'],
+      ['Bundle SHA-256', <code>{release.artifactDigest}</code>],
+      ['Bundle size', `${release.artifactSize} bytes`],
+      ['Manifest SHA-256', <code>{release.manifestDigest}</code>],
+      ['Source revision', <code>{release.sourceRevision}</code>],
+      ['License', release.license],
+    ]} />
     <p><a href={release.sourceUrl} rel="noopener noreferrer" target="_blank">Signed source reference</a> · <a href={release.artifactUrl} rel="noopener noreferrer" target="_blank">Signed Bundle reference</a></p>
   </aside>;
 }
 
 function PortableDocumentationState({ version }: { version: string }) {
   return <section className="linked-release-section"><h2>Portable documentation for {version}</h2><p>No versioned Markdown is attached to this Portable release. The signed base snapshot contains release metadata, not document references; linked Cargo or unsigned candidate documentation is not substituted.</p></section>;
+}
+
+function ProvenanceFacts({ items }: { items: readonly (readonly [string, ReactNode])[] }) {
+  return <DescriptionListRoot>{items.map(([label, value]) => <DescriptionListItem key={label}>
+    <DescriptionListTerm>{label}</DescriptionListTerm>
+    <DescriptionListDescription>{value}</DescriptionListDescription>
+  </DescriptionListItem>)}</DescriptionListRoot>;
 }

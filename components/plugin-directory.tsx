@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { Button } from '@lenso/ui/button';
+import { ContentState } from '@lenso/ui/content-state';
 import { Check, CircleAlert, ExternalLink, Search, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { candidateRelease, signedLinkedCatalog, signedPortableCatalog } from '@/lib/plugin-candidates';
@@ -75,11 +77,14 @@ export function PluginDirectory() {
           <Filter label="Target" onSelect={setTarget} options={['Native', 'Workers']} selected={target} />
           <Filter label="Distribution" onSelect={setDistribution} options={['Linked Rust', 'Portable']} selected={distribution} />
           <Filter label="Catalog status" onSelect={setCatalogStatus} options={['Signed', 'Candidate']} selected={catalogStatus} />
-          <button className="clear-filter" onClick={clearFilters} type="button">Clear filters</button>
+          <Button onClick={clearFilters} size="default" type="button" variant="ghost">Clear filters</Button>
         </div>
         <section className="signed-release-state" aria-labelledby="signed-release-heading">
           <h2 id="signed-release-heading">Signed releases</h2>
-          {signedLinked.length === 0 && signedPortable.length === 0 && <p>{currentSigned.linked || currentSigned.portable ? 'No signed release matches the current filters.' : 'No current signed Portable or linked Cargo catalog is available. Candidate claims are separate.'}</p>}
+          {signedLinked.length === 0 && signedPortable.length === 0 && <ContentState.Root align="start" role="status">
+            <ContentState.Title as="h3">No signed releases to show</ContentState.Title>
+            <ContentState.Description>{currentSigned.linked || currentSigned.portable ? 'No signed release matches the current filters.' : 'No current signed Portable or linked Cargo catalog is available. Candidate claims are separate.'}</ContentState.Description>
+          </ContentState.Root>}
           {signedPortable.map((release) => <article className="signed-release" key={`portable:${release.pluginId}@${release.version}`}>
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.summary}</p>
@@ -135,5 +140,5 @@ export function PluginDirectory() {
 }
 
 function Filter({ label, onSelect, options, selected }: { label: string; onSelect: (value: string | undefined) => void; options: readonly string[]; selected?: string }) {
-  return <fieldset><legend>{label}</legend><div>{options.map((option) => <button aria-pressed={option === selected} key={option} onClick={() => onSelect(option === selected ? undefined : option)} type="button">{option}</button>)}</div></fieldset>;
+  return <fieldset><legend>{label}</legend><div>{options.map((option) => <Button aria-pressed={option === selected} key={option} onClick={() => onSelect(option === selected ? undefined : option)} size="default" type="button" variant={option === selected ? 'primary' : 'secondary'}>{option}</Button>)}</div></fieldset>;
 }

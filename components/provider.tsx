@@ -11,5 +11,5 @@ export function Provider({ children }: { children: ReactNode }) {
     document.documentElement.lang = pathname === '/docs/zh' || pathname?.startsWith('/docs/zh/') ? 'zh-CN' : 'en';
   }, [pathname]);
 
-  return <RootProvider search={{ options: { api: '/api/search' } }}>{children}</RootProvider>;
+  return <RootProvider search={{ options: { api: '/api/search' } }} theme={{ attribute: ['class', 'data-theme'] }}>{children}</RootProvider>;
 }
