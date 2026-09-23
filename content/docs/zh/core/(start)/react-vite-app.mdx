@@ -22,6 +22,7 @@ Rust/Cargo、Bun、与 `project/frontend/bun.lock` 匹配且独立打包的
 `@lenso/web-client` 候选，以及 Auth API-token、Jobs、Secrets Provider 源码
 （或它们精确的已签名 `.crate` 输入）。请使用可丢弃的 PostgreSQL 数据库。
 验证器会创建 Schema 并留供检查，结束后不会重置数据库。
+这条交互式凭据 Handoff 需要 POSIX no-follow 文件 API，不支持 Windows。
 
 干净的 Fixture Checkout **不能直接**运行 `lenso app dev`：Provider Plugin、
 Operator 初始化、凭据与数据库配置均未准备。Fixture README 说明源码候选模式
@@ -54,9 +55,12 @@ Provider 和 App 构建可能执行包内构建脚本；未经审查的输入只
 （最多十分钟），打开该 URL、输入 Token、点击 **Load workspace**、创建一条
 笔记，并确认处理后的摘录显示。再为这条笔记上传一个小文件，确认保存状态。
 完成后删除 Handoff 文件，让验证器继续执行重启检查。最后的 `rmdir` 只会在
-验证器退出后删除已空的私有目录。超时或中断时，验证器只删除自己创建且身份未变
-的文件；若路径已被替换，它会拒绝删除替代物。对任何遗留文件保持私有，重试前
-先检查。不要提交或分享 Token。
+验证器退出后删除已空的私有目录。超时或 Ctrl-C 时，验证器会尝试核对 inode
+再清理；在 POSIX 主线程中还会临时处理 `SIGTERM` 以执行清理。这些都是
+尽力而为：同 UID 写入者可能在核对与按名称删除之间替换文件；`SIGKILL`、
+进程崩溃或断电也可能留下文件。保持 `0700` 目录私有。若有残留，先停止
+验证器，并仅在确认路径仍指向原 Handoff、而非替代文件后手工删除。
+不要复用、提交或分享 Token。
 
 成功运行后，验证的是带已签入静态页面、删除源码后仍可运行的候选 App。
 它不同于下文的

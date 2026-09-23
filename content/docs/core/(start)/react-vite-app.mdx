@@ -25,7 +25,8 @@ packed `@lenso/web-client` candidate matching `project/frontend/bun.lock`,
 and the Auth API-token, Jobs, and Secrets provider sources (or their exact
 signed `.crate` inputs). Use a disposable PostgreSQL database. The verifier
 creates schemas and leaves them available for inspection; it does not reset
-the database afterward.
+the database afterward. This interactive credential handoff requires POSIX
+no-follow file APIs; it is not a Windows path.
 
 A clean fixture checkout is **not** ready for `lenso app dev`: the provider
 Plugins, their operator setup, credentials, and database configuration have
@@ -64,10 +65,14 @@ workspace**, create a note, and confirm its excerpt appears after processing.
 Upload a small file to that note and confirm the stored-file status. Delete
 the handoff file when finished so the verifier can perform its restart checks.
 The final `rmdir` removes only that empty private directory after the verifier
-exits. On timeout or interruption, the verifier removes only its own handoff
-file; if the path was replaced, it refuses to remove the replacement. Keep any
-remaining file private and inspect it before retrying. Do not commit or share
-the token.
+exits. On timeout or Ctrl-C, the verifier attempts inode-checked cleanup;
+when the handoff runs on the POSIX main thread, it also temporarily handles
+`SIGTERM` for that purpose.
+This is best effort: the check and name-based deletion are not atomic against
+a same-UID writer, and `SIGKILL`, a process crash, or power loss may leave the
+file. Keep the `0700` directory private. If a file remains, stop the verifier
+and manually remove it only after confirming the path still names the handoff,
+not a replacement. Do not reuse, commit, or share the token.
 
 A successful run verifies a built, source-deleted candidate App with its
 checked-in static page. It is distinct from the editable Vite development
