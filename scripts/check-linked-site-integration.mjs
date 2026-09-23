@@ -77,18 +77,27 @@ try {
       return;
     }
     if (request.url === '/snapshot') {
+      const portable = {
+        plugin_id: portablePluginId, version: portableVersion, publisher_id: 'example',
+        title: 'Example Echo', summary: 'Fixture Portable Plugin',
+        presentation: { getting_started: 'UNVERSIONED_PUBLISHER_COPY_SENTINEL' },
+        source_url: 'https://example.test/echo', source_revision: 'c'.repeat(40), license: 'MIT',
+        artifact: {
+          url: 'https://example.test/echo.bundle', digest: `sha256:${'d'.repeat(64)}`,
+          size: 123, manifest_digest: `sha256:${'e'.repeat(64)}`,
+        },
+        availability: 'listed',
+      };
       const snapshot = {
         schema: 'lenso.marketplace.snapshot.v1', catalog_id: catalogId,
         revision: 2, issued_at: now - 1, expires_at: now + 3600,
-        releases: [{
-          plugin_id: portablePluginId, version: portableVersion, publisher_id: 'example',
-          title: 'Example Echo', summary: 'Fixture Portable Plugin',
-          source_url: 'https://example.test/echo', source_revision: 'c'.repeat(40), license: 'MIT',
+        releases: [portable, {
+          ...portable, plugin_id: pluginId, version, title: 'Example Web Portable',
+          summary: 'Independent signed Portable release',
           artifact: {
-            url: 'https://example.test/echo.bundle', digest: `sha256:${'d'.repeat(64)}`,
-            size: 123, manifest_digest: `sha256:${'e'.repeat(64)}`,
+            ...portable.artifact, url: 'https://example.test/web.bundle',
+            digest: `sha256:${'1'.repeat(64)}`, manifest_digest: `sha256:${'2'.repeat(64)}`,
           },
-          availability: 'listed',
         }],
       };
       const bytes = envelope(snapshot);
@@ -113,6 +122,7 @@ try {
   await run('pnpm', ['build'], environment);
   const slug = documentSlug(pluginId, version, document);
   const directory = await readFile(join(root, 'out/plugins/index.html'), 'utf8');
+  const portableRelease = await readFile(join(root, `out/plugins/${portablePluginId}/${portableVersion}/index.html`), 'utf8');
   const release = await readFile(join(root, `out/plugins/${pluginId}/${version}/index.html`), 'utf8');
   const page = await readFile(join(root, `out/plugins/${pluginId}/${version}/docs/${slug}/index.html`), 'utf8');
   const markdown = await readFile(join(root, `out/api/plugins/${pluginId}/${version}/docs/${slug}/content.md`), 'utf8');
@@ -122,7 +132,16 @@ try {
   assert.match(directory, /Fixture Portable Plugin/);
   assert.match(directory, /Portable Bundle/);
   assert.match(directory, /sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd/);
+  assert.match(directory, /\/plugins\/example\.echo\/2\.3\.4/);
+  assert.match(portableRelease, /Fixture Portable Plugin/);
+  assert.match(portableRelease, /sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd/);
+  assert.match(portableRelease, /No versioned Markdown is attached to this Portable release/);
+  assert.doesNotMatch(portableRelease, /UNVERSIONED_PUBLISHER_COPY_SENTINEL|Candidate documentation|No implicit portable fallback/);
+  await assert.rejects(readFile(join(root, `out/plugins/${portablePluginId}/9.9.9/index.html`)));
   assert.match(release, /Fixture linked ingress/);
+  assert.match(release, /Independent signed Portable release/);
+  assert.match(release, /two independently signed channels/);
+  assert.match(release, /sha256:1111111111111111111111111111111111111111111111111111111111111111/);
   assert.match(release, /lenso app add example.web@1.0.0/);
   assert.match(release, /Getting started/);
   assert.match(page, /Version 1.0.0 uses a linked Host build/);
@@ -130,7 +149,7 @@ try {
   assert.match(page, /<h2[^>]*>Verified quickstart<\/h2>/);
   assert.equal(markdown, body.toString());
   await run('pnpm', ['check:published'], environment);
-  console.log('Signed fixtures proved shared Portable + linked directory and linked exact version → verified Markdown page and API.');
+  console.log('Signed fixtures proved shared Portable + linked directory, exact versions, and linked verified Markdown page/API without Portable document fallback.');
 } finally {
   if (server) await new Promise((success) => server.close(success));
   await rm(temporary, { recursive: true, force: true });

@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { CandidateDocumentation } from '@/components/candidate-documentation';
 import { CopyCommand } from '@/components/copy-command';
 import { SiteHeader } from '@/components/site-header';
-import { candidateRelease, signedLinkedCatalog, type SignedLinkedRelease } from '@/lib/plugin-candidates';
+import { candidateRelease, signedLinkedCatalog, signedPortableCatalog, type SignedLinkedRelease, type SignedPortableRelease } from '@/lib/plugin-candidates';
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
 
 type Params = Promise<{ pluginId: string; version: string }>;
@@ -12,20 +12,28 @@ type Params = Promise<{ pluginId: string; version: string }>;
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  const releases = signedLinkedCatalog.releases.map(({ pluginId, version }) => ({ pluginId, version }));
-  if (!releases.some(({ pluginId, version }) => pluginId === candidateRelease.pluginId && version === candidateRelease.version)) {
-    releases.push({ pluginId: candidateRelease.pluginId, version: candidateRelease.version });
+  const releases = new Map<string, { pluginId: string; version: string }>();
+  for (const { pluginId, version } of [...signedLinkedCatalog.releases, ...signedPortableCatalog.releases]) {
+    releases.set(`${pluginId}\0${version}`, { pluginId, version });
   }
-  return releases;
+  const candidateKey = `${candidateRelease.pluginId}\0${candidateRelease.version}`;
+  if (!releases.has(candidateKey)) {
+    releases.set(candidateKey, { pluginId: candidateRelease.pluginId, version: candidateRelease.version });
+  }
+  return [...releases.values()];
 }
 
-function findSigned(pluginId: string, version: string) {
+function findLinked(pluginId: string, version: string) {
   return signedLinkedCatalog.releases.find((release) => release.pluginId === pluginId && release.version === version);
+}
+
+function findPortable(pluginId: string, version: string) {
+  return signedPortableCatalog.releases.find((release) => release.pluginId === pluginId && release.version === version);
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { pluginId, version } = await params;
-  const release = findSigned(pluginId, version);
+  const release = findLinked(pluginId, version) ?? findPortable(pluginId, version);
   if (release) {
     return { title: `${release.title} ${version}`, description: release.summary };
   }
@@ -41,13 +49,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function PluginReleasePage({ params }: { params: Params }) {
   const { pluginId, version } = await params;
-  const release = findSigned(pluginId, version);
-  if (release) return <SignedReleasePage release={release} />;
+  const linked = findLinked(pluginId, version);
+  const portable = findPortable(pluginId, version);
+  if (linked) return <SignedReleasePage release={linked} portable={portable} />;
+  if (portable) return <SignedPortableReleasePage release={portable} />;
   if (pluginId === candidateRelease.pluginId && version === candidateRelease.version) return <CandidateDocumentation />;
   notFound();
 }
 
-function SignedReleasePage({ release }: { release: SignedLinkedRelease }) {
+function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease; portable?: SignedPortableRelease }) {
   const otherVersions = signedLinkedCatalog.releases.filter((item) => item.pluginId === release.pluginId && item.version !== release.version);
   const genericAdoption = release.integration === 'linked_plugin' && release.registryUrl === 'https://crates.io';
   const adoptCommand = `lenso app add ${release.pluginId}@${release.version} --linked-snapshot ./linked-cargo-snapshot.json --trust ./catalog-trust.json --crate ./${release.package}-${release.version}.crate`;
@@ -56,9 +66,10 @@ function SignedReleasePage({ release }: { release: SignedLinkedRelease }) {
     <main className="linked-doc-main">
       <nav aria-label="Breadcrumb" className="linked-doc-breadcrumb"><Link href="/plugins">Plugins</Link><span>/</span><span>{release.pluginId}@{release.version}</span></nav>
       <header className="linked-doc-header">
-        <p className="linked-doc-eyebrow">Listed in signed linked Cargo catalog</p>
+        <p className="linked-doc-eyebrow">{portable ? 'Listed in signed Portable and linked Cargo catalogs' : 'Listed in signed linked Cargo catalog'}</p>
         <h1>{release.title}</h1>
         <p>{release.summary}</p>
+        {portable && <p>This identifier and version appear in two independently signed channels. Site does not claim their artifacts are interchangeable or derived from one another.</p>}
       </header>
       <aside className="linked-doc-provenance">
         <strong>Catalog evidence, not an installation</strong>
@@ -77,9 +88,10 @@ function SignedReleasePage({ release }: { release: SignedLinkedRelease }) {
         </dl>
         <p><a href={release.sourceUrl} rel="noopener noreferrer" target="_blank">Source</a> · <a href={release.registryUrl} rel="noopener noreferrer" target="_blank">Registry</a></p>
       </aside>
+      {portable && <PortableProvenance release={portable} />}
       {otherVersions.length > 0 && <section className="linked-release-section"><h2>Other listed versions</h2><ul>{otherVersions.map((item) => <li key={item.version}><Link href={linkedReleasePath(item.pluginId, item.version)}>{item.version}</Link></li>)}</ul></section>}
       <section className="linked-release-section" aria-labelledby="adoption-heading">
-        <h2 id="adoption-heading">Adopt this exact version</h2>
+        <h2 id="adoption-heading">{portable ? 'Adopt the linked Cargo distribution' : 'Adopt this exact version'}</h2>
         {genericAdoption ? <>
           <p>Download the signed snapshot, its independently trusted public-key configuration and the exact registry <code>.crate</code> to your own project. The CLI checks the signature, validity window, Host target, archive digest and package identity before changing your App.</p>
           <div className="code-panel"><div className="code-panel-head"><span>Local project · replace paths with verified files</span><CopyCommand value={adoptCommand} /></div><pre><code>{adoptCommand}</code></pre></div>
@@ -92,6 +104,52 @@ function SignedReleasePage({ release }: { release: SignedLinkedRelease }) {
           <Link href={linkedDocumentPath(release.pluginId, release.version, document.slug)}>{document.topic}</Link> · {document.language} · revision {document.revision}{document.target ? ` · ${document.target}` : ''}
         </li>)}</ul>}
       </section>
+      {portable && <PortableDocumentationState version={portable.version} />}
     </main>
   </div>;
+}
+
+function SignedPortableReleasePage({ release }: { release: SignedPortableRelease }) {
+  const otherVersions = signedPortableCatalog.releases.filter((item) => item.pluginId === release.pluginId && item.version !== release.version);
+  return <div className="linked-release-shell">
+    <SiteHeader active="plugins" />
+    <main className="linked-doc-main">
+      <nav aria-label="Breadcrumb" className="linked-doc-breadcrumb"><Link href="/plugins">Plugins</Link><span>/</span><span>{release.pluginId}@{release.version}</span></nav>
+      <header className="linked-doc-header">
+        <p className="linked-doc-eyebrow">Listed in signed Portable catalog</p>
+        <h1>{release.title}</h1>
+        <p>{release.summary}</p>
+      </header>
+      <PortableProvenance release={release} />
+      {otherVersions.length > 0 && <section className="linked-release-section"><h2>Other listed versions</h2><ul>{otherVersions.map((item) => <li key={item.version}><Link href={linkedReleasePath(item.pluginId, item.version)}>{item.version}</Link></li>)}</ul></section>}
+      <section className="linked-release-section"><h2>Before adopting this exact version</h2><p>Obtain the current signed snapshot and exact Bundle from an approved source. The adopting Host must reverify the signature, Bundle bytes, manifest, and compatibility. This Site page is not an installation grant and does not assume a generic install command.</p></section>
+      <PortableDocumentationState version={release.version} />
+    </main>
+  </div>;
+}
+
+function PortableProvenance({ release }: { release: SignedPortableRelease }) {
+  return <aside className="linked-doc-provenance">
+    <strong>Signed Portable catalog evidence, not an installation</strong>
+    <p>This exact release was verified against the configured catalog public key when Site was built. The snapshot expires {signedPortableCatalog.expiresAt ? new Date(signedPortableCatalog.expiresAt * 1000).toISOString() : 'at an unknown time'}. Reverify it locally before adoption; the base snapshot does not establish target compatibility.</p>
+    <dl>
+      <div><dt>Signed title</dt><dd>{release.title}</dd></div>
+      <div><dt>Signed summary</dt><dd>{release.summary}</dd></div>
+      <div><dt>Plugin ID</dt><dd><code>{release.pluginId}</code></dd></div>
+      <div><dt>Version</dt><dd>{release.version}</dd></div>
+      <div><dt>Publisher ID</dt><dd>{release.publisherId}</dd></div>
+      <div><dt>Catalog</dt><dd>{signedPortableCatalog.catalogId} · revision {signedPortableCatalog.revision}</dd></div>
+      <div><dt>Distribution</dt><dd>Portable Bundle</dd></div>
+      <div><dt>Bundle SHA-256</dt><dd><code>{release.artifactDigest}</code></dd></div>
+      <div><dt>Bundle size</dt><dd>{release.artifactSize} bytes</dd></div>
+      <div><dt>Manifest SHA-256</dt><dd><code>{release.manifestDigest}</code></dd></div>
+      <div><dt>Source revision</dt><dd><code>{release.sourceRevision}</code></dd></div>
+      <div><dt>License</dt><dd>{release.license}</dd></div>
+    </dl>
+    <p><a href={release.sourceUrl} rel="noopener noreferrer" target="_blank">Signed source reference</a> · <a href={release.artifactUrl} rel="noopener noreferrer" target="_blank">Signed Bundle reference</a></p>
+  </aside>;
+}
+
+function PortableDocumentationState({ version }: { version: string }) {
+  return <section className="linked-release-section"><h2>Portable documentation for {version}</h2><p>No versioned Markdown is attached to this Portable release. The signed base snapshot contains release metadata, not document references; linked Cargo or unsigned candidate documentation is not substituted.</p></section>;
 }

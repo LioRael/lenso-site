@@ -53,25 +53,31 @@ In either case, set
 `LENSO_MARKETPLACE_PUBLIC_KEY_HEX` to the independently trusted public
 identity shared by these Marketplace channels. The build verifies each exact
 signed payload, catalog identity, and validity window; missing configuration
-produces an empty signed section,
-while an incomplete or invalid configuration fails the build. The generated
-data is ignored by Git. Static pages hide expired results in the browser, but
-renewal requires a new Site build. The directory searches both signed channels
-with the same filters but labels their different distribution and target
-evidence. A Portable base snapshot does not declare target compatibility or
-carry versioned documentation. This is display evidence only: the adopting
-Host must independently verify the current signed snapshot and exact Bundle
-or crate before admission.
+produces an empty signed section, while an incomplete or invalid configuration
+fails the build. The generated data is ignored by Git. The directory hides
+expired results in the browser; prebuilt version pages remain readable with
+their build-time expiry and are not current installation authority. Renewal
+requires a new Site build. Site does not persist a catalog checkpoint across
+builds, so signature verification alone does not exclude a still-valid older
+revision. The directory searches both signed channels with the same filters
+and links each listed identity to an exact-version page,
+while labeling their different distribution and target evidence. A Portable
+base snapshot does not declare target compatibility or carry versioned
+documentation; its version page explicitly reports that absence rather than
+substituting linked or candidate content. This is display evidence only: the
+adopting Host must independently verify the current signed snapshot and exact
+Bundle or crate before admission.
 Each listed linked release gets an exact version page. The page links only to
 Markdown revisions whose bytes and digests were verified during the same build;
 the public Markdown route is read-only. The local `lenso app add` example needs
 the actual signed snapshot, trust file, and matching `.crate` from an approved
 source. Site never adopts a Plugin on behalf of a local project. Run
 `pnpm check:linked-site-integration` to build against temporary locally signed
-HTTPS Portable and linked fixtures and prove the shared directory plus linked
-version → document page/API path. This is fixture evidence, not a claim of a
-live production catalog. Separately signed release-details and Portable
-versioned documentation remain an integration step.
+HTTPS Portable and linked fixtures and prove the shared directory, both exact
+version pages, and the linked version → document page/API path. This is
+fixture evidence, not a claim of a live production catalog. Separately signed
+release-details and Portable versioned documentation remain an integration
+step once their public endpoint and immutable base-release join are available.
 
 ## Documentation model
 

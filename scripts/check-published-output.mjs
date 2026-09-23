@@ -28,7 +28,8 @@ for (const [path, markers] of [
   const html = requireFile(path);
   for (const marker of markers) if (!html.includes(marker)) failures.push(`out/${path}: missing ${JSON.stringify(marker)}`);
 }
-const candidateSigned = signedCatalog.releases.some((release) => release.pluginId === 'lenso.web-ingress' && release.version === '0.4.5');
+const candidateSigned = [...signedCatalog.releases, ...signedPortableCatalog.releases]
+  .some((release) => release.pluginId === 'lenso.web-ingress' && release.version === '0.4.5');
 if (!candidateSigned) {
   if (!requireFile('plugins/index.html').includes('Not yet catalog-signed')) failures.push('out/plugins/index.html: unsigned candidate marker missing');
   const html = requireFile('plugins/lenso.web-ingress/0.4.5/index.html');
@@ -39,6 +40,11 @@ if (!candidateSigned) {
 const pluginIndex = requireFile('plugins/index.html');
 const sitemap = requireFile('sitemap.xml');
 for (const release of signedPortableCatalog.releases) {
+  const route = `plugins/${release.pluginId}/${release.version}`;
+  const html = requireFile(`${route}/index.html`);
+  if (!html.includes(release.title) || !html.includes(release.artifactDigest)) failures.push(`out/${route}/index.html: signed Portable evidence missing`);
+  if (!pluginIndex.includes(`/${route}`)) failures.push(`out/plugins/index.html: signed Portable release link missing for ${route}`);
+  if (!sitemap.includes(`/${route}`)) failures.push(`out/sitemap.xml: signed Portable release missing for ${route}`);
   for (const marker of [release.pluginId, release.version, release.artifactDigest, 'Portable Bundle']) {
     if (!pluginIndex.includes(marker)) failures.push(`out/plugins/index.html: signed Portable release missing ${JSON.stringify(marker)}`);
   }

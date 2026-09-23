@@ -43,8 +43,10 @@ export function PluginDirectory() {
       && !target && (!distribution || distribution === 'Portable')
       && (!catalogStatus || catalogStatus === 'Signed');
   });
-  const candidateSuperseded = currentSigned.linked && signedLinkedCatalog.releases.some((release) =>
-    release.pluginId === candidateRelease.pluginId && release.version === candidateRelease.version);
+  const candidateSuperseded = (currentSigned.linked && signedLinkedCatalog.releases.some((release) =>
+    release.pluginId === candidateRelease.pluginId && release.version === candidateRelease.version))
+    || (currentSigned.portable && signedPortableCatalog.releases.some((release) =>
+      release.pluginId === candidateRelease.pluginId && release.version === candidateRelease.version));
   const visible = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     const matchesQuery = !normalized || [candidateRelease.pluginId, candidateRelease.package, candidateRelease.summary, 'http ingress web linked rust native']
@@ -79,11 +81,11 @@ export function PluginDirectory() {
           <h2 id="signed-release-heading">Signed releases</h2>
           {signedLinked.length === 0 && signedPortable.length === 0 && <p>{currentSigned.linked || currentSigned.portable ? 'No signed release matches the current filters.' : 'No current signed Portable or linked Cargo catalog is available. Candidate claims are separate.'}</p>}
           {signedPortable.map((release) => <article className="signed-release" key={`portable:${release.pluginId}@${release.version}`}>
-            <h3><code>{release.pluginId}</code> <span>{release.version}</span></h3>
+            <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.summary}</p>
             <dl><div><dt>Distribution</dt><dd>Portable Bundle</dd></div><div><dt>Publisher</dt><dd>{release.publisherId}</dd></div><div><dt>Bundle SHA-256</dt><dd><code>{release.artifactDigest}</code></dd></div><div><dt>Source revision</dt><dd><code>{release.sourceRevision}</code></dd></div><div><dt>Catalog</dt><dd>Signed revision {signedPortableCatalog.revision}</dd></div></dl>
             <p className="signed-release-note">This exact version is listed in a signed Portable snapshot verified when Site was built. Target compatibility is not declared here; verify the current snapshot and Bundle before installation. This listing does not install the Plugin.</p>
-            <a href={release.sourceUrl} rel="noopener noreferrer" target="_blank">Inspect signed source URL</a>
+            <Link href={linkedReleasePath(release.pluginId, release.version)}>Inspect exact signed Portable version</Link>
           </article>)}
           {signedLinked.map((release) => <article className="signed-release" key={`linked:${release.pluginId}@${release.version}`}>
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
@@ -113,7 +115,7 @@ export function PluginDirectory() {
               <code data-label="Plugin ID" role="cell">{candidateRelease.pluginId}</code><span data-label="Description" role="cell">{candidateRelease.summary}</span><code data-label="Version" role="cell">{candidateRelease.version}</code><span data-label="Distribution" role="cell">{candidateRelease.distribution}</span><span data-label="Target" role="cell">{candidateRelease.target}</span><span data-label="Catalog status" role="cell">{candidateRelease.catalogStatus}</span>
               <span data-label="Action" role="cell"><Link className="button button-primary button-small" href="/plugins/lenso.web-ingress/0.4.5">Inspect candidate</Link></span>
             </div>
-          ) : <p className="no-results" role="status">{candidateSuperseded ? 'This exact candidate has a current signed listing above.' : 'No candidate matches the current search and filters.'}</p>}
+          ) : <p className="no-results" role="status">{candidateSuperseded ? 'This Plugin ID and version have a current signed listing above; candidate claims remain separate.' : 'No candidate matches the current search and filters.'}</p>}
         </div>
         <p className="compatibility-note"><CircleAlert size={23} />Unknown compatibility is never treated as available.</p>
       </section>
