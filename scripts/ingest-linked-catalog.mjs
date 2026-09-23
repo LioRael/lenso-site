@@ -1,21 +1,24 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { verifyLinkedCatalog } from './linked-catalog.mjs';
-import { ingestLinkedDocuments } from './linked-documents.mjs';
+import { documentSlug, ingestVerifiedDocuments } from './linked-documents.mjs';
 import { verifyPortableCatalog } from './portable-catalog.mjs';
+import { joinPortableReleaseDetails, verifyReleaseDetails } from './release-details.mjs';
 
 const linkedUrl = process.env.LENSO_MARKETPLACE_LINKED_CARGO_URL;
 const portableUrl = process.env.LENSO_MARKETPLACE_PORTABLE_URL;
+const detailsUrl = process.env.LENSO_MARKETPLACE_RELEASE_DETAILS_URL;
 const trustNames = [
   'LENSO_MARKETPLACE_CATALOG_ID',
   'LENSO_MARKETPLACE_KEY_ID',
   'LENSO_MARKETPLACE_PUBLIC_KEY_HEX',
 ];
 const trustValues = trustNames.map((name) => process.env[name]);
-if ([linkedUrl, portableUrl, ...trustValues].some(Boolean)
+if ([linkedUrl, portableUrl, detailsUrl, ...trustValues].some(Boolean)
   && (!(linkedUrl || portableUrl) || trustValues.some((value) => !value))) {
   throw new Error(`signed catalog build requires at least one snapshot URL and all of ${trustNames.join(', ')}`);
 }
+if (detailsUrl && !portableUrl) throw new Error('release details require the signed Portable base snapshot');
 const trust = { catalogId: trustValues[0], keyId: trustValues[1], publicKeyHex: trustValues[2] };
 
 async function fetchSnapshot(endpoint) {
@@ -38,9 +41,19 @@ async function fetchSnapshot(endpoint) {
 }
 
 let catalog = { catalogId: null, revision: null, expiresAt: null, releases: [] };
-let portableCatalog = { catalogId: null, revision: null, expiresAt: null, releases: [] };
+let portableCatalog = { catalogId: null, revision: null, expiresAt: null, detailsRevision: null, detailsExpiresAt: null, releases: [] };
 if (linkedUrl) catalog = verifyLinkedCatalog(await fetchSnapshot(linkedUrl), trust);
-if (portableUrl) portableCatalog = verifyPortableCatalog(await fetchSnapshot(portableUrl), trust);
+if (portableUrl) {
+  const portableBase = verifyPortableCatalog(await fetchSnapshot(portableUrl), trust);
+  portableCatalog = detailsUrl
+    ? joinPortableReleaseDetails(portableBase, verifyReleaseDetails(await fetchSnapshot(detailsUrl), trust))
+    : { catalogId: portableBase.catalogId, revision: portableBase.revision,
+      expiresAt: portableBase.expiresAt, detailsRevision: null, detailsExpiresAt: null,
+      releases: portableBase.releases.map((release) => ({ ...release, documentation: [] })) };
+  portableCatalog.releases = portableCatalog.releases.map((release) => ({ ...release,
+    documentation: release.documentation.map((document) => ({ ...document,
+      slug: documentSlug(release.pluginId, release.version, document, 'portable') })) }));
+}
 const allowedHosts = new Set((process.env.LENSO_MARKETPLACE_DOCUMENT_HOSTS ?? '')
   .split(',').map((host) => host.trim()).filter(Boolean));
 for (const host of allowedHosts) {
@@ -48,9 +61,11 @@ for (const host of allowedHosts) {
     throw new Error('LENSO_MARKETPLACE_DOCUMENT_HOSTS must contain exact HTTPS host names');
   }
 }
-const documents = await ingestLinkedDocuments(catalog, allowedHosts);
+const documents = await ingestVerifiedDocuments([
+  { catalog, channel: 'linked' }, { catalog: portableCatalog, channel: 'portable' },
+], allowedHosts);
 await mkdir(resolve(import.meta.dirname, '../lib/.generated'), { recursive: true });
 await writeFile(resolve(import.meta.dirname, '../lib/.generated/linked-catalog.json'), `${JSON.stringify(catalog)}\n`);
 await writeFile(resolve(import.meta.dirname, '../lib/.generated/portable-catalog.json'), `${JSON.stringify(portableCatalog)}\n`);
 await writeFile(resolve(import.meta.dirname, '../lib/.generated/linked-documents.json'), `${JSON.stringify(documents)}\n`);
-console.log(`Signed Site catalogs: linked ${catalog.catalogId ? `${catalog.catalogId} revision ${catalog.revision} (${catalog.releases.length} listed releases, ${Object.keys(documents).length} documents)` : 'not configured'}; portable ${portableCatalog.catalogId ? `${portableCatalog.catalogId} revision ${portableCatalog.revision} (${portableCatalog.releases.length} listed releases)` : 'not configured'}.`);
+console.log(`Signed Site catalogs: linked ${catalog.catalogId ? `${catalog.catalogId} revision ${catalog.revision} (${catalog.releases.length} listed releases)` : 'not configured'}; portable ${portableCatalog.catalogId ? `${portableCatalog.catalogId} revision ${portableCatalog.revision} (${portableCatalog.releases.length} listed releases)` : 'not configured'}; details ${portableCatalog.detailsRevision ?? 'not configured'}; verified Markdown ${Object.keys(documents).length}.`);

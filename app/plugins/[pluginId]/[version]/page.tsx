@@ -106,7 +106,7 @@ function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease
           <Link href={linkedDocumentPath(release.pluginId, release.version, document.slug)}>{document.topic}</Link> · {document.language} · revision {document.revision}{document.target ? ` · ${document.target}` : ''}
         </li>)}</ul>}
       </section>
-      {portable && <PortableDocumentationState version={portable.version} />}
+      {portable && <PortableDocumentationState release={portable} />}
     </main>
   </div>;
 }
@@ -125,7 +125,7 @@ function SignedPortableReleasePage({ release }: { release: SignedPortableRelease
       <PortableProvenance release={release} />
       {otherVersions.length > 0 && <section className="linked-release-section"><h2>Other listed versions</h2><ul>{otherVersions.map((item) => <li key={item.version}><Link href={linkedReleasePath(item.pluginId, item.version)}>{item.version}</Link></li>)}</ul></section>}
       <section className="linked-release-section"><h2>Before adopting this exact version</h2><p>Obtain the current signed snapshot and exact Bundle from an approved source. The adopting Host must reverify the signature, Bundle bytes, manifest, and compatibility. This Site page is not an installation grant and does not assume a generic install command.</p></section>
-      <PortableDocumentationState version={release.version} />
+      <PortableDocumentationState release={release} />
     </main>
   </div>;
 }
@@ -152,8 +152,12 @@ function PortableProvenance({ release }: { release: SignedPortableRelease }) {
   </aside>;
 }
 
-function PortableDocumentationState({ version }: { version: string }) {
-  return <section className="linked-release-section"><h2>Portable documentation for {version}</h2><p>No versioned Markdown is attached to this Portable release. The signed base snapshot contains release metadata, not document references; linked Cargo or unsigned candidate documentation is not substituted.</p></section>;
+function PortableDocumentationState({ release }: { release: SignedPortableRelease }) {
+  return <section className="linked-release-section"><h2>Portable documentation for {release.version}</h2>
+    {release.documentation.length > 0 ? <><p>These exact revisions are named by signed release details matching this Portable base release; each Markdown body was verified at Site build.</p><ul>{release.documentation.map((document) => <li key={`${document.id}@${document.revision}`}>
+      <Link href={linkedDocumentPath(release.pluginId, release.version, document.slug)}>{document.topic}</Link> · {document.language} · revision {document.revision}{document.target ? ` · ${document.target}` : ''}
+    </li>)}</ul></> : <p>No versioned Markdown is attached to this Portable release. Linked Cargo or unsigned candidate documentation is not substituted.</p>}
+  </section>;
 }
 
 function ProvenanceFacts({ items }: { items: readonly (readonly [string, ReactNode])[] }) {

@@ -120,6 +120,7 @@ button, a, input, select { outline-offset: 3px; }
 .linked-doc-provenance { padding: 20px; border: 1px solid #7cb4ff; border-radius: 8px; background: var(--blue-soft); }
 .linked-doc-provenance p { margin: 8px 0 16px; color: var(--ink); line-height: 1.55; }
 .linked-doc-provenance dl { margin: 0 0 14px; }
+.linked-doc-provenance dd, .linked-doc-provenance code { overflow-wrap: anywhere; }
 .linked-release-section { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
 .linked-release-section h2 { margin: 0 0 12px; font-size: 23px; line-height: 1.25; }
 .linked-release-section p { margin: 0; line-height: 1.6; }

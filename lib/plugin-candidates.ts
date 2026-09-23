@@ -50,11 +50,14 @@ export type SignedPortableRelease = {
   artifactDigest: string;
   artifactSize: number;
   manifestDigest: string;
+  documentation: SignedLinkedRelease['documentation'];
 };
 export type SignedPortableCatalog = {
   catalogId: string | null;
   revision: number | null;
   expiresAt: number | null;
+  detailsRevision: number | null;
+  detailsExpiresAt: number | null;
   releases: SignedPortableRelease[];
 };
 export const signedPortableCatalog = portableGenerated as SignedPortableCatalog;

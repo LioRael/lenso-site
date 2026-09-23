@@ -1,4 +1,4 @@
-import { createPublicKey, verify } from 'node:crypto';
+import { createHash, createPublicKey, verify } from 'node:crypto';
 
 // Mirrors the public lenso-plugin-catalog Snapshot v1 wire contract. This
 // verifies display data only; installation must verify the snapshot again.
@@ -131,6 +131,19 @@ export function verifyPortableCatalog(raw, trust, now = Math.floor(Date.now() / 
     catalogId: snapshot.catalog_id,
     revision: snapshot.revision,
     expiresAt: snapshot.expires_at,
+    // Keep all identities only in build memory so signed details can be checked
+    // against yanked/revoked history without displaying those releases.
+    baseReleases: snapshot.releases.map((release) => ({
+      pluginId: release.plugin_id,
+      version: release.version,
+      identity: `sha256:${createHash('sha256').update(JSON.stringify([
+        release.publisher_id, release.source_url, release.source_revision,
+        release.artifact.digest, release.artifact.size, release.artifact.manifest_digest,
+      ])).digest('hex')}`,
+      artifactDigest: release.artifact.digest,
+      artifactSize: release.artifact.size,
+      manifestDigest: release.artifact.manifest_digest,
+    })),
     releases: snapshot.releases.filter((release) => release.availability === 'listed').map((release) => ({
       pluginId: release.plugin_id,
       version: release.version,

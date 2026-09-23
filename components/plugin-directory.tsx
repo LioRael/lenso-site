@@ -91,6 +91,14 @@ export function PluginDirectory() {
             <dl><div><dt>Distribution</dt><dd>Portable Bundle</dd></div><div><dt>Publisher</dt><dd>{release.publisherId}</dd></div><div><dt>Bundle SHA-256</dt><dd><code>{release.artifactDigest}</code></dd></div><div><dt>Source revision</dt><dd><code>{release.sourceRevision}</code></dd></div><div><dt>Catalog</dt><dd>Signed revision {signedPortableCatalog.revision}</dd></div></dl>
             <p className="signed-release-note">This exact version is listed in a signed Portable snapshot verified when Site was built. Target compatibility is not declared here; verify the current snapshot and Bundle before installation. This listing does not install the Plugin.</p>
             <Link href={linkedReleasePath(release.pluginId, release.version)}>Inspect exact signed Portable version</Link>
+            {release.documentation.length > 0 && <div className="signed-release-documents">
+              <h4>Portable versioned documentation</h4>
+              <ul>{release.documentation.map((document) => <li key={`${document.id}@${document.revision}`}>
+                <Link href={linkedDocumentPath(release.pluginId, release.version, document.slug)}>{document.topic}</Link> · {document.language} · {document.id}@{document.revision}
+                {document.target && <> · {document.target}</>}
+                <small>Signed release-details reference and Site-verified body: {document.digest}.</small>
+              </li>)}</ul>
+            </div>}
           </article>)}
           {signedLinked.map((release) => <article className="signed-release" key={`linked:${release.pluginId}@${release.version}`}>
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>

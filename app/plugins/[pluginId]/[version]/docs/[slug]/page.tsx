@@ -3,43 +3,46 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import ReactMarkdown from 'react-markdown';
 import { SiteHeader } from '@/components/site-header';
-import { signedLinkedCatalog } from '@/lib/plugin-candidates';
+import { signedLinkedCatalog, signedPortableCatalog } from '@/lib/plugin-candidates';
 import { linkedDocumentApiPath, linkedReleasePath } from '@/lib/linked-document-paths';
-import { staticLinkedDocumentParams, verifiedLinkedDocuments } from '@/lib/linked-documents';
+import { staticVerifiedDocumentParams, verifiedSignedDocuments } from '@/lib/linked-documents';
 
 type Params = Promise<{ pluginId: string; version: string; slug: string }>;
 
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return staticLinkedDocumentParams();
+  return staticVerifiedDocumentParams();
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { pluginId, version, slug } = await params;
-  const document = verifiedLinkedDocuments[slug];
+  const document = verifiedSignedDocuments[slug];
   if (!document || document.pluginId !== pluginId || document.version !== version) return {};
   return { title: `${document.topic} · ${pluginId} ${version}`, description: `${document.topic} for ${pluginId}@${version}` };
 }
 
-export default async function LinkedDocumentationPage({ params }: { params: Params }) {
+export default async function SignedDocumentationPage({ params }: { params: Params }) {
   const { pluginId, version, slug } = await params;
-  const document = verifiedLinkedDocuments[slug];
+  const document = verifiedSignedDocuments[slug];
   if (!document || document.pluginId !== pluginId || document.version !== version) notFound();
+  const catalog = document.channel === 'portable' ? signedPortableCatalog : signedLinkedCatalog;
+  const revision = document.channel === 'portable' ? signedPortableCatalog.detailsRevision : signedLinkedCatalog.revision;
+  const expiresAt = document.channel === 'portable' ? signedPortableCatalog.detailsExpiresAt : signedLinkedCatalog.expiresAt;
   return <div className="linked-doc-shell">
     <SiteHeader active="plugins" />
     <main className="linked-doc-main">
       <nav aria-label="Breadcrumb" className="linked-doc-breadcrumb"><Link href="/plugins">Plugins</Link><span>/</span><Link href={linkedReleasePath(pluginId, version)}>{pluginId}@{version}</Link></nav>
       <header className="linked-doc-header">
-        <p className="linked-doc-eyebrow">Verified versioned Markdown · {document.language}</p>
+        <p className="linked-doc-eyebrow">Verified {document.channel === 'portable' ? 'Portable' : 'linked Cargo'} versioned Markdown · {document.language}</p>
         <h1>{document.topic}</h1>
         <p>{pluginId}@{version} · document {document.documentId}@{document.revision}</p>
         {document.target && <p>Target: {document.target}</p>}
       </header>
       <aside className="linked-doc-provenance">
         <strong>Content verified at Site build</strong>
-        <p>The signed catalog names this exact revision, size and SHA-256. This third-party Markdown is displayed as data; HTML, images and executable MDX are disabled.</p>
-        <dl><div><dt>Digest</dt><dd><code>{document.digest}</code></dd></div><div><dt>Catalog revision</dt><dd>{signedLinkedCatalog.revision}</dd></div><div><dt>Catalog expires</dt><dd>{signedLinkedCatalog.expiresAt ? new Date(signedLinkedCatalog.expiresAt * 1000).toISOString() : 'unknown'}</dd></div></dl>
+        <p>The signed {document.channel === 'portable' ? 'release details and exact Portable base' : 'linked Cargo catalog'} name this exact revision, size and SHA-256. This third-party Markdown is displayed as data; HTML, images and executable MDX are disabled.</p>
+        <dl><div><dt>Digest</dt><dd><code>{document.digest}</code></dd></div><div><dt>Catalog</dt><dd>{catalog.catalogId}</dd></div><div><dt>{document.channel === 'portable' ? 'Details revision' : 'Catalog revision'}</dt><dd>{revision}</dd></div><div><dt>{document.channel === 'portable' ? 'Signed details expire' : 'Signed catalog expires'}</dt><dd>{expiresAt ? new Date(expiresAt * 1000).toISOString() : 'unknown'}</dd></div></dl>
         <a href={linkedDocumentApiPath(pluginId, version, slug)}>Read verified Markdown API</a>
       </aside>
       <article className="linked-doc-body">

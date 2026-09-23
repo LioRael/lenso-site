@@ -10,7 +10,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     linkedReleasePath(release.pluginId, release.version),
     ...release.documentation.map((document) => linkedDocumentPath(release.pluginId, release.version, document.slug)),
   ]);
-  const portable = signedPortableCatalog.releases.map((release) => linkedReleasePath(release.pluginId, release.version));
+  const portable = signedPortableCatalog.releases.flatMap((release) => [
+    linkedReleasePath(release.pluginId, release.version),
+    ...release.documentation.map((document) => linkedDocumentPath(release.pluginId, release.version, document.slug)),
+  ]);
   return [...new Set(['/', '/plugins', ...source.getPages().map((page) => page.url), ...linked, ...portable])]
     .map((path) => ({ url: new URL(path, 'https://lenso.dev').toString() }));
 }

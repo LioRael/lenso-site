@@ -1,8 +1,9 @@
 import generated from './.generated/linked-documents.json';
 
-export type VerifiedLinkedDocument = {
+export type VerifiedSignedDocument = {
   pluginId: string;
   version: string;
+  channel: 'linked' | 'portable';
   slug: string;
   documentId: string;
   revision: string;
@@ -14,10 +15,10 @@ export type VerifiedLinkedDocument = {
   content: string;
 };
 
-export const verifiedLinkedDocuments = generated as Record<string, VerifiedLinkedDocument>;
+export const verifiedSignedDocuments = generated as Record<string, VerifiedSignedDocument>;
 
-export function staticLinkedDocumentParams() {
-  const documents = Object.values(verifiedLinkedDocuments).map(({ pluginId, version, slug }) => ({ pluginId, version, slug }));
+export function staticVerifiedDocumentParams() {
+  const documents = Object.values(verifiedSignedDocuments).map(({ pluginId, version, slug }) => ({ pluginId, version, slug }));
   // Next static export requires one generated path even when no catalog is configured.
   // A leading underscore cannot be a valid signed Plugin ID.
   return documents.length > 0 ? documents : [{ pluginId: '_no-signed-document', version: '_none', slug: '_none' }];

@@ -48,6 +48,13 @@ To include current Portable releases in a static build, set
 `/api/marketplace/v1/snapshot` endpoint. To include source-only linked Cargo
 releases, set `LENSO_MARKETPLACE_LINKED_CARGO_URL` to its HTTPS
 `/api/marketplace/v1/linked-cargo` endpoint. Either or both may be configured.
+To attach versioned Portable Markdown, also set
+`LENSO_MARKETPLACE_RELEASE_DETAILS_URL` to the raw signed HTTPS
+`/api/marketplace/v1/release-details` endpoint; this requires the Portable
+base snapshot. The build verifies the separate details signature, validity
+window and exact immutable base-release identity before displaying any
+document reference. The details endpoint supplies signed URL, byte length and
+SHA-256 metadata, **not** hosted or sanitized document bytes.
 In either case, set
 `LENSO_MARKETPLACE_CATALOG_ID`, `LENSO_MARKETPLACE_KEY_ID`, and
 `LENSO_MARKETPLACE_PUBLIC_KEY_HEX` to the independently trusted public
@@ -63,21 +70,33 @@ revision. The directory searches both signed channels with the same filters
 and links each listed identity to an exact-version page,
 while labeling their different distribution and target evidence. A Portable
 base snapshot does not declare target compatibility or carry versioned
-documentation; its version page explicitly reports that absence rather than
-substituting linked or candidate content. This is display evidence only: the
-adopting Host must independently verify the current signed snapshot and exact
-Bundle or crate before admission.
-Each listed linked release gets an exact version page. The page links only to
+documentation. Without matching signed release details, its version page
+reports no versioned Markdown rather than substituting linked or candidate
+content. With details, linked and Portable documents have separate route
+identities even for the same Plugin ID, version, document ID and revision.
+This is display evidence only: the adopting Host must independently verify
+the current signed snapshot and exact Bundle or crate before admission.
+Each listed release gets an exact version page. The page links only to
 Markdown revisions whose bytes and digests were verified during the same build;
-the public Markdown route is read-only. The local `lenso app add` example needs
+the public Markdown route is read-only. Set
+`LENSO_MARKETPLACE_DOCUMENT_HOSTS` to a comma-separated exact host:port
+allowlist for documentation, using only operator-trusted document
+infrastructure. The build never follows redirects, rejects unapproved hosts,
+and enforces per-document and aggregate byte limits before rendering Markdown
+with HTML, images and executable MDX disabled. A DNS name allowlist alone
+does not prevent a trusted host from resolving to a private/rebound address or
+an operator proxy from redirecting traffic; deploy the Site build with
+network egress policy and trusted DNS/proxy settings. Do not allow arbitrary
+publisher-supplied hosts. The local `lenso app add` example needs
 the actual signed snapshot, trust file, and matching `.crate` from an approved
 source. Site never adopts a Plugin on behalf of a local project. Run
 `pnpm check:linked-site-integration` to build against temporary locally signed
-HTTPS Portable and linked fixtures and prove the shared directory, both exact
-version pages, and the linked version → document page/API path. This is
-fixture evidence, not a claim of a live production catalog. Separately signed
-release-details and Portable versioned documentation remain an integration
-step once their public endpoint and immutable base-release join are available.
+HTTPS Portable, release-details and linked fixtures and prove the shared
+directory, exact versions, and separate linked/Portable document page/API
+paths. This is fixture evidence, not a claim of a live production catalog or
+cross-deployment anti-rollback. Signed details can be amended additively by
+Market; Site needs a fresh build to display new revisions. No persistent
+details checkpoint is stored across Site deployments.
 
 ## Documentation model
 

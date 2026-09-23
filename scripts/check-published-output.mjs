@@ -48,6 +48,14 @@ for (const release of signedPortableCatalog.releases) {
   for (const marker of [release.pluginId, release.version, release.artifactDigest, 'Portable Bundle']) {
     if (!pluginIndex.includes(marker)) failures.push(`out/plugins/index.html: signed Portable release missing ${JSON.stringify(marker)}`);
   }
+  for (const document of release.documentation) {
+    const documentRoute = `${route}/docs/${document.slug}`;
+    const page = requireFile(`${documentRoute}/index.html`);
+    const markdown = requireFile(`api/${documentRoute}/content.md`);
+    if (!page.includes(document.topic) || !page.includes('Portable')) failures.push(`out/${documentRoute}/index.html: Portable document provenance missing`);
+    if (markdown !== signedDocuments[document.slug]?.content || signedDocuments[document.slug]?.channel !== 'portable') failures.push(`out/api/${documentRoute}/content.md: Portable verified Markdown mismatch`);
+    if (!sitemap.includes(`/${documentRoute}`)) failures.push(`out/sitemap.xml: signed Portable document missing for ${documentRoute}`);
+  }
 }
 for (const release of signedCatalog.releases) {
   const route = `plugins/${release.pluginId}/${release.version}`;
@@ -60,7 +68,7 @@ for (const release of signedCatalog.releases) {
     const page = requireFile(`${documentRoute}/index.html`);
     const markdown = requireFile(`api/${documentRoute}/content.md`);
     if (!page.includes(document.topic)) failures.push(`out/${documentRoute}/index.html: document topic missing`);
-    if (markdown !== signedDocuments[document.slug]?.content) failures.push(`out/api/${documentRoute}/content.md: verified Markdown mismatch`);
+    if (markdown !== signedDocuments[document.slug]?.content || signedDocuments[document.slug]?.channel !== 'linked') failures.push(`out/api/${documentRoute}/content.md: linked verified Markdown mismatch`);
     if (!sitemap.includes(`/${documentRoute}`)) failures.push(`out/sitemap.xml: signed document missing for ${documentRoute}`);
   }
 }

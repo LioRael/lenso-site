@@ -1,16 +1,16 @@
-import { staticLinkedDocumentParams, verifiedLinkedDocuments } from '@/lib/linked-documents';
+import { staticVerifiedDocumentParams, verifiedSignedDocuments } from '@/lib/linked-documents';
 
 type Params = Promise<{ pluginId: string; version: string; slug: string }>;
 
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return staticLinkedDocumentParams();
+  return staticVerifiedDocumentParams();
 }
 
 export async function GET(_request: Request, { params }: { params: Params }) {
   const { pluginId, version, slug } = await params;
-  const document = verifiedLinkedDocuments[slug];
+  const document = verifiedSignedDocuments[slug];
   if (!document || document.pluginId !== pluginId || document.version !== version) {
     return new Response('Document not found', { status: 404 });
   }
