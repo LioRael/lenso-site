@@ -3,5 +3,5 @@ export function linkedDocumentPath(pluginId: string, version: string, slug: stri
 }
 
 export function linkedDocumentApiPath(pluginId: string, version: string, slug: string) {
-  return `/api/plugins/${encodeURIComponent(pluginId)}/${encodeURIComponent(version)}/docs/${slug}`;
+  return `/api/plugins/${encodeURIComponent(pluginId)}/${encodeURIComponent(version)}/docs/${slug}/content.md`;
 }
