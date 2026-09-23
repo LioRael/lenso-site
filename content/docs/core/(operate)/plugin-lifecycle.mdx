@@ -1,0 +1,75 @@
+---
+title: Disable or withdraw a Plugin
+description: Inspect the next App generation before removing a selected Plugin or an exact linked Cargo source.
+---
+
+This is a **local source-checkout workflow**, not a claim that a matching public
+catalog release is available. Build the `lenso` CLI from the same Rust checkout
+as your App, as in [Create a local Web App](/docs/core/app-quickstart).
+
+Disabling an Instance, withdrawing a linked source, and migrating its data are
+different operations. Keep the currently running distribution and its data
+until the replacement passes `app check`, `app show`, and an application-level
+smoke test. An App build does not overwrite an existing output directory.
+
+## Disable one Instance for the next build
+
+In an App that already adopted `example.web`, inspect the exact selection:
+
+```sh
+"$LENSO_CLI" app facts --root dist --json
+"$LENSO_CLI" app show --root dist --json
+```
+
+The `plugins/example.web/default.toml` file is App-owned selection intent.
+Create the empty `plugins/example.web/default.disabled` marker to disable that
+Instance in the **next** App generation. Keep `default.toml`: it is the
+configuration and selection source that you may need when enabling the
+Instance again. The marker does not stop a Host that is already running.
+
+```sh
+touch plugins/example.web/default.disabled
+"$LENSO_CLI" app build --out dist-disabled
+"$LENSO_CLI" app check --root dist-disabled
+"$LENSO_CLI" app show --root dist-disabled --json
+"$LENSO_CLI" app start --from dist-disabled --check
+```
+
+Check the resolved Instances and bindings in `app show`: a dependent Plugin
+may make this build invalid, which is a useful refusal, not a reason to remove
+the dependency silently. Run the business operation that previously used the
+Plugin against a separately started replacement Host before changing your
+active deployment. To enable the Instance again, remove the `.disabled`
+marker as a reviewed project edit and repeat the checks with a new output
+directory.
+
+## Withdraw an exact signed linked Cargo source
+
+`app unadopt` currently applies **only** to a source previously adopted from a
+signed linked Cargo snapshot with `app add PLUGIN_ID@VERSION --linked-snapshot
+... --trust ... --crate ...`. It is not a general uninstall command for local
+Plugins, portable Bundles, or external services.
+
+After checking that no required binding needs the Instance, use its exact
+adopted coordinates:
+
+```sh
+"$LENSO_CLI" app unadopt example.web@0.4.5 --root .
+"$LENSO_CLI" app discover --root . --json
+"$LENSO_CLI" app build --out dist-withdrawn
+"$LENSO_CLI" app check --root dist-withdrawn
+"$LENSO_CLI" app show --root dist-withdrawn --json
+```
+
+The command validates the source lock and digest, then moves the exact source
+and unmodified Plugin Root intent into `.lenso/trash/linked-cargo/` and prints
+the recovery location. If either contains user changes, it refuses and leaves
+them for review. It does **not** delete a database, perform a schema migration,
+or prove application data compatibility. Preserve a backup and validate the
+replacement's real reads and writes before retiring the old Host.
+
+An exact-version upgrade is currently a separately reviewed adoption and
+application migration, not an automatic `upgrade` operation. Check target,
+contract, permissions, data compatibility, and the new distribution before
+switching. If the required `.crate` or its dependencies are not available,
+report that exact boundary; a catalog listing alone is not a runnable upgrade.

@@ -1,0 +1,67 @@
+---
+title: 停用或撤回插件
+description: 移除插件实例或精确版本的 linked Cargo 源码前，先验证下一代应用。
+---
+
+这是一条**本地源码候选流程**，不代表相应版本已在公共目录发布。请像
+[创建本地 Web 应用](/docs/zh/core/app-quickstart) 一样，从与应用匹配的
+Rust 源码检出构建 `lenso` CLI。
+
+停用实例、撤回 linked 源码和迁移数据是三种不同操作。新产物通过
+`app check`、`app show` 和业务冒烟测试前，保留当前运行的产物及其数据。
+`app build` 不覆盖已有输出目录。
+
+## 为下一次构建停用一个实例
+
+对于已采用 `example.web` 的应用，先检查实际选择：
+
+```sh
+"$LENSO_CLI" app facts --root dist --json
+"$LENSO_CLI" app show --root dist --json
+```
+
+`plugins/example.web/default.toml` 是应用拥有的选择意图。创建空文件
+`plugins/example.web/default.disabled`，会在**下一代**应用中停用该实例。
+保留 `default.toml`，以后重新启用时仍需要它。标记文件不会停止已经
+运行的 Host。
+
+```sh
+touch plugins/example.web/default.disabled
+"$LENSO_CLI" app build --out dist-disabled
+"$LENSO_CLI" app check --root dist-disabled
+"$LENSO_CLI" app show --root dist-disabled --json
+"$LENSO_CLI" app start --from dist-disabled --check
+```
+
+在 `app show` 中检查解析后的实例与绑定。若其他插件依赖此实例，构建
+失败是正确的拒绝，不能悄悄移除依赖。切换正在使用的产物前，单独启动
+候选 Host，验证原先依赖该插件的真实业务操作。重新启用时，经过审查
+后移除 `.disabled` 标记，并用新的输出目录重复检查。
+
+## 撤回精确版本的 signed linked Cargo 源码
+
+目前 `app unadopt` **只适用于**先前以签名快照、公共信任配置和精确
+`.crate` 文件，通过 `app add PLUGIN_ID@VERSION --linked-snapshot ...
+--trust ... --crate ...` 采用的源码。它不是本地插件、portable Bundle
+或外部服务的通用卸载命令。
+
+确认没有必需的绑定后，指定已采用的精确坐标：
+
+```sh
+"$LENSO_CLI" app unadopt example.web@0.4.5 --root .
+"$LENSO_CLI" app discover --root . --json
+"$LENSO_CLI" app build --out dist-withdrawn
+"$LENSO_CLI" app check --root dist-withdrawn
+"$LENSO_CLI" app show --root dist-withdrawn --json
+```
+
+命令会验证源码锁及摘要，把未被改动的精确源码和 Plugin Root 意图移到
+`.lenso/trash/linked-cargo/`，并打印可恢复位置。如其中有用户改动，
+它会拒绝并保留现场。命令**不会**删除数据库、执行 schema 迁移，也
+不能证明业务数据兼容。退役旧 Host 前，请保留备份，并测试替代版本的
+真实读写。
+
+精确版本升级目前仍是分别审查的新版本采用和业务迁移，不是自动
+`upgrade` 操作。切换前核对 target、契约、权限、数据兼容性和新产物。
+若所需 `.crate` 或依赖版本不可得，应报告精确阻塞；目录条目本身
+不能证明升级后的应用可运行。
