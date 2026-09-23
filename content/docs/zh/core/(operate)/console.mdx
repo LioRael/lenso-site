@@ -103,8 +103,9 @@ Console 持有 Shell、Selected-App Context、Identity Catalog 与 Integration P
 内贡献 Projects 内容；它不会替换 Shell，也不会自动获得完整授权。关于这条边界，继续阅读
 [打开 Projects](/docs/zh/core/projects)。
 
-Marketplace 仍是等待首次实现的设计。跨 App Console 也不是当前产品承诺。在其所有者仓库
-提供已实现且验证过的路径前，不要把这两项写入操作 Runbook。
+Marketplace 已有 Directory 与签名发布 API，Site 也有本地 Plugin 目录界面；但这不等于
+Console 安装流程或 Site 生产切换已通过验收。跨 App Console 同样不是当前产品承诺。
+在各自所有者仓库提供精确且经过测试的发布路径前，不要把这些集成写成可执行的操作 Runbook。
 
 如果故障超出 Console 边界，回到[检查与排障 App](/docs/zh/core/inspect-an-app)。它会先区分
 Host 设置、Plugin Root Resolution 与 Runtime Failure，再决定是否需要修改业务 Plugin。
