@@ -19,10 +19,10 @@ function requireFile(path) {
 for (const path of ['index.html', 'plugins/index.html', 'plugins/lenso.web-ingress/0.4.5/index.html', 'docs/index.html', 'docs/zh/index.html', 'api/search', 'llms.txt', 'llms-full.txt', 'robots.txt', 'sitemap.xml']) requireFile(path);
 
 for (const [path, markers] of [
-  ['index.html', ['Build the system.', 'Choose the shortest path', 'Browse plugins']],
+  ['index.html', ['Build the system.', 'Choose the shortest path', 'Preview app quickstart', 'Browse plugins']],
   ['plugins/index.html', ['Candidate releases', 'lenso.web-ingress']],
-  ['docs/index.html', ['Lenso documentation', 'What do you want to build?']],
-  ['docs/zh/index.html', ['Lenso 文档', '你想构建什么？']],
+  ['docs/index.html', ['Lenso documentation', 'Choose your role', 'Build an App', 'Develop a Plugin', 'Extend the framework']],
+  ['docs/zh/index.html', ['Lenso 文档', '选择你的角色', '构建 App', '开发 Plugin', '扩展框架']],
 ]) {
   const html = requireFile(path);
   for (const marker of markers) if (!html.includes(marker)) failures.push(`out/${path}: missing ${JSON.stringify(marker)}`);

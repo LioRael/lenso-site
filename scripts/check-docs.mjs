@@ -24,6 +24,7 @@ const requiredCurrentPages = [
   "index.mdx",
   "core/index.mdx",
   "core/(start)/engine-dx.mdx",
+  "core/(start)/app-quickstart.mdx",
   "core/(plugins)/file-conventions.mdx",
   "core/(operate)/app-console.mdx",
   "core/(start)/mental-model.mdx",
@@ -329,6 +330,24 @@ for (const marker of ["Resolved App Plan", "Runtime Driver", "Execution Adapter"
 }
 
 for (const [file, markers] of [
+  ["content/docs/core/(start)/app-quickstart.mdx", [
+    "Local candidate preview",
+    "app create hello-web --web",
+    "app dev",
+    "Hello, Ada!",
+    "app build --out dist-review",
+    "app check --root dist-review",
+    "Use a coding agent for these same steps",
+  ]],
+  ["content/docs/zh/core/(start)/app-quickstart.mdx", [
+    "本地候选预览",
+    "app create hello-web --web",
+    "app dev",
+    "Hello, Ada!",
+    "app build --out dist-review",
+    "app check --root dist-review",
+    "让 Coding Agent 执行相同步骤",
+  ]],
   ["content/docs/core/(start)/first-app-change.mdx", [
     "lenso app init",
     "lenso plugins add",

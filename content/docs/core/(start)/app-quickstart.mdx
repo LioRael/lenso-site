@@ -1,0 +1,103 @@
+---
+title: Create a local Web App
+description: Preview the source-built App workflow and finish one browser greeting without a catalog release.
+---
+
+> **Local candidate preview.** `app create --web` is implemented in the current
+> `lenso-cli` source checkout, but this page does not claim that an npm/Cargo
+> release contains it or that every generated dependency is published. Use a
+> matching local CLI build. If a dependency is unavailable, stop and record its
+> exact version; a source scaffold is not a successful independent build.
+
+This path creates one App-owned Web Plugin, starts its generated Host, and uses
+the browser form to make a real `POST /greetings` request. It does not need a
+Marketplace listing. Human and coding-agent users follow the **same commands
+and completion check** below.
+
+## 1. Build the CLI from the matching source checkout
+
+From the root of the current `LioRael/lenso` source checkout, with Rust and
+Cargo installed:
+
+```sh
+cargo build --locked -p lenso-cli --bin lenso
+LENSO_CLI="$(pwd)/target/debug/lenso"
+"$LENSO_CLI" app create --help
+```
+
+Confirm that help lists `--web`. The installed `lenso` on your `PATH` may be an
+older public release; use the absolute `LENSO_CLI` path for every step here.
+The starter runs a Cargo check during creation, so its pinned dependencies
+must be available before this preview can continue.
+
+## 2. Create and run the same App
+
+Use the same shell as above. A temporary parent keeps this preview outside the
+framework checkout; choose your own empty parent instead for a durable App.
+
+```sh
+APP_PARENT="$(mktemp -d)"
+"$LENSO_CLI" app create "$APP_PARENT/hello-web" --web
+cd "$APP_PARENT/hello-web"
+"$LENSO_CLI" app dev
+```
+
+The App has an `app/local.starter/` Rust Plugin and a Plugin-owned
+`public/index.html`. The generated Host supplies Web Ingress; you did not
+write a Host Catalog or Plan. Keep `app dev` running and open the exact
+`Listening on http://...` address printed by the Host. Do not assume a fixed
+port.
+
+Enter **Ada** in the page's form and choose **Create greeting**. The page
+should show **Hello, Ada!** from the Plugin's `POST /greetings` endpoint.
+Inspect the browser console and network response if it does not. Seeing only
+the HTML page is not completion: the POST must succeed.
+
+## 3. Build and inspect the result
+
+Stop `app dev`, then run from `hello-web/`:
+
+```sh
+"$LENSO_CLI" app build --out dist-review
+"$LENSO_CLI" app check --root dist-review
+"$LENSO_CLI" app show --root dist-review --json
+"$LENSO_CLI" app start --from dist-review --check
+```
+
+`app build` refuses to overwrite an existing output directory. The check and
+show commands inspect the built distribution's Plugin Root and resolved result;
+`start --check` activates and shuts down. A successful source build is still
+not proof of a publicly downloadable release or deployment.
+
+## Use a coding agent for these same steps
+
+Give an agent the matching checkout and an empty local parent directory, then
+use this bounded request:
+
+```text
+Create the local Web App using the manual commands in this page, with the
+source-built lenso CLI from this checkout. Keep the App outside the framework
+source tree. Use app create hello-web --web, then app dev. In a real browser,
+submit Ada and show the Hello, Ada! result and any console errors. After
+stopping dev, run app build, app check, app show and app start --check on the
+same App. Report the exact CLI revision, commands, output path, browser URL,
+and failures. If the pinned dependency cohort is unavailable, stop and report
+that boundary; do not substitute a different release or claim success.
+```
+
+The agent may edit ordinary business code in `app/local.starter/`, but App
+selection and authority still come from the App's `plugins/` root and Host.
+The Site cannot operate your local files or approve installation for you.
+
+## Add another Plugin only when it is real
+
+[Browse Plugins](/plugins) to inspect distribution, version, targets, and
+documentation. The candidate `lenso.web-ingress` page is **not** a signed
+catalog release and is not an installation instruction. A signed linked Cargo
+listing also remains only a candidate until your CLI verifies the exact
+snapshot, public trust, `.crate`, Host target, build, and resolved App. The
+local starter needs no catalog adoption to complete its greeting.
+
+For the standalone Plugin workflow, keep using the existing
+[Plugin quickstart](/docs/core/quickstart). To understand how local App
+discovery and packaging work, continue with [Local App development](/docs/core/engine-dx).

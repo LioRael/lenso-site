@@ -1,18 +1,32 @@
 ---
 title: Lenso 文档
-description: 选择最短路径学习 Lenso 核心框架、构建 Web 后端，或运行并扩展 Agent 产品。
+description: 构建 App、开发 Plugin 或扩展框架，然后选择具体产品路径。
 ---
 
-## 你想构建什么？
+## 选择你的角色
 
-开始之前不需要先学完整个运行时。先选择想得到的结果，完成一条引导路径；当下一步
-确实需要某个框架概念时，再沿页面中的链接深入阅读。
+先从你负责的结果出发。本地 App 预览与独立 Plugin 快速开始的可用性不同，
+各页面会写明前置条件。
 
 <CardGroup>
-  <Card title="学习核心框架" href="/docs/zh/core" description="创建一个可移除的 Plugin，再理解 App、Capability、Host、Plan 与运行时生命周期。" />
-  <Card title="构建 Web 后端" href="/docs/zh/web" description="编写类型化 HTTP Endpoint，通过 Web Ingress 绑定，并用真实 Socket 证明结果。" />
-  <Card title="运行并扩展 Agent" href="/docs/zh/agent" description="运行维护中的 Agent，选择 Profile，理解它的状态，并增加一个 Tool。" />
+  <Card title="构建 App" href="/docs/zh/core/app-quickstart" description="使用源码构建的本地预览，手工或借助 Coding Agent 创建 Web App，并在浏览器完成一次请求。" />
+  <Card title="开发 Plugin" href="/docs/zh/core/quickstart" description="沿独立 CLI 路径调用并打包可移植 Plugin；采用前确认其他分发方式。" />
+  <Card title="扩展框架" href="/docs/zh/core/architecture" description="在所有者边界内修改 Engine、Host、执行或兼容机制。" />
 </CardGroup>
+
+每种角色先从教程开始；具体变更看任务指南；精确 Contract 看 API/参考；边界不熟悉时
+再看解释。[Plugin 目录](/plugins)区分未签名候选与当前签名列表，浏览不等于安装。
+
+## 产品路径
+
+<CardGroup>
+  <Card title="核心框架" href="/docs/zh/core" description="App 组合、Plugin 开发、Capability 与运行时边界。" />
+  <Card title="Web 后端" href="/docs/zh/web" description="类型化 HTTP Endpoint、Web Ingress 与真实 Socket 验证。" />
+  <Card title="Agent 产品" href="/docs/zh/agent" description="运行维护中的 Agent Host、选择 Profile、增加一个 Tool。" />
+</CardGroup>
+
+“让 Coding Agent 帮我构建 App”属于[构建 App](/docs/zh/core/app-quickstart)；
+“构建 Agent 产品”属于 [Agent 产品](/docs/zh/agent)，两者不是同一个任务。
 
 ## 选择一个产品任务
 

@@ -3,7 +3,7 @@ import { ArrowRight, Boxes, Braces, Cog, Copy, FileCode2, Folder, Terminal } fro
 import { SiteHeader } from '@/components/site-header';
 
 const paths = [
-  { title: 'Build an app', body: 'Start with ordinary business code and one observable request.', href: '/docs/core/quickstart', Icon: Braces },
+  { title: 'Build an app', body: 'Preview a local Web App and complete one browser request. Matching source CLI required.', href: '/docs/core/app-quickstart', Icon: Braces },
   { title: 'Develop a Plugin', body: 'Choose linked Rust, portable Rust, or JavaScript from the same identity.', href: '/docs/core/plugin-authoring', Icon: Boxes },
   { title: 'Extend the framework', body: 'Add Engine or Host mechanics without moving business ownership into Core.', href: '/docs/core/architecture', Icon: Cog },
 ];
@@ -18,15 +18,15 @@ export default function Home() {
             <h1>Build the system.<br />Keep every boundary explicit.</h1>
             <p>Create a normal application, add removable Plugins, and run the same reviewed contracts by hand or with an agent.</p>
             <div className="hero-actions">
-              <Link className="button button-primary" href="/docs/core/quickstart">Create an app</Link>
+              <Link className="button button-primary" href="/docs/core/app-quickstart">Preview app quickstart</Link>
               <Link className="button button-secondary" href="/plugins">Browse plugins</Link>
             </div>
           </div>
           <div aria-label="Example project creation result" className="terminal-card">
-            <div className="terminal-bar"><span className="terminal-lights"><i /><i /><i /></span><span>lenso — app</span><Copy aria-hidden="true" size={16} /></div>
+            <div className="terminal-bar"><span className="terminal-lights"><i /><i /><i /></span><span>lenso — local source preview</span><Copy aria-hidden="true" size={16} /></div>
             <div className="terminal-body">
               <p><span>$</span> lenso app create knowledge-base --web</p>
-              <p className="terminal-success">✓ Created App · run lenso app dev</p>
+              <p className="terminal-success">✓ Scaffolded App · build dependencies before running</p>
               <div className="file-tree">
                 <p><Folder size={16} /> knowledge-base/</p>
                 <p className="depth"><Folder size={16} /> app/</p>
