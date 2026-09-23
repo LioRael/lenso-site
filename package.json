@@ -3,8 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "next build && node scripts/finalize-static-output.mjs",
-    "check": "pnpm check:docs && pnpm check:search && pnpm types:check && pnpm build && pnpm check:published",
+    "build": "node scripts/ingest-linked-catalog.mjs && next build && node scripts/finalize-static-output.mjs",
+    "check": "pnpm check:docs && pnpm check:search && pnpm check:linked-catalog && pnpm types:check && pnpm build && pnpm check:published",
+    "check:linked-catalog": "node --test scripts/linked-catalog.test.mjs",
     "check:docs": "node scripts/check-docs.mjs",
     "check:docs:upstream": "pnpm check && node scripts/check-external-links.mjs",
     "check:search": "node scripts/check-search.mjs",
@@ -12,10 +13,10 @@
     "worker:build": "pnpm build",
     "deploy": "pnpm build && wrangler deploy",
     "deploy:dry-run": "pnpm build && wrangler deploy --dry-run",
-    "dev": "next dev",
+    "dev": "node scripts/ingest-linked-catalog.mjs && next dev",
     "preview": "node scripts/preview.mjs",
     "start": "node scripts/preview.mjs",
-    "types:check": "next typegen && tsc --noEmit"
+    "types:check": "node scripts/ingest-linked-catalog.mjs && next typegen && tsc --noEmit"
   },
   "dependencies": {
     "fumadocs-core": "16.15.12",

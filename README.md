@@ -42,11 +42,19 @@ build, AI-readable catalogs, and draft exclusion.
 - `lib/source.ts`: Fumadocs content source and page tree
 - `public/lenso-assets`: brand and explanatory assets
 
-The Plugin page currently exposes an explicitly isolated registry candidate.
-It does not present that candidate as a signed Marketplace publication. The
-signed release-details API becomes the source for catalog results after its
-protocol package and Marketplace backend are published through their owning
-workflows.
+The Plugin page keeps its registry candidate separate from signed results.
+To include current source-only linked Cargo releases in a static build, set
+`LENSO_MARKETPLACE_LINKED_CARGO_URL` to the Marketplace HTTPS
+`/api/marketplace/v1/linked-cargo` endpoint and set
+`LENSO_MARKETPLACE_CATALOG_ID`, `LENSO_MARKETPLACE_KEY_ID`, and
+`LENSO_MARKETPLACE_PUBLIC_KEY_HEX` to the independently trusted public
+identity. The build verifies the exact signed payload, catalog identity, and
+validity window; a missing configuration produces an empty signed section,
+while an incomplete or invalid configuration fails the build. The generated
+data is ignored by Git. Static pages hide expired results in the browser, but
+renewal requires a new Site build. This is display evidence only: the adopting
+Host must independently verify the signed catalog, exact crate, and build.
+Portable and release-details browsing remains a separate integration step.
 
 ## Documentation model
 

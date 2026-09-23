@@ -1,14 +1,22 @@
-export type SignedReleaseDetails = {
+import generated from './.generated/linked-catalog.json';
+
+export type SignedLinkedRelease = {
   pluginId: string;
   version: string;
-  revision: number;
-  releaseDigest: string;
-  detailsDigest: string;
+  title: string;
+  summary: string;
+  package: string;
+  integration: 'linked_plugin' | 'host_provided';
+  targets: string[];
+  crateDigest: string;
 };
-
-// This channel stays empty until Marketplace consumes and verifies the W6
-// release-details protocol. Candidate claims must never enter it.
-export const signedReleaseDetails: readonly SignedReleaseDetails[] = [];
+export type SignedLinkedCatalog = {
+  catalogId: string | null;
+  revision: number | null;
+  expiresAt: number | null;
+  releases: SignedLinkedRelease[];
+};
+export const signedLinkedCatalog: SignedLinkedCatalog = generated;
 
 export const candidateRelease = {
   pluginId: 'lenso.web-ingress',
