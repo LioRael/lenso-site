@@ -1,0 +1,145 @@
+---
+title: Connect a React/Vite frontend
+description: Preview typed React calls against a local knowledge-base App candidate.
+---
+
+> **Local candidate, not a published starter.** This lesson uses matching source
+> checkouts of `lenso`, `lenso-js`, and `lenso-examples`. The example's
+> `@lenso/web-client` dependency is an exact local tarball recorded in
+> `bun.lock`; it is not fetched as a public package by this path. Auth, Jobs,
+> and Secrets also need explicit provider inputs and a disposable PostgreSQL
+> database. Stop at any missing input instead of substituting a release.
+
+The [local Web App quickstart](/docs/core/app-quickstart) proves one greeting.
+This follow-up shows how a normal React page calls an App's **public** API with
+generated types. Lenso starts one Vite development process; React still owns
+the page, and the backend Plugins still own authentication and authorization.
+
+## 1. Identify the inputs before starting
+
+In the matching `lenso-examples` source checkout, open
+`fixtures/vnext-knowledge-base-app/README.md`. The fixture's `project/` is the
+App root, while `project/frontend/` is the ordinary Vite/React project. You
+need a matching source-built `lenso` CLI, Rust/Cargo, Bun, an independently
+packed `@lenso/web-client` candidate matching `project/frontend/bun.lock`,
+and the Auth API-token, Jobs, and Secrets provider sources (or their exact
+signed `.crate` inputs). Use a disposable PostgreSQL database. The verifier
+creates schemas and leaves them available for inspection; it does not reset
+the database afterward.
+
+A clean fixture checkout is **not** ready for `lenso app dev`: the provider
+Plugins, their operator setup, credentials, and database configuration have
+not been prepared. The fixture README explains both source-candidate and
+signed-package input modes. The package-only mode remains an acceptance gate,
+not proof that the exact provider cohort is publicly available.
+
+## 2. Run the bounded reference flow
+
+After reviewing the candidate source and arranging an isolated local build
+environment, the fixture verifier can prepare a temporary App, build the
+React page from the supplied tarball, issue short-lived test credentials,
+build the Host, and exercise the real HTTP listener:
+
+```sh
+cd /path/to/lenso-examples/fixtures/vnext-knowledge-base-app
+HANDOFF_DIR="$(mktemp -d)" # Private mode-0700 directory; keep it outside the checkout.
+LENSO_REFERENCE_DATABASE_URL='postgresql://.../disposable_db' \
+  python3 verify.py \
+  --cli /absolute/path/to/lenso \
+  --web-client-package /absolute/path/to/lenso-web-client.tgz \
+  --auth-source /absolute/path/to/lenso-auth-plugin/crates/lenso-auth-api-token-plugin \
+  --jobs-source /absolute/path/to/lenso-jobs-plugin/crates/lenso-jobs-plugin \
+  --secrets-source /absolute/path/to/lenso-secrets-plugin/crates/lenso-secrets-env-plugin \
+  --browser-handoff "$HANDOFF_DIR/browser-handoff.json"
+rmdir "$HANDOFF_DIR" # Only after the verifier exits and the handoff file is gone.
+```
+
+Provider and App builds can execute package build scripts; run unreviewed
+inputs only in a network-disabled, resource-limited sandbox. The verifier
+exclusively creates the handoff file at mode `0600` in that private directory
+and rejects a pre-existing file or symlink. It contains a live test token and
+URL. While the verifier waits
+(at most ten minutes), open that URL, enter the token, select **Load
+workspace**, create a note, and confirm its excerpt appears after processing.
+Upload a small file to that note and confirm the stored-file status. Delete
+the handoff file when finished so the verifier can perform its restart checks.
+The final `rmdir` removes only that empty private directory after the verifier
+exits. On timeout or interruption, the verifier removes only its own handoff
+file; if the path was replaced, it refuses to remove the replacement. Keep any
+remaining file private and inspect it before retrying. Do not commit or share
+the token.
+
+A successful run verifies a built, source-deleted candidate App with its
+checked-in static page. It is distinct from the editable Vite development
+loop below and is not evidence of a published package, a deployed Site, or
+production support.
+
+## 3. Edit the React page in a prepared App
+
+For an App **already prepared** with those providers, schema operators,
+credential, and database settings, put the exact tarball at the fixture's
+locked local dependency path. From the fixture directory:
+
+```sh
+mkdir -p project/frontend/vendor
+cp /absolute/path/to/lenso-web-client.tgz project/frontend/vendor/lenso-web-client.tgz
+(cd project/frontend && bun install --frozen-lockfile && bun run generate && bun run typecheck)
+lenso app dev --root project
+```
+
+`bun run generate` projects the selected `openapi.json` into
+`src/generated/api.ts`. The page in `src/main.tsx` creates
+`createLensoWebClient<paths>` with a Bearer token callback and uses typed
+`GET`/`POST`/`PUT` calls. `unwrap` turns API failures into
+`LensoApiError`; type generation does not make server input trusted or grant
+access to an internal Capability. The backend verifies the actor and resource
+permissions on each request. See [Auth Plugin](/docs/web/auth-plugin) for the
+provider boundary.
+
+`project/frontend/lenso.dev.toml` explicitly selects `bun run dev` at
+`http://127.0.0.1:5173/`. Engine supplies `LENSO_API_URL_FILE`, pointing at
+the current Host URL in `project/.lenso/dev-backend-url`. The Vite middleware
+reads that file on every allowed public API request and exposes
+`GET /__lenso/backend` as a readiness handshake. A missing or invalid file
+returns `503`; a Host rebuild may change its port without restarting Vite.
+The browser calls its own origin; Host secret environment variables are not
+inherited by the frontend process.
+The proxy only admits the public notes, settings, jobs, and attachment routes
+declared by the example, not Host administration or internal Capabilities.
+Open the frontend URL only after `app dev` reports readiness.
+
+After editing the page, `bun run build` updates the Plugin-owned static assets
+for a new App build. Vite HMR during development does not itself update those
+packaged assets:
+
+```sh
+(cd project/frontend && bun run build)
+lenso app build --root project --out dist-react-review
+lenso app check --root dist-react-review
+lenso app show --root dist-react-review --json
+```
+
+Use a new output directory each time; `app build` refuses to overwrite one.
+Completion means the browser request succeeds with an issued token, a note
+can be read back, an unauthorized user cannot read it, and the built App
+passes `check` and `show`. This Site page describes that check; it does not
+claim those browser or build steps have been run for your checkout.
+
+## Give an agent the same task
+
+```text
+Use the React/Vite knowledge-base candidate from this page with matching
+source checkouts and an isolated disposable database. First verify the exact
+CLI, provider inputs, and locked @lenso/web-client tarball. Run the fixture
+verifier with a private browser handoff; exercise token verification, note creation,
+readback, and upload in a real browser, and inspect the verifier's cross-user
+denial result. For a separately
+prepared App, run the frozen frontend install, generate/typecheck, and app dev;
+after an edit, rebuild static assets and run app build/check/show. Report exact
+revisions, package digest, commands, browser URL, result, and missing inputs.
+Do not turn candidate proof into a published or deployed claim.
+```
+
+The agent and a human use the same App and verification boundary. A missing
+provider or tarball is a blocked candidate step, not permission to bypass the
+Plugin Root or expose a private Capability through the browser.

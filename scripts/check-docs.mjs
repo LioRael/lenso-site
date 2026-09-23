@@ -25,6 +25,7 @@ const requiredCurrentPages = [
   "core/index.mdx",
   "core/(start)/engine-dx.mdx",
   "core/(start)/app-quickstart.mdx",
+  "core/(start)/react-vite-app.mdx",
   "core/(plugins)/file-conventions.mdx",
   "core/(operate)/app-console.mdx",
   "core/(start)/mental-model.mdx",
@@ -310,9 +311,11 @@ for (const file of currentFiles) {
   ]) {
     if (expression.test(text)) failures.push(`${relative(root, file)}: ${label}`);
   }
-  // The accepted upstream fixture retains this exact directory/crate name.
+  // Accepted upstream fixtures retain these exact directory names.
   // Keep rejecting retired terminology in prose while allowing runnable source references.
-  const terminologyText = text.replaceAll("vnext-plugin-authoring-v2", "plugin-authoring-fixture");
+  const terminologyText = text
+    .replaceAll("vnext-plugin-authoring-v2", "plugin-authoring-fixture")
+    .replaceAll("fixtures/vnext-knowledge-base-app", "fixtures/knowledge-base-app");
   if (retiredGenerationName.test(terminologyText)) {
     failures.push(`${relative(root, file)}: retired generation terminology`);
   }
