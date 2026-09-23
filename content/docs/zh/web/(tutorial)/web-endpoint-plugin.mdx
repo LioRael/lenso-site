@@ -41,7 +41,10 @@ root-slot = "web"
 默认情况下，生成流程还会创建 `Cargo.lock` 并运行无 Socket 测试。仅当依赖必须
 稍后解析时才使用 `--no-install`。把 Crate 移入 Host Workspace 时，改用该
 Workspace 的 Dependency Entry，并删除脚手架中用于隔离独立项目的
-`[workspace]` Table。
+`[workspace]` Table。如果复制、重命名脚手架或修改 Manifest，先在对应
+Crate 或 Workspace 根目录运行 `cargo generate-lockfile` 更新受影响的
+`Cargo.lock`，再执行 `cargo test --locked` 或 `lenso app build`。过期的
+Lockfile 会在构建的 Cargo Metadata 锁定检查中失败。
 
 ## 2. 实现 Route
 

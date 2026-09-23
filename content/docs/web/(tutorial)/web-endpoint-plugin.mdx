@@ -43,7 +43,10 @@ By default, generation also creates `Cargo.lock` and runs the socket-free test.
 Use `--no-install` only when dependency resolution must happen later. When you
 move the crate into a Host workspace, replace the pinned dependencies with that
 workspace's dependency entries and remove the scaffold's standalone
-`[workspace]` table.
+`[workspace]` table. If you copy or rename the scaffold, or change its manifest,
+regenerate the affected `Cargo.lock` with `cargo generate-lockfile` from the
+crate or workspace root before `cargo test --locked` or `lenso app build`. A
+stale lockfile fails the build's locked Cargo metadata check.
 
 ## 2. Implement the routes
 

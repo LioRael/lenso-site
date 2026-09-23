@@ -14,7 +14,7 @@ installed binary; the Engine library version alone does not identify CLI feature
 ## Create an App without configuration
 
 ```sh
-lenso app create my-app --runtime bun
+lenso app create my-app
 cd my-app
 lenso app dev
 # After stopping development:
@@ -22,11 +22,35 @@ lenso app build
 lenso app start --from dist
 ```
 
-`app/` holds App-owned Plugin sources. `plugins/` holds Instance configuration
-and disabled markers. A basic source App needs no `lenso.toml`, Host declaration,
-preset or activation flag. The default scaffold runtime is `process`; `bun`,
-`wasm`, `multi`, and `empty` are explicit alternatives. Rust source builds need
-the corresponding Rust toolchain; Bun-only Apps use a precompiled runtime.
+Without flags, `app create` makes a root Cargo package with Web routes: the
+first App-owned business Plugin. Additional App-owned Plugin sources live under
+`app/`; `plugins/` holds Instance configuration and disabled markers. A basic
+source App needs no `lenso.toml`, Host declaration, preset or activation flag.
+Use `--runtime process`, `bun`, `wasm`, or `multi` for an explicit nested
+starter, or `--runtime empty` for none. Rust source builds need the
+corresponding Rust toolchain; Bun-only Apps use a precompiled runtime.
+
+## Add a second linked Web Plugin
+
+After stopping the App started above, scaffold another linked Rust Plugin
+inside `my-app/app/`:
+
+```sh
+lenso plugin new example.second-http --web --repo-root ./app
+```
+
+The root Cargo package is the first Web Plugin; `app/example.second-http/` is
+the second. Both starters include the same greeting route IDs and paths. Give
+the second Plugin distinct route IDs and method/path pairs in
+`app/example.second-http/src/routes/`, and update its generated tests before
+building. The generated Host rejects route collisions before Ready. Then run
+the discovery, build, check, show and start commands below with a new output
+directory.
+
+`lenso app plugin new` is for CLI `tools` Plugins, not linked Web Plugins. It
+requires `lenso app add @lenso/cli` first; the Web path above does not.
+
+## Inspect and build local sources
 
 Add local discovery locations only when needed:
 
