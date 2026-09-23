@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { verifyLinkedCatalog } from './linked-catalog.mjs';
+import { ingestLinkedDocuments } from './linked-documents.mjs';
 
 const output = resolve(import.meta.dirname, '../lib/.generated/linked-catalog.json');
 const names = [
@@ -35,8 +36,17 @@ if (values.every(Boolean)) {
     catalogId: values[1], keyId: values[2], publicKeyHex: values[3],
   });
 }
+const allowedHosts = new Set((process.env.LENSO_MARKETPLACE_DOCUMENT_HOSTS ?? '')
+  .split(',').map((host) => host.trim()).filter(Boolean));
+for (const host of allowedHosts) {
+  if (new URL(`https://${host}`).host !== host || host.includes('/')) {
+    throw new Error('LENSO_MARKETPLACE_DOCUMENT_HOSTS must contain exact HTTPS host names');
+  }
+}
+const documents = await ingestLinkedDocuments(catalog, allowedHosts);
 await mkdir(resolve(import.meta.dirname, '../lib/.generated'), { recursive: true });
 await writeFile(output, `${JSON.stringify(catalog)}\n`);
+await writeFile(resolve(import.meta.dirname, '../lib/.generated/linked-documents.json'), `${JSON.stringify(documents)}\n`);
 console.log(catalog.catalogId
-  ? `Verified linked catalog ${catalog.catalogId} revision ${catalog.revision} (${catalog.releases.length} listed releases)`
+  ? `Verified linked catalog ${catalog.catalogId} revision ${catalog.revision} (${catalog.releases.length} listed releases, ${Object.keys(documents).length} documents)`
   : 'No linked catalog configured; signed Site results remain empty.');

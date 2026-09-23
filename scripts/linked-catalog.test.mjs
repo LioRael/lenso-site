@@ -32,7 +32,10 @@ const snapshot = {
 
 test('accepts exact signed current linked releases and excludes yanked versions', () => {
   assert.deepEqual(verifyLinkedCatalog(envelope(snapshot), trust, 150).releases.map((item) => item.version), ['1.0.0']);
-  assert.deepEqual(verifyLinkedCatalog(envelope(snapshot), trust, 150).releases[0].documentation, release.documentation);
+  const document = verifyLinkedCatalog(envelope(snapshot), trust, 150).releases[0].documentation[0];
+  const { slug, ...metadata } = document;
+  assert.deepEqual(metadata, release.documentation[0]);
+  assert.match(document.slug, /^[0-9a-f]{64}$/);
 });
 
 test('rejects malformed signed release and document metadata', () => {

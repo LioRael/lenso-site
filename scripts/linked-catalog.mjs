@@ -1,4 +1,5 @@
 import { createPublicKey, verify } from 'node:crypto';
+import { documentSlug } from './linked-documents.mjs';
 
 const schema = 'lenso.marketplace.linked-cargo-snapshot.v1';
 const context = Buffer.from(`${schema}\0`);
@@ -113,7 +114,10 @@ export function verifyLinkedCatalog(raw, trust, now = Math.floor(Date.now() / 10
       integration: release.integration,
       targets: release.targets,
       crateDigest: release.crate_digest,
-      documentation: release.documentation ?? [],
+      documentation: (release.documentation ?? []).map((document) => ({
+        ...document,
+        slug: documentSlug(release.plugin_id, release.version, document),
+      })),
     })),
   };
 }

@@ -19,6 +19,7 @@ export type SignedLinkedRelease = {
     digest: string;
     size: number;
     media_type: 'text/markdown';
+    slug: string;
   }[];
 };
 export type SignedLinkedCatalog = {

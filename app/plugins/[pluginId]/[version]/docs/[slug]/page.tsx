@@ -1,0 +1,65 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import ReactMarkdown from 'react-markdown';
+import { SiteHeader } from '@/components/site-header';
+import { signedLinkedCatalog } from '@/lib/plugin-candidates';
+import { linkedDocumentApiPath } from '@/lib/linked-document-paths';
+import { staticLinkedDocumentParams, verifiedLinkedDocuments } from '@/lib/linked-documents';
+
+type Params = Promise<{ pluginId: string; version: string; slug: string }>;
+
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return staticLinkedDocumentParams();
+}
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { pluginId, version, slug } = await params;
+  const document = verifiedLinkedDocuments[slug];
+  if (!document || document.pluginId !== pluginId || document.version !== version) return {};
+  return { title: `${document.topic} · ${pluginId} ${version}`, description: `${document.topic} for ${pluginId}@${version}` };
+}
+
+export default async function LinkedDocumentationPage({ params }: { params: Params }) {
+  const { pluginId, version, slug } = await params;
+  const document = verifiedLinkedDocuments[slug];
+  if (!document || document.pluginId !== pluginId || document.version !== version) notFound();
+  return <div className="linked-doc-shell">
+    <SiteHeader active="plugins" />
+    <main className="linked-doc-main">
+      <nav aria-label="Breadcrumb" className="linked-doc-breadcrumb"><Link href="/plugins">Plugins</Link><span>/</span><span>{pluginId}</span><span>/</span><span>{version}</span></nav>
+      <header className="linked-doc-header">
+        <p className="linked-doc-eyebrow">Verified versioned Markdown · {document.language}</p>
+        <h1>{document.topic}</h1>
+        <p>{pluginId}@{version} · document {document.documentId}@{document.revision}</p>
+        {document.target && <p>Target: {document.target}</p>}
+      </header>
+      <aside className="linked-doc-provenance">
+        <strong>Content verified at Site build</strong>
+        <p>The signed catalog names this exact revision, size and SHA-256. This third-party Markdown is displayed as data; HTML, images and executable MDX are disabled.</p>
+        <dl><div><dt>Digest</dt><dd><code>{document.digest}</code></dd></div><div><dt>Catalog revision</dt><dd>{signedLinkedCatalog.revision}</dd></div><div><dt>Catalog expires</dt><dd>{signedLinkedCatalog.expiresAt ? new Date(signedLinkedCatalog.expiresAt * 1000).toISOString() : 'unknown'}</dd></div></dl>
+        <a href={linkedDocumentApiPath(pluginId, version, slug)}>Read verified Markdown API</a>
+      </aside>
+      <article className="linked-doc-body">
+        <ReactMarkdown
+          allowedElements={['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'blockquote', 'pre', 'code', 'a', 'hr', 'br']}
+          skipHtml
+          components={{
+            a: ({ href, children }) => {
+              try {
+                const url = new URL(href ?? '');
+                if (url.protocol === 'https:' && !url.username && !url.password) {
+                  return <a href={url.toString()} rel="nofollow noopener noreferrer" target="_blank">{children}</a>;
+                }
+              } catch { /* Relative and malformed third-party links are not navigable. */ }
+              return <span>{children}</span>;
+            },
+          }}
+        >{document.content}</ReactMarkdown>
+      </article>
+      <p className="linked-doc-footer">Publisher-authored content may contain errors. Review code, permissions and external service requirements before adoption.</p>
+    </main>
+  </div>;
+}

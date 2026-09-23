@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Check, CircleAlert, ExternalLink, Search, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { candidateRelease, signedLinkedCatalog } from '@/lib/plugin-candidates';
+import { linkedDocumentPath } from '@/lib/linked-document-paths';
 
 export function PluginDirectory() {
   const [query, setQuery] = useState('');
@@ -76,9 +77,9 @@ export function PluginDirectory() {
             {release.documentation.length > 0 && <div className="signed-release-documents">
               <h4>Versioned documentation references</h4>
               <ul>{release.documentation.map((document) => <li key={`${document.id}@${document.revision}`}>
-                <a href={document.url} rel="noopener noreferrer">{document.topic}</a> · {document.language} · {document.id}@{document.revision}
+                <Link href={linkedDocumentPath(release.pluginId, release.version, document.slug)}>{document.topic}</Link> · {document.language} · {document.id}@{document.revision}
                 {document.target && <> · {document.target}</>}
-                <small>Signed reference: {document.digest}. Publisher content is not verified by this Site listing.</small>
+                <small>Signed reference and Site-verified body: {document.digest}.</small>
               </li>)}</ul>
             </div>}
           </article>)}
