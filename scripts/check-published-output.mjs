@@ -11,6 +11,13 @@ const signedPortableCatalog = JSON.parse(readFileSync(join(root, 'lib/.generated
 const signedDocuments = JSON.parse(readFileSync(join(root, 'lib/.generated/linked-documents.json'), 'utf8'));
 const failures = [];
 
+for (const path of [
+  'plugins/_no-signed-document',
+  'api/plugins/_no-signed-document',
+]) {
+  if (existsSync(join(outputRoot, path))) failures.push(`out/${path}: static-generation placeholder was published`);
+}
+
 function requireFile(path) {
   const absolute = join(outputRoot, path);
   if (!existsSync(absolute)) failures.push(`out/${path}: missing`);
