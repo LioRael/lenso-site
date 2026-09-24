@@ -1,3 +1,3 @@
 export default {
-  pages: ["index", "core", "web", "agent"],
+  pages: ["index", "build-apps", "develop-plugins", "extend-framework", "core", "web", "agent"],
 };

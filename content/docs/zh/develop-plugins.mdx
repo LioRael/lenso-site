@@ -1,0 +1,33 @@
+---
+title: 开发 Plugin
+description: 在本地调用 Plugin，选择分发路径，并在发布前准备证据。
+---
+
+Plugin 通过 Capability 持有行为。逻辑 ID 与包名、发布版本是不同的身份。复制其他
+Plugin 的命令前，先选择分发路径；Linked Rust、Portable Rust 与 Bun 的构建和采用
+步骤并不相同。
+
+## 教程：调用一个 Plugin
+
+[创建第一个 Plugin](/docs/zh/core/quickstart)沿独立 CLI 路径完成脚手架、调用、
+检查和打包。结果是一个开发中的 Plugin，不是完整 App，也不是签名目录中的发布。
+
+## 完成首次调用后的任务
+
+| 你要做什么 | 使用哪一页 |
+| --- | --- |
+| 选择 Linked Rust、Portable Rust 或 Bun | [选择 Plugin 开发路径](/docs/zh/core/choose-plugin-path) |
+| 在 Host 中实现原生 Plugin | [Linked Rust Plugin](/docs/zh/core/linked-rust-plugin) |
+| 实现 Bun Process Plugin | [Bun Plugin 开发](/docs/zh/core/bun-plugin-authoring) |
+| 定义新的类型化角色 | [编写 Capability](/docs/zh/core/capability-authoring) |
+| 说明文档与源码所有权 | [文件约定](/docs/zh/core/file-conventions)和[文档同步](/docs/zh/core/document-sync) |
+
+打包 Plugin 不等于发布签名目录条目。[Plugin 目录](/plugins)只展示本站构建时
+摄取并验证的签名发布；未签名候选保持独立。发布是否可用、目标是否兼容、能否安装，
+都必须针对精确发布版本和消费它的 App 核对。
+
+## 参考与原理
+
+[仓库地图](/docs/zh/core/repository-map)标出当前 Rust 与 JavaScript 所有者。
+[Plugin 与 Capability](/docs/zh/core/plugins-and-capabilities)解释身份与绑定；
+[Driver 与 Adapter](/docs/zh/core/execution-adapters)解释执行环境改变时的边界。

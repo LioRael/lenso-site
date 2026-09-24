@@ -1,0 +1,43 @@
+---
+title: 扩展框架
+description: 定位负责的 Rust Crate 或 JavaScript Package，并在边界上验证 Contract。
+---
+
+当你要修改 Host、Engine、Protocol、Driver 或 Execution Adapter 机制时使用这条
+路径。产品行为应留在 Plugin 中。Rust 主链位于
+[`LioRael/lenso`](https://github.com/LioRael/lenso)，JavaScript 与 TypeScript
+分发源码位于 [`LioRael/lenso-js`](https://github.com/LioRael/lenso-js)。旧的
+Rust 拆分仓库是迁移来源，不是新框架改动的起点。
+
+## 第一次贡献：找到 Contract
+
+1. 阅读[核心架构](/docs/zh/core/architecture)，用其中的所有权判断确定改动边界。
+2. 用[仓库地图](/docs/zh/core/repository-map)找到当前 Crate 或 Package。改变稳定
+   边界前，先阅读相关的[架构决策](/docs/zh/core/architecture-decisions)。
+3. 在版本匹配的 `lenso` 源码 Checkout 中，修改运行时机制前先运行已有的可移植
+   Runtime Conformance 测试：
+
+   ```sh
+   cargo test --locked -p lenso-runtime-conformance
+   ```
+
+   这只检查现有 Contract，不能单独证明新 Driver 或 Adapter 合格。
+4. 在负责的公开边界加入一条聚焦的失败用例，在该处实现改动，再运行用例及适用的
+   真实 Host 或目标验证。不要为了让某个目标的测试通过，就把目标专属故障变成
+   Kernel 功能。
+
+这是贡献流程，不是某个特定扩展的完整入门教程。新目标或 Adapter 仍需属于自己的
+行为范围和 Conformance 证据。
+
+## 选择对应指南
+
+| 改动 | 下一页 |
+| --- | --- |
+| Driver 或 Execution Adapter 行为 | [Driver 与 Adapter](/docs/zh/core/execution-adapters) |
+| App 解析或不可变 Plan 输入 | [Project 与 Plan](/docs/zh/core/project-and-plan) |
+| TypeScript Host 开发 | [TypeScript Host](/docs/zh/core/typescript-host) |
+| Capability Contract 生成 | [编写 Capability](/docs/zh/core/capability-authoring) |
+
+[运行时生命周期](/docs/zh/core/runtime-lifecycle)解释这些扩展必须保持的可移植行为。
+通过[受支持的工作流](/docs/zh/core/supported-workflows)区分维护中的本地验证与
+已发布目标。

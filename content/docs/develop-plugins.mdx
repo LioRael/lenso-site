@@ -1,0 +1,38 @@
+---
+title: Develop a Plugin
+description: Invoke one Plugin locally, choose its distribution path, and prepare evidence before publication.
+---
+
+A Plugin owns behavior behind a Capability. Its logical ID is separate from
+its package and release version. Choose a distribution path before copying
+commands from another Plugin; linked Rust, portable Rust, and Bun do not have
+the same build or installation steps.
+
+## Tutorial: invoke one Plugin
+
+[Create your first Plugin](/docs/core/quickstart) follows the standalone CLI
+path to scaffold, call, check, and package a portable Plugin. It is a Plugin
+development result, not a complete App or a signed Directory publication.
+
+## Tasks after the first call
+
+| When you need to | Use |
+| --- | --- |
+| Select linked Rust, portable Rust, or Bun | [Choose a Plugin path](/docs/core/choose-plugin-path) |
+| Implement a native Plugin inside a Host | [Linked Rust Plugin](/docs/core/linked-rust-plugin) |
+| Implement a Bun process Plugin | [Bun Plugin authoring](/docs/core/bun-plugin-authoring) |
+| Define a new typed role | [Author a Capability](/docs/core/capability-authoring) |
+| Describe documentation and source ownership | [File conventions](/docs/core/file-conventions) and [Document sync](/docs/core/document-sync) |
+
+Packaging a Plugin does not publish a signed catalog entry. The
+[Plugin directory](/plugins) shows only the signed releases ingested and
+verified by this Site build; an unsigned candidate remains separate. Release
+availability, compatible targets, and installation must be checked against
+the exact release and the consuming App.
+
+## Reference and explanation
+
+The [Repository map](/docs/core/repository-map) identifies the current Rust
+and JavaScript owners. [Plugins and Capabilities](/docs/core/plugins-and-capabilities)
+explains identity and binding; [Drivers and Adapters](/docs/core/execution-adapters)
+explains what changes when the execution environment changes.

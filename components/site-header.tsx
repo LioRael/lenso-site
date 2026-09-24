@@ -11,9 +11,9 @@ export function Brand({ compact = false }: { compact?: boolean }) {
 }
 
 const links = [
-  ['Build apps', '/docs/core/app-quickstart'],
-  ['Develop plugins', '/docs/core/plugin-authoring'],
-  ['Extend the framework', '/docs/core/architecture'],
+  ['Build apps', '/docs/build-apps'],
+  ['Develop plugins', '/docs/develop-plugins'],
+  ['Extend the framework', '/docs/extend-framework'],
   ['Plugins', '/plugins'],
   ['Docs', '/docs'],
 ] as const;

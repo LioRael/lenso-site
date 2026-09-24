@@ -109,8 +109,9 @@ environment.
 - `lenso-app-plan` owns the serializable execution input.
 - `lenso-kernel` owns portable runtime semantics and deterministic conformance.
 - `lenso-runtime-conformance` owns product-neutral runtime proofs.
-- Drivers, Execution Adapters, protocols, optional Plugins, authoring, and
-  examples live in separate owner repositories.
+- Rust Drivers, Execution Adapters, protocols, and authoring crates live in
+  `LioRael/lenso`; JavaScript and TypeScript packages live in `LioRael/lenso-js`.
+  Product Plugins and executable examples retain their own owners.
 - Runtime discovery, hot graph mutation, distributed placement, automatic
   replicas, and an independent Console product are not current runtime promises.
 

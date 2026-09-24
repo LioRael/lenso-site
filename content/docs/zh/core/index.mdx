@@ -97,8 +97,9 @@ Kernel 持有图校验、分阶段生命周期、就绪门、调用、取消、�
 - `lenso-app-plan` 持有可序列化执行输入。
 - `lenso-kernel` 持有可移植运行时语义与确定性 conformance。
 - `lenso-runtime-conformance` 持有产品无关的运行时验证。
-- Driver、Execution Adapter、协议、可选 Plugin、Authoring 与示例分别位于
-  独立的所有者仓库。
+- Rust Driver、Execution Adapter、协议与 Authoring Crate 位于 `LioRael/lenso`；
+  JavaScript 与 TypeScript Package 位于 `LioRael/lenso-js`。产品 Plugin 与可执行
+  示例仍各有所有者。
 - 运行时 discovery、hot graph mutation、distributed placement、自动副本与
   独立 Console 产品都不是当前运行时承诺。
 

@@ -35,8 +35,30 @@ for (const [path, markers] of [
   const html = requireFile(path);
   for (const marker of markers) if (!html.includes(marker)) failures.push(`out/${path}: missing ${JSON.stringify(marker)}`);
 }
+for (const [slug, englishTitle, chineseTitle] of [
+  ['build-apps', 'Build an App', '构建 App'],
+  ['develop-plugins', 'Develop a Plugin', '开发 Plugin'],
+  ['extend-framework', 'Extend the framework', '扩展框架'],
+]) {
+  const englishRoute = `/docs/${slug}/`;
+  const chineseRoute = `/docs/zh/${slug}/`;
+  const english = requireFile(`docs/${slug}/index.html`);
+  const chinese = requireFile(`docs/zh/${slug}/index.html`);
+  if (!english.includes(englishTitle) || !english.includes(`href="${chineseRoute.slice(0, -1)}"`)) failures.push(`out/docs/${slug}/index.html: role path or locale switch missing`);
+  if (!chinese.includes(chineseTitle) || !chinese.includes(`href="${englishRoute.slice(0, -1)}"`)) failures.push(`out/docs/zh/${slug}/index.html: role path or locale switch missing`);
+  if (!requireFile('docs/index.html').includes(englishRoute)) failures.push(`out/docs/index.html: missing role path ${englishRoute}`);
+  if (!requireFile('docs/zh/index.html').includes(chineseRoute)) failures.push(`out/docs/zh/index.html: missing role path ${chineseRoute}`);
+  if (!requireFile('index.html').includes(englishRoute)) failures.push(`out/index.html: missing role path ${englishRoute}`);
+}
 const candidateSigned = [...signedCatalog.releases, ...signedPortableCatalog.releases]
   .some((release) => release.pluginId === 'lenso.web-ingress' && release.version === '0.4.5');
+function requireReleaseNavigationPayload(pluginId, version) {
+  const directory = `plugins/${pluginId}/${version}`;
+  const expected = requireFile(`${directory}/index.txt`);
+  const actual = requireFile(`plugins/${pluginId}/${version}.txt`);
+  if (actual !== expected) failures.push(`out/${directory}: client navigation payload does not match the published release`);
+}
+requireReleaseNavigationPayload('lenso.web-ingress', '0.4.5');
 if (!candidateSigned) {
   if (!requireFile('plugins/index.html').includes('Not yet catalog-signed')) failures.push('out/plugins/index.html: unsigned candidate marker missing');
   const html = requireFile('plugins/lenso.web-ingress/0.4.5/index.html');
@@ -49,6 +71,7 @@ const pluginSearch = requireFile('api/plugins/search');
 const sitemap = requireFile('sitemap.xml');
 for (const release of signedPortableCatalog.releases) {
   const route = `plugins/${release.pluginId}/${release.version}`;
+  requireReleaseNavigationPayload(release.pluginId, release.version);
   const html = requireFile(`${route}/index.html`);
   if (!html.includes(release.title) || !html.includes(release.artifactDigest)) failures.push(`out/${route}/index.html: signed Portable evidence missing`);
   if (!pluginIndex.includes(`/${route}`)) failures.push(`out/plugins/index.html: signed Portable release link missing for ${route}`);
@@ -68,6 +91,7 @@ for (const release of signedPortableCatalog.releases) {
 }
 for (const release of signedCatalog.releases) {
   const route = `plugins/${release.pluginId}/${release.version}`;
+  requireReleaseNavigationPayload(release.pluginId, release.version);
   const html = requireFile(`${route}/index.html`);
   if (!html.includes(release.title) || !html.includes(release.crateDigest)) failures.push(`out/${route}/index.html: signed release evidence missing`);
   if (!pluginIndex.includes(`/${route}`)) failures.push(`out/plugins/index.html: signed release link missing for ${route}`);

@@ -1,0 +1,39 @@
+---
+title: Build an App
+description: Start with a local App result, then adopt Plugins, connect a frontend, and inspect the built App.
+---
+
+The current App tutorial is a **source-built local preview**. It does not
+promise that the CLI or every generated dependency is available from a public
+registry. The manual and coding-agent routes use the same App, commands, and
+success checks.
+
+## Tutorial: complete one browser request
+
+[Create a local Web App](/docs/core/app-quickstart) starts with a root Cargo
+package, runs the App, submits a greeting from the browser, and checks the
+result of a second linked Plugin. Stop at the page's dependency boundary if
+the exact source cohort cannot build.
+
+## Tasks after the first result
+
+| When you need to | Use |
+| --- | --- |
+| Find a Plugin and inspect its exact version and documentation | [Plugin directory](/plugins) |
+| Change the App's selected Plugins and bindings | [Add Plugins to an App](/docs/core/plugin-composition) |
+| Configure an Instance, then disable or remove it | [Configure a Plugin](/docs/core/plugin-configuration) and [Plugin lifecycle](/docs/core/plugin-lifecycle) |
+| Connect a React page to a typed public API | [React/Vite candidate path](/docs/core/react-vite-app) |
+| Diagnose an App that does not resolve or start | [Inspect a failing App](/docs/core/inspect-an-app) |
+
+The directory distinguishes signed releases from unsigned candidates. A
+versioned document belongs to one exact Plugin ID and version; a candidate
+page is not an installation instruction. The Site cannot decide whether a
+release is compatible with your local App or authorize adoption for you.
+
+## Reference and explanation
+
+Check [Supported workflows](/docs/core/supported-workflows) for the current
+environment and availability boundary. Use the [Repository map](/docs/core/repository-map)
+to find the owner of a package or contract. If the App, Plugin Root, Host, and
+Plan are unfamiliar, read the [mental model](/docs/core/mental-model) and
+[project and Plan](/docs/core/project-and-plan) explanations.

@@ -1,0 +1,33 @@
+---
+title: 构建 App
+description: 从本地 App 的实际结果开始，再采用 Plugin、接入前端并检查构建产物。
+---
+
+当前 App 教程是**从源码构建的本地预览**，不代表 CLI 或生成项目的每项依赖都已在
+公开 Registry 发布。手工与 Coding Agent 使用同一个 App、同一组命令和成功检查。
+
+## 教程：在浏览器完成一次请求
+
+[创建本地 Web App](/docs/zh/core/app-quickstart)从根 Cargo Package 出发，运行
+App，在浏览器提交问候，然后检查第二个 Linked Plugin 的结果。如果精确的源码
+版本组合无法构建，应停在教程注明的依赖边界。
+
+## 完成首个结果后的任务
+
+| 你要做什么 | 使用哪一页 |
+| --- | --- |
+| 查找 Plugin 并阅读精确版本的文档 | [Plugin 目录](/plugins) |
+| 修改 App 选中的 Plugin 与绑定 | [向 App 添加 Plugin](/docs/zh/core/plugin-composition) |
+| 配置 Instance，再禁用或移除 | [配置 Plugin](/docs/zh/core/plugin-configuration)和[Plugin 生命周期](/docs/zh/core/plugin-lifecycle) |
+| 将 React 页面接到类型化公开 API | [React/Vite 候选路径](/docs/zh/core/react-vite-app) |
+| 排查无法解析或启动的 App | [检查失败的 App](/docs/zh/core/inspect-an-app) |
+
+目录将签名发布与未签名候选分开。版本化文档只对应一个精确的 Plugin ID 和版本；
+候选页面不是安装指令。Site 不能替本地 App 判断兼容性，也不能代替用户授权采用。
+
+## 参考与原理
+
+先通过[受支持的工作流](/docs/zh/core/supported-workflows)核对环境和可用性边界。
+用[仓库地图](/docs/zh/core/repository-map)定位包或 Contract 的所有者。如果不熟悉
+App、Plugin Root、Host 与 Plan，阅读[心智模型](/docs/zh/core/mental-model)和
+[Project 与 Plan](/docs/zh/core/project-and-plan)的解释。

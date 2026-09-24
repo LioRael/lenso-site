@@ -1,0 +1,50 @@
+---
+title: Extend the framework
+description: Locate the owning Rust crate or JavaScript package and test the contract at its boundary.
+---
+
+Use this path for Host, Engine, protocol, Driver, or Execution Adapter
+mechanics. Product behavior belongs in a Plugin instead. The Rust main chain
+is in [`LioRael/lenso`](https://github.com/LioRael/lenso); JavaScript and
+TypeScript distribution sources are in
+[`LioRael/lenso-js`](https://github.com/LioRael/lenso-js). Former split Rust
+repositories are migration sources, not places to start a new framework
+change.
+
+## First contribution: identify the contract
+
+1. Read [Core architecture](/docs/core/architecture) and apply its ownership
+   test to the behavior you want to change.
+2. Use the [Repository map](/docs/core/repository-map) to find the current
+   crate or package. Read the relevant [architecture decision](/docs/core/architecture-decisions)
+   before changing a stable boundary.
+3. In a matching `lenso` source checkout, run the existing portable runtime
+   conformance suite before editing runtime mechanics:
+
+   ```sh
+   cargo test --locked -p lenso-runtime-conformance
+   ```
+
+   This checks the existing contract. It does not qualify a new Driver or
+   Adapter by itself.
+4. Add a focused failing case at the owning public boundary, implement the
+   change there, then run that case and the applicable real Host or target
+   proof. Do not turn a target-specific failure into a Kernel feature to make
+   one test pass.
+
+This is a contribution workflow, not a turn-key tutorial for a particular
+extension. A new target or Adapter still needs its own scoped behavior and
+conformance evidence.
+
+## Choose the right guide
+
+| Change | Next page |
+| --- | --- |
+| Driver or Execution Adapter behavior | [Drivers and Adapters](/docs/core/execution-adapters) |
+| App resolution or immutable Plan inputs | [Project and Plan](/docs/core/project-and-plan) |
+| TypeScript Host authoring | [TypeScript Host](/docs/core/typescript-host) |
+| Capability contract generation | [Author a Capability](/docs/core/capability-authoring) |
+
+The [runtime lifecycle](/docs/core/runtime-lifecycle) explains the portable
+behavior these extensions must preserve. Use [Supported workflows](/docs/core/supported-workflows)
+to distinguish a maintained local proof from a released target.

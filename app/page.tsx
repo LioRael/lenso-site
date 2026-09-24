@@ -3,9 +3,9 @@ import { ArrowRight, Boxes, Braces, Cog, Copy, FileCode2, Folder, Terminal } fro
 import { SiteHeader } from '@/components/site-header';
 
 const paths = [
-  { title: 'Build an app', body: 'Preview a local Web App and complete one browser request. Matching source CLI required.', href: '/docs/core/app-quickstart', Icon: Braces },
-  { title: 'Develop a Plugin', body: 'Choose linked Rust, portable Rust, or JavaScript from the same identity.', href: '/docs/core/plugin-authoring', Icon: Boxes },
-  { title: 'Extend the framework', body: 'Add Engine or Host mechanics without moving business ownership into Core.', href: '/docs/core/architecture', Icon: Cog },
+  { title: 'Build an app', body: 'Preview a local Web App and complete one browser request. Matching source CLI required.', href: '/docs/build-apps', Icon: Braces },
+  { title: 'Develop a Plugin', body: 'Choose linked Rust, portable Rust, or JavaScript from the same identity.', href: '/docs/develop-plugins', Icon: Boxes },
+  { title: 'Extend the framework', body: 'Add Engine or Host mechanics without moving business ownership into Core.', href: '/docs/extend-framework', Icon: Cog },
 ];
 
 export default function Home() {

@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { copyFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { join, relative, sep } from 'node:path';
 import { walkFiles } from './docs-files.mjs';
 
 const outputRoot = join(process.cwd(), 'out');
@@ -20,6 +20,14 @@ for (const file of walkFiles(chineseRoot).filter((candidate) => candidate.endsWi
   const localized = html.replace('<html lang="en"', '<html lang="zh-CN"');
   if (localized === html) throw new Error(`${file}: expected an English root language marker`);
   writeFileSync(file, localized);
+}
+
+const pluginRoot = join(outputRoot, 'plugins');
+for (const file of walkFiles(pluginRoot)) {
+  const parts = relative(pluginRoot, file).split(sep);
+  if (parts.length !== 3 || parts[2] !== 'index.txt') continue;
+  const [pluginId, version] = parts;
+  copyFileSync(file, join(pluginRoot, pluginId, `${version}.txt`));
 }
 
 console.log('Finalized static output: Simplified Chinese documents declare lang="zh-CN"; no unsigned document placeholder is published.');
