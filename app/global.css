@@ -16,6 +16,11 @@
 * { box-sizing: border-box; }
 html { background: #fff; color: var(--ink); scrollbar-gutter: stable; }
 body { margin: 0; background: #fff; color: var(--ink); font-family: Geist, Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+html:has(#nd-docs-layout),
+body:has(#nd-docs-layout) { background: var(--color-fd-background); }
+html:not(.dark):has(#nd-docs-layout) { --color-fd-muted-foreground: #666; }
+body:has(#nd-docs-layout) { color: var(--color-fd-foreground); }
+html.dark:has(#nd-docs-layout) { color-scheme: dark; }
 a { color: inherit; text-decoration: none; }
 button, input, select { font: inherit; }
 button, a, input, select { outline-offset: 3px; }
