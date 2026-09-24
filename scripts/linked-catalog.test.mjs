@@ -78,3 +78,20 @@ test('linked checkpoint retains release and documentation history across omissio
   assert.throws(() => verifyLinkedCatalog(envelope({ ...snapshot, revision: 4,
     releases: [{ ...release, documentation: [{ ...release.documentation[0], topic: 'Rewritten guide' }] }] }), trust, 150, absent.checkpoint), /documentation changed/);
 });
+
+test('accepts an additive signed document revision for an unchanged linked release', () => {
+  const first = verifyLinkedCatalog(envelope(snapshot), trust, 150);
+  const revision = {
+    ...release.documentation[0],
+    revision: 'v2',
+    topic: 'Updated getting started',
+    url: 'https://example.test/quickstart-v2.md',
+    digest: `sha256:${'d'.repeat(64)}`,
+  };
+  const next = verifyLinkedCatalog(envelope({ ...snapshot, revision: 3,
+    releases: [{ ...release, documentation: [...release.documentation, revision] }] }),
+  trust, 150, first.checkpoint);
+  assert.deepEqual(next.releases[0].documentation.map((document) => document.revision), ['v1', 'v2']);
+  assert.ok(next.checkpoint.document_identities['example.web@1.0.0/quickstart@v1']);
+  assert.ok(next.checkpoint.document_identities['example.web@1.0.0/quickstart@v2']);
+});
