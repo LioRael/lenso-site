@@ -5,6 +5,10 @@ const route = readFileSync(new URL('../app/api/search/route.ts', import.meta.url
 if (/language\s*:\s*['"]english['"]/.test(route)) {
   throw new Error('The bilingual search route must not force the English tokenizer.');
 }
+const provider = readFileSync(new URL('../components/provider.tsx', import.meta.url), 'utf8');
+if (!/search=\{\{\s*options:\s*\{[^}]*\btype:\s*['"]static['"]/.test(provider)) {
+  throw new Error('The Docs search provider must read the static search index as a static client.');
+}
 
 const db = create({ schema: { content: 'string' }, language: 'multilingual' });
 await insert(db, { content: '插件配置指南' });
