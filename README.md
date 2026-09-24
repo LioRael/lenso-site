@@ -97,7 +97,15 @@ This is display evidence only: the adopting Host must independently verify
 the current signed snapshot and exact Bundle or crate before admission.
 Each listed release gets an exact version page. The page links only to
 Markdown revisions whose bytes and digests were verified during the same build;
-the public Markdown route is read-only. Set
+the public Markdown route is read-only.
+
+`/api/plugins/search` is a static, read-only search index made from those same
+verified public Markdown bodies and their exact Plugin/version routes. The
+Plugin directory loads it only when a reader searches, keeps unsigned
+candidate copy out of its results, and hides matches from expired signed
+channels. The index and version pages remain build-time records, not a live
+registry or an installation authority; refresh the Site build to pick up a
+new signed snapshot or documentation revision. Set
 `LENSO_MARKETPLACE_DOCUMENT_HOSTS` to a comma-separated exact host:port
 allowlist for documentation, using only operator-trusted document
 infrastructure. The build never follows redirects, rejects unapproved hosts,

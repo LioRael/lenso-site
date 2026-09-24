@@ -7,6 +7,7 @@ import { Check, CircleAlert, ExternalLink, Search, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { candidateRelease, signedLinkedCatalog, signedPortableCatalog } from '@/lib/plugin-candidates';
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
+import { SignedDocumentSearch } from '@/components/signed-document-search';
 
 export function PluginDirectory() {
   const [query, setQuery] = useState('');
@@ -16,6 +17,7 @@ export function PluginDirectory() {
   const [currentSigned, setCurrentSigned] = useState({
     linked: Boolean(signedLinkedCatalog.expiresAt),
     portable: Boolean(signedPortableCatalog.expiresAt),
+    portableDetails: Boolean(signedPortableCatalog.detailsExpiresAt),
   });
   useEffect(() => {
     let timer: number | undefined;
@@ -24,8 +26,10 @@ export function PluginDirectory() {
       const now = Date.now();
       const linkedRemaining = (signedLinkedCatalog.expiresAt ?? 0) * 1000 - now;
       const portableRemaining = (signedPortableCatalog.expiresAt ?? 0) * 1000 - now;
-      setCurrentSigned({ linked: linkedRemaining > 0, portable: portableRemaining > 0 });
-      const next = [linkedRemaining, portableRemaining].filter((remaining) => remaining > 0);
+      const detailsRemaining = (signedPortableCatalog.detailsExpiresAt ?? 0) * 1000 - now;
+      setCurrentSigned({ linked: linkedRemaining > 0, portable: portableRemaining > 0,
+        portableDetails: portableRemaining > 0 && detailsRemaining > 0 });
+      const next = [linkedRemaining, portableRemaining, detailsRemaining].filter((remaining) => remaining > 0);
       if (next.length > 0) timer = window.setTimeout(update, Math.min(...next, 2_147_483_647));
     };
     update();
@@ -72,13 +76,14 @@ export function PluginDirectory() {
           <h1>Plugins</h1>
           <p>Find a compatible release, inspect its exact distribution, then adopt it through the same reviewed project path.</p>
         </div>
-        <label className="directory-search"><Search size={20} /><span className="sr-only">Search Plugins</span><input onChange={(event) => setQuery(event.target.value)} placeholder="Search by capability, Plugin ID, or package" value={query} /></label>
+        <label className="directory-search"><Search size={20} /><span className="sr-only">Search Plugins</span><input onChange={(event) => setQuery(event.target.value)} placeholder="Search Plugin IDs, packages, or verified docs" value={query} /></label>
         <div aria-label="Directory filters" className="filter-rail">
           <Filter label="Target" onSelect={setTarget} options={['Native', 'Workers']} selected={target} />
           <Filter label="Distribution" onSelect={setDistribution} options={['Linked Rust', 'Portable']} selected={distribution} />
           <Filter label="Catalog status" onSelect={setCatalogStatus} options={['Signed', 'Candidate']} selected={catalogStatus} />
           <Button onClick={clearFilters} size="default" type="button" variant="ghost">Clear filters</Button>
         </div>
+        <SignedDocumentSearch query={query} target={target} distribution={distribution} catalogStatus={catalogStatus} currentSigned={currentSigned} />
         <section className="signed-release-state" aria-labelledby="signed-release-heading">
           <h2 id="signed-release-heading">Signed releases</h2>
           {signedLinked.length === 0 && signedPortable.length === 0 && <ContentState.Root align="start" role="status">

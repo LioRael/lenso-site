@@ -5,6 +5,7 @@ import { createServer } from 'node:https';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { create, load, search } from 'zbsearch';
 import { documentSlug } from './linked-documents.mjs';
 
 const root = resolve(import.meta.dirname, '..');
@@ -51,6 +52,10 @@ const sharedPortableRelease = {
     ...portableRelease.artifact, url: 'https://example.test/web.bundle',
     digest: `sha256:${'1'.repeat(64)}`, manifest_digest: `sha256:${'2'.repeat(64)}`,
   },
+};
+const yankedPortableRelease = {
+  ...portableRelease, plugin_id: 'example.retired', version: '0.9.0',
+  title: 'YANKED_RELEASE_SENTINEL', availability: 'yanked',
 };
 
 function releaseDetails(release, url) {
@@ -127,7 +132,7 @@ try {
         schema: 'lenso.marketplace.snapshot.v1', catalog_id: catalogId,
         revision: request.url === '/snapshot-rollback' ? 1 : 2,
         issued_at: now - 1, expires_at: now + 3600,
-        releases: [portableRelease, sharedPortableRelease],
+        releases: [portableRelease, sharedPortableRelease, yankedPortableRelease],
       };
       const bytes = envelope(snapshot);
       response.writeHead(200, { 'content-type': 'application/json', 'content-length': bytes.length });
@@ -140,7 +145,8 @@ try {
       const snapshot = {
         schema: 'lenso.marketplace.release-details.v1', catalog_id: catalogId,
         revision: 3, issued_at: now - 1, expires_at: now + 3600,
-        releases: [releaseDetails(portableRelease, url), releaseDetails(sharedPortableRelease, url)],
+        releases: [releaseDetails(portableRelease, url), releaseDetails(sharedPortableRelease, url),
+          releaseDetails(yankedPortableRelease, url)],
       };
       const bytes = envelope(snapshot);
       response.writeHead(200, { 'content-type': 'application/json', 'content-length': bytes.length });
@@ -184,6 +190,16 @@ try {
   const markdown = await readFile(join(root, `out/api/plugins/${pluginId}/${version}/docs/${slug}/content.md`), 'utf8');
   const portablePage = await readFile(join(root, `out/plugins/${pluginId}/${version}/docs/${portableSlug}/index.html`), 'utf8');
   const portableMarkdown = await readFile(join(root, `out/api/plugins/${pluginId}/${version}/docs/${portableSlug}/content.md`), 'utf8');
+  const searchIndex = JSON.parse(await readFile(join(root, 'out/api/plugins/search'), 'utf8'));
+  const searchDatabase = create({ schema: { _: 'string' } });
+  load(searchDatabase, searchIndex);
+  const linkedSearch = await search(searchDatabase, { term: 'Host build' });
+  const portableSearch = await search(searchDatabase, { term: 'independently signed' });
+  assert.ok(linkedSearch.hits.some((hit) => hit.document.url === `/plugins/${pluginId}/${version}/docs/${slug}`));
+  assert.ok(portableSearch.hits.some((hit) => hit.document.url === `/plugins/${pluginId}/${version}/docs/${portableSlug}`));
+  assert.ok(portableSearch.hits.some((hit) => hit.document.url === `/plugins/${portablePluginId}/${portableVersion}/docs/${echoPortableSlug}`));
+  assert.doesNotMatch(JSON.stringify(searchIndex), /YANKED_RELEASE_SENTINEL|example\.retired/);
+  assert.doesNotMatch(JSON.stringify(searchIndex), /lenso\.web-ingress|UNVERSIONED_PUBLISHER_COPY_SENTINEL/);
   assert.match(directory, /Inspect exact signed version/);
   assert.match(directory, /example.echo/);
   assert.match(directory, /2\.3\.4/);

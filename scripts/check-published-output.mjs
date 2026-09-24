@@ -24,7 +24,7 @@ function requireFile(path) {
   return existsSync(absolute) ? readFileSync(absolute, 'utf8') : '';
 }
 
-for (const path of ['index.html', 'plugins/index.html', 'plugins/lenso.web-ingress/0.4.5/index.html', 'docs/index.html', 'docs/zh/index.html', 'api/search', 'llms.txt', 'llms-full.txt', 'robots.txt', 'sitemap.xml']) requireFile(path);
+for (const path of ['index.html', 'plugins/index.html', 'plugins/lenso.web-ingress/0.4.5/index.html', 'docs/index.html', 'docs/zh/index.html', 'api/search', 'api/plugins/search', 'llms.txt', 'llms-full.txt', 'robots.txt', 'sitemap.xml']) requireFile(path);
 
 for (const [path, markers] of [
   ['index.html', ['Build the system.', 'Choose the shortest path', 'Preview app quickstart', 'Browse plugins']],
@@ -45,6 +45,7 @@ if (!candidateSigned) {
   }
 }
 const pluginIndex = requireFile('plugins/index.html');
+const pluginSearch = requireFile('api/plugins/search');
 const sitemap = requireFile('sitemap.xml');
 for (const release of signedPortableCatalog.releases) {
   const route = `plugins/${release.pluginId}/${release.version}`;
@@ -61,6 +62,7 @@ for (const release of signedPortableCatalog.releases) {
     const markdown = requireFile(`api/${documentRoute}/content.md`);
     if (!page.includes(document.topic) || !page.includes('Portable')) failures.push(`out/${documentRoute}/index.html: Portable document provenance missing`);
     if (markdown !== signedDocuments[document.slug]?.content || signedDocuments[document.slug]?.channel !== 'portable') failures.push(`out/api/${documentRoute}/content.md: Portable verified Markdown mismatch`);
+    if (!pluginSearch.includes(`/${documentRoute}`)) failures.push(`out/api/plugins/search: signed Portable document missing for ${documentRoute}`);
     if (!sitemap.includes(`/${documentRoute}`)) failures.push(`out/sitemap.xml: signed Portable document missing for ${documentRoute}`);
   }
 }
@@ -76,6 +78,7 @@ for (const release of signedCatalog.releases) {
     const markdown = requireFile(`api/${documentRoute}/content.md`);
     if (!page.includes(document.topic)) failures.push(`out/${documentRoute}/index.html: document topic missing`);
     if (markdown !== signedDocuments[document.slug]?.content || signedDocuments[document.slug]?.channel !== 'linked') failures.push(`out/api/${documentRoute}/content.md: linked verified Markdown mismatch`);
+    if (!pluginSearch.includes(`/${documentRoute}`)) failures.push(`out/api/plugins/search: signed linked document missing for ${documentRoute}`);
     if (!sitemap.includes(`/${documentRoute}`)) failures.push(`out/sitemap.xml: signed document missing for ${documentRoute}`);
   }
 }

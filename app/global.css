@@ -111,6 +111,14 @@ button, a, input, select { outline-offset: 3px; }
 .signed-release-documents li { margin: 8px 0; overflow-wrap: anywhere; }
 .signed-release-documents a, .linked-doc-main a { color: var(--blue); }
 .signed-release-documents small { display: block; color: var(--muted); }
+.signed-document-search { margin: -24px 0 30px; padding: 18px; border: 1px solid var(--line); border-radius: 7px; background: var(--soft); }
+.signed-document-search h2 { margin: 0 0 10px; font-size: 18px; }
+.signed-document-search p { margin: 0; color: var(--muted); line-height: 1.5; }
+.signed-document-search ul { margin: 0; padding: 0; list-style: none; }
+.signed-document-search li { display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 9px 0; }
+.signed-document-search li + li { border-top: 1px solid var(--line); }
+.signed-document-search a { color: var(--blue); font-weight: 600; }
+.signed-document-search span { color: var(--muted); overflow-wrap: anywhere; }
 .linked-doc-main { max-width: 980px; margin: 0 auto; padding: 40px clamp(20px, 5vw, 64px) 90px; }
 .linked-doc-breadcrumb { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 14px; }
 .linked-doc-header { margin: 40px 0 26px; }
