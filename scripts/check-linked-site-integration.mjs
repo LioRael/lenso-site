@@ -23,11 +23,17 @@ const version = '1.0.0';
 const portablePluginId = 'example.echo';
 const portableVersion = '2.3.4';
 const body = Buffer.from('# Verified quickstart\n\nVersion 1.0.0 uses a linked Host build.\n');
+const revisedBody = Buffer.from('# Revised quickstart\n\nThe same release has an additive documentation revision.\n');
 const portableBody = Buffer.from('# Portable quickstart\n\nPortable Bundle bytes are independently signed and versioned.\n');
 const document = {
   id: 'quickstart', revision: 'rev-1', language: 'en', topic: 'Getting started',
   digest: `sha256:${createHash('sha256').update(body).digest('hex')}`,
   size: body.length, media_type: 'text/markdown',
+};
+const revisedDocument = {
+  ...document, revision: 'rev-2', topic: 'Revised getting started',
+  digest: `sha256:${createHash('sha256').update(revisedBody).digest('hex')}`,
+  size: revisedBody.length,
 };
 const portableDocument = {
   id: 'quickstart', revision: 'rev-1', language: 'en', topic: 'Portable getting started',
@@ -103,23 +109,31 @@ try {
       response.end(body);
       return;
     }
+    if (request.url === '/revised-quickstart.md') {
+      response.writeHead(200, { 'content-type': 'text/markdown', 'content-length': revisedBody.length });
+      response.end(revisedBody);
+      return;
+    }
     if (request.url === '/portable-quickstart.md') {
       response.writeHead(200, { 'content-type': 'text/markdown', 'content-length': portableBody.length });
       response.end(portableBody);
       return;
     }
-    if (request.url === '/linked-cargo') {
+    if (request.url === '/linked-cargo' || request.url === '/linked-cargo-amended') {
       const address = server.address();
       const url = `https://127.0.0.1:${address.port}/quickstart.md`;
+      const amended = request.url === '/linked-cargo-amended';
       const snapshot = {
         schema: 'lenso.marketplace.linked-cargo-snapshot.v1', catalog_id: catalogId,
-        revision: 1, issued_at: now - 1, expires_at: now + 3600,
+        revision: amended ? 2 : 1, issued_at: now - 1, expires_at: now + 3600,
         releases: [{
           plugin_id: pluginId, version, publisher_id: 'example', title: 'Example Web', summary: 'Fixture linked ingress',
           source_url: 'https://example.test/web', source_revision: 'a'.repeat(40), license: 'MIT',
           package: 'example-web', registry_url: 'https://crates.io', crate_digest: `sha256:${'b'.repeat(64)}`,
           integration: 'linked_plugin', targets: ['aarch64-apple-darwin'], availability: 'listed',
-          documentation: [{ ...document, url }],
+          documentation: [{ ...document, url }, ...(amended
+            ? [{ ...revisedDocument, url: `https://127.0.0.1:${address.port}/revised-quickstart.md` }]
+            : [])],
         }],
       };
       const bytes = envelope(snapshot);
@@ -232,11 +246,19 @@ try {
   assert.notEqual(portableMarkdown, markdown);
   const secondEnvironment = { ...environment,
     LENSO_MARKETPLACE_CHECKPOINT_INPUT: checkpointPath,
-    LENSO_MARKETPLACE_CHECKPOINT_OUTPUT: secondCheckpointPath };
+    LENSO_MARKETPLACE_CHECKPOINT_OUTPUT: secondCheckpointPath,
+    LENSO_MARKETPLACE_LINKED_CARGO_URL: `https://127.0.0.1:${port}/linked-cargo-amended` };
   delete secondEnvironment.LENSO_MARKETPLACE_CHECKPOINT_BOOTSTRAP;
   await run('pnpm', ['build'], secondEnvironment);
   const secondCheckpoint = JSON.parse(await readFile(secondCheckpointPath, 'utf8'));
-  assert.deepEqual(secondCheckpoint, firstCheckpoint, 'same signed payload retains exact checkpoint');
+  assert.equal(secondCheckpoint.linked_cargo.revision, 2);
+  assert.equal(secondCheckpoint.linked_cargo.document_identities[`${pluginId}@${version}/quickstart@rev-1`],
+    firstCheckpoint.linked_cargo.document_identities[`${pluginId}@${version}/quickstart@rev-1`]);
+  assert.ok(secondCheckpoint.linked_cargo.document_identities[`${pluginId}@${version}/quickstart@rev-2`]);
+  const revisedSlug = documentSlug(pluginId, version, revisedDocument);
+  assert.equal(await readFile(join(root, `out/api/plugins/${pluginId}/${version}/docs/${slug}/content.md`), 'utf8'), body.toString());
+  assert.equal(await readFile(join(root, `out/api/plugins/${pluginId}/${version}/docs/${revisedSlug}/content.md`), 'utf8'), revisedBody.toString());
+  assert.match(await readFile(join(root, `out/plugins/${pluginId}/${version}/index.html`), 'utf8'), /Revised getting started/);
   const metadataOnlyEnvironment = { ...environment };
   delete metadataOnlyEnvironment.LENSO_MARKETPLACE_RELEASE_DETAILS_URL;
   await run('node', ['scripts/ingest-linked-catalog.mjs'], metadataOnlyEnvironment);
@@ -252,7 +274,7 @@ try {
     LENSO_MARKETPLACE_PORTABLE_URL: `https://127.0.0.1:${port}/snapshot-rollback` };
   await assert.rejects(run('pnpm', ['build'], rollbackEnvironment));
   await assert.rejects(readFile(failedCheckpointPath), { code: 'ENOENT' });
-  console.log('Signed HTTPS fixtures proved exact Portable details/base join, separate channel documents, checkpoint bootstrap/continuation, and no output on rollback failure.');
+  console.log('Signed HTTPS fixtures proved exact Portable details/base join, additive linked documentation revisions, checkpoint bootstrap/continuation, and no output on rollback failure.');
 } finally {
   if (server) await new Promise((success) => server.close(success));
   await rm(temporary, { recursive: true, force: true });
