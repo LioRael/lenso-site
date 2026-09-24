@@ -265,6 +265,13 @@ const nextConfig = read("next.config.mjs");
 for (const requiredMarker of ["createMDX", "output: 'export'", "trailingSlash: true"]) {
   if (!nextConfig.includes(requiredMarker)) failures.push(`next.config.mjs: missing ${JSON.stringify(requiredMarker)}`);
 }
+const homepage = read("app/page.tsx");
+if (!homepage.includes("lenso app create knowledge-base</p>")
+  || !homepage.includes("App created · Cargo check passed")
+  || !/knowledge-base\/[\s\S]*Cargo\.toml[\s\S]*src\/[\s\S]*lib\.rs[\s\S]*public\/[\s\S]*index\.html[\s\S]*plugins\//.test(homepage)
+  || homepage.includes("local.starter/")) {
+  failures.push("app/page.tsx: local App preview must show the default root Cargo Web scaffold");
+}
 const navigation = read("lib/layout.shared.tsx");
 for (const requiredMarker of ["Build apps", "Develop plugins", "Extend the framework", "Plugins"]) {
   if (!navigation.includes(requiredMarker)) failures.push(`lib/layout.shared.tsx: missing navigation marker ${JSON.stringify(requiredMarker)}`);
