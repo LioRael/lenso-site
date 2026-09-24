@@ -128,8 +128,8 @@ the command shape is:
   --trust /absolute/path/to/public-trust.json \
   --crate /absolute/path/to/exact-package.crate
 "$LENSO_CLI" app build --out dist-linked-review
-"$LENSO_CLI" app check --root dist-linked-review
-"$LENSO_CLI" app show --root dist-linked-review --json
+"$LENSO_CLI" app check --root dist-linked-review/intent
+"$LENSO_CLI" app show --root dist-linked-review/intent --json
 ```
 
 `PLUGIN_ID`, `VERSION`, and the file paths above are placeholders, not a

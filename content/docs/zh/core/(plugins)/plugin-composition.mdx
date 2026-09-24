@@ -116,8 +116,8 @@ Portable Release 已公开发布。
   --trust /absolute/path/to/public-trust.json \
   --crate /absolute/path/to/exact-package.crate
 "$LENSO_CLI" app build --out dist-linked-review
-"$LENSO_CLI" app check --root dist-linked-review
-"$LENSO_CLI" app show --root dist-linked-review --json
+"$LENSO_CLI" app check --root dist-linked-review/intent
+"$LENSO_CLI" app show --root dist-linked-review/intent --json
 ```
 
 上面的 `PLUGIN_ID`、`VERSION` 和文件路径都是占位符，不代表已有公开发布。

@@ -17,7 +17,7 @@ Rust 源码检出构建 `lenso` CLI。
 
 ```sh
 "$LENSO_CLI" app facts --root dist --json
-"$LENSO_CLI" app show --root dist --json
+"$LENSO_CLI" app show --root dist/intent --json
 ```
 
 `plugins/example.web/default.toml` 是应用拥有的选择意图。创建空文件
@@ -28,8 +28,8 @@ Rust 源码检出构建 `lenso` CLI。
 ```sh
 touch plugins/example.web/default.disabled
 "$LENSO_CLI" app build --out dist-disabled
-"$LENSO_CLI" app check --root dist-disabled
-"$LENSO_CLI" app show --root dist-disabled --json
+"$LENSO_CLI" app check --root dist-disabled/intent
+"$LENSO_CLI" app show --root dist-disabled/intent --json
 "$LENSO_CLI" app start --from dist-disabled --check
 ```
 
@@ -50,8 +50,8 @@ touch plugins/example.web/default.disabled
 "$LENSO_CLI" app unadopt example.web@0.4.5 --root .
 "$LENSO_CLI" app discover --root . --json
 "$LENSO_CLI" app build --out dist-withdrawn
-"$LENSO_CLI" app check --root dist-withdrawn
-"$LENSO_CLI" app show --root dist-withdrawn --json
+"$LENSO_CLI" app check --root dist-withdrawn/intent
+"$LENSO_CLI" app show --root dist-withdrawn/intent --json
 ```
 
 命令会验证源码锁及摘要，把未被改动的精确源码和 Plugin Root 意图移到

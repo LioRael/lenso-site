@@ -12,16 +12,16 @@ description: Preview typed React calls against a local knowledge-base App candid
 
 The [local Web App quickstart](/docs/core/app-quickstart) proves one greeting.
 This follow-up shows how a normal React page calls an App's **public** API with
-generated types. Lenso starts one Vite development process; React still owns
-the page, and the backend Plugins still own authentication and authorization.
+generated types. Vite builds the page into the Web Plugin's static assets;
+the built Lenso Host serves it. Backend Plugins still own authentication and authorization.
 
 ## 1. Identify the inputs before starting
 
 In the matching `lenso-examples` source checkout, open
 `fixtures/vnext-knowledge-base-app/README.md`. The fixture's `project/` is the
-App root, while `project/frontend/` is the ordinary Vite/React project. You
+App root, while sibling `frontend/` is the ordinary Vite/React project. You
 need a matching source-built `lenso` CLI, Rust/Cargo, Bun, an independently
-packed `@lenso/web-client` candidate matching `project/frontend/bun.lock`,
+packed `@lenso/web-client` candidate matching `frontend/bun.lock`,
 and the Auth API-token, Jobs, and Secrets provider sources (or their exact
 signed `.crate` inputs). Use a disposable PostgreSQL database. The verifier
 creates schemas and leaves them available for inspection; it does not reset
@@ -74,22 +74,27 @@ file. Keep the `0700` directory private. If a file remains, stop the verifier
 and manually remove it only after confirming the path still names the handoff,
 not a replacement. Do not reuse, commit, or share the token.
 
-A successful run verifies a built, source-deleted candidate App with its
-checked-in static page. It is distinct from the editable Vite development
-loop below and is not evidence of a published package, a deployed Site, or
-production support.
+A successful run verifies a built, source-deleted candidate App. With
+`--web-client-package`, the verifier builds the React page from the supplied
+tarball before that App build; without it, the checked-in static page remains.
+Neither path proves a published package, a deployed Site, or production support.
 
-## 3. Edit the React page in a prepared App
+## 3. Rebuild the React page for a prepared App
 
 For an App **already prepared** with those providers, schema operators,
-credential, and database settings, put the exact tarball at the fixture's
-locked local dependency path. From the fixture directory:
+credentials, and database settings, put the exact tarball at the fixture's
+locked local dependency path. From the fixture directory, use the matching
+source-built CLI and a new output directory:
 
 ```sh
-mkdir -p project/frontend/vendor
-cp /absolute/path/to/lenso-web-client.tgz project/frontend/vendor/lenso-web-client.tgz
-(cd project/frontend && bun install --frozen-lockfile && bun run generate && bun run typecheck)
-lenso app dev --root project
+LENSO_CLI=/absolute/path/to/lenso
+mkdir -p frontend/vendor
+cp /absolute/path/to/lenso-web-client.tgz frontend/vendor/lenso-web-client.tgz
+(cd frontend && bun install --frozen-lockfile && bun run generate && bun run typecheck && bun run build)
+"$LENSO_CLI" app build --root project --out dist-react-review
+"$LENSO_CLI" app check --root dist-react-review/intent
+"$LENSO_CLI" app show --root dist-react-review/intent --json
+"$LENSO_CLI" app start --from dist-react-review --check
 ```
 
 `bun run generate` projects the selected `openapi.json` into
@@ -101,34 +106,21 @@ access to an internal Capability. The backend verifies the actor and resource
 permissions on each request. See [Auth Plugin](/docs/web/auth-plugin) for the
 provider boundary.
 
-`project/frontend/lenso.dev.toml` explicitly selects `bun run dev` at
-`http://127.0.0.1:5173/`. Engine supplies `LENSO_API_URL_FILE`, pointing at
-the current Host URL in `project/.lenso/dev-backend-url`. The Vite middleware
-reads that file on every allowed public API request and exposes
-`GET /__lenso/backend` as a readiness handshake. A missing or invalid file
-returns `503`; a Host rebuild may change its port without restarting Vite.
-The browser calls its own origin; Host secret environment variables are not
-inherited by the frontend process.
-The proxy only admits the public notes, settings, jobs, and attachment routes
-declared by the example, not Host administration or internal Capabilities.
-Open the frontend URL only after `app dev` reports readiness.
-
-After editing the page, `bun run build` updates the Plugin-owned static assets
-for a new App build. Vite HMR during development does not itself update those
-packaged assets:
-
-```sh
-(cd project/frontend && bun run build)
-lenso app build --root project --out dist-react-review
-lenso app check --root dist-react-review
-lenso app show --root dist-react-review --json
-```
+`frontend/vite.config.ts` writes the build to
+`project/app/notes-web/public/`. The current fixture has no
+`lenso.dev.toml` connecting Vite to `app dev`, and its standalone Vite proxy
+only forwards `/notes`. Do not treat `bun run dev` as a complete browser
+check for settings, jobs, or attachments. For the full authenticated flow,
+use the verifier's browser handoff against the built Host. After any React
+edit, run `bun run build` again and build to another output directory; Vite
+HMR does not update a previously built App.
 
 Use a new output directory each time; `app build` refuses to overwrite one.
-Completion means the browser request succeeds with an issued token, a note
-can be read back, an unauthorized user cannot read it, and the built App
-passes `check` and `show`. This Site page describes that check; it does not
-claim those browser or build steps have been run for your checkout.
+`app start --check` validates readiness and shuts down; it does not perform
+the browser request. Completion means the verifier's browser request succeeds
+with an issued token, a note can be read back, an unauthorized user cannot
+read it, and the built App passes `check` and `show`. This Site page describes
+that check; it does not claim those steps have been run for your checkout.
 
 ## Give an agent the same task
 
@@ -138,9 +130,9 @@ source checkouts and an isolated disposable database. First verify the exact
 CLI, provider inputs, and locked @lenso/web-client tarball. Run the fixture
 verifier with a private browser handoff; exercise token verification, note creation,
 readback, and upload in a real browser, and inspect the verifier's cross-user
-denial result. For a separately
-prepared App, run the frozen frontend install, generate/typecheck, and app dev;
-after an edit, rebuild static assets and run app build/check/show. Report exact
+denial result. For a separately prepared App, run the frozen frontend install,
+generate/typecheck/build, then app build/check/show/start --check. Do not
+substitute the standalone Vite proxy for the full browser check. Report exact
 revisions, package digest, commands, browser URL, result, and missing inputs.
 Do not turn candidate proof into a published or deployed claim.
 ```

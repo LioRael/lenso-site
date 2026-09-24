@@ -18,7 +18,7 @@ In an App that already adopted `example.web`, inspect the exact selection:
 
 ```sh
 "$LENSO_CLI" app facts --root dist --json
-"$LENSO_CLI" app show --root dist --json
+"$LENSO_CLI" app show --root dist/intent --json
 ```
 
 The `plugins/example.web/default.toml` file is App-owned selection intent.
@@ -30,8 +30,8 @@ Instance again. The marker does not stop a Host that is already running.
 ```sh
 touch plugins/example.web/default.disabled
 "$LENSO_CLI" app build --out dist-disabled
-"$LENSO_CLI" app check --root dist-disabled
-"$LENSO_CLI" app show --root dist-disabled --json
+"$LENSO_CLI" app check --root dist-disabled/intent
+"$LENSO_CLI" app show --root dist-disabled/intent --json
 "$LENSO_CLI" app start --from dist-disabled --check
 ```
 
@@ -57,8 +57,8 @@ adopted coordinates:
 "$LENSO_CLI" app unadopt example.web@0.4.5 --root .
 "$LENSO_CLI" app discover --root . --json
 "$LENSO_CLI" app build --out dist-withdrawn
-"$LENSO_CLI" app check --root dist-withdrawn
-"$LENSO_CLI" app show --root dist-withdrawn --json
+"$LENSO_CLI" app check --root dist-withdrawn/intent
+"$LENSO_CLI" app show --root dist-withdrawn/intent --json
 ```
 
 The command validates the source lock and digest, then moves the exact source

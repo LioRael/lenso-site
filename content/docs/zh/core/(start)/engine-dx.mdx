@@ -66,8 +66,8 @@ App 自有 Plugin 获得可禁用的 default Instance。重复身份或未满足
 ```sh
 lenso app discover --json
 lenso app build --out dist-review
-lenso app check --root dist-review
-lenso app show --root dist-review --json
+lenso app check --root dist-review/intent
+lenso app show --root dist-review/intent --json
 lenso app start --from dist-review --check
 ```
 

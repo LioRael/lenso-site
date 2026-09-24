@@ -266,11 +266,10 @@ for (const requiredMarker of ["createMDX", "output: 'export'", "trailingSlash: t
   if (!nextConfig.includes(requiredMarker)) failures.push(`next.config.mjs: missing ${JSON.stringify(requiredMarker)}`);
 }
 const homepage = read("app/page.tsx");
-if (!homepage.includes("lenso app create knowledge-base</p>")
+if (!homepage.includes("lenso app create knowledge-base --web</p>")
   || !homepage.includes("App created · Cargo check passed")
-  || !/knowledge-base\/[\s\S]*Cargo\.toml[\s\S]*src\/[\s\S]*lib\.rs[\s\S]*public\/[\s\S]*index\.html[\s\S]*plugins\//.test(homepage)
-  || homepage.includes("local.starter/")) {
-  failures.push("app/page.tsx: local App preview must show the default root Cargo Web scaffold");
+  || !/knowledge-base\/[\s\S]*app\/local\.starter\/[\s\S]*Cargo\.toml[\s\S]*src\/routes\/home\.rs[\s\S]*public\/index\.html[\s\S]*plugins\//.test(homepage)) {
+  failures.push("app/page.tsx: Web App preview must select --web and show its nested linked Plugin");
 }
 const navigation = read("lib/layout.shared.tsx");
 for (const requiredMarker of ["Build apps", "Develop plugins", "Extend the framework", "Plugins"]) {
@@ -279,6 +278,21 @@ for (const requiredMarker of ["Build apps", "Develop plugins", "Extend the frame
 const pluginCandidate = read("lib/plugin-candidates.ts");
 for (const requiredMarker of ["lenso.web-ingress", "0.4.5", "Not yet catalog-signed"]) {
   if (!pluginCandidate.includes(requiredMarker)) failures.push(`lib/plugin-candidates.ts: missing honest candidate marker ${JSON.stringify(requiredMarker)}`);
+}
+for (const locale of ["", "zh/"]) {
+  const compositionPath = `content/docs/${locale}core/(plugins)/plugin-composition.mdx`;
+  const composition = read(compositionPath);
+  for (const marker of ["--portable-snapshot", "--archive", "dist-portable-review/intent", "--linked-snapshot", "--crate", "dist-linked-review/intent"]) {
+    if (!composition.includes(marker)) failures.push(`${compositionPath}: exact distribution command missing ${marker}`);
+  }
+  const frontendPath = `content/docs/${locale}core/(start)/react-vite-app.mdx`;
+  const frontend = read(frontendPath);
+  for (const marker of ["frontend/bun.lock", "frontend/vendor/lenso-web-client.tgz", "project/app/notes-web/public/", "dist-react-review/intent"]) {
+    if (!frontend.includes(marker)) failures.push(`${frontendPath}: current Examples path missing ${marker}`);
+  }
+  for (const stale of ["project/frontend", "LENSO_API_URL_FILE", "/__lenso/backend", "lenso app dev --root project"]) {
+    if (frontend.includes(stale)) failures.push(`${frontendPath}: stale Vite integration claim ${stale}`);
+  }
 }
 
 const currentFiles = walkFiles(docsRoot).filter((file) => /\.(?:md|mdx|ts)$/.test(file));
@@ -305,6 +319,9 @@ for (const file of chineseDocuments) {
 const retiredGenerationName = new RegExp(["v", "next"].join(""), "i");
 for (const file of currentFiles) {
   const text = readFileSync(file, "utf8");
+  for (const match of text.matchAll(/\bapp (?:check|show) --root (dist[\w-]*)(?!\/intent)(?=[\s`]|$)/g)) {
+    failures.push(`${relative(root, file)}: source App distribution check/show must use ${match[1]}/intent`);
+  }
   for (const [label, expression] of [
     ["retired public lifecycle", /Compose, Run locally, Connect, (?:and )?Status/g],
     ["retired runtime model", /agent-ready Rust modular applications and microservices/g],
@@ -342,22 +359,22 @@ for (const marker of ["Resolved App Plan", "Runtime Driver", "Execution Adapter"
 for (const [file, markers] of [
   ["content/docs/core/(start)/app-quickstart.mdx", [
     "Local candidate preview",
-    'app create "$APP_PARENT/hello-web"',
+    'app create "$APP_PARENT/hello-web" --web',
     "plugin new example.second-http --web --repo-root ./app",
     "app dev",
     "Hello, Ada!",
     "app build --out dist-review",
-    "app check --root dist-review",
+    "app check --root dist-review/intent",
     "Use a coding agent for these same steps",
   ]],
   ["content/docs/zh/core/(start)/app-quickstart.mdx", [
     "本地候选预览",
-    'app create "$APP_PARENT/hello-web"',
+    'app create "$APP_PARENT/hello-web" --web',
     "plugin new example.second-http --web --repo-root ./app",
     "app dev",
     "Hello, Ada!",
     "app build --out dist-review",
-    "app check --root dist-review",
+    "app check --root dist-review/intent",
     "让 Coding Agent 执行相同步骤",
   ]],
   ["content/docs/core/(start)/first-app-change.mdx", [

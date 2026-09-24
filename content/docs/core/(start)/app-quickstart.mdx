@@ -99,13 +99,13 @@ From `hello-web/`, run:
 "$LENSO_CLI" app discover --json
 cargo test --locked --manifest-path app/example.second-http/Cargo.toml
 "$LENSO_CLI" app build --out dist-review
-"$LENSO_CLI" app check --root dist-review
-"$LENSO_CLI" app show --root dist-review --json
+"$LENSO_CLI" app check --root dist-review/intent
+"$LENSO_CLI" app show --root dist-review/intent --json
 "$LENSO_CLI" app start --from dist-review --check
 ```
 
 `app build` refuses to overwrite an existing output directory. The check and
-show commands inspect the built distribution's Plugin Root and resolved result;
+show commands inspect the built distribution's `intent/` Plugin Root and resolved result;
 `start --check` activates and shuts down. A successful source build is still
 not proof of a publicly downloadable release or deployment. To check live HTTP,
 run `"$LENSO_CLI" app start --from dist-review` and visit `/` and `/second` at

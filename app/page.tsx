@@ -25,15 +25,14 @@ export default function Home() {
           <div aria-label="Example project creation result" className="terminal-card">
             <div className="terminal-bar"><span className="terminal-lights"><i /><i /><i /></span><span>lenso — local source preview</span><Copy aria-hidden="true" size={16} /></div>
             <div className="terminal-body">
-              <p><span>$</span> lenso app create knowledge-base</p>
+              <p><span>$</span> lenso app create knowledge-base --web</p>
               <p className="terminal-success">✓ App created · Cargo check passed</p>
               <div className="file-tree">
                 <p><Folder size={16} /> knowledge-base/</p>
-                <p className="depth"><FileCode2 size={16} /> Cargo.toml</p>
-                <p className="depth"><Folder size={16} /> src/</p>
-                <p className="depth-two"><FileCode2 size={16} /> lib.rs</p>
-                <p className="depth"><Folder size={16} /> public/</p>
-                <p className="depth-two"><FileCode2 size={16} /> index.html</p>
+                <p className="depth"><Folder size={16} /> app/local.starter/</p>
+                <p className="depth-two"><FileCode2 size={16} /> Cargo.toml</p>
+                <p className="depth-two"><FileCode2 size={16} /> src/routes/home.rs</p>
+                <p className="depth-two"><FileCode2 size={16} /> public/index.html</p>
                 <p className="depth"><Folder size={16} /> plugins/</p>
               </div>
               <p><span>$</span> <span className="cursor" /></p>
