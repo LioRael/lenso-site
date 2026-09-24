@@ -7,7 +7,21 @@ Plugin browsing experience while catalog signing, publishing, and installation
 authority remain in the Marketplace and the adopting Host.
 
 The documentation tree describes the current Lenso architecture only. Retired product generations
-are intentionally excluded from the public site.
+are intentionally excluded from the public site. `/docs` and `/docs/zh` are explicitly
+**development previews**, not documentation for a published framework version.
+The static `/docs/versions` and `/docs/zh/versions` pages accept an exact
+`?version=` lookup and report unavailable versions instead of redirecting to
+the preview or to “latest.” `/api/docs/versions` is the machine-readable
+inventory: this build has one preview channel and no published-version
+snapshots. Its corpus revision and each page's content revision are SHA-256
+fingerprints of the route, title, description, and processed Markdown, not
+release numbers or Git commits.
+HTML, per-page Markdown, `llms.txt`, `llms-full.txt`, and the search index carry
+the preview identity and revision; page outputs also carry their locale.
+The public static Site has no connected project lock, so it cannot infer a
+project's selected framework version. Published snapshots and lock-aware
+selection require separate content, provenance, and product integration.
+The page hashes do not prove translation freshness between languages.
 
 ## Development
 

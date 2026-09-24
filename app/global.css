@@ -144,6 +144,20 @@ button, a, input, select { outline-offset: 3px; }
 .linked-doc-footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
 
 .docs-actions { display: flex; gap: 8px; align-items: center; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+.docs-provenance { margin: 22px 0; padding: 16px 18px; border: 1px solid var(--color-fd-border); border-radius: 8px; background: var(--color-fd-card); }
+.docs-provenance strong { display: block; margin-bottom: 5px; }
+.docs-provenance p { margin: 0 0 11px; }
+.docs-provenance a, .docs-version-lookup a { color: var(--color-fd-primary); text-decoration: underline; }
+.docs-provenance dl { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 0; font-size: 12px; }
+.docs-provenance dl > div { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+.docs-provenance dt { color: var(--color-fd-muted-foreground); }
+.docs-provenance dd { margin: 0; overflow-wrap: anywhere; }
+.docs-version-lookup form { display: grid; gap: 9px; margin: 18px 0; }
+.docs-version-lookup form > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.docs-version-lookup input { min-width: min(100%, 220px); padding: 8px 10px; border: 1px solid var(--color-fd-border); border-radius: 6px; background: var(--color-fd-background); color: var(--color-fd-foreground); }
+.docs-version-lookup button { padding: 8px 14px; border-radius: 6px; background: var(--color-fd-primary); color: var(--color-fd-primary-foreground); cursor: pointer; }
+.docs-version-unavailable { padding: 12px 14px; border: 1px solid var(--color-fd-border); border-radius: 6px; overflow-wrap: anywhere; }
+.docs-revision { overflow-wrap: anywhere; }
 .mdx-card-group { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin: 24px 0; }.mdx-card { display: grid; gap: 7px; padding: 18px; border: 1px solid var(--line); border-radius: 7px; }.mdx-card:hover { border-color: var(--blue); }.mdx-card span { color: var(--muted); font-size: 14px; line-height: 1.5; }
 .mdx-steps { counter-reset: step; margin: 28px 0; padding: 0; list-style: none; }.mdx-steps > li { counter-increment: step; position: relative; margin-left: 18px; padding: 0 0 28px 38px; border-left: 1px solid var(--line); }.mdx-steps > li::before { content: counter(step); position: absolute; left: -14px; top: 0; width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: #fff; color: var(--muted); font: 600 12px/1 ui-sans-serif; }.mdx-steps > li:last-child { border-left-color: transparent; }
 

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "node scripts/ingest-linked-catalog.mjs && next build && node scripts/finalize-static-output.mjs && node scripts/check-published-output.mjs && node scripts/publish-catalog-checkpoint.mjs",
+    "build": "node scripts/ingest-linked-catalog.mjs && next build && node scripts/finalize-static-output.mjs && node scripts/check-published-output.mjs && node scripts/check-framework-doc-versions.mjs && node scripts/publish-catalog-checkpoint.mjs",
     "check": "pnpm check:docs && pnpm check:search && pnpm check:linked-catalog && pnpm types:check && pnpm build && pnpm check:learning-paths",
     "check:learning-paths": "node scripts/check-learning-paths.mjs",
     "check:engine-extension": "node scripts/smoke-engine-extension.mjs",
@@ -12,6 +12,7 @@
     "check:docs": "node scripts/check-docs.mjs",
     "check:docs:upstream": "pnpm check && node scripts/check-external-links.mjs",
     "check:search": "node scripts/check-search.mjs",
+    "check:framework-doc-versions": "node scripts/check-framework-doc-versions.mjs",
     "check:published": "node scripts/check-published-output.mjs",
     "worker:build": "pnpm build",
     "deploy": "pnpm build && wrangler deploy",
