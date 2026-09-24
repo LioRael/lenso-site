@@ -20,27 +20,32 @@ lenso app build
 lenso app start --from dist
 ```
 
-不带选项的 `app create` 会在根目录生成带 Web Route 的 Cargo 包，它是第一个
-App 自有业务 Plugin。更多 App 自有 Plugin 源码放在 `app/`；`plugins/` 保留
+不带选项的 `app create` 会在根目录生成 Cargo Process Plugin，提供
+`POST /notes` 和 `GET /notes/{id}`，不会生成公开 HTML 页面。更多 App 自有
+Plugin 源码放在 `app/`；`plugins/` 保留
 Instance 配置和禁用标记。基础源码 App 无需 `lenso.toml`、Host 声明、preset
 或激活开关。`--runtime process`、`bun`、`wasm` 或 `multi` 可选择其他嵌套
 starter；`--runtime empty` 不生成 starter。Rust 源码需要相应工具链；纯 Bun
 App 使用预编译 runtime。
 
-## 添加第二个 Linked Web Plugin
+## 创建 Linked Web App，再添加第二个 Web Plugin
 
-停止上方启动的 App 后，在 `my-app/app/` 中生成另一个 Linked Rust Plugin：
+上方默认 Process starter 是另一条路径。要组合两个 Linked Web Plugin，应先用
+`--web` 创建新 App，再在 `my-web-app/app/` 生成第二个 Plugin：
 
 ```sh
+lenso app create my-web-app --web
+cd my-web-app
 lenso plugin new example.second-http --web --repo-root ./app
 ```
 
-根目录 Cargo 包是第一个 Web Plugin，`app/example.second-http/` 是第二个。
+`app/local.starter/` 是第一个 Web Plugin，`app/example.second-http/` 是第二个。
 两个 starter 默认使用相同的 greeting Route ID 和路径。构建前，在
 `app/example.second-http/src/routes/` 为第二个 Plugin 设置不同的 Route ID
 及 Method/Path 组合，并同步修改生成的测试；生成的 Host 会在 Ready 前拒绝
 Route 冲突。
 然后用新的输出目录执行下方的 discover、build、check、show 和 start 命令。
+浏览器请求与具体修改步骤见[本地 Web App 快速开始](/docs/zh/core/app-quickstart)。
 
 `lenso app plugin new` 只生成 CLI `tools` Plugin，不生成 Linked Web Plugin。
 它需要先执行 `lenso app add @lenso/cli`；上面的 Web 路径不需要 CLI support。

@@ -22,30 +22,35 @@ lenso app build
 lenso app start --from dist
 ```
 
-Without flags, `app create` makes a root Cargo package with Web routes: the
-first App-owned business Plugin. Additional App-owned Plugin sources live under
-`app/`; `plugins/` holds Instance configuration and disabled markers. A basic
+Without flags, `app create` makes a root Cargo Process Plugin with
+`POST /notes` and `GET /notes/{id}`. It does not create a public HTML page.
+Additional App-owned Plugin sources live under `app/`; `plugins/` holds Instance
+configuration and disabled markers. A basic
 source App needs no `lenso.toml`, Host declaration, preset or activation flag.
 Use `--runtime process`, `bun`, `wasm`, or `multi` for an explicit nested
 starter, or `--runtime empty` for none. Rust source builds need the
 corresponding Rust toolchain; Bun-only Apps use a precompiled runtime.
 
-## Add a second linked Web Plugin
+## Create a linked Web App and add another Web Plugin
 
-After stopping the App started above, scaffold another linked Rust Plugin
-inside `my-app/app/`:
+The default Process starter above is a separate path. For two linked Web
+Plugins, create a new App with `--web`, then scaffold the second Plugin inside
+`my-web-app/app/`:
 
 ```sh
+lenso app create my-web-app --web
+cd my-web-app
 lenso plugin new example.second-http --web --repo-root ./app
 ```
 
-The root Cargo package is the first Web Plugin; `app/example.second-http/` is
+`app/local.starter/` is the first Web Plugin; `app/example.second-http/` is
 the second. Both starters include the same greeting route IDs and paths. Give
 the second Plugin distinct route IDs and method/path pairs in
 `app/example.second-http/src/routes/`, and update its generated tests before
 building. The generated Host rejects route collisions before Ready. Then run
 the discovery, build, check, show and start commands below with a new output
-directory.
+directory. Follow the [local Web App quickstart](/docs/core/app-quickstart)
+for the browser request and exact edit sequence.
 
 `lenso app plugin new` is for CLI `tools` Plugins, not linked Web Plugins. It
 requires `lenso app add @lenso/cli` first; the Web path above does not.
