@@ -1,13 +1,13 @@
 ---
 title: Disable or withdraw a Plugin
-description: Inspect the next App generation before removing a selected Plugin or an exact linked Cargo source.
+description: Inspect the next App generation before removing a selected Plugin or an exact signed source.
 ---
 
 This is a **local source-checkout workflow**, not a claim that a matching public
 catalog release is available. Build the `lenso` CLI from the same Rust checkout
 as your App, as in [Create a local Web App](/docs/core/app-quickstart).
 
-Disabling an Instance, withdrawing a linked source, and migrating its data are
+Disabling an Instance, withdrawing a signed source, and migrating its data are
 different operations. Keep the currently running distribution and its data
 until the replacement passes `app check`, `app show`, and an application-level
 smoke test. An App build does not overwrite an existing output directory.
@@ -45,10 +45,10 @@ directory.
 
 ## Withdraw an exact signed linked Cargo source
 
-`app unadopt` currently applies **only** to a source previously adopted from a
+`app unadopt` without `--portable` applies **only** to a source previously adopted from a
 signed linked Cargo snapshot with `app add PLUGIN_ID@VERSION --linked-snapshot
 ... --trust ... --crate ...`. It is not a general uninstall command for local
-Plugins, portable Bundles, or external services.
+Plugins or external services.
 
 After checking that no required binding needs the Instance, use its exact
 adopted coordinates:
@@ -67,6 +67,26 @@ the recovery location. If either contains user changes, it refuses and leaves
 them for review. It does **not** delete a database, perform a schema migration,
 or prove application data compatibility. Preserve a backup and validate the
 replacement's real reads and writes before retiring the old Host.
+
+## Unselect an exact signed Portable source
+
+For a source App that adopted an exact signed `.lenso-plugin` with
+`app add PLUGIN_ID@VERSION --portable-snapshot ... --trust ... --archive ...`,
+use its exact coordinates and the explicit distribution flag:
+
+```sh
+"$LENSO_CLI" app unadopt example.tool@0.1.0 --portable --root .
+"$LENSO_CLI" app discover --root . --json
+"$LENSO_CLI" app build --out dist-portable-withdrawn
+"$LENSO_CLI" app check --root dist-portable-withdrawn/intent
+"$LENSO_CLI" app show --root dist-portable-withdrawn/intent --json
+```
+
+This unselects the source and moves only an unmodified generated Plugin Root
+intent into recoverable `.lenso/trash/portable/`. The exact archive remains
+under `vendor/lenso/portable/` for audit. It does not stop an already running
+Host, delete application data, or reverse a data migration. Review the new
+generation before switching traffic.
 
 An exact-version upgrade is currently a separately reviewed adoption and
 application migration, not an automatic `upgrade` operation. Check target,

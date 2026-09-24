@@ -7,10 +7,11 @@ The reviewed authoring authority is a visible `plugins/` directory. The matching
 Host Build publishes `.lenso/host-catalog.json`; resolution merges Host defaults
 with Plugin Root differences and produces the complete immutable App Plan.
 
-Before using these commands, obtain the executable Host Build and
+The built-root commands in section 2 require an executable Host Build and
 `host-catalog.json` generated from that exact build. They define which linked
 Plugins, Slots, Execution Adapters, and defaults the product actually supports;
-the generic CLI cannot invent them.
+the generic CLI cannot invent them. The source-App commands in section 3
+instead build a new Host from the adopted inputs.
 
 ## 1. Understand the App files
 
@@ -84,11 +85,37 @@ catalog may truthfully be empty until a Release has a real downloadable Bundle.
 The `example.tool` coordinates above are illustrative, not a claim of an
 available release.
 
-The current **source-built** CLI also has a separate exact signed linked Cargo
-path. Build that CLI as in [Create a local Web App](/docs/core/app-quickstart)
-and set `LENSO_CLI` to its absolute binary path. In a source App, first inspect
-an operator-supplied signed snapshot with
-its local public trust configuration. Only after you have the exact matching
+For the exact signed paths below, build the source CLI as in
+[Create a local Web App](/docs/core/app-quickstart) and set `LENSO_CLI` to
+its absolute binary path. This candidate CLI accepts one exact signed Portable
+Release as a source App input. The snapshot, public trust configuration, and matching
+`.lenso-plugin` must be supplied independently; a Site listing is not an
+installation grant:
+
+```sh
+"$LENSO_CLI" plugins signed-search \
+  --snapshot /absolute/path/to/signed-portable.json \
+  --trust /absolute/path/to/public-trust.json --json
+"$LENSO_CLI" app add "$PLUGIN_ID@$VERSION" --root . \
+  --portable-snapshot /absolute/path/to/signed-portable.json \
+  --trust /absolute/path/to/public-trust.json \
+  --archive /absolute/path/to/exact-release.lenso-plugin
+"$LENSO_CLI" app build --out dist-portable-review
+"$LENSO_CLI" app check --root dist-portable-review/intent
+"$LENSO_CLI" app show --root dist-portable-review/intent --json
+```
+
+`app add` checks the signed payload, freshness, exact release identity,
+archive digest, and manifest before recording the source App intent. A later
+build checks the local archive against its lock; it does not establish a new
+independent signature authority over an App owner's editable source tree.
+Inspect the Host target and permissions, and run an untrusted Bundle only in
+an appropriately isolated Host. These coordinates are placeholders, not a
+claim that a public Portable release or CLI binary is available.
+
+The same CLI also has a separate exact signed linked Cargo path. In a source
+App, first inspect an operator-supplied signed snapshot with its local public
+trust configuration. Only after you have the exact matching
 registry `.crate` archive and have reviewed its Host target and integration,
 the command shape is:
 

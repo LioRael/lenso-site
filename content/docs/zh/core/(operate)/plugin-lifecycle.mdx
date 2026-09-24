@@ -1,13 +1,13 @@
 ---
 title: 停用或撤回插件
-description: 移除插件实例或精确版本的 linked Cargo 源码前，先验证下一代应用。
+description: 移除插件实例或精确版本的签名源码前，先验证下一代应用。
 ---
 
 这是一条**本地源码候选流程**，不代表相应版本已在公共目录发布。请像
 [创建本地 Web 应用](/docs/zh/core/app-quickstart) 一样，从与应用匹配的
 Rust 源码检出构建 `lenso` CLI。
 
-停用实例、撤回 linked 源码和迁移数据是三种不同操作。新产物通过
+停用实例、撤回签名源码和迁移数据是三种不同操作。新产物通过
 `app check`、`app show` 和业务冒烟测试前，保留当前运行的产物及其数据。
 `app build` 不覆盖已有输出目录。
 
@@ -40,10 +40,9 @@ touch plugins/example.web/default.disabled
 
 ## 撤回精确版本的 signed linked Cargo 源码
 
-目前 `app unadopt` **只适用于**先前以签名快照、公共信任配置和精确
+`app unadopt` 不带 `--portable` 时，**只适用于**先前以签名快照、公共信任配置和精确
 `.crate` 文件，通过 `app add PLUGIN_ID@VERSION --linked-snapshot ...
---trust ... --crate ...` 采用的源码。它不是本地插件、portable Bundle
-或外部服务的通用卸载命令。
+--trust ... --crate ...` 采用的源码。它不是本地插件或外部服务的通用卸载命令。
 
 确认没有必需的绑定后，指定已采用的精确坐标：
 
@@ -60,6 +59,25 @@ touch plugins/example.web/default.disabled
 它会拒绝并保留现场。命令**不会**删除数据库、执行 schema 迁移，也
 不能证明业务数据兼容。退役旧 Host 前，请保留备份，并测试替代版本的
 真实读写。
+
+## 撤回精确版本的 signed Portable 源码
+
+对于使用 `app add PLUGIN_ID@VERSION --portable-snapshot ... --trust ...
+--archive ...` 采用准确 `.lenso-plugin` 的源码 App，指定相同坐标和明确的
+分发标记：
+
+```sh
+"$LENSO_CLI" app unadopt example.tool@0.1.0 --portable --root .
+"$LENSO_CLI" app discover --root . --json
+"$LENSO_CLI" app build --out dist-portable-withdrawn
+"$LENSO_CLI" app check --root dist-portable-withdrawn/intent
+"$LENSO_CLI" app show --root dist-portable-withdrawn/intent --json
+```
+
+命令撤回源码选择，并只将未修改的 Plugin Root 意图移到可恢复的
+`.lenso/trash/portable/`；准确归档仍保留在 `vendor/lenso/portable/` 供审计。
+它不会停止已运行的 Host、删除业务数据或撤销数据迁移。切换流量前，
+检查新一代应用。
 
 精确版本升级目前仍是分别审查的新版本采用和业务迁移，不是自动
 `upgrade` 操作。切换前核对 target、契约、权限、数据兼容性和新产物。

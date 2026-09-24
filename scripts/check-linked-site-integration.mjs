@@ -223,6 +223,9 @@ try {
   assert.match(directory, /\/plugins\/example\.echo\/2\.3\.4/);
   assert.match(portableHtml, /Fixture Portable Plugin/);
   assert.match(portableHtml, /sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd/);
+  assert.match(portableHtml, /Adopt this exact Portable version/);
+  assert.match(portableHtml, /app add example\.echo@2\.3\.4 --portable-snapshot/);
+  assert.match(portableHtml, /not a new independent signature authority/);
   assert.match(portableHtml, /Portable getting started/);
   assert.match(portableHtml, new RegExp(echoPortableSlug));
   assert.doesNotMatch(portableHtml, /UNVERSIONED_PUBLISHER_COPY_SENTINEL|Candidate documentation|No implicit portable fallback/);

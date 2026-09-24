@@ -96,7 +96,7 @@ function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease
         <h2 id="adoption-heading">{portable ? 'Adopt the linked Cargo distribution' : 'Adopt this exact version'}</h2>
         {genericAdoption ? <>
           <p>Download the signed snapshot, its independently trusted public-key configuration and the exact registry <code>.crate</code> to your own project. The CLI checks the signature, validity window, Host target, archive digest and package identity before changing your App.</p>
-          <div className="code-panel"><div className="code-panel-head"><span>Local project · replace paths with verified files</span><CopyCommand value={adoptCommand} /></div><pre><code>{adoptCommand}</code></pre></div>
+          <AdoptionCommandPanel command={adoptCommand} />
           <p>This is a local Host build input, not a portable runtime bundle. Inspect the resolved App and build/check it before use. The Site cannot grant local filesystem access.</p>
         </> : <p>This release requires a product Host-specific integration or a registry unsupported by generic <code>lenso app add</code>. Do not use the generic adoption command.</p>}
       </section>
@@ -113,6 +113,7 @@ function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease
 
 function SignedPortableReleasePage({ release }: { release: SignedPortableRelease }) {
   const otherVersions = signedPortableCatalog.releases.filter((item) => item.pluginId === release.pluginId && item.version !== release.version);
+  const adoptCommand = `lenso app add ${release.pluginId}@${release.version} --portable-snapshot ./portable-snapshot.json --trust ./catalog-trust.json --archive ./exact-release.lenso-plugin`;
   return <div className="linked-release-shell">
     <SiteHeader active="plugins" />
     <main className="linked-doc-main">
@@ -124,7 +125,12 @@ function SignedPortableReleasePage({ release }: { release: SignedPortableRelease
       </header>
       <PortableProvenance release={release} />
       {otherVersions.length > 0 && <section className="linked-release-section"><h2>Other listed versions</h2><ul>{otherVersions.map((item) => <li key={item.version}><Link href={linkedReleasePath(item.pluginId, item.version)}>{item.version}</Link></li>)}</ul></section>}
-      <section className="linked-release-section"><h2>Before adopting this exact version</h2><p>Obtain the current signed snapshot and exact Bundle from an approved source. The adopting Host must reverify the signature, Bundle bytes, manifest, and compatibility. This Site page is not an installation grant and does not assume a generic install command.</p></section>
+      <section className="linked-release-section">
+        <h2>Adopt this exact Portable version</h2>
+        <p>In a source App, the source-built candidate CLI accepts an independently trusted signed snapshot and the exact <code>.lenso-plugin</code> archive. Obtain both from an approved source and review the declared runtime and permissions before adoption. This Site page grants neither trust nor local filesystem access.</p>
+        <AdoptionCommandPanel command={adoptCommand} />
+        <p><code>app add</code> checks the signature, freshness, exact identity, archive digest, and manifest before recording local source intent. Then build the App and use <code>app check</code>/<code>app show</code> on the new distribution. The App owner can edit local sources; a later build checks archive drift against its local lock, not a new independent signature authority. This candidate path is not a claim that the CLI or release is publicly published.</p>
+      </section>
       <PortableDocumentationState release={release} />
     </main>
   </div>;
@@ -150,6 +156,10 @@ function PortableProvenance({ release }: { release: SignedPortableRelease }) {
     ]} />
     <p><a href={release.sourceUrl} rel="noopener noreferrer" target="_blank">Signed source reference</a> · <a href={release.artifactUrl} rel="noopener noreferrer" target="_blank">Signed Bundle reference</a></p>
   </aside>;
+}
+
+function AdoptionCommandPanel({ command }: { command: string }) {
+  return <div className="code-panel"><div className="code-panel-head"><span>Local project · replace paths with verified files</span><CopyCommand value={command} /></div><pre><code>{command}</code></pre></div>;
 }
 
 function PortableDocumentationState({ release }: { release: SignedPortableRelease }) {

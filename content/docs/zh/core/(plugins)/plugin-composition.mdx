@@ -7,9 +7,10 @@ description: 通过可见 Plugin Root 与 Host Catalog 组合一个 App。
 `.lenso/host-catalog.json`；解析器合并 Host Default 与 Plugin Root 差异，生成完整、
 不可变的 App Plan。
 
-使用这些命令前，先取得可执行 Host Build，以及从这个确定 Build 生成的
-`host-catalog.json`。它们定义产品实际支持的 linked Plugin、Slot、Execution
-Adapter 与默认值；通用 CLI 无法自行发明这些信息。
+第 2 节的 built-root 命令需要可执行 Host Build，以及从这个确定 Build
+生成的 `host-catalog.json`。它们定义产品实际支持的 linked Plugin、Slot、
+Execution Adapter 与默认值；通用 CLI 无法自行发明这些信息。第 3 节的
+源码 App 命令则从已采用的输入构建新的 Host。
 
 ## 1. 理解 App 文件
 
@@ -77,10 +78,33 @@ lenso plugins rollback example.tool --version 1.2.0
 版本保持不可变。在真正存在可下载 Bundle 前，官方 Catalog 可以如实为空。
 上面的 `example.tool` 坐标仅用于说明，不代表已有对应的公开发布。
 
-当前**源码构建的** CLI 还提供另一条准确签名的 linked Cargo 路径。按
-[创建本地 Web App](/docs/zh/core/app-quickstart)构建 CLI，将 `LENSO_CLI`
-设为其二进制绝对路径。在源码 App 中，先用本地公开信任配置检查运营方提供的
-签名快照。取得准确匹配的 Registry
+下列准确签名路径需要先按[创建本地 Web App](/docs/zh/core/app-quickstart)
+构建源码 CLI，并将 `LENSO_CLI` 设为该二进制的绝对路径。此候选 CLI 支持
+将一个准确签名的 Portable Release 采用为源码 App 输入。签名快照、公开信任配置
+和匹配的 `.lenso-plugin` 必须独立提供；Site
+列表本身不授予安装权限：
+
+```sh
+"$LENSO_CLI" plugins signed-search \
+  --snapshot /absolute/path/to/signed-portable.json \
+  --trust /absolute/path/to/public-trust.json --json
+"$LENSO_CLI" app add "$PLUGIN_ID@$VERSION" --root . \
+  --portable-snapshot /absolute/path/to/signed-portable.json \
+  --trust /absolute/path/to/public-trust.json \
+  --archive /absolute/path/to/exact-release.lenso-plugin
+"$LENSO_CLI" app build --out dist-portable-review
+"$LENSO_CLI" app check --root dist-portable-review/intent
+"$LENSO_CLI" app show --root dist-portable-review/intent --json
+```
+
+`app add` 在记录源码 App 意图前检查签名原文、有效期、准确 Release
+身份、归档摘要与 Manifest。后续构建按本地锁检查归档是否漂移；它不能对 App
+所有者可编辑的源码树建立新的独立签名权威。运行不受信任 Bundle 前，仍需审查
+Host 目标与权限，并使用适当隔离。这里的坐标仅为占位符，不表示 CLI 或
+Portable Release 已公开发布。
+
+同一 CLI 还提供另一条准确签名的 linked Cargo 路径。在源码 App 中，
+先用本地公开信任配置检查运营方提供的签名快照。取得准确匹配的 Registry
 `.crate` 归档，并审查 Host 目标和集成方式后，命令形状如下：
 
 ```sh
