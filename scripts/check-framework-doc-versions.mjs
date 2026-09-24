@@ -48,7 +48,7 @@ for (const [route, locale] of [['docs/versions/index.html', 'en'], ['docs/zh/ver
   assert.ok(html.includes(`action="${locale === 'en' ? '/docs/versions' : '/docs/zh/versions'}"`), `${route}: exact-version form missing`);
   assert.ok(html.includes('name="version"'), `${route}: exact-version field missing`);
   assert.ok(html.includes(manifest.preview.revision), `${route}: preview corpus revision differs`);
-  assert.ok(html.includes(locale === 'en' ? 'href="/docs/zh/versions"' : 'href="/docs/versions"'), `${route}: locale switch missing`);
+  assert.ok(html.includes(locale === 'en' ? 'href="/docs/zh/versions/"' : 'href="/docs/versions/"'), `${route}: locale switch missing`);
 }
 assert.ok(read('sitemap.xml').includes('https://lenso.dev/docs/versions<'));
 assert.ok(read('sitemap.xml').includes('https://lenso.dev/docs/zh/versions<'));

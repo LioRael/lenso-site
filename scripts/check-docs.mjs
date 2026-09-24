@@ -287,11 +287,11 @@ for (const locale of ["", "zh/"]) {
   }
   const frontendPath = `content/docs/${locale}core/(start)/react-vite-app.mdx`;
   const frontend = read(frontendPath);
-  for (const marker of ["frontend/bun.lock", "frontend/vendor/lenso-web-client.tgz", "project/app/notes-web/public/", "dist-react-review/intent"]) {
+  for (const marker of ["project/frontend/bun.lock", "project/frontend/vendor/lenso-web-client.tgz", "project/frontend/lenso.dev.toml", "LENSO_API_URL_FILE", "/__lenso/backend", '"$LENSO_CLI" app dev --root project', "--framework-source", "--tool-provider-source", "project/app/notes-web/public/", "dist-react-review/intent"]) {
     if (!frontend.includes(marker)) failures.push(`${frontendPath}: current Examples path missing ${marker}`);
   }
-  for (const stale of ["project/frontend", "LENSO_API_URL_FILE", "/__lenso/backend", "lenso app dev --root project"]) {
-    if (frontend.includes(stale)) failures.push(`${frontendPath}: stale Vite integration claim ${stale}`);
+  for (const stale of ["while sibling `frontend/`", "only forwards `/notes`", "no\n`lenso.dev.toml`"]) {
+    if (frontend.includes(stale)) failures.push(`${frontendPath}: stale Examples claim ${stale}`);
   }
 }
 

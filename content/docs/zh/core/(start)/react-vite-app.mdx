@@ -10,17 +10,17 @@ description: 使用本地知识库 App 候选，预览有类型、有认证的�
 > 缺少任何输入就停下，不要擅自替换 Release。
 
 [本地 Web App 快速开始](/docs/zh/core/app-quickstart)先验证一次问候。本篇继续展示
-普通 React 页面如何通过生成的类型调用 App **明确公开的** API。Vite 将页面
-构建为 Web Plugin 的静态资源，由构建后的 Lenso Host 提供；身份认证与授权
-仍由后端 Plugin 持有。
+普通 React 页面如何通过生成的类型调用 App **明确公开的** API。对于已准备的
+源码 App，Lenso 会启动 Vite；另行构建后，静态资源由 Lenso Host 提供。
+身份认证与授权仍由后端 Plugin 持有。
 
 ## 1. 启动前确认输入
 
 在匹配的 `lenso-examples` 源码 Checkout 中，先读
 `fixtures/vnext-knowledge-base-app/README.md`。其中的 `project/` 是 App Root，
-与 `project/` 同级的 `frontend/` 是普通 Vite/React 项目。你需要匹配源码构建的 `lenso` CLI、
-Rust/Cargo、Bun、与 `frontend/bun.lock` 匹配且独立打包的
-`@lenso/web-client` 候选，以及 Auth API-token、Jobs、Secrets Provider 源码
+`project/frontend/` 是普通 Vite/React 项目。你需要匹配源码构建的 `lenso` CLI、
+Rust/Cargo、Bun、与 `project/frontend/bun.lock` 匹配且独立打包的
+`@lenso/web-client` 候选、匹配的框架与 Agent Tool Provider 候选源码，以及 Auth API-token、Jobs、Secrets Provider 源码
 （或它们精确的已签名 `.crate` 输入）。请使用可丢弃的 PostgreSQL 数据库。
 验证器会创建 Schema 并留供检查，结束后不会重置数据库。
 这条交互式凭据 Handoff 需要 POSIX no-follow 文件 API，不支持 Windows。
@@ -43,6 +43,8 @@ LENSO_REFERENCE_DATABASE_URL='postgresql://.../disposable_db' \
   python3 verify.py \
   --cli /absolute/path/to/lenso \
   --web-client-package /absolute/path/to/lenso-web-client.tgz \
+  --framework-source /absolute/path/to/lenso-rust-checkout \
+  --tool-provider-source /absolute/path/to/lenso-capability-agent-tool-provider \
   --auth-source /absolute/path/to/lenso-auth-plugin/crates/lenso-auth-api-token-plugin \
   --jobs-source /absolute/path/to/lenso-jobs-plugin/crates/lenso-jobs-plugin \
   --secrets-source /absolute/path/to/lenso-secrets-plugin/crates/lenso-secrets-env-plugin \
@@ -67,17 +69,33 @@ Provider 和 App 构建可能执行包内构建脚本；未经审查的输入只
 验证器会先用给定 Tarball 构建 React 页面；否则仍使用仓库内静态页面。
 两种路径都不证明包已发布、Site 已部署或生产环境已受支持。
 
-## 3. 为已准备的 App 重新构建 React 页面
+## 3. 在已准备的 App 中编辑 React 页面
 
-对于 Provider、Schema Operator、凭据和数据库设置都**已经准备好**的 App，
+对于 Provider、Schema Operator、凭据、Excerpt Plugin 和数据库设置都**已经准备好**的 App，
 先将精确 Tarball 放到 Fixture 锁定的本地依赖路径。从 Fixture 目录使用
-匹配源码构建的 CLI 与新的输出目录执行：
+匹配源码构建的 CLI 执行：
 
 ```sh
 LENSO_CLI=/absolute/path/to/lenso
-mkdir -p frontend/vendor
-cp /absolute/path/to/lenso-web-client.tgz frontend/vendor/lenso-web-client.tgz
-(cd frontend && bun install --frozen-lockfile && bun run generate && bun run typecheck && bun run build)
+mkdir -p project/frontend/vendor
+cp /absolute/path/to/lenso-web-client.tgz project/frontend/vendor/lenso-web-client.tgz
+(cd project/frontend && bun install --frozen-lockfile && bun run generate && bun run typecheck)
+"$LENSO_CLI" app dev --root project
+```
+
+`project/frontend/lenso.dev.toml` 选择 `bun run dev`，页面位于
+`http://127.0.0.1:5173/`。Engine 通过 `LENSO_API_URL_FILE` 提供当前 Host
+URL 文件 `project/.lenso/dev-backend-url`；Vite Middleware 对每个允许的公开
+请求重新读取该文件，并提供 `GET /__lenso/backend` 就绪握手。文件缺失或
+无效时返回 `503`；Host 成功重建并换端口后，无需重启 Vite。Proxy 只转发
+Fixture 的公开 notes、settings、jobs 和 attachment 路径，不开放 Host
+管理接口或内部 Capability。等待 `app dev` 报告就绪后再打开 Vite 页面。
+
+修改 React 页面后，停止开发循环，重新构建 Plugin 持有的静态资源，再构建
+新的 App 分发目录：
+
+```sh
+(cd project/frontend && bun run build)
 "$LENSO_CLI" app build --root project --out dist-react-review
 "$LENSO_CLI" app check --root dist-react-review/intent
 "$LENSO_CLI" app show --root dist-react-review/intent --json
@@ -91,13 +109,10 @@ cp /absolute/path/to/lenso-web-client.tgz frontend/vendor/lenso-web-client.tgz
 可信，也不会授予内部 Capability 的访问权。后端对每次请求校验 Actor 与资源
 权限。Provider 边界见 [Auth Plugin](/docs/zh/web/auth-plugin)。
 
-`frontend/vite.config.ts` 将构建结果写入
-`project/app/notes-web/public/`。当前 Fixture 没有将 Vite 与 `app dev`
-连接的 `lenso.dev.toml`，独立 Vite Proxy 也只转发 `/notes`。不要把
-`bun run dev` 当作 settings、jobs 或 attachment 路径的完整浏览器验收。
-完整认证流程应使用验证器针对构建后 Host 的浏览器 Handoff。每次修改
-React 页面后，重新执行 `bun run build`，再使用另一个输出目录构建 App；
-Vite HMR 不会更新已经构建的 App。
+`project/frontend/vite.config.ts` 将构建结果写入
+`project/app/notes-web/public/`。Vite HMR 不会更新已经构建的 App。
+验证器的私有浏览器 Handoff 另行检查删除源码后仍可运行的 Host，而不是
+可编辑的开发页面。
 
 每次使用新的输出目录；`app build` 不覆盖已有目录。`app start --check`
 只检查就绪后退出，不执行浏览器请求。完成标准是：验证器的浏览器请求使用
@@ -112,8 +127,8 @@ Vite HMR 不会更新已经构建的 App。
 先核对精确 CLI、Provider 输入，以及锁定的 @lenso/web-client Tarball。
 用私有浏览器 Handoff 运行 Fixture 验证器；在真实浏览器完成 Token 验证、
 创建与读回笔记、上传文件，并检查验证器的跨用户拒绝结果。对于另外准备好的 App，
-运行冻结的前端安装、generate/typecheck/build，再执行 app
-build/check/show/start --check；不要用独立 Vite Proxy 替代完整浏览器检查。
+运行冻结的前端安装、generate/typecheck 和 app dev；修改后重新构建静态资源，
+再执行 app build/check/show/start --check。
 报告精确 Revision、包摘要、命令、浏览器 URL、结果与
 缺失输入。不要把候选证明写成已发布或已部署的证明。
 ```
