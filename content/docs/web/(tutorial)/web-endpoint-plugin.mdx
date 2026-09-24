@@ -136,7 +136,10 @@ impl GreetingsHttp {
 generates the route description, dispatch path, `lenso.http.endpoint@1`
 Capability, and linked Plugin factory from the same declarations. Product code
 does not implement `NativePluginFactory`, and must not use the retired
-`NativeModuleFactory` API. A handler returns business-facing values:
+`NativeModuleFactory` API. The Plugin must be a named-field struct. If it has
+no state, declare `pub struct PreviewHttp {}` rather than the unit struct
+`pub struct PreviewHttp;`; the Plugin macro rejects unit structs. A handler
+returns business-facing values:
 `Json<T>` means a `200` JSON response, `(StatusCode, T)` overrides its status,
 and `Problem` is an intentional client-visible failure. The macro lowers these
 values into the portable Capability contract.
