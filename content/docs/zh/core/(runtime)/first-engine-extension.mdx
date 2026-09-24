@@ -1,0 +1,86 @@
+---
+title: 编写本地 Engine 扩展
+description: 从合仓后的 Rust 源码出发，选择、锁定、检查并运行一个进程式 Engine 扩展。
+---
+
+这个**源码本地练习**给 Engine 增加一个文档处理器，不修改 Kernel，也不创建业务
+Plugin。对应 Rust 源码在 [`LioRael/lenso`](https://github.com/LioRael/lenso)
+的 `crates/lenso-engine` 与 `crates/lenso-cli`；可运行样例在本站源码仓库的
+`examples/engine-extension/`。旧的 Engine/CLI 拆分仓库不是新改动的起点。
+
+这**不是已安装包教程**。请从所检查的同一 `lenso` 源码修订构建 CLI。系统中已有
+的 `lenso` 可能提供不同命令；Engine 库已有发布版本，也不能证明此 CLI 与样例
+已经以同一组合在 Registry 可用。
+
+## 1. 构建匹配的 CLI
+
+确保 Rust/Cargo 与 Node 在 `PATH` 中，然后在 `LioRael/lenso` 源码根目录运行：
+
+```sh
+cargo build --locked -p lenso-cli --bin lenso
+LENSO_CLI_BIN="$(pwd)/target/debug/lenso"
+"$LENSO_CLI_BIN" engine --help
+```
+
+保留绝对路径 `LENSO_CLI_BIN`。若没有 `engine lock`、`inspect` 或 `run`，记录
+当前 CLI 修订并停止，不要换用别的发布版本掩盖差异。
+
+## 2. 将样例复制到两个源码树之外
+
+在另一个 `LioRael/lenso-site` 源码 Checkout 中，沿用同一个 Shell：
+
+```sh
+cd /path/to/lenso-site
+ENGINE_PARENT="$(mktemp -d)"
+cp -R examples/engine-extension "$ENGINE_PARENT/work"
+cd "$ENGINE_PARENT/work"
+```
+
+样例包含 `content/intro.md`、`engine.json`、
+`tools/summary/engine-plugin.json` 与 `summary.mjs`。工作流把输入文件和处理器
+发现分开，并显式选择 `example.summary.v1`。Manifest 声明 `node` 可执行文件，
+将脚本列为锁定制品。这个进程是具有普通本地进程权限的**可信代码**，不是运行
+不可信第三方 Plugin 的沙箱。
+
+## 3. 执行前检查计划
+
+```sh
+"$LENSO_CLI_BIN" engine lock --workflow engine.json
+"$LENSO_CLI_BIN" engine inspect --workflow engine.json
+```
+
+锁定文件记录已选中的 Manifest、Node 可执行文件及脚本字节。检查结果只有一步
+`example.summary.v1/intro.md`，此时脚本不会执行。`tools/` 中存在但未被选择
+的处理器不会自动启用。
+
+## 4. 运行并检查结果
+
+```sh
+"$LENSO_CLI_BIN" engine run --workflow engine.json --output dist
+```
+
+JSON 结果中，
+`outputs["example.summary.v1/intro.md"].summary.value.title` 应为
+`"First document"`。`dist/current.json` 指向已发布的 Generation。修改输入
+文档后可再运行；输入内容不是被锁定的工具制品。
+
+在复制出的工作目录中编辑 `tools/summary/summary.mjs`，只加注释也可以，再运行
+一次 `engine run`。预期以 `locked input changed` 拒绝。检查新的处理器代码后
+才重新运行 `engine lock`。锁定能发现已选中字节变化，但不能代替代码审查、
+签名验证或授权。
+
+若要自动复验成功与拒绝两条路径，在 Site 源码根目录运行下面的命令。脚本只会
+操作并清理自己的临时副本：
+
+```sh
+LENSO_CLI_BIN=/absolute/path/to/lenso/target/debug/lenso \
+  node scripts/smoke-engine-extension.mjs
+```
+
+## 下一层边界
+
+真实 Engine 扩展的行为或未声明的工具链输入变化时，应更新处理器 Identity，
+在负责的 Crate 添加聚焦测试，并运行相关 Engine 与 Runtime Conformance。
+[运行时生命周期](/docs/zh/core/runtime-lifecycle)和
+[Driver/Adapter 指南](/docs/zh/core/execution-adapters)说明更底层的 Host 工作。
+文档处理器的成功不等于新 Runtime Target 或 Adapter 已通过认证。

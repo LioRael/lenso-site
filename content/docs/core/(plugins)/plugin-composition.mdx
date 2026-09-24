@@ -64,7 +64,11 @@ explains the complete derived App, including Host defaults and Capability
 bindings. `app check` is the shortest validation after a manual review or
 merge.
 
-## 3. Use exact Catalog Releases
+## 3. Choose the release path by distribution
+
+The older published Portable Bundle workflow uses `lenso plugins` commands
+like these. They require a real downloadable Bundle and a compatible Host;
+they do **not** adopt a linked Rust `.crate` into a source App:
 
 ```sh
 lenso plugins search tool
@@ -77,6 +81,36 @@ lenso plugins rollback example.tool --version 1.2.0
 There is no implicit “latest.” Catalog and Bundle schemas are strict, network
 downloads are digest-bound, and retained versions are immutable. The official
 catalog may truthfully be empty until a Release has a real downloadable Bundle.
+The `example.tool` coordinates above are illustrative, not a claim of an
+available release.
+
+The current **source-built** CLI also has a separate exact signed linked Cargo
+path. Build that CLI as in [Create a local Web App](/docs/core/app-quickstart)
+and set `LENSO_CLI` to its absolute binary path. In a source App, first inspect
+an operator-supplied signed snapshot with
+its local public trust configuration. Only after you have the exact matching
+registry `.crate` archive and have reviewed its Host target and integration,
+the command shape is:
+
+```sh
+"$LENSO_CLI" app linked-catalog \
+  --linked-snapshot /absolute/path/to/signed-linked.json \
+  --trust /absolute/path/to/public-trust.json --json
+"$LENSO_CLI" app add "$PLUGIN_ID@$VERSION" --root . \
+  --linked-snapshot /absolute/path/to/signed-linked.json \
+  --trust /absolute/path/to/public-trust.json \
+  --crate /absolute/path/to/exact-package.crate
+"$LENSO_CLI" app build --out dist-linked-review
+"$LENSO_CLI" app check --root dist-linked-review
+"$LENSO_CLI" app show --root dist-linked-review --json
+```
+
+`PLUGIN_ID`, `VERSION`, and the file paths above are placeholders, not a
+published release. `app add` checks the signature, exact identity/version,
+crate digest, and Native Host target before adopting source. This Site's
+unsigned candidate documentation is not one of those inputs. A signed
+listing without its `.crate` and trust material is still not an installation
+result; a successful adoption still needs the build, check, and real App call.
 
 The Kernel never reads this directory and never installs a package. It receives
 only the resolved Plan selected for one App Generation.

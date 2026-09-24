@@ -1,0 +1,8 @@
+{
+  "schema": "lenso.engine-plugin.v1",
+  "identity": "example.summary.v1",
+  "entries": ["*.md", "**/*.md"],
+  "program": "node",
+  "args": ["summary.mjs"],
+  "artifacts": ["summary.mjs"]
+}

@@ -1,0 +1,96 @@
+---
+title: Build a local Engine extension
+description: Select, lock, inspect, and run a small process-based Engine extension from the consolidated Rust source.
+---
+
+This source-local exercise adds a document processor to Engine without changing
+Kernel code or creating a business Plugin. The matching Rust source is in
+[`LioRael/lenso`](https://github.com/LioRael/lenso), under `crates/lenso-engine`
+and `crates/lenso-cli`. The runnable fixture is in this Site checkout at
+`examples/engine-extension/`. Former split Engine and CLI repositories are not
+the starting point for new changes.
+
+This is **not** an installed-package tutorial. Build the CLI from the same
+`lenso` source revision you are inspecting. An installed `lenso` may expose a
+different command set; published Engine library versions do not establish
+that this exact CLI and fixture are available together from a registry.
+
+## 1. Build the matching CLI
+
+With Rust/Cargo and Node on `PATH`, from a `LioRael/lenso` source checkout:
+
+```sh
+cargo build --locked -p lenso-cli --bin lenso
+LENSO_CLI_BIN="$(pwd)/target/debug/lenso"
+"$LENSO_CLI_BIN" engine --help
+```
+
+Keep the absolute `LENSO_CLI_BIN` path. If `engine lock`, `inspect`, or `run`
+is missing, stop and record the CLI revision instead of substituting a
+different release.
+
+## 2. Copy the fixture outside both source trees
+
+In a separate `LioRael/lenso-site` checkout, use the same shell:
+
+```sh
+cd /path/to/lenso-site
+ENGINE_PARENT="$(mktemp -d)"
+cp -R examples/engine-extension "$ENGINE_PARENT/work"
+cd "$ENGINE_PARENT/work"
+```
+
+The fixture has `content/intro.md`, `engine.json`, and
+`tools/summary/engine-plugin.json` with `summary.mjs`. The workflow separates
+input files from processor discovery and explicitly selects
+`example.summary.v1`. The manifest declares `node` as the executable and the
+script as a locked artifact. This process is **trusted local code** with normal
+process authority, not a sandbox for an untrusted third-party Plugin.
+
+## 3. Inspect before executing
+
+```sh
+"$LENSO_CLI_BIN" engine lock --workflow engine.json
+"$LENSO_CLI_BIN" engine inspect --workflow engine.json
+```
+
+The lock pins the selected manifest, Node executable, and script bytes. The
+inspection result contains one planned step,
+`example.summary.v1/intro.md`; it does not execute the script. An unselected
+processor in `tools/` does not become active just because it exists there.
+
+## 4. Run and check the result
+
+```sh
+"$LENSO_CLI_BIN" engine run --workflow engine.json --output dist
+```
+
+The JSON result contains
+`outputs["example.summary.v1/intro.md"].summary.value.title` equal to
+`"First document"`. `dist/current.json` points at the published generation.
+If the source document changes, run again to get a new result; source content
+is not a locked tool artifact.
+
+Edit `tools/summary/summary.mjs` in the copied work directory, even by adding
+a comment, and repeat `engine run`. It must refuse with `locked input changed`.
+Review the new processor code before using `engine lock` again. A lock detects
+changed selected bytes; it is not code review, signature verification, or a
+permission grant.
+
+To repeat the exact positive and negative checks without editing the fixture
+by hand, run this from the Site checkout (the script copies into a temporary
+directory and removes only that copy):
+
+```sh
+LENSO_CLI_BIN=/absolute/path/to/lenso/target/debug/lenso \
+  node scripts/smoke-engine-extension.mjs
+```
+
+## Next boundary
+
+For a real Engine extension, change the processor's identity when its
+behavior or undeclared toolchain inputs change, add a focused test in the
+owning crate, then run the relevant Engine and runtime conformance checks.
+The [runtime lifecycle](/docs/core/runtime-lifecycle) and
+[Driver/Adapter guide](/docs/core/execution-adapters) cover lower-level Host
+work. A document processor does not qualify a new runtime target or Adapter.

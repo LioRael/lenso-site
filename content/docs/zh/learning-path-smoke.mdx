@@ -1,0 +1,94 @@
+---
+title: 学习路径 Smoke 矩阵
+description: 检查八条核心路径，同时区分本地样例、签名发布与部署证据。
+---
+
+这是一份**测试计划，不是八个已通过的徽章**。命令和前提以链接中的教程为准。
+每次运行应记录源码提交、CLI 版本、准确包或 Plugin 版本、目标、命令结果和
+浏览器结果。Site 链接检查通过，不会使源码候选变成已发布教程。
+
+| 路径 | 教程 |
+| --- | --- |
+| P1 | [创建本地 Web App](/docs/zh/core/app-quickstart) |
+| P2 | [同一 App 的手工与 Agent 路径](/docs/zh/core/app-quickstart) |
+| P3 | [向 App 添加 Plugin](/docs/zh/core/plugin-composition) |
+| P4 | [编写第一个 Plugin](/docs/zh/core/quickstart) |
+| P5 | [连接 React/Vite 前端](/docs/zh/core/react-vite-app) |
+| P6 | [配置 Agent](/docs/zh/agent/agent-configuration) |
+| P7 | [构建并检查 App](/docs/zh/core/app-quickstart) |
+| P8 | [禁用或撤出 Plugin](/docs/zh/core/plugin-lifecycle) |
+
+## P1. 首个可运行 App
+
+**Smoke：** 运行 `app dev`；在真实浏览器提交 Ada，看到
+`POST /greetings` 返回的 `Hello, Ada!`。
+
+**边界：** 需要源码构建的 CLI 和匹配的依赖组合。固定依赖不可用时停止。
+
+## P2. Agent 与人完成同一任务
+
+**Smoke：** 给 Agent 与 P1 相同的 CLI 修订、模板和浏览器断言，比较实际输出与
+错误。
+
+**边界：** 这不是第二套模板，也不是另一款 Agent 产品。外部 Agent 独立完成仍需
+单独实测。
+
+## P3. 采用 Plugin
+
+**Smoke：** 在[目录](/plugins)寻找准确的签名版本，核对分发方式、目标、信任与权限，
+再采用、配置、构建并调用。
+
+**边界：** 候选页不能直接安装。签名列表本身不证明 `.crate` 可用、权限信息完整或
+App 构建成功。
+
+## P4. 编写 Plugin
+
+**Smoke：** 实现业务行为，真实调用 `plugin dev`，运行 `plugin check` 与
+`plugin pack`，再将制品接入兼容 App 并调用。
+
+**边界：** 打包是本地准备，不是目录发布。App 采用还需要匹配的 Host 和目标。
+
+## P5. Web 与 React
+
+**Smoke：** 生成客户端并做类型检查；在浏览器中创建、读取笔记，再检查跨用户拒绝
+和 API 错误。
+
+**边界：** 此候选需要准确的客户端 Tarball、Auth/Jobs/Secrets 输入、凭据和一次性
+PostgreSQL。
+
+## P6. 配置与动态来源
+
+**Smoke：** 发布带修订栅栏的有效 Proposal，拒绝无效值与旧修订；确认秘密引用
+不泄漏，外部来源不可用时不默许新值。
+
+**边界：** 具体服务只覆盖一个 App/环境资源。这里尚不能证明默认 App 已接入动态
+来源。
+
+## P7. 构建并运行分发产物
+
+**Smoke：** 构建、检查并查看分发产物；复制到框架及兄弟仓库之外，在无源码路径
+依赖时启动并重复真实请求。
+
+**边界：** 源码本地教程中的 `app start --from` 只是第一关，不是仅靠发布包的
+独立消费证据。
+
+## P8. 升级、禁用与卸载
+
+**Smoke：** 构建禁用后的 Generation 并检查绑定。对于准确的签名 Linked 源，
+运行 `app unadopt`，核对可恢复回收位置和业务数据保留。
+
+**边界：** 升级与数据迁移需要独立审查。这里不承诺自动可逆迁移。
+
+## 分层运行
+
+1. 在 Site Checkout 中运行 `pnpm build` 生成公开页面，再运行
+   `pnpm check:learning-paths`，检查八个入口、中英文页面及教程链接是否出现在
+   发布输出中。这**不会**启动 App 或发出浏览器请求。
+2. 只有具备各教程列出的输入时，才运行其命令与浏览器检查。缺失依赖、签名发布
+   或外部服务时，记录明确边界，不能记为通过。
+3. 独立的框架扩展路径见[编写本地 Engine 扩展](/docs/zh/core/first-engine-extension)
+   及其临时样例 Smoke 脚本。它验证真实本地 CLI，但不认证 Driver 或 Adapter。
+
+P3 应保存采用决策时使用的准确签名文档/版本 URL；P5 应保存生成客户端修订及
+浏览器网络响应；P6 只保存不含秘密的修订和诊断证据；P7 应说明如何让源码
+Checkout 不可用；P8 在切换活跃 Host 前应备份数据，并明确指出不可逆迁移。

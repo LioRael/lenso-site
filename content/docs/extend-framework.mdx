@@ -11,7 +11,15 @@ TypeScript distribution sources are in
 repositories are migration sources, not places to start a new framework
 change.
 
-## First contribution: identify the contract
+## Tutorial: run one Engine extension
+
+[Build a local Engine extension](/docs/core/first-engine-extension) starts
+from a source-built CLI and a small Site fixture. You will explicitly select a
+Node processor, inspect its plan without executing it, run it, and verify that
+a changed locked artifact is rejected. The result is a local Engine resource,
+not a business Plugin installation or a new runtime target.
+
+## Task guide: identify the contract for a framework change
 
 1. Read [Core architecture](/docs/core/architecture) and apply its ownership
    test to the behavior you want to change.
@@ -32,9 +40,8 @@ change.
    proof. Do not turn a target-specific failure into a Kernel feature to make
    one test pass.
 
-This is a contribution workflow, not a turn-key tutorial for a particular
-extension. A new target or Adapter still needs its own scoped behavior and
-conformance evidence.
+The tutorial above covers Engine processor extension. A new target or Adapter
+still needs its own scoped behavior and conformance evidence.
 
 ## Choose the right guide
 

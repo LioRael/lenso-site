@@ -59,7 +59,11 @@ Generation、通过 Ready Gate、切换 Route、Drain 旧 Generation，并可在
 Default 与 Capability Binding 在内的完整 Derived App。人工审查或合并后，
 `app check` 是最短的验证。
 
-## 3. 使用确定的 Catalog Release
+## 3. 按分发方式选择准确的 Release 路径
+
+较早发布的 Portable Bundle 工作流使用下面的 `lenso plugins` 命令。它们需要
+真实可下载的 Bundle 和兼容 Host；**不能**把 linked Rust `.crate` 采用到源码
+App 中：
 
 ```sh
 lenso plugins search tool
@@ -71,6 +75,31 @@ lenso plugins rollback example.tool --version 1.2.0
 
 不存在隐式“latest”。Catalog 与 Bundle Schema 是严格的；网络下载绑定 Digest；保留
 版本保持不可变。在真正存在可下载 Bundle 前，官方 Catalog 可以如实为空。
+上面的 `example.tool` 坐标仅用于说明，不代表已有对应的公开发布。
+
+当前**源码构建的** CLI 还提供另一条准确签名的 linked Cargo 路径。按
+[创建本地 Web App](/docs/zh/core/app-quickstart)构建 CLI，将 `LENSO_CLI`
+设为其二进制绝对路径。在源码 App 中，先用本地公开信任配置检查运营方提供的
+签名快照。取得准确匹配的 Registry
+`.crate` 归档，并审查 Host 目标和集成方式后，命令形状如下：
+
+```sh
+"$LENSO_CLI" app linked-catalog \
+  --linked-snapshot /absolute/path/to/signed-linked.json \
+  --trust /absolute/path/to/public-trust.json --json
+"$LENSO_CLI" app add "$PLUGIN_ID@$VERSION" --root . \
+  --linked-snapshot /absolute/path/to/signed-linked.json \
+  --trust /absolute/path/to/public-trust.json \
+  --crate /absolute/path/to/exact-package.crate
+"$LENSO_CLI" app build --out dist-linked-review
+"$LENSO_CLI" app check --root dist-linked-review
+"$LENSO_CLI" app show --root dist-linked-review --json
+```
+
+上面的 `PLUGIN_ID`、`VERSION` 和文件路径都是占位符，不代表已有公开发布。
+`app add` 会在采用源码前检查签名、准确身份/版本、Crate 摘要及 Native Host
+目标。本站未签名的候选文档不能作为这些输入。仅有签名列表、缺少 `.crate` 或
+信任材料仍不算安装成功；采用成功之后还需构建、检查并真实调用 App。
 
 Kernel 从不读取该目录，也不安装 Package；它只接收某个 App Generation 选择的
 Resolved Plan。

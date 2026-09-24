@@ -1,0 +1,112 @@
+---
+title: Learning-path smoke matrix
+description: Check the eight core journeys without confusing local examples, signed releases, and deployment proof.
+---
+
+This matrix is a **test plan, not eight passing badges**. Use the linked page
+for commands and prerequisites. Record the source commit, CLI version, exact
+package or Plugin version, target, command result, and browser result for each
+run. A local source candidate cannot become a released tutorial by passing a
+Site link check.
+
+| Path | Tutorial |
+| --- | --- |
+| P1 | [Create a local Web App](/docs/core/app-quickstart) |
+| P2 | [The same App, manual or agent](/docs/core/app-quickstart) |
+| P3 | [Add Plugins to an App](/docs/core/plugin-composition) |
+| P4 | [Create your first Plugin](/docs/core/quickstart) |
+| P5 | [Connect a React/Vite frontend](/docs/core/react-vite-app) |
+| P6 | [Configure an Agent](/docs/agent/agent-configuration) |
+| P7 | [Build and inspect the App](/docs/core/app-quickstart) |
+| P8 | [Disable or withdraw a Plugin](/docs/core/plugin-lifecycle) |
+
+## P1. First runnable App
+
+**Smoke:** Run `app dev`; submit Ada in a real browser and see `Hello, Ada!`
+from `POST /greetings`.
+
+**Boundary:** Use a source-built CLI and matching dependency cohort. Stop if a
+pinned dependency is unavailable.
+
+## P2. Same task for an agent and a human
+
+**Smoke:** Give the page's agent request the same CLI revision, template, and
+browser assertion as P1. Compare actual output and errors.
+
+**Boundary:** This is not a second template or another Agent product.
+Independent agent completion still needs a recorded run.
+
+## P3. Adopt a Plugin
+
+**Smoke:** Find an exact signed version in the [directory](/plugins), check
+distribution, target, trust, and permissions, then adopt, configure, build,
+and invoke it.
+
+**Boundary:** A candidate page is not installable. A signed listing alone
+does not prove a compatible `.crate`, complete permission evidence, or a
+successful App build.
+
+## P4. Write a Plugin
+
+**Smoke:** Implement behavior, make a real `plugin dev` call, run
+`plugin check` and `plugin pack`, then add the artifact to a compatible App
+and call it there.
+
+**Boundary:** Packaging is local preparation, not catalog publication. App
+adoption requires a matching Host and target.
+
+## P5. Web and React
+
+**Smoke:** Generate and typecheck the client, create and read a note in the
+browser, then inspect a denied cross-user request and an API error.
+
+**Boundary:** This candidate needs an exact client tarball, Auth/Jobs/Secrets
+inputs, credentials, and disposable PostgreSQL.
+
+## P6. Configuration and dynamic sources
+
+**Smoke:** Publish a valid revision-fenced proposal. Reject an invalid value
+and old revision. Verify secret references stay private and an unavailable
+external source does not silently authorize a new value.
+
+**Boundary:** The concrete service is one App/environment resource.
+Default-App dynamic-source integration is not established here.
+
+## P7. Build and run a distribution
+
+**Smoke:** Build, check, and show a distribution. Copy it outside the
+framework and sibling checkouts, then start it and repeat the real request
+without source-path dependencies.
+
+**Boundary:** `app start --from` in the source-local tutorial is a first
+check, not yet a package-only independent-consumer receipt.
+
+## P8. Upgrade, disable, and uninstall
+
+**Smoke:** Build a disabled generation and inspect its bindings. For an exact
+signed linked source, use `app unadopt` and verify the recoverable trash
+location and retained business data.
+
+**Boundary:** Upgrade and data migration are separately reviewed. No
+automatic reversible migration is promised.
+
+## Run the checks in layers
+
+1. `pnpm build` in the Site checkout generates the public pages. Then
+   `pnpm check:learning-paths` checks that all eight entries, English/Chinese
+   routes, and linked tutorials are present in the published output. It does
+   **not** run an App or issue a browser request.
+2. Run the command and browser check in each linked tutorial only after its
+   stated inputs exist. A failed dependency, missing signed release, or missing
+   external service is a named boundary, not a pass.
+3. For the separate framework-extension path, use
+   [Build a local Engine extension](/docs/core/first-engine-extension) and its
+   temporary-fixture smoke script. It checks a real local CLI but does not
+   qualify a Driver or Adapter.
+
+For P3, retain the exact signed document/version URL used for the adoption
+decision. For P5, retain the generated client revision and browser network
+response. For P6, retain non-secret revision and diagnostic evidence. For P7,
+record how the source checkouts were made unavailable. For P8, keep a data
+backup and explicitly name any irreversible migration before changing the
+active Host.

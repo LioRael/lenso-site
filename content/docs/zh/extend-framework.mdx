@@ -9,7 +9,14 @@ description: 定位负责的 Rust Crate 或 JavaScript Package，并在边界上
 分发源码位于 [`LioRael/lenso-js`](https://github.com/LioRael/lenso-js)。旧的
 Rust 拆分仓库是迁移来源，不是新框架改动的起点。
 
-## 第一次贡献：找到 Contract
+## 教程：运行一个 Engine 扩展
+
+[编写本地 Engine 扩展](/docs/zh/core/first-engine-extension)从源码构建的 CLI
+和 Site 小样例开始：显式选择一个 Node 处理器，不执行代码先检查计划，运行后验证
+锁定制品变化会被拒绝。结果是本地 Engine Resource，不是业务 Plugin 安装，也
+不是新 Runtime Target 的认证。
+
+## 任务指南：为框架改动找到 Contract
 
 1. 阅读[核心架构](/docs/zh/core/architecture)，用其中的所有权判断确定改动边界。
 2. 用[仓库地图](/docs/zh/core/repository-map)找到当前 Crate 或 Package。改变稳定
@@ -26,8 +33,8 @@ Rust 拆分仓库是迁移来源，不是新框架改动的起点。
    真实 Host 或目标验证。不要为了让某个目标的测试通过，就把目标专属故障变成
    Kernel 功能。
 
-这是贡献流程，不是某个特定扩展的完整入门教程。新目标或 Adapter 仍需属于自己的
-行为范围和 Conformance 证据。
+上面的教程覆盖 Engine 处理器扩展。新目标或 Adapter 仍需属于自己的行为范围和
+Conformance 证据。
 
 ## 选择对应指南
 
