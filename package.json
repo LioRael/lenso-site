@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "build": "node scripts/ingest-linked-catalog.mjs && next build && node scripts/finalize-static-output.mjs && node scripts/check-published-output.mjs && node scripts/check-framework-doc-versions.mjs && node scripts/publish-catalog-checkpoint.mjs",
-    "check": "pnpm check:docs && pnpm check:search && pnpm check:linked-catalog && pnpm types:check && pnpm build && pnpm check:learning-paths",
+    "check": "pnpm check:docs && pnpm check:legacy-links && pnpm check:search && pnpm check:linked-catalog && pnpm types:check && pnpm build && pnpm check:learning-paths",
+    "check:legacy-links": "node --test scripts/legacy-marketplace-links.test.mjs",
     "check:learning-paths": "node scripts/check-learning-paths.mjs",
     "check:engine-extension": "node scripts/smoke-engine-extension.mjs",
     "check:linked-catalog": "node --test scripts/catalog-checkpoint-files.test.mjs scripts/linked-catalog.test.mjs scripts/linked-documents.test.mjs scripts/portable-catalog.test.mjs scripts/release-details.test.mjs",

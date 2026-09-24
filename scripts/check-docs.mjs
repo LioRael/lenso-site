@@ -15,6 +15,10 @@ for (const [from, to] of legacyRedirects) {
     `/docs${from} /docs${to} 301`,
     `/zh${from} /docs/zh${to} 301`,
     `/docs/zh${from} /docs/zh${to} 301`,
+    `${from}/ /docs${to}/ 301`,
+    `/docs${from}/ /docs${to}/ 301`,
+    `/zh${from}/ /docs/zh${to}/ 301`,
+    `/docs/zh${from}/ /docs/zh${to}/ 301`,
   ]) {
     if (!redirectFile.split("\n").includes(expected)) failures.push(`public/_redirects: missing ${expected}`);
   }

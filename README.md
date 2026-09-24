@@ -6,6 +6,14 @@ search, `llms.txt`, and per-page Markdown routes. The site also owns the public
 Plugin browsing experience while catalog signing, publishing, and installation
 authority remain in the Marketplace and the adopting Host.
 
+The old Marketplace UI used `/?plugin=ID&version=VERSION` for exact release
+links. If such a link reaches this Site, the browser opens the same exact
+version only when this build has its release page. Otherwise it shows an
+unavailable state; it never substitutes a different version or presents an
+omitted release as signed. This is client-side link handling, not a Marketplace
+host or API cutover. The old
+Marketplace remains in place until a separately verified deployment change.
+
 The documentation tree describes the current Lenso architecture only. Retired product generations
 are intentionally excluded from the public site. `/docs` and `/docs/zh` are explicitly
 **development previews**, not documentation for a published framework version.

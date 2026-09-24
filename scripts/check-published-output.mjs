@@ -26,6 +26,17 @@ function requireFile(path) {
 
 for (const path of ['index.html', 'plugins/index.html', 'plugins/lenso.web-ingress/0.4.5/index.html', 'docs/index.html', 'docs/zh/index.html', 'api/search', 'api/plugins/search', 'llms.txt', 'llms-full.txt', 'robots.txt', 'sitemap.xml']) requireFile(path);
 
+for (const line of requireFile('_redirects').trim().split(/\r?\n/u)) {
+  const [from, to, status, ...extra] = line.split(/\s+/u);
+  if (!from?.startsWith('/') || !to?.startsWith('/docs/') || status !== '301' || extra.length) {
+    failures.push(`out/_redirects: invalid entry ${JSON.stringify(line)}`);
+    continue;
+  }
+  if (!existsSync(join(outputRoot, to.replace(/^\/+/, ''), 'index.html'))) {
+    failures.push(`out/_redirects: ${from} targets an unpublished page ${to}`);
+  }
+}
+
 for (const [path, markers] of [
   ['index.html', ['Build the system.', 'Choose the shortest path', 'Preview app quickstart', 'Browse plugins']],
   ['plugins/index.html', ['Candidate releases', 'lenso.web-ingress']],
