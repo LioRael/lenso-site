@@ -14,7 +14,7 @@ const paths = [
   ["P5", "core/(start)/react-vite-app.mdx"],
   ["P6", "agent/(configure)/agent-configuration.mdx"],
   ["P7", "core/(start)/app-quickstart.mdx"],
-  ["P8", "core/(operate)/plugin-lifecycle.mdx"],
+  ["P8", "core/(start)/first-app-change.mdx"],
 ];
 const failures = [];
 
@@ -54,6 +54,14 @@ for (const locale of ["", "zh/"]) {
   for (const marker of ["lenso plugins install", 'app add "$PLUGIN_ID@$VERSION"',
     "--linked-snapshot", "--trust", "--crate", "app build --out dist-linked-review"]) {
     if (!markdown.includes(marker)) failures.push(`${guide}: missing release-path boundary ${marker}`);
+  }
+}
+
+for (const locale of ["", "zh/"]) {
+  const matrix = readFileSync(join(docsRoot, locale, "learning-path-smoke.mdx"), "utf8");
+  const linkedWithdrawal = `/docs/${locale}core/plugin-lifecycle`;
+  if (!matrix.includes(`](${linkedWithdrawal})`)) {
+    failures.push(`learning-path-smoke.mdx: P8 must distinguish source-local linked withdrawal`);
   }
 }
 

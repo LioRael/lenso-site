@@ -18,7 +18,7 @@ Site link check.
 | P5 | [Connect a React/Vite frontend](/docs/core/react-vite-app) |
 | P6 | [Configure an Agent](/docs/agent/agent-configuration) |
 | P7 | [Build and inspect the App](/docs/core/app-quickstart) |
-| P8 | [Disable or withdraw a Plugin](/docs/core/plugin-lifecycle) |
+| P8 | [Disable and remove in a Host App](/docs/core/first-app-change) |
 
 ## P1. First runnable App
 
@@ -83,12 +83,15 @@ check, not yet a package-only independent-consumer receipt.
 
 ## P8. Upgrade, disable, and uninstall
 
-**Smoke:** Build a disabled generation and inspect its bindings. For an exact
-signed linked source, use `app unadopt` and verify the recoverable trash
-location and retained business data.
+**Smoke:** With an exact Host executable and its matching Host Catalog, use
+`lenso plugins disable example.echo default --root ./my-app`, inspect with
+`app show`, then enable and remove the Plugin. Check the derived App again and
+verify business data separately.
 
-**Boundary:** Upgrade and data migration are separately reviewed. No
-automatic reversible migration is promised.
+**Boundary:** The generic published CLI does not provide that Host/Catalog
+pair. [Exact linked-source withdrawal](/docs/core/plugin-lifecycle) is a
+different, source-local `app unadopt` path. Upgrade and data migration still
+need separate review; no automatic reversible migration is promised.
 
 ## Run the checks in layers
 

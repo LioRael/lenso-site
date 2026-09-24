@@ -16,7 +16,7 @@ description: 检查八条核心路径，同时区分本地样例、签名发布�
 | P5 | [连接 React/Vite 前端](/docs/zh/core/react-vite-app) |
 | P6 | [配置 Agent](/docs/zh/agent/agent-configuration) |
 | P7 | [构建并检查 App](/docs/zh/core/app-quickstart) |
-| P8 | [禁用或撤出 Plugin](/docs/zh/core/plugin-lifecycle) |
+| P8 | [在 Host App 中禁用并移除 Plugin](/docs/zh/core/first-app-change) |
 
 ## P1. 首个可运行 App
 
@@ -74,10 +74,13 @@ PostgreSQL。
 
 ## P8. 升级、禁用与卸载
 
-**Smoke：** 构建禁用后的 Generation 并检查绑定。对于准确的签名 Linked 源，
-运行 `app unadopt`，核对可恢复回收位置和业务数据保留。
+**Smoke：** 取得准确的 Host 可执行文件及与其匹配的 Host Catalog 后，运行
+`lenso plugins disable example.echo default --root ./my-app`，通过 `app show`
+检查，再启用并移除 Plugin。重新检查解析后的 App，另行验证业务数据保留。
 
-**边界：** 升级与数据迁移需要独立审查。这里不承诺自动可逆迁移。
+**边界：** 通用已发布 CLI 不附带这对 Host/Catalog。
+[准确 Linked 源码撤出](/docs/zh/core/plugin-lifecycle)是另一条仅在源码本地验证的
+`app unadopt` 路径。升级与数据迁移仍需独立审查；这里不承诺自动可逆迁移。
 
 ## 分层运行
 
