@@ -234,7 +234,16 @@ try {
   assert.match(release, /Independent signed Portable release/);
   assert.match(release, /two independently signed channels/);
   assert.match(release, /sha256:1111111111111111111111111111111111111111111111111111111111111111/);
-  assert.match(release, /lenso app add example.web@1.0.0/);
+  const linkedAdoption = release.match(/<section class="linked-release-section" aria-labelledby="adoption-heading">([\s\S]*?)<\/section>/)?.[1];
+  const portableAdoption = release.match(/<section class="linked-release-section" aria-labelledby="portable-adoption-heading">([\s\S]*?)<\/section>/)?.[1];
+  assert.ok(linkedAdoption, 'a shared release must retain its linked Cargo adoption panel');
+  assert.ok(portableAdoption, 'a shared release must expose its separate Portable adoption panel');
+  assert.match(linkedAdoption, /lenso app add example\.web@1\.0\.0 --linked-snapshot [^<]*--trust [^<]*--crate [^<]*\.crate/);
+  assert.doesNotMatch(linkedAdoption, /--portable-snapshot|--archive/);
+  assert.match(portableAdoption, /Adopt the Portable distribution/);
+  assert.match(portableAdoption, /lenso app add example\.web@1\.0\.0 --portable-snapshot [^<]*--trust [^<]*--archive [^<]*\.lenso-plugin/);
+  assert.match(portableAdoption, /linked Cargo snapshot and <code>\.crate<\/code> above do not verify this Portable Bundle/);
+  assert.doesNotMatch(portableAdoption, /--linked-snapshot|--crate/);
   assert.match(release, /Getting started/);
   assert.match(release, /Portable getting started/);
   assert.match(release, new RegExp(portableSlug));

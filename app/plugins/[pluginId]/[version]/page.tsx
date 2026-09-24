@@ -100,6 +100,7 @@ function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease
           <p>This is a local Host build input, not a portable runtime bundle. Inspect the resolved App and build/check it before use. The Site cannot grant local filesystem access.</p>
         </> : <p>This release requires a product Host-specific integration or a registry unsupported by generic <code>lenso app add</code>. Do not use the generic adoption command.</p>}
       </section>
+      {portable && <PortableAdoption release={portable} alongsideLinked />}
       <section className="linked-release-section" aria-labelledby="release-docs-heading">
         <h2 id="release-docs-heading">Documentation for {release.version}</h2>
         {release.documentation.length === 0 ? <p>No versioned Markdown is attached to this release.</p> : <ul>{release.documentation.map((document) => <li key={`${document.id}@${document.revision}`}>
@@ -113,7 +114,6 @@ function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease
 
 function SignedPortableReleasePage({ release }: { release: SignedPortableRelease }) {
   const otherVersions = signedPortableCatalog.releases.filter((item) => item.pluginId === release.pluginId && item.version !== release.version);
-  const adoptCommand = `lenso app add ${release.pluginId}@${release.version} --portable-snapshot ./portable-snapshot.json --trust ./catalog-trust.json --archive ./exact-release.lenso-plugin`;
   return <div className="linked-release-shell">
     <SiteHeader active="plugins" />
     <main className="linked-doc-main">
@@ -125,15 +125,21 @@ function SignedPortableReleasePage({ release }: { release: SignedPortableRelease
       </header>
       <PortableProvenance release={release} />
       {otherVersions.length > 0 && <section className="linked-release-section"><h2>Other listed versions</h2><ul>{otherVersions.map((item) => <li key={item.version}><Link href={linkedReleasePath(item.pluginId, item.version)}>{item.version}</Link></li>)}</ul></section>}
-      <section className="linked-release-section">
-        <h2>Adopt this exact Portable version</h2>
-        <p>In a source App, the source-built candidate CLI accepts an independently trusted signed snapshot and the exact <code>.lenso-plugin</code> archive. Obtain both from an approved source and review the declared runtime and permissions before adoption. This Site page grants neither trust nor local filesystem access.</p>
-        <AdoptionCommandPanel command={adoptCommand} />
-        <p><code>app add</code> checks the signature, freshness, exact identity, archive digest, and manifest before recording local source intent. Then build the App and use <code>app check</code>/<code>app show</code> on the new distribution. The App owner can edit local sources; a later build checks archive drift against its local lock, not a new independent signature authority. This candidate path is not a claim that the CLI or release is publicly published.</p>
-      </section>
+      <PortableAdoption release={release} />
       <PortableDocumentationState release={release} />
     </main>
   </div>;
+}
+
+function PortableAdoption({ release, alongsideLinked = false }: { release: SignedPortableRelease; alongsideLinked?: boolean }) {
+  const adoptCommand = `lenso app add ${release.pluginId}@${release.version} --portable-snapshot ./portable-snapshot.json --trust ./catalog-trust.json --archive ./exact-release.lenso-plugin`;
+  return <section className="linked-release-section" aria-labelledby="portable-adoption-heading">
+    <h2 id="portable-adoption-heading">{alongsideLinked ? 'Adopt the Portable distribution' : 'Adopt this exact Portable version'}</h2>
+    <p>In a source App, the source-built candidate CLI accepts an independently trusted signed Portable snapshot and the exact <code>.lenso-plugin</code> archive. Obtain both from an approved source and review the declared runtime and permissions before adoption. This Site page grants neither trust nor local filesystem access.</p>
+    {alongsideLinked && <p>The linked Cargo snapshot and <code>.crate</code> above do not verify this Portable Bundle. Use the Portable snapshot and archive named below.</p>}
+    <AdoptionCommandPanel command={adoptCommand} />
+    <p><code>app add</code> checks the signature, freshness, exact identity, archive digest, and manifest before recording local source intent. Then build the App and use <code>app check</code>/<code>app show</code> on the new distribution. The App owner can edit local sources; a later build checks archive drift against its local lock, not a new independent signature authority. This candidate path is not a claim that the CLI or release is publicly published.</p>
+  </section>;
 }
 
 function PortableProvenance({ release }: { release: SignedPortableRelease }) {
