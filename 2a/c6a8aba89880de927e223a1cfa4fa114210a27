@@ -1,0 +1,21 @@
+lib/plugin-targets.ts
+  s_7d146975368699::t_5d0d4bfb66abf0 10
+app/sitemap.ts
+  s_7d146975368699::t_5d0d4bfb66abf0 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2ac6a8aba89880de927e223a1cfa4fa114210a27",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
