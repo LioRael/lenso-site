@@ -62,9 +62,14 @@ try {
           plugin_id: pluginId, version, publisher_id: 'example', title: 'Example Bun',
           summary: 'Fixture npm-only Plugin', source_url: 'https://example.test/bun',
           source_revision: 'a'.repeat(40), license: 'MIT', availability: 'listed',
-          distributions: [{ id: 'bun', kind: 'npm_package', package: '@example/bun-plugin',
-            version: '2.1.0', integrity: `sha256:${'b'.repeat(64)}`,
-            registry_url: 'https://registry.npmjs.org', targets: ['workers'] }],
+          distributions: [
+            { id: 'bun', kind: 'npm_package', package: '@example/bun-plugin',
+              version: '2.1.0', integrity: `sha256:${'b'.repeat(64)}`,
+              registry_url: 'https://registry.npmjs.org', targets: ['workers'] },
+            { id: 'native', kind: 'npm_package', package: '@example/bun-plugin',
+              version: '2.1.0', integrity: `sha256:${'b'.repeat(64)}`,
+              registry_url: 'https://registry.npmjs.org', targets: [] },
+          ],
           documentation: [{ ...document, url: `https://127.0.0.1:${port}/quickstart.md` }],
         }],
       };
@@ -109,7 +114,9 @@ try {
   assert.match(page, /Plugin version/);
   assert.match(page, /npm package version/);
   assert.match(page, /2\.1\.0/);
-  assert.doesNotMatch(page, /app add example\.bun@1\.0\.0/);
+  assert.match(page, /app add example\.bun@1\.0\.0[^<]*--distribution &#x27;native&#x27;/);
+  assert.doesNotMatch(page, /--distribution &#x27;bun&#x27;/);
+  assert.match(page, /No generic <code>lenso app add<\/code> command is available for this non-Native distribution/);
   assert.match(documentPage, /npm-only package/);
   assert.equal(markdown, body.toString());
   console.log('Signed npm-only fixture exposed an exact release and independently verified versioned Markdown without a Portable base.');
