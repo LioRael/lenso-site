@@ -10,6 +10,7 @@
     "check:engine-extension": "node scripts/smoke-engine-extension.mjs",
     "check:linked-catalog": "node --test scripts/catalog-checkpoint-files.test.mjs scripts/linked-catalog.test.mjs scripts/linked-documents.test.mjs scripts/portable-catalog.test.mjs scripts/release-details.test.mjs",
     "check:linked-site-integration": "node scripts/check-linked-site-integration.mjs",
+    "check:real-linked-adoption": "node scripts/check-real-linked-adoption.mjs",
     "check:docs": "node scripts/check-docs.mjs",
     "check:docs:upstream": "pnpm check && node --test scripts/external-link-policy.test.mjs && node scripts/check-external-links.mjs",
     "check:search": "node scripts/check-search.mjs",

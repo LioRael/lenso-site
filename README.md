@@ -146,6 +146,22 @@ paths. This is fixture evidence, not a claim of a live production catalog or
 operator checkpoint persistence. Signed details can be amended additively by
 Market; Site needs a fresh build to display new revisions.
 
+For a separate opt-in, package-backed linked adoption check, set absolute
+`LENSO_SITE_CLI`, `LENSO_SITE_LINKED_SNAPSHOT`, `LENSO_SITE_LINKED_TRUST`,
+`LENSO_SITE_AUTH_CRATE`, `LENSO_SITE_SECRETS_CRATE`, and
+`LENSO_SITE_CARGO_CONFIG`, then run `pnpm check:real-linked-adoption`.
+The snapshot must contain exact `lenso.auth.api-token@0.1.1` and
+`lenso.secrets.env@0.1.7` releases matching those two `.crate` files; the
+Cargo config must point to an available offline dependency source. The check
+serves the unchanged signed snapshot over temporary loopback HTTPS for one
+static Site build, then gives that same snapshot file, trust file and both
+archives to the supplied CLI for `app add`, `app build`, `app check` and
+`app show` in a disposable App. It does not publish the fixture, prepare an
+Auth database, or make the Site an installation authority. Set absolute
+`LENSO_SITE_RECEIPT` outside this repository to save a JSON result; existing
+receipt files are never overwritten. This check runs native build-time code
+from the selected archives, so use only a reviewed local release cohort.
+
 ## Documentation model
 
 Write navigation around a reader's job, not an internal subsystem. The first
