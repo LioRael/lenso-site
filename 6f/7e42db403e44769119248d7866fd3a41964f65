@@ -1,0 +1,48 @@
+scripts/ingest-linked-catalog.mjs
+  s_7d146975368699::t_986ddac35e1ea2 55,77,98-100,129
+  s_7d146975368699::t_044f2f81a571c5 7,26,54,71-76,78-84,94-97,101-102
+scripts/linked-package-join.test.mjs
+  s_7d146975368699::t_ec4a063cee2a89 1-98
+scripts/linked-catalog.mjs
+  s_7d146975368699::t_63d2393071842b 126
+scripts/check-published-output.mjs
+  s_7d146975368699::t_a49c61d4e0c322 179,191
+README.md
+  s_7d146975368699::t_4d6d85bb513afb 77,79-90,99-100,143,156-159
+lib/signed-plugin-directory.ts
+  s_7d146975368699::t_38d8ae0fdcc37a 69,86,100,106-117,123,158-159
+components/signed-document-search.tsx
+  s_7d146975368699::t_1d7b81bf9e8d66 35,64,69-70
+scripts/release-details.mjs
+  s_7d146975368699::t_63d2393071842b 163-187,191-212
+  s_7d146975368699::t_34d3ac59690c64 188-190
+lib/plugin-candidates.ts
+  s_7d146975368699::t_34d3ac59690c64 91-92
+  s_7d146975368699::t_986ddac35e1ea2 93
+app/plugins/[pluginId]/[version]/docs/[slug]/page.tsx
+  s_7d146975368699::t_b76a4695d4a632 34-36
+app/plugins/[pluginId]/[version]/page.tsx
+  s_7d146975368699::t_b76a4695d4a632 66-69,125-127,136-137,141,170,180-185,191-208
+  s_7d146975368699::t_30de17a88a74ff 209-210
+components/plugin-directory.tsx
+  s_7d146975368699::t_b8dc11f593f13f 12-15,26,41,44-46,55-63,65-68,83-84,159-161
+  s_7d146975368699::t_71bd1385e78cf6 64
+scripts/package-catalog.mjs
+  s_7d146975368699::t_63d2393071842b 125-126,143,149-152,154-157
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6f7e42db403e44769119248d7866fd3a41964f65",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
