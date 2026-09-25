@@ -1,5 +1,6 @@
 import generated from './.generated/linked-catalog.json';
 import portableGenerated from './.generated/portable-catalog.json';
+import contentGenerated from './.generated/release-content.json';
 
 export type SignedLinkedRelease = {
   pluginId: string;
@@ -61,6 +62,27 @@ export type SignedPortableCatalog = {
   releases: SignedPortableRelease[];
 };
 export const signedPortableCatalog = portableGenerated as SignedPortableCatalog;
+
+export type SignedReleaseContent = {
+  pluginId: string;
+  version: string;
+  baseKind: 'linked_cargo' | 'portable';
+  baseReleaseIdentity: string;
+  content: {
+    id: string;
+    kind: 'editable_template' | 'development_extension';
+    url: string;
+    digest: string;
+    size: number;
+  }[];
+};
+export type SignedReleaseContentCatalog = {
+  catalogId: string | null;
+  revision: number | null;
+  expiresAt: number | null;
+  releases: SignedReleaseContent[];
+};
+export const signedReleaseContent = contentGenerated as SignedReleaseContentCatalog;
 
 export const candidateRelease = {
   pluginId: 'lenso.web-ingress',

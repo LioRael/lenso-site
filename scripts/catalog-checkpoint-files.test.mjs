@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { checkpointConfig, loadCheckpointBundle, nextCheckpointBundle } from './catalog-checkpoint-files.mjs';
-import { emptyCheckpointBundle } from './catalog-checkpoints.mjs';
+import { emptyCheckpointBundle, validateCheckpointBundle } from './catalog-checkpoints.mjs';
 
 test('no-config build stays empty, while signed builds need explicit bootstrap or durable input/output', () => {
   assert.equal(checkpointConfig({}, false), null);
@@ -52,4 +52,18 @@ test('operator checkpoint input is strict, read-only and carries omitted channel
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }
+});
+
+test('optional content history preserves the old bundle shape and survives channel omission', () => {
+  const oldBundle = emptyCheckpointBundle('catalog');
+  assert.ok(!Object.hasOwn(nextCheckpointBundle(oldBundle, {}), 'release_content'));
+  const content = {
+    catalog_id: 'catalog', revision: 1, payload_digest: `sha256:${'a'.repeat(64)}`,
+    release_identities: { 'example.web@1.0.0': `sha256:${'b'.repeat(64)}` },
+  };
+  const next = nextCheckpointBundle(oldBundle, { release_content: content });
+  assert.deepEqual(validateCheckpointBundle(next, 'catalog').release_content, content);
+  assert.deepEqual(nextCheckpointBundle(next, {}).release_content, content);
+  assert.throws(() => validateCheckpointBundle({ ...next,
+    release_content: { ...content, document_identities: {} } }, 'catalog'));
 });

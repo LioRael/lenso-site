@@ -137,6 +137,9 @@ button, a, input, select { outline-offset: 3px; }
 .linked-release-section { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
 .linked-release-section h2 { margin: 0 0 12px; font-size: 23px; line-height: 1.25; }
 .linked-release-section p { margin: 0; line-height: 1.6; }
+.release-content-entry h3 { margin: 0 0 10px; font-size: 18px; line-height: 1.4; }
+.release-content-entry dl { margin: 16px 0 0; }
+.release-content-entry a { overflow-wrap: anywhere; }
 .linked-release-shell .code-panel pre { color: var(--ink); }
 .linked-doc-body { margin-top: 44px; font-size: 17px; line-height: 1.7; overflow-wrap: anywhere; }
 .linked-doc-body h2, .linked-doc-body h3, .linked-doc-body h4, .linked-doc-body h5, .linked-doc-body h6 { margin: 1.6em 0 .5em; line-height: 1.2; letter-spacing: -.025em; }

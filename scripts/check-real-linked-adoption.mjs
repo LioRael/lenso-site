@@ -80,6 +80,7 @@ try {
   };
   for (const name of [
     'LENSO_MARKETPLACE_PORTABLE_URL', 'LENSO_MARKETPLACE_RELEASE_DETAILS_URL',
+    'LENSO_MARKETPLACE_RELEASE_CONTENT_URL',
     'LENSO_MARKETPLACE_CHECKPOINT_INPUT',
   ]) delete siteEnvironment[name];
   await run('pnpm', ['build'], root, siteEnvironment);

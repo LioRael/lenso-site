@@ -77,7 +77,26 @@ base snapshot. The build verifies the separate details signature, validity
 window and exact immutable base-release identity before displaying any
 document reference. The details endpoint supplies signed URL, byte length and
 SHA-256 metadata, **not** hosted or sanitized document bytes.
-In either case, set
+To display optional editable templates or development extensions, set
+`LENSO_MARKETPLACE_RELEASE_CONTENT_URL` to a raw signed HTTPS
+`release-content.v2` endpoint alongside at least one base snapshot. Site
+checks its separate signature, expiry, checkpoint history and exact immutable
+Portable or linked Cargo base identity before showing a content reference on
+an exact-version page. Site does not fetch the archive. The page shows its
+signed URL, size, digest and separate CLI preview/copy commands. A copied
+template becomes App-owned editable source; a copied development extension
+remains inactive until the App owner explicitly selects it after review.
+For a local same-input check, generate a temporary signed fixture with absolute
+`LENSO_SITE_LINKED_SNAPSHOT` and `LENSO_SITE_CONTENT_FIXTURE_PARENT` set for
+`node scripts/create-release-content-fixture.mjs`. Set the resulting absolute
+manifest path as `LENSO_SITE_CONTENT_FIXTURE`, set an absolute candidate CLI as
+`LENSO_SITE_CONTENT_CLI`, then run `pnpm check:release-content-integration`.
+This builds Site from both signed snapshots and uses the same files for real
+CLI preview and copy of both content kinds in a disposable App. Set absolute
+`LENSO_SITE_CONTENT_RECEIPT` outside this repository to save a no-overwrite
+JSON receipt. The fixture key is generated in memory and is not an operator
+trust root; this check does not fetch public archives or select an extension.
+For every configured signed channel, set
 `LENSO_MARKETPLACE_CATALOG_ID`, `LENSO_MARKETPLACE_KEY_ID`, and
 `LENSO_MARKETPLACE_PUBLIC_KEY_HEX` to the independently trusted public
 identity shared by these Marketplace channels. The build verifies each exact
@@ -96,9 +115,10 @@ one of:
 - `LENSO_MARKETPLACE_CHECKPOINT_BOOTSTRAP=1`: an explicit first trusted build
   only. Never use bootstrap to recover from a missing prior checkpoint.
 
-Site validates the previous Portable, release-details and linked Cargo
-checkpoints, including historical immutable release/document identities,
-revision rollback and same-revision equivocation. An omitted channel keeps
+Site validates the previous Portable, release-details, linked Cargo and
+optional release-content checkpoints, including historical immutable release,
+content and document identities, revision rollback and same-revision
+equivocation. An omitted channel keeps
 its previous history. Only after static generation and published-output checks
 pass does the build atomically create (without overwriting) the **candidate**
 checkpoint output. The build does not promote or persist it: the operator must

@@ -184,6 +184,7 @@ try {
     LENSO_MARKETPLACE_CHECKPOINT_BOOTSTRAP: '1',
     LENSO_MARKETPLACE_CHECKPOINT_OUTPUT: checkpointPath,
   };
+  delete environment.LENSO_MARKETPLACE_RELEASE_CONTENT_URL;
   await run('pnpm', ['build'], environment);
   const firstCheckpoint = JSON.parse(await readFile(checkpointPath, 'utf8'));
   assert.equal(firstCheckpoint.schema, 'lenso.site.catalog-checkpoints.v1');

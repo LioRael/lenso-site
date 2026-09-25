@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-// Build-time mirrors of lenso-plugin-catalog's three Checkpoint v1 types.
+// Build-time mirrors of the independent Marketplace checkpoint types.
 // The outer bundle is Site-local transport, not a signed catalog protocol.
 export const checkpointSchema = 'lenso.site.catalog-checkpoints.v1';
 const hash = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
@@ -26,7 +26,7 @@ function validateHistory(map, limit, maxBytes = Infinity) {
 
 export function validateCheckpoint(checkpoint, channel, catalogId) {
   if (checkpoint === null || checkpoint === undefined) return null;
-  const documents = channel !== 'portable';
+  const documents = channel !== 'portable' && channel !== 'content';
   const keys = ['catalog_id', 'revision', 'payload_digest', 'release_identities'];
   if (documents) keys.push('document_identities');
   if (!exactKeys(checkpoint, keys) || checkpoint.catalog_id !== catalogId
@@ -39,6 +39,10 @@ export function validateCheckpoint(checkpoint, channel, catalogId) {
   const maxDocuments = channel === 'portable' ? 0 : 65_536;
   validateHistory(checkpoint.release_identities, maxReleases,
     channel === 'portable' ? Infinity : 8 * 1024 * 1024);
+  if (channel === 'content' && Object.keys(checkpoint.release_identities)
+    .some((identity) => Buffer.byteLength(identity, 'utf8') > 512)) {
+    throw new Error('release content checkpoint identity exceeds limit');
+  }
   if (documents) {
     validateHistory(checkpoint.document_identities, maxDocuments);
     const totalBytes = [...Object.entries(checkpoint.release_identities), ...Object.entries(checkpoint.document_identities)]
@@ -75,7 +79,8 @@ function canonicalDistribution(distribution) {
 function begin(snapshot, payload, previous, channel) {
   validateCheckpoint(previous, channel, snapshot.catalog_id);
   const releaseIdentities = { ...(previous?.release_identities ?? {}) };
-  const documentIdentities = channel === 'portable' ? null : { ...(previous?.document_identities ?? {}) };
+  const documentIdentities = channel === 'portable' || channel === 'content'
+    ? null : { ...(previous?.document_identities ?? {}) };
   return { releaseIdentities, documentIdentities,
     checkpoint: { catalog_id: snapshot.catalog_id, revision: snapshot.revision,
       payload_digest: hash(payload) } };
@@ -154,15 +159,32 @@ export function detailsCheckpoint(snapshot, payload, previous = null) {
   return finish(snapshot, previous, 'details', state);
 }
 
+export function releaseContentCheckpoint(snapshot, payload, previous = null) {
+  const state = begin(snapshot, payload, previous, 'content');
+  for (const release of snapshot.releases) {
+    const identity = `${release.plugin_id}@${release.version}`;
+    const immutable = hashJson([
+      release.plugin_id, release.version, release.base_kind, release.base_release_identity,
+      release.content.map((item) => [item.id, item.kind, item.url, item.digest, item.size]),
+    ]);
+    retain(state.releaseIdentities, identity, immutable, 'published release content changed');
+  }
+  return finish(snapshot, previous, 'content', state);
+}
+
 export function validateCheckpointBundle(bundle, catalogId) {
   if (!exactKeys(bundle, ['schema', 'catalog_id', 'portable', 'release_details', 'linked_cargo'])
-    || bundle.schema !== checkpointSchema || bundle.catalog_id !== catalogId
+    && !exactKeys(bundle, ['schema', 'catalog_id', 'portable', 'release_details', 'linked_cargo', 'release_content'])) {
+    throw new Error('invalid Site catalog checkpoint bundle');
+  }
+  if (bundle.schema !== checkpointSchema || bundle.catalog_id !== catalogId
     || !validText(bundle.catalog_id, 128)) {
     throw new Error('invalid Site catalog checkpoint bundle');
   }
   validateCheckpoint(bundle.portable, 'portable', catalogId);
   validateCheckpoint(bundle.release_details, 'details', catalogId);
   validateCheckpoint(bundle.linked_cargo, 'linked', catalogId);
+  if (Object.hasOwn(bundle, 'release_content')) validateCheckpoint(bundle.release_content, 'content', catalogId);
   return bundle;
 }
 

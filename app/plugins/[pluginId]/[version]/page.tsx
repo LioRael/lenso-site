@@ -6,7 +6,7 @@ import { DescriptionListDescription, DescriptionListItem, DescriptionListRoot, D
 import { CandidateDocumentation } from '@/components/candidate-documentation';
 import { CopyCommand } from '@/components/copy-command';
 import { SiteHeader } from '@/components/site-header';
-import { candidateRelease, signedLinkedCatalog, signedPortableCatalog, type SignedLinkedRelease, type SignedPortableRelease } from '@/lib/plugin-candidates';
+import { candidateRelease, signedLinkedCatalog, signedPortableCatalog, signedReleaseContent, type SignedLinkedRelease, type SignedPortableRelease, type SignedReleaseContent } from '@/lib/plugin-candidates';
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
 
 type Params = Promise<{ pluginId: string; version: string }>;
@@ -31,6 +31,11 @@ function findLinked(pluginId: string, version: string) {
 
 function findPortable(pluginId: string, version: string) {
   return signedPortableCatalog.releases.find((release) => release.pluginId === pluginId && release.version === version);
+}
+
+function findContent(pluginId: string, version: string, baseKind: SignedReleaseContent['baseKind']) {
+  return signedReleaseContent.releases.find((release) => release.pluginId === pluginId
+    && release.version === version && release.baseKind === baseKind);
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
@@ -100,7 +105,9 @@ function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease
           <p>This is a local Host build input, not a portable runtime bundle. Inspect the resolved App and build/check it before use. The Site cannot grant local filesystem access.</p>
         </> : <p>This release requires a product Host-specific integration or a registry unsupported by generic <code>lenso app add</code>. Do not use the generic adoption command.</p>}
       </section>
-      {portable && <PortableAdoption release={portable} alongsideLinked />}
+      <ReleaseContentFor pluginId={release.pluginId} version={release.version} baseKind="linked_cargo" />
+      {portable && <><PortableAdoption release={portable} alongsideLinked />
+        <ReleaseContentFor pluginId={portable.pluginId} version={portable.version} baseKind="portable" /></>}
       <section className="linked-release-section" aria-labelledby="release-docs-heading">
         <h2 id="release-docs-heading">Documentation for {release.version}</h2>
         {release.documentation.length === 0 ? <p>No versioned Markdown is attached to this release.</p> : <ul>{release.documentation.map((document) => <li key={`${document.id}@${document.revision}`}>
@@ -126,6 +133,7 @@ function SignedPortableReleasePage({ release }: { release: SignedPortableRelease
       <PortableProvenance release={release} />
       {otherVersions.length > 0 && <section className="linked-release-section"><h2>Other listed versions</h2><ul>{otherVersions.map((item) => <li key={item.version}><Link href={linkedReleasePath(item.pluginId, item.version)}>{item.version}</Link></li>)}</ul></section>}
       <PortableAdoption release={release} />
+      <ReleaseContentFor pluginId={release.pluginId} version={release.version} baseKind="portable" />
       <PortableDocumentationState release={release} />
     </main>
   </div>;
@@ -164,8 +172,40 @@ function PortableProvenance({ release }: { release: SignedPortableRelease }) {
   </aside>;
 }
 
-function AdoptionCommandPanel({ command }: { command: string }) {
-  return <div className="code-panel"><div className="code-panel-head"><span>Local project · replace paths with verified files</span><CopyCommand value={command} /></div><pre><code>{command}</code></pre></div>;
+function ReleaseContentFor({ pluginId, version, baseKind }: {
+  pluginId: string; version: string; baseKind: SignedReleaseContent['baseKind'];
+}) {
+  const release = findContent(pluginId, version, baseKind);
+  if (!release) return null;
+  const baseFlag = release.baseKind === 'linked_cargo'
+    ? '--linked-snapshot ./linked-cargo-snapshot.json'
+    : '--portable-snapshot ./portable-snapshot.json';
+  return <section className="linked-release-section" aria-labelledby={`release-content-${release.baseKind}`}>
+    <h2 id={`release-content-${release.baseKind}`}>Optional source content</h2>
+    <p>These archive references come from a separate signed content snapshot for this exact {release.baseKind === 'linked_cargo' ? 'linked Cargo' : 'Portable'} release. Site does not download or inspect the archives. Download the exact archive, review its source, and use the CLI to verify it locally. A listing does not activate an extension or install a runtime Plugin.</p>
+    <p>Content snapshot revision {signedReleaseContent.revision}; expires {signedReleaseContent.expiresAt ? new Date(signedReleaseContent.expiresAt * 1000).toISOString() : 'at an unknown time'}. Reverify both snapshots when copying content.</p>
+    {release.content.map((item) => {
+      const destination = item.kind === 'editable_template' ? `examples/${item.id}` : `extensions/${item.id}`;
+      const command = `lenso app add ${release.pluginId}@${release.version} ${baseFlag} --trust ./catalog-trust.json --content-snapshot ./release-content-snapshot.json --content-id ${item.id} --content-archive ./${item.id}.tar.gz --content-destination ${destination}`;
+      return <div key={item.id} className="linked-release-section release-content-entry">
+        <h3>{item.kind === 'editable_template' ? 'Editable template' : 'Development extension'}: <code>{item.id}</code></h3>
+        <p>{item.kind === 'editable_template'
+          ? 'The CLI copies this template into a new App-owned directory. You can edit those files; the catalog does not manage your copy.'
+          : <>The CLI copies this opt-in source into a new App-owned directory without running or selecting it. Review it before explicitly adding <code>{destination}</code> as a development Plugin.</>}</p>
+        <ProvenanceFacts items={[
+          ['Signed archive reference', <a key="url" href={item.url} rel="noopener noreferrer" target="_blank">{item.url}</a>],
+          ['Archive SHA-256', <code key="digest">{item.digest}</code>],
+          ['Archive size', `${item.size} bytes`],
+        ]} />
+        <AdoptionCommandPanel command={`${command} --content-preview`} label="CLI preview command" />
+        <AdoptionCommandPanel command={command} label="CLI copy command" />
+      </div>;
+    })}
+  </section>;
+}
+
+function AdoptionCommandPanel({ command, label = 'Local project · replace paths with verified files' }: { command: string; label?: string }) {
+  return <div className="code-panel"><div className="code-panel-head"><span>{label}</span><CopyCommand value={command} /></div><pre><code>{command}</code></pre></div>;
 }
 
 function PortableDocumentationState({ release }: { release: SignedPortableRelease }) {
