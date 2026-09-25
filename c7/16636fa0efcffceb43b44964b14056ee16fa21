@@ -1,0 +1,73 @@
+scripts/linked-documents.test.mjs
+  s_7d146975368699::t_03e2714149a9df 61-69
+app/plugins/[pluginId]/[version]/page.tsx
+  s_7d146975368699::t_9181c463df3977 9,18,36-39,47,65,68,73-120
+  s_7d146975368699::t_d2d30dbc9143e8 121
+lib/linked-documents.ts
+  s_7d146975368699::t_af3d86e2f05d21 6
+scripts/catalog-checkpoints.mjs
+  s_7d146975368699::t_44165cc14b7f8e 144-154,156-162,196-198,209
+  s_7d146975368699::t_e8e8c00d20424e 155
+scripts/check-published-output.mjs
+  s_7d146975368699::t_03fb90e3a2f08c 11,66,90,96-97,110,112,116-119,123-124,177-194
+  s_7d146975368699::t_03e2714149a9df 250
+  s_7d146975368699::t_c4b7886d41c63d 195
+scripts/publish-catalog-checkpoint.mjs
+  s_7d146975368699::t_24700b52f801e9 4-5
+scripts/package-catalog.mjs
+  s_7d146975368699::t_24700b52f801e9 136-150
+  s_7d146975368699::t_ed38335f805fd8 1-135
+scripts/linked-documents.mjs
+  s_7d146975368699::t_44165cc14b7f8e 7,13
+lib/signed-plugin-directory.ts
+  s_7d146975368699::t_055a0bd4ed7c78 3,7,50-62,68,101-112,143-144
+lib/plugin-candidates.ts
+  s_7d146975368699::t_055a0bd4ed7c78 3,67-93
+  s_7d146975368699::t_ceca77a46fea2a 94
+components/plugin-directory.tsx
+  s_7d146975368699::t_a5642acc4176c2 8,21,35,37-39,59-70,74-75,111,118,120,154-169
+  s_7d146975368699::t_8e7909b49fce1c 170
+components/signed-document-search.tsx
+  s_7d146975368699::t_af3d86e2f05d21 6,12-13,23-26,35,40,63-69,83
+scripts/finalize-static-output.mjs
+  s_7d146975368699::t_03fb90e3a2f08c 10,20
+scripts/package-catalog.test.mjs
+  s_7d146975368699::t_e8e8c00d20424e 42
+  s_7d146975368699::t_ecd8943b885cf3 1-41,43-75,87-97
+  s_7d146975368699::t_d2c53eb8994fed 76-86
+scripts/check-package-site-integration.mjs
+  s_7d146975368699::t_2cbf0c87526653 1-119
+package.json
+  s_7d146975368699::t_8ec565b5f20e4c 11
+  s_7d146975368699::t_2cbf0c87526653 13
+scripts/catalog-checkpoint-files.mjs
+  s_7d146975368699::t_44165cc14b7f8e 9,97-98
+scripts/ingest-linked-catalog.mjs
+  s_7d146975368699::t_24700b52f801e9 6,13,22-23,29,54,58,84-90,106,111,116
+app/sitemap.ts
+  s_7d146975368699::t_af3d86e2f05d21 3,17-21
+README.md
+  s_7d146975368699::t_03e2714149a9df 85-87
+  s_7d146975368699::t_8ec565b5f20e4c 77-84,133-134,145
+  s_7d146975368699::t_47b726a1a29cf7 76
+scripts/catalog-checkpoint-files.test.mjs
+  s_7d146975368699::t_ecd8943b885cf3 70-84
+app/plugins/[pluginId]/[version]/docs/[slug]/page.tsx
+  s_7d146975368699::t_af3d86e2f05d21 6,29-34,40,47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c716636fa0efcffceb43b44964b14056ee16fa21",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
