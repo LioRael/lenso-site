@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const linked = signedLinkedCatalog.releases.flatMap((release) => [
     linkedReleasePath(release.pluginId, release.version),
     ...release.documentation.map((document) => linkedDocumentPath(release.pluginId, release.version, document.slug)),
+    ...(release.details?.documentation ?? []).map((document) => linkedDocumentPath(release.pluginId, release.version, document.slug)),
   ]);
   const portable = signedPortableCatalog.releases.flatMap((release) => [
     linkedReleasePath(release.pluginId, release.version),

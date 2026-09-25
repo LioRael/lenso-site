@@ -7,7 +7,7 @@ export function npmTargetMatches(distributions: readonly { targets: readonly str
   if (!target) return true;
   if (target === 'Native') {
     return distributions.some((distribution) => distribution.targets.length === 0
-      || distribution.targets.some(isNativeTarget));
+      || distribution.targets.some((value) => value === '*' || isNativeTarget(value)));
   }
   if (target === 'Workers') {
     return distributions.some((distribution) => distribution.targets.some((value) =>
