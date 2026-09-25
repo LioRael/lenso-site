@@ -8,6 +8,7 @@ const outputRoot = process.env.NEXT_OUTPUT_ROOT ? resolve(root, process.env.NEXT
 const docsRoot = join(root, 'content/docs');
 const signedCatalog = JSON.parse(readFileSync(join(root, 'lib/.generated/linked-catalog.json'), 'utf8'));
 const signedPortableCatalog = JSON.parse(readFileSync(join(root, 'lib/.generated/portable-catalog.json'), 'utf8'));
+const signedPackageCatalog = JSON.parse(readFileSync(join(root, 'lib/.generated/package-catalog.json'), 'utf8'));
 const signedDocuments = JSON.parse(readFileSync(join(root, 'lib/.generated/linked-documents.json'), 'utf8'));
 const failures = [];
 
@@ -62,7 +63,7 @@ for (const [slug, englishTitle, chineseTitle] of [
   if (!requireFile('docs/zh/index.html').includes(chineseRoute)) failures.push(`out/docs/zh/index.html: missing role path ${chineseRoute}`);
   if (!requireFile('index.html').includes(englishRoute)) failures.push(`out/index.html: missing role path ${englishRoute}`);
 }
-const candidateSigned = [...signedCatalog.releases, ...signedPortableCatalog.releases]
+const candidateSigned = [...signedCatalog.releases, ...signedPortableCatalog.releases, ...signedPackageCatalog.releases]
   .some((release) => release.pluginId === 'lenso.web-ingress' && release.version === '0.4.5');
 function requireReleaseNavigationPayload(pluginId, version) {
   const directory = `plugins/${pluginId}/${version}`;
@@ -86,13 +87,14 @@ if (!candidateSigned) {
 const pluginIndex = requireFile('plugins/index.html');
 const pluginSearch = requireFile('api/plugins/search');
 const pluginDirectory = JSON.parse(requireFile('api/plugins/catalog.json'));
-const signedIdentities = new Set([...signedCatalog.releases, ...signedPortableCatalog.releases]
+const signedIdentities = new Set([...signedCatalog.releases, ...signedPortableCatalog.releases, ...signedPackageCatalog.releases]
   .map((release) => `${release.pluginId}\0${release.version}`));
 if (pluginDirectory.schema !== 'lenso.site.signed-plugin-directory.v1'
   || pluginDirectory.verification !== 'signature-verified-at-build'
   || pluginDirectory.releases.length !== signedIdentities.size
   || pluginDirectory.catalogs.linkedCargo.expiresAt !== signedCatalog.expiresAt
-  || pluginDirectory.catalogs.portable.expiresAt !== signedPortableCatalog.expiresAt) {
+  || pluginDirectory.catalogs.portable.expiresAt !== signedPortableCatalog.expiresAt
+  || pluginDirectory.catalogs.package.expiresAt !== signedPackageCatalog.expiresAt) {
   failures.push('out/api/plugins/catalog.json: signed source or expiry mismatch');
 }
 for (const release of pluginDirectory.releases) {
@@ -105,16 +107,21 @@ for (const release of pluginDirectory.releases) {
   }
   const linked = signedCatalog.releases.find((item) => item.pluginId === release.pluginId && item.version === release.version);
   const portable = signedPortableCatalog.releases.find((item) => item.pluginId === release.pluginId && item.version === release.version);
+  const npmPackage = signedPackageCatalog.releases.find((item) => item.pluginId === release.pluginId && item.version === release.version);
   const channels = release.distributions.map((item) => item.kind);
-  if (channels.length !== Number(Boolean(linked)) + Number(Boolean(portable))
+  if (channels.length !== Number(Boolean(linked)) + Number(Boolean(portable)) + Number(Boolean(npmPackage))
     || (linked && !release.distributions.some((item) => item.kind === 'linked_cargo'
       && item.expiresAt === signedCatalog.expiresAt && item.release.crateDigest === linked.crateDigest))
     || (portable && !release.distributions.some((item) => item.kind === 'portable_bundle'
-      && item.expiresAt === signedPortableCatalog.expiresAt && item.release.artifactDigest === portable.artifactDigest))) {
+      && item.expiresAt === signedPortableCatalog.expiresAt && item.release.artifactDigest === portable.artifactDigest))
+    || (npmPackage && !release.distributions.some((item) => item.kind === 'npm_package'
+      && item.expiresAt === signedPackageCatalog.expiresAt
+      && JSON.stringify(item.release.distributions) === JSON.stringify(npmPackage.distributions)))) {
     failures.push(`out/api/plugins/catalog.json: distribution mismatch for ${identity}`);
   }
   for (const distribution of release.distributions) {
-    const source = distribution.kind === 'linked_cargo' ? linked : portable;
+    const source = distribution.kind === 'linked_cargo' ? linked
+      : distribution.kind === 'portable_bundle' ? portable : npmPackage;
     for (const document of distribution.release.documentation) {
       const expected = source?.documentation.find((item) => item.slug === document.slug);
       const markdownPath = `/api/plugins/${release.pluginId}/${release.version}/docs/${document.slug}/content.md`;
@@ -165,6 +172,25 @@ for (const release of signedCatalog.releases) {
     if (markdown !== signedDocuments[document.slug]?.content || signedDocuments[document.slug]?.channel !== 'linked') failures.push(`out/api/${documentRoute}/content.md: linked verified Markdown mismatch`);
     if (!pluginSearch.includes(`/${documentRoute}`)) failures.push(`out/api/plugins/search: signed linked document missing for ${documentRoute}`);
     if (!sitemap.includes(`/${documentRoute}`)) failures.push(`out/sitemap.xml: signed document missing for ${documentRoute}`);
+  }
+}
+for (const release of signedPackageCatalog.releases) {
+  const route = `plugins/${release.pluginId}/${release.version}`;
+  requireReleaseNavigationPayload(release.pluginId, release.version);
+  const html = requireFile(`${route}/index.html`);
+  if (!html.includes(release.title) || !release.distributions.every((item) => html.includes(item.integrity))) {
+    failures.push(`out/${route}/index.html: signed npm-only evidence missing`);
+  }
+  if (!pluginIndex.includes(`/${route}`)) failures.push(`out/plugins/index.html: signed npm-only release link missing for ${route}`);
+  if (!sitemap.includes(`/${route}`)) failures.push(`out/sitemap.xml: signed npm-only release missing for ${route}`);
+  for (const document of release.documentation) {
+    const documentRoute = `${route}/docs/${document.slug}`;
+    const page = requireFile(`${documentRoute}/index.html`);
+    const markdown = requireFile(`api/${documentRoute}/content.md`);
+    if (!page.includes(document.topic) || !page.includes('npm-only package')) failures.push(`out/${documentRoute}/index.html: npm-only document provenance missing`);
+    if (markdown !== signedDocuments[document.slug]?.content || signedDocuments[document.slug]?.channel !== 'package') failures.push(`out/api/${documentRoute}/content.md: npm-only verified Markdown mismatch`);
+    if (!pluginSearch.includes(`/${documentRoute}`)) failures.push(`out/api/plugins/search: signed npm-only document missing for ${documentRoute}`);
+    if (!sitemap.includes(`/${documentRoute}`)) failures.push(`out/sitemap.xml: signed npm-only document missing for ${documentRoute}`);
   }
 }
 
@@ -221,4 +247,4 @@ if (failures.length) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
-console.log('Published-output checks passed: Next.js pages, signed Portable and linked listings, exact JSON API, candidate isolation, EN/ZH docs, search and AI-readable artifacts.');
+console.log('Published-output checks passed: Next.js pages, signed Portable, linked and npm-only listings, exact JSON API, candidate isolation, EN/ZH docs, search and AI-readable artifacts.');

@@ -6,7 +6,7 @@ import { DescriptionListDescription, DescriptionListItem, DescriptionListRoot, D
 import { CandidateDocumentation } from '@/components/candidate-documentation';
 import { CopyCommand } from '@/components/copy-command';
 import { SiteHeader } from '@/components/site-header';
-import { candidateRelease, signedLinkedCatalog, signedPortableCatalog, signedReleaseContent, type SignedLinkedRelease, type SignedPortableRelease, type SignedReleaseContent } from '@/lib/plugin-candidates';
+import { candidateRelease, signedLinkedCatalog, signedPackageCatalog, signedPortableCatalog, signedReleaseContent, type SignedLinkedRelease, type SignedPackageRelease, type SignedPortableRelease, type SignedReleaseContent } from '@/lib/plugin-candidates';
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
 
 type Params = Promise<{ pluginId: string; version: string }>;
@@ -15,7 +15,7 @@ export const dynamicParams = false;
 
 export function generateStaticParams() {
   const releases = new Map<string, { pluginId: string; version: string }>();
-  for (const { pluginId, version } of [...signedLinkedCatalog.releases, ...signedPortableCatalog.releases]) {
+  for (const { pluginId, version } of [...signedLinkedCatalog.releases, ...signedPortableCatalog.releases, ...signedPackageCatalog.releases]) {
     releases.set(`${pluginId}\0${version}`, { pluginId, version });
   }
   const candidateKey = `${candidateRelease.pluginId}\0${candidateRelease.version}`;
@@ -33,6 +33,10 @@ function findPortable(pluginId: string, version: string) {
   return signedPortableCatalog.releases.find((release) => release.pluginId === pluginId && release.version === version);
 }
 
+function findPackage(pluginId: string, version: string) {
+  return signedPackageCatalog.releases.find((release) => release.pluginId === pluginId && release.version === version);
+}
+
 function findContent(pluginId: string, version: string, baseKind: SignedReleaseContent['baseKind']) {
   return signedReleaseContent.releases.find((release) => release.pluginId === pluginId
     && release.version === version && release.baseKind === baseKind);
@@ -40,7 +44,7 @@ function findContent(pluginId: string, version: string, baseKind: SignedReleaseC
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { pluginId, version } = await params;
-  const release = findLinked(pluginId, version) ?? findPortable(pluginId, version);
+  const release = findLinked(pluginId, version) ?? findPortable(pluginId, version) ?? findPackage(pluginId, version);
   if (release) {
     return { title: `${release.title} ${version}`, description: release.summary };
   }
@@ -58,10 +62,61 @@ export default async function PluginReleasePage({ params }: { params: Params }) 
   const { pluginId, version } = await params;
   const linked = findLinked(pluginId, version);
   const portable = findPortable(pluginId, version);
+  const npmPackage = findPackage(pluginId, version);
   if (linked) return <SignedReleasePage release={linked} portable={portable} />;
   if (portable) return <SignedPortableReleasePage release={portable} />;
+  if (npmPackage) return <SignedPackageReleasePage release={npmPackage} />;
   if (pluginId === candidateRelease.pluginId && version === candidateRelease.version) return <CandidateDocumentation />;
   notFound();
+}
+
+function SignedPackageReleasePage({ release }: { release: SignedPackageRelease }) {
+  const otherVersions = signedPackageCatalog.releases.filter((item) => item.pluginId === release.pluginId && item.version !== release.version);
+  return <div className="linked-release-shell">
+    <SiteHeader active="plugins" />
+    <main className="linked-doc-main">
+      <nav aria-label="Breadcrumb" className="linked-doc-breadcrumb"><Link href="/plugins">Plugins</Link><span>/</span><span>{release.pluginId}@{release.version}</span></nav>
+      <header className="linked-doc-header">
+        <p className="linked-doc-eyebrow">Listed in signed npm-only package catalog</p>
+        <h1>{release.title}</h1>
+        <p>{release.summary}</p>
+      </header>
+      <aside className="linked-doc-provenance">
+        <strong>Signed package references, not an installation</strong>
+        <p>This exact Plugin release was verified against the configured catalog public key when Site was built. The snapshot expires {signedPackageCatalog.expiresAt ? new Date(signedPackageCatalog.expiresAt * 1000).toISOString() : 'at an unknown time'}. Reverify it locally before adoption. The signature does not establish package safety, target compatibility, or a running Plugin.</p>
+        <ProvenanceFacts items={[
+          ['Plugin ID', <code key="id">{release.pluginId}</code>],
+          ['Plugin version', release.version],
+          ['Publisher ID', release.publisherId],
+          ['Catalog', <span key="catalog">{signedPackageCatalog.catalogId} · revision {signedPackageCatalog.revision}</span>],
+          ['Distribution', 'npm package only; no Portable Bundle'],
+          ['Source revision', <code key="source">{release.sourceRevision}</code>],
+          ['License', release.license],
+        ]} />
+        <p><a href={release.sourceUrl} rel="noopener noreferrer" target="_blank">Signed source reference</a></p>
+      </aside>
+      {otherVersions.length > 0 && <section className="linked-release-section"><h2>Other listed Plugin versions</h2><ul>{otherVersions.map((item) => <li key={item.version}><Link href={linkedReleasePath(item.pluginId, item.version)}>{item.version}</Link></li>)}</ul></section>}
+      <section className="linked-release-section">
+        <h2>Exact npm distributions</h2>
+        <p>These are signed registry package references. A package version can differ from the Plugin release version; the Site does not equate them. No public CLI package-only adoption path is claimed here. Use a reviewed project package-manager lock and independently verify the current snapshot, registry bytes, lifecycle-script policy, and runtime before use.</p>
+        {release.distributions.map((distribution) => <div key={distribution.id} className="linked-release-section release-content-entry">
+          <h3>{distribution.id}</h3>
+          <ProvenanceFacts items={[
+            ['npm package', <code key="package">{distribution.package}</code>],
+            ['npm package version', distribution.version],
+            ['Package integrity SHA-256', <code key="integrity">{distribution.integrity}</code>],
+            ['Declared targets', distribution.targets.length ? distribution.targets.join(', ') : 'Not declared'],
+            ['Registry', <a key="registry" href={distribution.registryUrl} rel="noopener noreferrer" target="_blank">{distribution.registryUrl}</a>],
+          ]} />
+        </div>)}
+      </section>
+      <section className="linked-release-section"><h2>Documentation for {release.version}</h2>
+        {release.documentation.length > 0 ? <ul>{release.documentation.map((document) => <li key={`${document.id}@${document.revision}`}>
+          <Link href={linkedDocumentPath(release.pluginId, release.version, document.slug)}>{document.topic}</Link> · {document.language} · revision {document.revision}{document.target ? ` · ${document.target}` : ''}
+        </li>)}</ul> : <p>No versioned Markdown is attached to this npm-only release.</p>}
+      </section>
+    </main>
+  </div>;
 }
 
 function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease; portable?: SignedPortableRelease }) {

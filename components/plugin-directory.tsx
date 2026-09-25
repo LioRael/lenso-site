@@ -5,7 +5,7 @@ import { Button } from '@lenso/ui/button';
 import { ContentState } from '@lenso/ui/content-state';
 import { Check, CircleAlert, ExternalLink, Search, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { candidateRelease, signedLinkedCatalog, signedPortableCatalog } from '@/lib/plugin-candidates';
+import { candidateRelease, signedLinkedCatalog, signedPackageCatalog, signedPortableCatalog } from '@/lib/plugin-candidates';
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
 import { SignedDocumentSearch } from '@/components/signed-document-search';
 
@@ -18,6 +18,7 @@ export function PluginDirectory() {
     linked: Boolean(signedLinkedCatalog.expiresAt),
     portable: Boolean(signedPortableCatalog.expiresAt),
     portableDetails: Boolean(signedPortableCatalog.detailsExpiresAt),
+    package: Boolean(signedPackageCatalog.expiresAt),
   });
   useEffect(() => {
     const queries = new URLSearchParams(window.location.search).getAll('q');
@@ -31,9 +32,11 @@ export function PluginDirectory() {
       const linkedRemaining = (signedLinkedCatalog.expiresAt ?? 0) * 1000 - now;
       const portableRemaining = (signedPortableCatalog.expiresAt ?? 0) * 1000 - now;
       const detailsRemaining = (signedPortableCatalog.detailsExpiresAt ?? 0) * 1000 - now;
+      const packageRemaining = (signedPackageCatalog.expiresAt ?? 0) * 1000 - now;
       setCurrentSigned({ linked: linkedRemaining > 0, portable: portableRemaining > 0,
-        portableDetails: portableRemaining > 0 && detailsRemaining > 0 });
-      const next = [linkedRemaining, portableRemaining, detailsRemaining].filter((remaining) => remaining > 0);
+        portableDetails: portableRemaining > 0 && detailsRemaining > 0,
+        package: packageRemaining > 0 });
+      const next = [linkedRemaining, portableRemaining, detailsRemaining, packageRemaining].filter((remaining) => remaining > 0);
       if (next.length > 0) timer = window.setTimeout(update, Math.min(...next, 2_147_483_647));
     };
     update();
@@ -53,9 +56,23 @@ export function PluginDirectory() {
       && !target && (!distribution || distribution === 'Portable')
       && (!catalogStatus || catalogStatus === 'Signed');
   });
+  const signedPackage = signedPackageCatalog.releases.filter((release) => {
+    const normalized = query.trim().toLowerCase();
+    const packageTargets = release.distributions.flatMap((item) => item.targets);
+    const targetMatches = !target || (target === 'Native'
+      ? packageTargets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value))
+      : packageTargets.some((value) => value === 'workers' || value === 'cloudflare-workers'));
+    return currentSigned.package && (!normalized || [release.pluginId, release.title, release.summary,
+      release.publisherId, ...release.distributions.map((item) => item.package)]
+      .some((value) => value.toLowerCase().includes(normalized)))
+      && targetMatches && (!distribution || distribution === 'npm package')
+      && (!catalogStatus || catalogStatus === 'Signed');
+  });
   const candidateSuperseded = (currentSigned.linked && signedLinkedCatalog.releases.some((release) =>
     release.pluginId === candidateRelease.pluginId && release.version === candidateRelease.version))
     || (currentSigned.portable && signedPortableCatalog.releases.some((release) =>
+      release.pluginId === candidateRelease.pluginId && release.version === candidateRelease.version))
+    || (currentSigned.package && signedPackageCatalog.releases.some((release) =>
       release.pluginId === candidateRelease.pluginId && release.version === candidateRelease.version));
   const visible = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -91,16 +108,16 @@ export function PluginDirectory() {
         <label className="directory-search"><Search size={20} /><span className="sr-only">Search Plugins</span><input maxLength={256} onChange={(event) => updateQuery(event.target.value)} placeholder="Search Plugin IDs, packages, or verified docs" value={query} /></label>
         <div aria-label="Directory filters" className="filter-rail">
           <Filter label="Target" onSelect={setTarget} options={['Native', 'Workers']} selected={target} />
-          <Filter label="Distribution" onSelect={setDistribution} options={['Linked Rust', 'Portable']} selected={distribution} />
+          <Filter label="Distribution" onSelect={setDistribution} options={['Linked Rust', 'Portable', 'npm package']} selected={distribution} />
           <Filter label="Catalog status" onSelect={setCatalogStatus} options={['Signed', 'Candidate']} selected={catalogStatus} />
           <Button onClick={clearFilters} size="default" type="button" variant="ghost">Clear filters</Button>
         </div>
         <SignedDocumentSearch query={query} target={target} distribution={distribution} catalogStatus={catalogStatus} currentSigned={currentSigned} />
         <section className="signed-release-state" aria-labelledby="signed-release-heading">
           <h2 id="signed-release-heading">Signed releases</h2>
-          {signedLinked.length === 0 && signedPortable.length === 0 && <ContentState.Root align="start" role="status">
+          {signedLinked.length === 0 && signedPortable.length === 0 && signedPackage.length === 0 && <ContentState.Root align="start" role="status">
             <ContentState.Title as="h3">No signed releases to show</ContentState.Title>
-            <ContentState.Description>{currentSigned.linked || currentSigned.portable ? 'No signed release matches the current filters.' : 'No current signed Portable or linked Cargo catalog is available. Candidate claims are separate.'}</ContentState.Description>
+            <ContentState.Description>{currentSigned.linked || currentSigned.portable || currentSigned.package ? 'No signed release matches the current filters.' : 'No current signed Portable, linked Cargo, or npm-only package catalog is available. Candidate claims are separate.'}</ContentState.Description>
           </ContentState.Root>}
           {signedPortable.map((release) => <article className="signed-release" key={`portable:${release.pluginId}@${release.version}`}>
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
@@ -133,6 +150,23 @@ export function PluginDirectory() {
                 <small>Signed reference and Site-verified body: {document.digest}.</small>
               </li>)}</ul>
             </div>}
+          </article>)}
+          {signedPackage.map((release) => <article className="signed-release" key={`package:${release.pluginId}@${release.version}`}>
+            <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
+            <p>{release.summary}</p>
+            <dl><div><dt>Distribution</dt><dd>npm package only</dd></div><div><dt>Publisher</dt><dd>{release.publisherId}</dd></div>
+              <div><dt>Exact packages</dt><dd>{release.distributions.map((item) => <code key={item.id}>{item.package}@{item.version} </code>)}</dd></div>
+              <div><dt>Declared targets</dt><dd>{release.distributions.flatMap((item) => item.targets).join(', ') || 'Not declared'}</dd></div>
+              <div><dt>Catalog</dt><dd>Signed revision {signedPackageCatalog.revision}</dd></div></dl>
+            <p className="signed-release-note">This npm-only release has no Portable base. A signed listing is not an installation, target qualification, or a public CLI adoption claim.</p>
+            <Link href={linkedReleasePath(release.pluginId, release.version)}>Inspect exact signed npm-only version</Link>
+            {release.documentation.length > 0 && <div className="signed-release-documents"><h4>Versioned documentation references</h4><ul>
+              {release.documentation.map((document) => <li key={`${document.id}@${document.revision}`}>
+                <Link href={linkedDocumentPath(release.pluginId, release.version, document.slug)}>{document.topic}</Link> · {document.language} · {document.id}@{document.revision}
+                {document.target && <> · {document.target}</>}
+                <small>Signed reference and Site-verified body: {document.digest}.</small>
+              </li>)}
+            </ul></div>}
           </article>)}
         </section>
         <h2>Candidate releases</h2>

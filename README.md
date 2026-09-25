@@ -73,7 +73,18 @@ To include current Portable releases in a static build, set
 `LENSO_MARKETPLACE_PORTABLE_URL` to the Marketplace HTTPS
 `/api/marketplace/v1/snapshot` endpoint. To include source-only linked Cargo
 releases, set `LENSO_MARKETPLACE_LINKED_CARGO_URL` to its HTTPS
-`/api/marketplace/v1/linked-cargo` endpoint. Either or both may be configured.
+`/api/marketplace/v1/linked-cargo` endpoint. These inputs may be configured independently.
+For independently signed npm-only Plugin releases with no Portable base, set
+`LENSO_MARKETPLACE_PACKAGE_URL` to an operator-approved HTTPS endpoint serving
+the raw `lenso.marketplace.package-snapshot.v1` envelope. This is a separate
+channel: if its Plugin ID and version occur in current or checkpointed Portable
+or linked Cargo history, the build fails rather than merging distributions.
+No public npm-only listing appears without this signed input. Site displays
+the exact npm package version and SHA-256 separately from the logical Plugin
+version; it does not install packages or claim a public CLI adoption path.
+`pnpm check:package-site-integration` uses a temporary signing key and local
+HTTPS fixture to verify the generated package-only page, JSON API, Markdown,
+and checkpoint. It is not a published registry or operator trust root.
 To attach versioned Portable Markdown, also set
 `LENSO_MARKETPLACE_RELEASE_DETAILS_URL` to the raw signed HTTPS
 `/api/marketplace/v1/release-details` endpoint; this requires the Portable
@@ -119,8 +130,8 @@ one of:
 - `LENSO_MARKETPLACE_CHECKPOINT_BOOTSTRAP=1`: an explicit first trusted build
   only. Never use bootstrap to recover from a missing prior checkpoint.
 
-Site validates the previous Portable, release-details, linked Cargo and
-optional release-content checkpoints, including historical immutable release,
+Site validates the previous Portable, release-details, linked Cargo, optional
+npm-only package, and optional release-content checkpoints, including historical immutable release,
 content and document identities, revision rollback and same-revision
 equivocation. An omitted channel keeps
 its previous history. Only after static generation and published-output checks
@@ -131,7 +142,7 @@ new candidate as the next INPUT **only after the matching Site deployment
 succeeds**. Without that external continuity, including after an accidental
 bootstrap reset, no cross-deployment anti-rollback guarantee exists. Unsigned
 local builds need none of these settings and retain an empty signed directory.
-The directory searches both signed channels with the same filters
+The directory searches configured signed channels with the same filters
 and links each listed identity to an exact-version page,
 while labeling their different distribution and target evidence. A Portable
 base snapshot does not declare target compatibility or carry versioned

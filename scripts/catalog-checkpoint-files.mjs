@@ -6,7 +6,7 @@ import { checkpointSchema, emptyCheckpointBundle, validateCheckpointBundle } fro
 const maxInputBytes = 32 * 1024 * 1024;
 const generatedDirectory = resolve(import.meta.dirname, '../lib/.generated');
 export const pendingCheckpointPath = join(generatedDirectory, 'catalog-checkpoint.pending.json');
-const generatedFiles = ['linked-catalog.json', 'portable-catalog.json', 'release-content.json', 'linked-documents.json']
+const generatedFiles = ['linked-catalog.json', 'portable-catalog.json', 'package-catalog.json', 'release-content.json', 'linked-documents.json']
   .map((file) => join(generatedDirectory, file));
 const sha256 = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 
@@ -94,6 +94,8 @@ export function nextCheckpointBundle(previous, updates) {
     portable: updates.portable ?? previous.portable,
     release_details: updates.release_details ?? previous.release_details,
     linked_cargo: updates.linked_cargo ?? previous.linked_cargo,
+    ...(updates.package || Object.hasOwn(previous, 'package')
+      ? { package: updates.package ?? previous.package } : {}),
     ...(updates.release_content || Object.hasOwn(previous, 'release_content')
       ? { release_content: updates.release_content ?? previous.release_content } : {}),
   };

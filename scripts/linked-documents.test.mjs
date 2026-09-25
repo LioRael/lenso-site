@@ -58,6 +58,15 @@ test('same Plugin/version/document revision in Portable and linked channels neve
   assert.notEqual(result[linkedSlug].content, result[portableSlug].content);
 });
 
+test('npm-only documentation has a channel-specific route', () => {
+  const linked = documentSlug('example.web', '1.0.0', document);
+  const portable = documentSlug('example.web', '1.0.0', document, 'portable');
+  const npmPackage = documentSlug('example.web', '1.0.0', document, 'package');
+  assert.notEqual(npmPackage, linked);
+  assert.notEqual(npmPackage, portable);
+  assert.match(npmPackage, /^package-[0-9a-f]{64}$/);
+});
+
 test('rejects changed hosts, credentialed URLs, redirects and excessive signed sizes', async () => {
   for (const url of ['https://user@docs.example.test/quickstart.md',
     'https://docs.example.test.evil.test/quickstart.md', 'http://docs.example.test/quickstart.md']) {

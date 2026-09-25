@@ -141,6 +141,25 @@ export function linkedCheckpoint(snapshot, payload, previous = null) {
   return finish(snapshot, previous, 'linked', state);
 }
 
+export function packageCheckpoint(snapshot, payload, previous = null) {
+  const state = begin(snapshot, payload, previous, 'package');
+  for (const release of snapshot.releases) {
+    const identity = `${release.plugin_id}@${release.version}`;
+    const immutable = hashJson([
+      release.plugin_id, release.version, release.publisher_id, release.title,
+      release.summary, release.source_url, release.source_revision, release.license,
+      release.distributions.map(canonicalDistribution),
+    ]);
+    retain(state.releaseIdentities, identity, immutable, 'published package release changed');
+    for (const document of release.documentation ?? []) {
+      const documentIdentity = JSON.stringify([release.plugin_id, release.version, document.id, document.revision]);
+      retain(state.documentIdentities, documentIdentity, hashJson(canonicalDocument(document)),
+        'published package documentation changed');
+    }
+  }
+  return finish(snapshot, previous, 'package', state);
+}
+
 export function detailsCheckpoint(snapshot, payload, previous = null) {
   const state = begin(snapshot, payload, previous, 'details');
   for (const release of snapshot.releases) {
@@ -174,7 +193,9 @@ export function releaseContentCheckpoint(snapshot, payload, previous = null) {
 
 export function validateCheckpointBundle(bundle, catalogId) {
   if (!exactKeys(bundle, ['schema', 'catalog_id', 'portable', 'release_details', 'linked_cargo'])
-    && !exactKeys(bundle, ['schema', 'catalog_id', 'portable', 'release_details', 'linked_cargo', 'release_content'])) {
+    && !exactKeys(bundle, ['schema', 'catalog_id', 'portable', 'release_details', 'linked_cargo', 'release_content'])
+    && !exactKeys(bundle, ['schema', 'catalog_id', 'portable', 'release_details', 'linked_cargo', 'package'])
+    && !exactKeys(bundle, ['schema', 'catalog_id', 'portable', 'release_details', 'linked_cargo', 'release_content', 'package'])) {
     throw new Error('invalid Site catalog checkpoint bundle');
   }
   if (bundle.schema !== checkpointSchema || bundle.catalog_id !== catalogId
@@ -185,6 +206,7 @@ export function validateCheckpointBundle(bundle, catalogId) {
   validateCheckpoint(bundle.release_details, 'details', catalogId);
   validateCheckpoint(bundle.linked_cargo, 'linked', catalogId);
   if (Object.hasOwn(bundle, 'release_content')) validateCheckpoint(bundle.release_content, 'content', catalogId);
+  if (Object.hasOwn(bundle, 'package')) validateCheckpoint(bundle.package, 'package', catalogId);
   return bundle;
 }
 

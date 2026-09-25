@@ -7,6 +7,7 @@ const chineseRoot = join(outputRoot, 'docs', 'zh');
 const signedDocuments = JSON.parse(readFileSync(join(process.cwd(), 'lib/.generated/linked-documents.json'), 'utf8'));
 const linkedCatalog = JSON.parse(readFileSync(join(process.cwd(), 'lib/.generated/linked-catalog.json'), 'utf8'));
 const portableCatalog = JSON.parse(readFileSync(join(process.cwd(), 'lib/.generated/portable-catalog.json'), 'utf8'));
+const packageCatalog = JSON.parse(readFileSync(join(process.cwd(), 'lib/.generated/package-catalog.json'), 'utf8'));
 
 if (Object.keys(signedDocuments).length === 0) {
   for (const path of [
@@ -16,7 +17,7 @@ if (Object.keys(signedDocuments).length === 0) {
     if (existsSync(path)) rmSync(path, { recursive: true });
   }
 }
-if (linkedCatalog.releases.length === 0 && portableCatalog.releases.length === 0) {
+if (linkedCatalog.releases.length === 0 && portableCatalog.releases.length === 0 && packageCatalog.releases.length === 0) {
   const placeholder = join(outputRoot, 'api', 'plugins', 'releases', '_no-signed-release');
   if (existsSync(placeholder)) rmSync(placeholder, { recursive: true });
 }

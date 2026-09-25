@@ -67,3 +67,18 @@ test('optional content history preserves the old bundle shape and survives chann
   assert.throws(() => validateCheckpointBundle({ ...next,
     release_content: { ...content, document_identities: {} } }, 'catalog'));
 });
+
+test('optional package history preserves old bundle shape and survives channel omission', () => {
+  const oldBundle = emptyCheckpointBundle('catalog');
+  assert.ok(!Object.hasOwn(nextCheckpointBundle(oldBundle, {}), 'package'));
+  const packageCheckpoint = {
+    catalog_id: 'catalog', revision: 1, payload_digest: `sha256:${'a'.repeat(64)}`,
+    release_identities: { 'example.bun@1.0.0': `sha256:${'b'.repeat(64)}` },
+    document_identities: {},
+  };
+  const next = nextCheckpointBundle(oldBundle, { package: packageCheckpoint });
+  assert.deepEqual(validateCheckpointBundle(next, 'catalog').package, packageCheckpoint);
+  assert.deepEqual(nextCheckpointBundle(next, {}).package, packageCheckpoint);
+  assert.throws(() => validateCheckpointBundle({ ...next,
+    package: { ...packageCheckpoint, payload_digest: 'bad' } }, 'catalog'));
+});

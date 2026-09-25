@@ -3,7 +3,7 @@ import generated from './.generated/linked-documents.json';
 export type VerifiedSignedDocument = {
   pluginId: string;
   version: string;
-  channel: 'linked' | 'portable';
+  channel: 'linked' | 'portable' | 'package';
   slug: string;
   documentId: string;
   revision: string;

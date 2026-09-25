@@ -1,8 +1,10 @@
 import {
   signedLinkedCatalog,
+  signedPackageCatalog,
   signedPortableCatalog,
   signedReleaseContent,
   type SignedLinkedRelease,
+  type SignedPackageRelease,
   type SignedPortableRelease,
 } from '@/lib/plugin-candidates';
 import { linkedDocumentApiPath, linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
@@ -45,12 +47,25 @@ function portableDistribution(release: SignedPortableRelease) {
   };
 }
 
+function packageDistribution(release: SignedPackageRelease) {
+  return {
+    kind: 'npm_package' as const,
+    catalogId: signedPackageCatalog.catalogId,
+    catalogRevision: signedPackageCatalog.revision,
+    expiresAt: signedPackageCatalog.expiresAt,
+    release: {
+      ...release,
+      documentation: documents(release.pluginId, release.version, release.documentation),
+    },
+  };
+}
+
 const releases = new Map<string, {
   pluginId: string;
   version: string;
   pageUrl: string;
   apiUrl: string;
-  distributions: (ReturnType<typeof linkedDistribution> | ReturnType<typeof portableDistribution>)[];
+  distributions: (ReturnType<typeof linkedDistribution> | ReturnType<typeof portableDistribution> | ReturnType<typeof packageDistribution>)[];
   optionalSourceContent: {
     catalogId: string | null;
     catalogRevision: number | null;
@@ -80,6 +95,18 @@ for (const release of signedPortableCatalog.releases) {
     pageUrl: linkedReleasePath(release.pluginId, release.version),
     apiUrl: `/api/plugins/releases/${encodeURIComponent(release.pluginId)}/${encodeURIComponent(release.version)}/release.json`,
     distributions: [portableDistribution(release)],
+    optionalSourceContent: [],
+  });
+}
+for (const release of signedPackageCatalog.releases) {
+  const key = `${release.pluginId}\0${release.version}`;
+  if (releases.has(key)) throw new Error(`package-only release conflicts with an existing signed channel: ${release.pluginId}@${release.version}`);
+  releases.set(key, {
+    pluginId: release.pluginId,
+    version: release.version,
+    pageUrl: linkedReleasePath(release.pluginId, release.version),
+    apiUrl: `/api/plugins/releases/${encodeURIComponent(release.pluginId)}/${encodeURIComponent(release.version)}/release.json`,
+    distributions: [packageDistribution(release)],
     optionalSourceContent: [],
   });
 }
@@ -113,6 +140,8 @@ export function signedPluginDirectory() {
       linkedCargo: { catalogId: signedLinkedCatalog.catalogId, revision: signedLinkedCatalog.revision, expiresAt: signedLinkedCatalog.expiresAt },
       portable: { catalogId: signedPortableCatalog.catalogId, revision: signedPortableCatalog.revision, expiresAt: signedPortableCatalog.expiresAt,
         detailsRevision: signedPortableCatalog.detailsRevision, detailsExpiresAt: signedPortableCatalog.detailsExpiresAt },
+      package: { catalogId: signedPackageCatalog.catalogId, revision: signedPackageCatalog.revision,
+        expiresAt: signedPackageCatalog.expiresAt },
       optionalSourceContent: { catalogId: signedReleaseContent.catalogId, revision: signedReleaseContent.revision,
         expiresAt: signedReleaseContent.expiresAt },
     },
