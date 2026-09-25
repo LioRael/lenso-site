@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { walkFiles } from './docs-files.mjs';
+import { assertAllowedExternalUrl, isPublishedSiteUrl } from './external-link-policy.mjs';
 
 const outputRoot = join(process.cwd(), 'out');
-const allowedHosts = new Set(['docs.rs', 'github.com', 'www.npmjs.com']);
 const links = new Map();
 
 for (const file of walkFiles(outputRoot).filter((candidate) => candidate.endsWith('.html'))) {
@@ -20,16 +20,10 @@ const entries = [...links];
 const failures = [];
 let cursor = 0;
 
-function assertAllowedUrl(url) {
-  if (url.protocol !== 'https:' || !allowedHosts.has(url.hostname) || url.port || url.username || url.password) {
-    throw new Error(`host is not allowlisted for external checks: ${url.hostname}`);
-  }
-}
-
 async function requestFollowingRedirects(initialUrl, method) {
   let url = new URL(initialUrl);
   for (let redirects = 0; redirects <= 5; redirects += 1) {
-    assertAllowedUrl(url);
+    assertAllowedExternalUrl(url);
     const response = await fetch(url, {
       headers: { 'User-Agent': 'lenso-site-link-check/1.0' },
       method,
@@ -46,6 +40,7 @@ async function requestFollowingRedirects(initialUrl, method) {
 }
 
 async function check(url, source) {
+  if (isPublishedSiteUrl(new URL(url), outputRoot)) return;
   let response = await requestFollowingRedirects(url, 'HEAD');
   if (!response.ok) {
     await response.body?.cancel();
@@ -74,4 +69,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`External-link checks passed: ${entries.length} allowlisted public URLs.`);
+console.log(`External-link checks passed: ${entries.length} public URLs; own-site targets resolved from static output.`);
