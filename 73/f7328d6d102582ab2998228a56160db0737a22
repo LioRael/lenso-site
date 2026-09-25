@@ -1,0 +1,62 @@
+scripts/catalog-checkpoints.mjs
+  s_7d146975368699::t_4fe7faa5c9dabf 3
+  s_7d146975368699::t_786199fb054af4 29,42-45,162-174,177-179,187
+  s_7d146975368699::t_95b6d38bc87a53 82-83
+  s_7d146975368699::t_1041274918f061 180
+scripts/linked-catalog.mjs
+  s_7d146975368699::t_dbe52a0534aa4b 122-126
+scripts/check-release-content-site-integration.mjs
+  s_7d146975368699::t_0b298d5ae821c9 72
+  s_7d146975368699::t_857cc7c164b2da 1-71,73-146
+scripts/release-content.mjs
+  s_7d146975368699::t_7a343f4d4933ab 1-134
+scripts/release-content.test.mjs
+  s_7d146975368699::t_ec99fa368495b2 5,68-93
+  s_7d146975368699::t_9cc04f8859e34f 1-4,6-67,94-129
+package.json
+  s_7d146975368699::t_9cc04f8859e34f 11
+  s_7d146975368699::t_857cc7c164b2da 14
+app/global.css
+  s_7d146975368699::t_9a622b9ca63335 140-142
+scripts/create-release-content-fixture.mjs
+  s_7d146975368699::t_a7e9969c8808ac 1-106
+scripts/catalog-checkpoint-files.test.mjs
+  s_7d146975368699::t_45d0498bd55828 7,56-68
+  s_7d146975368699::t_057c277acfe063 69
+lib/plugin-candidates.ts
+  s_7d146975368699::t_7a7c68111ac189 3,66-85
+  s_7d146975368699::t_253c0dbab91df1 86
+scripts/catalog-checkpoint-files.mjs
+  s_7d146975368699::t_dbe52a0534aa4b 9,97-98
+scripts/check-linked-site-integration.mjs
+  s_7d146975368699::t_859a51d9e7cdfd 187
+scripts/ingest-linked-catalog.mjs
+  s_7d146975368699::t_097dc55efdd8be 7,13,20,25,52-54,58,64,80-85,99,103
+README.md
+  s_7d146975368699::t_5d2194dc0aaa1e 99,120-121
+  s_7d146975368699::t_0b298d5ae821c9 89-98
+  s_7d146975368699::t_7fafd166c97daa 80-88,118-119
+scripts/check-real-linked-adoption.mjs
+  s_7d146975368699::t_859a51d9e7cdfd 83
+app/plugins/[pluginId]/[version]/page.tsx
+  s_7d146975368699::t_238c9364433c13 108-110,136,175-179
+  s_7d146975368699::t_9a622b9ca63335 190
+  s_7d146975368699::t_7a7c68111ac189 9,36-40,180-189,191-199,202-208
+  s_7d146975368699::t_4fe7faa5c9dabf 200-201
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "73f7328d6d102582ab2998228a56160db0737a22",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
