@@ -5,6 +5,8 @@ import { walkFiles } from './docs-files.mjs';
 const outputRoot = join(process.cwd(), 'out');
 const chineseRoot = join(outputRoot, 'docs', 'zh');
 const signedDocuments = JSON.parse(readFileSync(join(process.cwd(), 'lib/.generated/linked-documents.json'), 'utf8'));
+const linkedCatalog = JSON.parse(readFileSync(join(process.cwd(), 'lib/.generated/linked-catalog.json'), 'utf8'));
+const portableCatalog = JSON.parse(readFileSync(join(process.cwd(), 'lib/.generated/portable-catalog.json'), 'utf8'));
 
 if (Object.keys(signedDocuments).length === 0) {
   for (const path of [
@@ -13,6 +15,10 @@ if (Object.keys(signedDocuments).length === 0) {
   ]) {
     if (existsSync(path)) rmSync(path, { recursive: true });
   }
+}
+if (linkedCatalog.releases.length === 0 && portableCatalog.releases.length === 0) {
+  const placeholder = join(outputRoot, 'api', 'plugins', 'releases', '_no-signed-release');
+  if (existsSync(placeholder)) rmSync(placeholder, { recursive: true });
 }
 
 for (const file of walkFiles(chineseRoot).filter((candidate) => candidate.endsWith('.html'))) {
@@ -30,4 +36,4 @@ for (const file of walkFiles(pluginRoot)) {
   copyFileSync(file, join(pluginRoot, pluginId, `${version}.txt`));
 }
 
-console.log('Finalized static output: Simplified Chinese documents declare lang="zh-CN"; no unsigned document placeholder is published.');
+console.log('Finalized static output: Simplified Chinese documents declare lang="zh-CN"; no unsigned release or document placeholder is published.');

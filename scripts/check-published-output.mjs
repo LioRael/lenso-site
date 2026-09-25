@@ -14,6 +14,7 @@ const failures = [];
 for (const path of [
   'plugins/_no-signed-document',
   'api/plugins/_no-signed-document',
+  'api/plugins/releases/_no-signed-release',
 ]) {
   if (existsSync(join(outputRoot, path))) failures.push(`out/${path}: static-generation placeholder was published`);
 }
@@ -24,7 +25,7 @@ function requireFile(path) {
   return existsSync(absolute) ? readFileSync(absolute, 'utf8') : '';
 }
 
-for (const path of ['index.html', 'plugins/index.html', 'plugins/lenso.web-ingress/0.4.5/index.html', 'docs/index.html', 'docs/zh/index.html', 'api/search', 'api/plugins/search', 'llms.txt', 'llms-full.txt', 'robots.txt', 'sitemap.xml']) requireFile(path);
+for (const path of ['index.html', 'plugins/index.html', 'plugins/lenso.web-ingress/0.4.5/index.html', 'docs/index.html', 'docs/zh/index.html', 'api/search', 'api/plugins/search', 'api/plugins/catalog.json', 'llms.txt', 'llms-full.txt', 'robots.txt', 'sitemap.xml']) requireFile(path);
 
 for (const line of requireFile('_redirects').trim().split(/\r?\n/u)) {
   const [from, to, status, ...extra] = line.split(/\s+/u);
@@ -84,6 +85,50 @@ if (!candidateSigned) {
 }
 const pluginIndex = requireFile('plugins/index.html');
 const pluginSearch = requireFile('api/plugins/search');
+const pluginDirectory = JSON.parse(requireFile('api/plugins/catalog.json'));
+const signedIdentities = new Set([...signedCatalog.releases, ...signedPortableCatalog.releases]
+  .map((release) => `${release.pluginId}\0${release.version}`));
+if (pluginDirectory.schema !== 'lenso.site.signed-plugin-directory.v1'
+  || pluginDirectory.verification !== 'signature-verified-at-build'
+  || pluginDirectory.releases.length !== signedIdentities.size
+  || pluginDirectory.catalogs.linkedCargo.expiresAt !== signedCatalog.expiresAt
+  || pluginDirectory.catalogs.portable.expiresAt !== signedPortableCatalog.expiresAt) {
+  failures.push('out/api/plugins/catalog.json: signed source or expiry mismatch');
+}
+for (const release of pluginDirectory.releases) {
+  const identity = `${release.pluginId}\0${release.version}`;
+  if (!signedIdentities.delete(identity)) failures.push(`out/api/plugins/catalog.json: duplicate or unsigned release ${identity}`);
+  const exactPath = `api/plugins/releases/${release.pluginId}/${release.version}/release.json`;
+  const exact = JSON.parse(requireFile(exactPath));
+  if (JSON.stringify(exact) !== JSON.stringify(release) || release.apiUrl !== `/${exactPath}`) {
+    failures.push(`out/${exactPath}: exact version does not match unified catalog`);
+  }
+  const linked = signedCatalog.releases.find((item) => item.pluginId === release.pluginId && item.version === release.version);
+  const portable = signedPortableCatalog.releases.find((item) => item.pluginId === release.pluginId && item.version === release.version);
+  const channels = release.distributions.map((item) => item.kind);
+  if (channels.length !== Number(Boolean(linked)) + Number(Boolean(portable))
+    || (linked && !release.distributions.some((item) => item.kind === 'linked_cargo'
+      && item.expiresAt === signedCatalog.expiresAt && item.release.crateDigest === linked.crateDigest))
+    || (portable && !release.distributions.some((item) => item.kind === 'portable_bundle'
+      && item.expiresAt === signedPortableCatalog.expiresAt && item.release.artifactDigest === portable.artifactDigest))) {
+    failures.push(`out/api/plugins/catalog.json: distribution mismatch for ${identity}`);
+  }
+  for (const distribution of release.distributions) {
+    const source = distribution.kind === 'linked_cargo' ? linked : portable;
+    for (const document of distribution.release.documentation) {
+      const expected = source?.documentation.find((item) => item.slug === document.slug);
+      const markdownPath = `/api/plugins/${release.pluginId}/${release.version}/docs/${document.slug}/content.md`;
+      if (!expected || expected.digest !== document.digest
+        || document.markdownUrl !== markdownPath
+        || document.pageUrl !== `/plugins/${release.pluginId}/${release.version}/docs/${document.slug}`) {
+        failures.push(`out/api/plugins/catalog.json: versioned documentation mismatch for ${identity}`);
+      }
+    }
+  }
+}
+if (signedIdentities.size) failures.push('out/api/plugins/catalog.json: signed releases omitted');
+if (pluginDirectory.releases.some((release) => release.pluginId === 'lenso.web-ingress' && release.version === '0.4.5')
+  && !candidateSigned) failures.push('out/api/plugins/catalog.json: unsigned historical Web candidate leaked');
 const sitemap = requireFile('sitemap.xml');
 for (const release of signedPortableCatalog.releases) {
   const route = `plugins/${release.pluginId}/${release.version}`;
@@ -146,6 +191,7 @@ for (const document of documents.filter(isDraftDocument)) {
 }
 if (!llmsFull.includes('# Lenso documentation (/docs)')) failures.push('out/llms-full.txt: missing English root');
 if (!llmsFull.includes('# Lenso 文档 (/docs/zh)')) failures.push('out/llms-full.txt: missing Chinese root');
+if (!llms.includes('/api/plugins/catalog.json') || !llmsFull.includes('/api/plugins/catalog.json')) failures.push('Agent-readable indexes omit signed Plugin directory API');
 if (/(?:^|\/)(?:mcp|webmcp)(?:\/|$)|\.well-known\//iu.test(JSON.stringify({ llms, llmsFull }))) failures.push('AI-readable catalogs advertise an unsupported MCP endpoint');
 
 for (const file of walkFiles(outputRoot).filter((candidate) => candidate.endsWith('.html'))) {
@@ -175,4 +221,4 @@ if (failures.length) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exit(1);
 }
-console.log('Published-output checks passed: Next.js pages, signed Portable and linked listings, candidate isolation, EN/ZH docs, search and AI-readable artifacts.');
+console.log('Published-output checks passed: Next.js pages, signed Portable and linked listings, exact JSON API, candidate isolation, EN/ZH docs, search and AI-readable artifacts.');
