@@ -1,0 +1,35 @@
+scripts/finalize-static-output.mjs
+  s_7d146975368699::t_4604726230b74f 8-9,19-22,39
+lib/signed-plugin-directory.ts
+  s_7d146975368699::t_4604726230b74f 54-59,88-93,112-118
+  s_7d146975368699::t_3a548ab320d817 97-101,111
+  s_7d146975368699::t_dd54684bfc19c1 1-53,60-87,94-96,102-110,119-121
+app/llms.txt/route.ts
+  s_7d146975368699::t_97f817bf84a1f0 7
+app/llms-full.txt/route.ts
+  s_7d146975368699::t_97f817bf84a1f0 7
+app/api/plugins/releases/[pluginId]/[version]/release.json/route.ts
+  s_7d146975368699::t_dd54684bfc19c1 1-17
+app/api/plugins/catalog.json/route.ts
+  s_7d146975368699::t_dd54684bfc19c1 1-7
+scripts/check-published-output.mjs
+  s_7d146975368699::t_3a548ab320d817 116-127
+  s_7d146975368699::t_0d44ec3eab34c7 17,28
+  s_7d146975368699::t_b42e8c994f05ae 88-115,128-131,194,224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d6e26c102780476386c78b34116bc06a234f14df",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
