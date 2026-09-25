@@ -1,0 +1,27 @@
+components/plugin-directory.tsx
+  s_7d146975368699::t_07d6faeefa3bab 184
+  s_7d146975368699::t_ba917a54dfaffc 10,59-61,79
+components/signed-document-search.tsx
+  s_7d146975368699::t_ba917a54dfaffc 8,70,75-78,83
+lib/plugin-targets.ts
+  s_7d146975368699::t_1954b2989ab1a2 6
+  s_7d146975368699::t_ba917a54dfaffc 1-5,7-17
+app/plugins/[pluginId]/[version]/page.tsx
+  s_7d146975368699::t_07d6faeefa3bab 113,205
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "258dd3fe80602e6e202bffb07d7ac9b37e8e872c",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
