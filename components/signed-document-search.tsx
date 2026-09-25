@@ -5,6 +5,7 @@ import { staticClient } from 'fumadocs-core/search/client/orama-static';
 import { useEffect, useState } from 'react';
 import { signedLinkedCatalog, signedPackageCatalog, signedPortableCatalog, type SignedLinkedRelease, type SignedPackageRelease, type SignedPortableRelease } from '@/lib/plugin-candidates';
 import { linkedDocumentPath } from '@/lib/linked-document-paths';
+import { isNativeTarget, npmTargetMatches } from '@/lib/plugin-targets';
 
 const searchClient = staticClient({ from: '/api/plugins/search', search: { limit: 512 } });
 type SearchDocument = SignedLinkedRelease['documentation'][number];
@@ -66,23 +67,20 @@ export function SignedDocumentSearch({ query, target, distribution, catalogStatu
       return currentSigned.portableDetails && !target && (!distribution || distribution === 'Portable') ? [{ url, ...entry }] : [];
     }
     if (entry.channel === 'package') {
-      const targets = entry.release.distributions.flatMap((item) => item.targets);
-      const targetMatches = !target || (target === 'Native'
-        ? targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value))
-        : targets.some((value) => value === 'workers' || value === 'cloudflare-workers'));
+      const targetMatches = npmTargetMatches(entry.release.distributions, target);
       return currentSigned.package && targetMatches && (!distribution || distribution === 'npm package') ? [{ url, ...entry }] : [];
     }
     if (entry.channel === 'linked_details') {
       const npmDistributions = entry.release.details?.npmDistributions ?? [];
-      const targets = [...entry.release.targets, ...npmDistributions.flatMap((item) => item.targets)];
-      const targetMatches = !target || (target === 'Native'
-        ? targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value))
-        : targets.some((value) => value === 'workers' || value === 'cloudflare-workers'));
+      const cargoMatchesTarget = !target || (target === 'Native' && entry.release.targets.some(isNativeTarget));
+      const npmMatchesTarget = npmDistributions.length > 0 && npmTargetMatches(npmDistributions, target);
+      const targetMatches = distribution === 'Linked Rust' ? cargoMatchesTarget
+        : distribution === 'npm package' ? npmMatchesTarget : cargoMatchesTarget || npmMatchesTarget;
       return currentSigned.linked && currentSigned.linkedDetails && targetMatches
         && (!distribution || distribution === 'Linked Rust'
           || (distribution === 'npm package' && npmDistributions.length > 0)) ? [{ url, ...entry }] : [];
     }
-    const native = entry.release.targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value));
+    const native = entry.release.targets.some(isNativeTarget);
     return currentSigned.linked && (!target || (target === 'Native' && native))
       && (!distribution || distribution === 'Linked Rust') ? [{ url, ...entry }] : [];
   }).slice(0, 24);

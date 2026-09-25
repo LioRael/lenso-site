@@ -110,7 +110,7 @@ function SignedPackageReleasePage({ release }: { release: SignedPackageRelease }
             ['npm package', <code key="package">{distribution.package}</code>],
             ['npm package version', distribution.version],
             ['Package integrity SHA-256', <code key="integrity">{distribution.integrity}</code>],
-            ['Declared targets', distribution.targets.length ? distribution.targets.join(', ') : 'Not declared'],
+            ['Declared targets', distribution.targets.length ? distribution.targets.join(', ') : 'No Native restriction declared; Workers not declared'],
             ['Registry', <a key="registry" href={distribution.registryUrl} rel="noopener noreferrer" target="_blank">{distribution.registryUrl}</a>],
           ]} />
           <AdoptionCommandPanel command={`lenso app add ${release.pluginId}@${release.version} --package-snapshot ./package-snapshot.json --trust ./catalog-trust.json --tgz ./exact-package.tgz --distribution ${shellArgument(distribution.id)}`} label="Source-built candidate CLI · local App" />
@@ -202,7 +202,7 @@ function NpmPackageAlongsideLinked({ release }: { release: SignedLinkedRelease }
         ['npm package', <code key="package">{distribution.package}</code>],
         ['npm package version', distribution.version],
         ['Package integrity SHA-256', <code key="integrity">{distribution.integrity}</code>],
-        ['Declared targets', distribution.targets.length ? distribution.targets.join(', ') : 'Not declared'],
+        ['Declared targets', distribution.targets.length ? distribution.targets.join(', ') : 'No Native restriction declared; Workers not declared'],
         ['Registry', <a key="registry" href={distribution.registryUrl} rel="noopener noreferrer" target="_blank">{distribution.registryUrl}</a>],
       ]} />
       <AdoptionCommandPanel command={`lenso app add ${release.pluginId}@${release.version} --linked-snapshot ./linked-cargo-snapshot.json --release-details ./release-details-snapshot.json --trust ./catalog-trust.json --tgz ./exact-package.tgz --distribution ${shellArgument(distribution.id)}`} label="Source-built candidate CLI · local App" />

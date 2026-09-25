@@ -7,6 +7,7 @@ import { Check, CircleAlert, ExternalLink, Search, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { candidateRelease, signedLinkedCatalog, signedPackageCatalog, signedPortableCatalog } from '@/lib/plugin-candidates';
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
+import { isNativeTarget, npmTargetMatches } from '@/lib/plugin-targets';
 import { SignedDocumentSearch } from '@/components/signed-document-search';
 
 const joinedPackages = new Map(signedLinkedCatalog.releases
@@ -55,11 +56,9 @@ export function PluginDirectory() {
     const normalized = query.trim().toLowerCase();
     const joined = currentSigned.linkedDetails
       ? joinedPackages.get(`${release.pluginId}@${release.version}`) : undefined;
-    const nativeCargo = release.targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value));
-    const npmTargets = joined?.details?.npmDistributions.flatMap((item) => item.targets) ?? [];
-    const npmMatchesTarget = !target || (target === 'Native'
-      ? npmTargets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value))
-      : npmTargets.some((value) => value === 'workers' || value === 'cloudflare-workers'));
+    const nativeCargo = release.targets.some(isNativeTarget);
+    const npmMatchesTarget = Boolean(joined)
+      && npmTargetMatches(joined?.details?.npmDistributions ?? [], target);
     const cargoMatchesTarget = !target || (target === 'Native' && nativeCargo);
     return currentSigned.linked && (!normalized || [release.pluginId, release.package, release.title, release.summary,
       ...(joined?.details?.npmDistributions.map((item) => item.package) ?? [])].some((value) => value.toLowerCase().includes(normalized)))
@@ -77,10 +76,7 @@ export function PluginDirectory() {
   });
   const signedPackage = signedPackageCatalog.releases.filter((release) => {
     const normalized = query.trim().toLowerCase();
-    const packageTargets = release.distributions.flatMap((item) => item.targets);
-    const targetMatches = !target || (target === 'Native'
-      ? packageTargets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value))
-      : packageTargets.some((value) => value === 'workers' || value === 'cloudflare-workers'));
+    const targetMatches = npmTargetMatches(release.distributions, target);
     return currentSigned.package && (!normalized || [release.pluginId, release.title, release.summary,
       release.publisherId, ...release.distributions.map((item) => item.package)]
       .some((value) => value.toLowerCase().includes(normalized)))
@@ -185,7 +181,7 @@ export function PluginDirectory() {
             <p>{release.summary}</p>
             <dl><div><dt>Distribution</dt><dd>npm package only</dd></div><div><dt>Publisher</dt><dd>{release.publisherId}</dd></div>
               <div><dt>Exact packages</dt><dd>{release.distributions.map((item) => <code key={item.id}>{item.package}@{item.version} </code>)}</dd></div>
-              <div><dt>Declared targets</dt><dd>{release.distributions.flatMap((item) => item.targets).join(', ') || 'Not declared'}</dd></div>
+              <div><dt>Declared targets</dt><dd>{release.distributions.flatMap((item) => item.targets).join(', ') || 'No Native restriction declared; Workers not declared'}</dd></div>
               <div><dt>Catalog</dt><dd>Signed revision {signedPackageCatalog.revision}</dd></div></dl>
             <p className="signed-release-note">This npm-only release has no Portable base. A signed listing is not an installation, target qualification, or a public CLI adoption claim.</p>
             <Link href={linkedReleasePath(release.pluginId, release.version)}>Inspect exact signed npm-only version</Link>
