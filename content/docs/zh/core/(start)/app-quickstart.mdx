@@ -90,13 +90,14 @@ async fn home(&self) -> Result<HandleResponse, Problem> {
 "$LENSO_CLI" app discover --json
 cargo test --locked --manifest-path app/example.second-http/Cargo.toml
 "$LENSO_CLI" app build --out dist-review
-"$LENSO_CLI" app check --root dist-review/intent
+"$LENSO_CLI" app check --root dist-review
 "$LENSO_CLI" app show --root dist-review/intent --json
 "$LENSO_CLI" app start --from dist-review --check
 ```
 
-`app build` 不覆盖已有输出目录。check/show 检查构建后分发目录 `intent/` 中的 Plugin Root
-和解析结果；`start --check` 完成激活并关闭。源码构建成功仍不等于有公开可下载
+`app build` 不覆盖已有输出目录。`app check` 以分发目录为根，核对 Host Bundle 清单；
+`app show` 则以其中的 `intent/` Plugin Root 为根，查看解析结果。`start --check` 完成激活并关闭。
+源码构建成功仍不等于有公开可下载
 Release 或已部署。要检查真实 HTTP，运行 `"$LENSO_CLI" app start --from dist-review`，
 并在它打印的地址访问 `/` 和 `/second`。
 

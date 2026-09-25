@@ -323,8 +323,11 @@ for (const file of chineseDocuments) {
 const retiredGenerationName = new RegExp(["v", "next"].join(""), "i");
 for (const file of currentFiles) {
   const text = readFileSync(file, "utf8");
-  for (const match of text.matchAll(/\bapp (?:check|show) --root (dist[\w-]*)(?!\/intent)(?=[\s`]|$)/g)) {
-    failures.push(`${relative(root, file)}: source App distribution check/show must use ${match[1]}/intent`);
+  for (const match of text.matchAll(/\bapp show --root (dist[\w-]*)(?!\/intent)(?=[\s`]|$)/g)) {
+    failures.push(`${relative(root, file)}: source App distribution show must use ${match[1]}/intent`);
+  }
+  for (const match of text.matchAll(/\bapp check --root (dist[\w-]*)\/intent(?=[\s`]|$)/g)) {
+    failures.push(`${relative(root, file)}: source App distribution check must use ${match[1]}`);
   }
   for (const [label, expression] of [
     ["retired public lifecycle", /Compose, Run locally, Connect, (?:and )?Status/g],
@@ -368,7 +371,7 @@ for (const [file, markers] of [
     "app dev",
     "Hello, Ada!",
     "app build --out dist-review",
-    "app check --root dist-review/intent",
+    "app check --root dist-review",
     "Use a coding agent for these same steps",
   ]],
   ["content/docs/zh/core/(start)/app-quickstart.mdx", [
@@ -378,7 +381,7 @@ for (const [file, markers] of [
     "app dev",
     "Hello, Ada!",
     "app build --out dist-review",
-    "app check --root dist-review/intent",
+    "app check --root dist-review",
     "让 Coding Agent 执行相同步骤",
   ]],
   ["content/docs/core/(start)/first-app-change.mdx", [

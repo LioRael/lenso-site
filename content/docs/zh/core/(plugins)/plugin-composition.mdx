@@ -93,7 +93,7 @@ lenso plugins rollback example.tool --version 1.2.0
   --trust /absolute/path/to/public-trust.json \
   --archive /absolute/path/to/exact-release.lenso-plugin
 "$LENSO_CLI" app build --out dist-portable-review
-"$LENSO_CLI" app check --root dist-portable-review/intent
+"$LENSO_CLI" app check --root dist-portable-review
 "$LENSO_CLI" app show --root dist-portable-review/intent --json
 ```
 
@@ -116,7 +116,7 @@ Portable Release 已公开发布。
   --trust /absolute/path/to/public-trust.json \
   --crate /absolute/path/to/exact-package.crate
 "$LENSO_CLI" app build --out dist-linked-review
-"$LENSO_CLI" app check --root dist-linked-review/intent
+"$LENSO_CLI" app check --root dist-linked-review
 "$LENSO_CLI" app show --root dist-linked-review/intent --json
 ```
 

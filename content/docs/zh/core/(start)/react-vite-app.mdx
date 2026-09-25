@@ -97,7 +97,7 @@ Fixture 的公开 notes、settings、jobs 和 attachment 路径，不开放 Host
 ```sh
 (cd project/frontend && bun run build)
 "$LENSO_CLI" app build --root project --out dist-react-review
-"$LENSO_CLI" app check --root dist-react-review/intent
+"$LENSO_CLI" app check --root dist-react-review
 "$LENSO_CLI" app show --root dist-react-review/intent --json
 "$LENSO_CLI" app start --from dist-react-review --check
 ```

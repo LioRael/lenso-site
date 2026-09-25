@@ -30,7 +30,7 @@ Instance again. The marker does not stop a Host that is already running.
 ```sh
 touch plugins/example.web/default.disabled
 "$LENSO_CLI" app build --out dist-disabled
-"$LENSO_CLI" app check --root dist-disabled/intent
+"$LENSO_CLI" app check --root dist-disabled
 "$LENSO_CLI" app show --root dist-disabled/intent --json
 "$LENSO_CLI" app start --from dist-disabled --check
 ```
@@ -57,7 +57,7 @@ adopted coordinates:
 "$LENSO_CLI" app unadopt example.web@0.4.5 --root .
 "$LENSO_CLI" app discover --root . --json
 "$LENSO_CLI" app build --out dist-withdrawn
-"$LENSO_CLI" app check --root dist-withdrawn/intent
+"$LENSO_CLI" app check --root dist-withdrawn
 "$LENSO_CLI" app show --root dist-withdrawn/intent --json
 ```
 
@@ -78,7 +78,7 @@ use its exact coordinates and the explicit distribution flag:
 "$LENSO_CLI" app unadopt example.tool@0.1.0 --portable --root .
 "$LENSO_CLI" app discover --root . --json
 "$LENSO_CLI" app build --out dist-portable-withdrawn
-"$LENSO_CLI" app check --root dist-portable-withdrawn/intent
+"$LENSO_CLI" app check --root dist-portable-withdrawn
 "$LENSO_CLI" app show --root dist-portable-withdrawn/intent --json
 ```
 
