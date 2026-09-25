@@ -1,0 +1,21 @@
+scripts/check-package-site-integration.mjs
+  s_7d146975368699::t_644b0860508b58 72-74,122-123
+app/plugins/[pluginId]/[version]/page.tsx
+  s_7d146975368699::t_7f1c0fdcbea5ab 18-25,114,124,126,208,218,220
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "06e593db3a978fef0ebb2890ec3142dfcfb9684a",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
