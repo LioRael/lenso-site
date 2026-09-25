@@ -28,12 +28,15 @@ export default async function SignedDocumentationPage({ params }: { params: Para
   if (!document || document.pluginId !== pluginId || document.version !== version) notFound();
   const catalog = document.channel === 'portable' ? signedPortableCatalog
     : document.channel === 'package' ? signedPackageCatalog : signedLinkedCatalog;
-  const revision = document.channel === 'portable' ? signedPortableCatalog.detailsRevision : catalog.revision;
-  const expiresAt = document.channel === 'portable' ? signedPortableCatalog.detailsExpiresAt : catalog.expiresAt;
+  const linkedDetails = document.channel === 'linked_details'
+    ? signedLinkedCatalog.releases.find((item) => item.pluginId === pluginId && item.version === version)?.details : null;
+  const revision = document.channel === 'portable' ? signedPortableCatalog.detailsRevision
+    : document.channel === 'linked_details' ? linkedDetails?.revision : catalog.revision;
+  const expiresAt = document.channel === 'portable' ? signedPortableCatalog.detailsExpiresAt
+    : document.channel === 'linked_details' ? linkedDetails?.expiresAt : catalog.expiresAt;
   const channelLabel = document.channel === 'portable' ? 'Portable'
-    : document.channel === 'package'
-      ? signedPackageCatalog.joinedLinkedBaseIdentities?.[`${pluginId}@${version}`] ? 'npm package' : 'npm-only package'
-      : 'linked Cargo';
+    : document.channel === 'package' ? 'npm-only package'
+      : document.channel === 'linked_details' ? 'linked Cargo release-details' : 'linked Cargo';
   return <div className="linked-doc-shell">
     <SiteHeader active="plugins" />
     <main className="linked-doc-main">
@@ -46,8 +49,9 @@ export default async function SignedDocumentationPage({ params }: { params: Para
       </header>
       <aside className="linked-doc-provenance">
         <strong>Content verified at Site build</strong>
-        <p>The signed {document.channel === 'portable' ? 'release details and exact Portable base' : `${channelLabel} catalog`} name this exact revision, size and SHA-256. This third-party Markdown is displayed as data; HTML, images and executable MDX are disabled.</p>
-        <dl><div><dt>Digest</dt><dd><code>{document.digest}</code></dd></div><div><dt>Catalog</dt><dd>{catalog.catalogId}</dd></div><div><dt>{document.channel === 'portable' ? 'Details revision' : 'Catalog revision'}</dt><dd>{revision}</dd></div><div><dt>{document.channel === 'portable' ? 'Signed details expire' : 'Signed catalog expires'}</dt><dd>{expiresAt ? new Date(expiresAt * 1000).toISOString() : 'unknown'}</dd></div></dl>
+        <p>The signed {document.channel === 'portable' ? 'release details and exact Portable base'
+          : document.channel === 'linked_details' ? 'release details and exact linked Cargo base' : `${channelLabel} catalog`} name this exact revision, size and SHA-256. This third-party Markdown is displayed as data; HTML, images and executable MDX are disabled.</p>
+        <dl><div><dt>Digest</dt><dd><code>{document.digest}</code></dd></div><div><dt>Catalog</dt><dd>{catalog.catalogId}</dd></div><div><dt>{document.channel === 'portable' || document.channel === 'linked_details' ? 'Details revision' : 'Catalog revision'}</dt><dd>{revision}</dd></div><div><dt>{document.channel === 'portable' || document.channel === 'linked_details' ? 'Signed details expire' : 'Signed catalog expires'}</dt><dd>{expiresAt ? new Date(expiresAt * 1000).toISOString() : 'unknown'}</dd></div></dl>
         <a href={linkedDocumentApiPath(pluginId, version, slug)}>Read verified Markdown API</a>
       </aside>
       <article className="linked-doc-body">

@@ -9,12 +9,17 @@ import { linkedDocumentPath } from '@/lib/linked-document-paths';
 const searchClient = staticClient({ from: '/api/plugins/search', search: { limit: 512 } });
 type SearchDocument = SignedLinkedRelease['documentation'][number];
 type SearchEntry = { release: SignedLinkedRelease; document: SearchDocument; channel: 'linked' }
+  | { release: SignedLinkedRelease; document: SearchDocument; channel: 'linked_details' }
   | { release: SignedPortableRelease; document: SearchDocument; channel: 'portable' }
   | { release: SignedPackageRelease; document: SearchDocument; channel: 'package' };
 const documentDetails = new Map<string, SearchEntry>([
   ...signedLinkedCatalog.releases.flatMap((release) => release.documentation.map((document) => [
     linkedDocumentPath(release.pluginId, release.version, document.slug),
     { release, document, channel: 'linked' as const },
+  ] as const)),
+  ...signedLinkedCatalog.releases.flatMap((release) => (release.details?.documentation ?? []).map((document) => [
+    linkedDocumentPath(release.pluginId, release.version, document.slug),
+    { release, document, channel: 'linked_details' as const },
   ] as const)),
   ...signedPortableCatalog.releases.flatMap((release) => release.documentation.map((document) => [
     linkedDocumentPath(release.pluginId, release.version, document.slug),
@@ -32,7 +37,7 @@ type Props = {
   target?: string;
   distribution?: string;
   catalogStatus?: string;
-  currentSigned: { linked: boolean; portableDetails: boolean; package: boolean; linkedPackageDetails: boolean };
+  currentSigned: { linked: boolean; portableDetails: boolean; package: boolean; linkedDetails: boolean };
 };
 
 export function SignedDocumentSearch({ query, target, distribution, catalogStatus, currentSigned }: Props) {
@@ -61,13 +66,21 @@ export function SignedDocumentSearch({ query, target, distribution, catalogStatu
       return currentSigned.portableDetails && !target && (!distribution || distribution === 'Portable') ? [{ url, ...entry }] : [];
     }
     if (entry.channel === 'package') {
-      const joined = Boolean(signedPackageCatalog.joinedLinkedBaseIdentities?.[`${entry.release.pluginId}@${entry.release.version}`]);
       const targets = entry.release.distributions.flatMap((item) => item.targets);
       const targetMatches = !target || (target === 'Native'
         ? targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value))
         : targets.some((value) => value === 'workers' || value === 'cloudflare-workers'));
-      return currentSigned.package && (!joined || (currentSigned.linked && currentSigned.linkedPackageDetails))
-        && targetMatches && (!distribution || distribution === 'npm package') ? [{ url, ...entry }] : [];
+      return currentSigned.package && targetMatches && (!distribution || distribution === 'npm package') ? [{ url, ...entry }] : [];
+    }
+    if (entry.channel === 'linked_details') {
+      const npmDistributions = entry.release.details?.npmDistributions ?? [];
+      const targets = [...entry.release.targets, ...npmDistributions.flatMap((item) => item.targets)];
+      const targetMatches = !target || (target === 'Native'
+        ? targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value))
+        : targets.some((value) => value === 'workers' || value === 'cloudflare-workers'));
+      return currentSigned.linked && currentSigned.linkedDetails && targetMatches
+        && (!distribution || distribution === 'Linked Rust'
+          || (distribution === 'npm package' && npmDistributions.length > 0)) ? [{ url, ...entry }] : [];
     }
     const native = entry.release.targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value));
     return currentSigned.linked && (!target || (target === 'Native' && native))
@@ -82,7 +95,8 @@ export function SignedDocumentSearch({ query, target, distribution, catalogStatu
           : matches.length === 0 ? <p role="status">No versioned documentation matches this search and the selected filters.</p>
             : <ul>{matches.map(({ url, release, document, channel }) => <li key={url}>
               <Link href={url}>{document.topic}</Link>
-              <span>{release.pluginId}@{release.version} · {channel === 'portable' ? 'Portable' : channel === 'package' ? 'npm package' : 'Linked Rust'} · {document.language} · revision {document.revision}</span>
+              <span>{release.pluginId}@{release.version} · {channel === 'portable' ? 'Portable'
+                : channel === 'package' ? 'npm package only' : channel === 'linked_details' ? 'Linked Cargo release details' : 'Linked Rust'} · {document.language} · revision {document.revision}</span>
             </li>)}</ul>}
   </section>;
 }

@@ -17,6 +17,13 @@ export type SignedLinkedRelease = {
   integration: 'linked_plugin' | 'host_provided';
   targets: string[];
   crateDigest: string;
+  details?: {
+    baseReleaseIdentity: string;
+    revision: number;
+    expiresAt: number;
+    npmDistributions: SignedPackageRelease['distributions'];
+    documentation: SignedLinkedRelease['documentation'];
+  };
   documentation: {
     id: string;
     revision: string;
@@ -88,9 +95,6 @@ export type SignedPackageCatalog = {
   catalogId: string | null;
   revision: number | null;
   expiresAt: number | null;
-  linkedDetailsRevision: number | null;
-  linkedDetailsExpiresAt: number | null;
-  joinedLinkedBaseIdentities: Record<string, string>;
   releases: SignedPackageRelease[];
 };
 export const signedPackageCatalog = packageGenerated as SignedPackageCatalog;

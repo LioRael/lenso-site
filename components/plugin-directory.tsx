@@ -9,9 +9,10 @@ import { candidateRelease, signedLinkedCatalog, signedPackageCatalog, signedPort
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
 import { SignedDocumentSearch } from '@/components/signed-document-search';
 
-const joinedPackages = new Map(signedPackageCatalog.releases
-  .filter((release) => signedPackageCatalog.joinedLinkedBaseIdentities?.[`${release.pluginId}@${release.version}`])
+const joinedPackages = new Map(signedLinkedCatalog.releases
+  .filter((release) => release.details?.npmDistributions.length)
   .map((release) => [`${release.pluginId}@${release.version}`, release]));
+const linkedDetailsExpiresAt = signedLinkedCatalog.releases.find((release) => release.details)?.details?.expiresAt ?? null;
 
 export function PluginDirectory() {
   const [query, setQuery] = useState('');
@@ -23,7 +24,7 @@ export function PluginDirectory() {
     portable: Boolean(signedPortableCatalog.expiresAt),
     portableDetails: Boolean(signedPortableCatalog.detailsExpiresAt),
     package: Boolean(signedPackageCatalog.expiresAt),
-    linkedPackageDetails: Boolean(signedPackageCatalog.linkedDetailsExpiresAt),
+    linkedDetails: Boolean(linkedDetailsExpiresAt),
   });
   useEffect(() => {
     const queries = new URLSearchParams(window.location.search).getAll('q');
@@ -38,12 +39,12 @@ export function PluginDirectory() {
       const portableRemaining = (signedPortableCatalog.expiresAt ?? 0) * 1000 - now;
       const detailsRemaining = (signedPortableCatalog.detailsExpiresAt ?? 0) * 1000 - now;
       const packageRemaining = (signedPackageCatalog.expiresAt ?? 0) * 1000 - now;
-      const linkedPackageDetailsRemaining = (signedPackageCatalog.linkedDetailsExpiresAt ?? 0) * 1000 - now;
+      const linkedDetailsRemaining = (linkedDetailsExpiresAt ?? 0) * 1000 - now;
       setCurrentSigned({ linked: linkedRemaining > 0, portable: portableRemaining > 0,
         portableDetails: portableRemaining > 0 && detailsRemaining > 0,
-        package: packageRemaining > 0, linkedPackageDetails: linkedPackageDetailsRemaining > 0 });
+        package: packageRemaining > 0, linkedDetails: linkedDetailsRemaining > 0 });
       const next = [linkedRemaining, portableRemaining, detailsRemaining, packageRemaining,
-        linkedPackageDetailsRemaining].filter((remaining) => remaining > 0);
+        linkedDetailsRemaining].filter((remaining) => remaining > 0);
       if (next.length > 0) timer = window.setTimeout(update, Math.min(...next, 2_147_483_647));
     };
     update();
@@ -52,16 +53,16 @@ export function PluginDirectory() {
   }, []);
   const signedLinked = signedLinkedCatalog.releases.filter((release) => {
     const normalized = query.trim().toLowerCase();
-    const joined = currentSigned.package && currentSigned.linkedPackageDetails
+    const joined = currentSigned.linkedDetails
       ? joinedPackages.get(`${release.pluginId}@${release.version}`) : undefined;
     const nativeCargo = release.targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value));
-    const npmTargets = joined?.distributions.flatMap((item) => item.targets) ?? [];
+    const npmTargets = joined?.details?.npmDistributions.flatMap((item) => item.targets) ?? [];
     const npmMatchesTarget = !target || (target === 'Native'
       ? npmTargets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value))
       : npmTargets.some((value) => value === 'workers' || value === 'cloudflare-workers'));
     const cargoMatchesTarget = !target || (target === 'Native' && nativeCargo);
     return currentSigned.linked && (!normalized || [release.pluginId, release.package, release.title, release.summary,
-      ...(joined?.distributions.map((item) => item.package) ?? [])].some((value) => value.toLowerCase().includes(normalized)))
+      ...(joined?.details?.npmDistributions.map((item) => item.package) ?? [])].some((value) => value.toLowerCase().includes(normalized)))
       && (distribution === 'Linked Rust' ? cargoMatchesTarget
         : distribution === 'npm package' ? Boolean(joined) && npmMatchesTarget
           : cargoMatchesTarget || Boolean(joined) && npmMatchesTarget)
@@ -80,8 +81,7 @@ export function PluginDirectory() {
     const targetMatches = !target || (target === 'Native'
       ? packageTargets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value))
       : packageTargets.some((value) => value === 'workers' || value === 'cloudflare-workers'));
-    return currentSigned.package && !joinedPackages.has(`${release.pluginId}@${release.version}`)
-      && (!normalized || [release.pluginId, release.title, release.summary,
+    return currentSigned.package && (!normalized || [release.pluginId, release.title, release.summary,
       release.publisherId, ...release.distributions.map((item) => item.package)]
       .some((value) => value.toLowerCase().includes(normalized)))
       && targetMatches && (!distribution || distribution === 'npm package')
@@ -156,8 +156,8 @@ export function PluginDirectory() {
           {signedLinked.map((release) => <article className="signed-release" key={`linked:${release.pluginId}@${release.version}`}>
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.summary}</p>
-            <dl><div><dt>Distribution</dt><dd>Linked Rust{joinedPackages.has(`${release.pluginId}@${release.version}`) && currentSigned.package && currentSigned.linkedPackageDetails ? ' + npm package' : ''} · {release.integration === 'host_provided' ? 'Host-provided integration' : 'linked Plugin'}</dd></div><div><dt>Cargo package</dt><dd><code>{release.package}</code></dd></div>
-              {joinedPackages.has(`${release.pluginId}@${release.version}`) && currentSigned.package && currentSigned.linkedPackageDetails && <div><dt>npm package</dt><dd>{joinedPackages.get(`${release.pluginId}@${release.version}`)?.distributions.map((item) => <code key={item.id}>{item.package}@{item.version} </code>)}</dd></div>}
+            <dl><div><dt>Distribution</dt><dd>Linked Rust{joinedPackages.has(`${release.pluginId}@${release.version}`) && currentSigned.linkedDetails ? ' + npm package' : ''} · {release.integration === 'host_provided' ? 'Host-provided integration' : 'linked Plugin'}</dd></div><div><dt>Cargo package</dt><dd><code>{release.package}</code></dd></div>
+              {joinedPackages.has(`${release.pluginId}@${release.version}`) && currentSigned.linkedDetails && <div><dt>npm package</dt><dd>{joinedPackages.get(`${release.pluginId}@${release.version}`)?.details?.npmDistributions.map((item) => <code key={item.id}>{item.package}@{item.version} </code>)}</dd></div>}
               <div><dt>Exact Cargo targets</dt><dd>{release.targets.join(', ')}</dd></div><div><dt>Catalog</dt><dd>Signed revision {signedLinkedCatalog.revision}</dd></div></dl>
             <p className="signed-release-note">{release.integration === 'host_provided'
               ? 'Requires a product Host-specific adapter; not a generic lenso app add candidate.'
@@ -169,6 +169,14 @@ export function PluginDirectory() {
                 <Link href={linkedDocumentPath(release.pluginId, release.version, document.slug)}>{document.topic}</Link> · {document.language} · {document.id}@{document.revision}
                 {document.target && <> · {document.target}</>}
                 <small>Signed reference and Site-verified body: {document.digest}.</small>
+              </li>)}</ul>
+            </div>}
+            {currentSigned.linkedDetails && Boolean(release.details?.documentation.length) && <div className="signed-release-documents">
+              <h4>Signed release-details documentation</h4>
+              <ul>{release.details?.documentation.map((document) => <li key={`${document.id}@${document.revision}`}>
+                <Link href={linkedDocumentPath(release.pluginId, release.version, document.slug)}>{document.topic}</Link> · {document.language} · {document.id}@{document.revision}
+                {document.target && <> · {document.target}</>}
+                <small>Signed details reference and Site-verified body: {document.digest}.</small>
               </li>)}</ul>
             </div>}
           </article>)}

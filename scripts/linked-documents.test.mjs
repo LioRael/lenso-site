@@ -65,6 +65,11 @@ test('npm-only documentation has a channel-specific route', () => {
   assert.notEqual(npmPackage, linked);
   assert.notEqual(npmPackage, portable);
   assert.match(npmPackage, /^package-[0-9a-f]{64}$/);
+  const linkedDetails = documentSlug('example.web', '1.0.0', document, 'linked_details');
+  assert.notEqual(linkedDetails, linked);
+  assert.notEqual(linkedDetails, portable);
+  assert.notEqual(linkedDetails, npmPackage);
+  assert.match(linkedDetails, /^linked_details-[0-9a-f]{64}$/);
 });
 
 test('rejects changed hosts, credentialed URLs, redirects and excessive signed sizes', async () => {

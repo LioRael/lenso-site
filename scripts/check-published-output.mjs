@@ -109,11 +109,17 @@ for (const release of pluginDirectory.releases) {
   const portable = signedPortableCatalog.releases.find((item) => item.pluginId === release.pluginId && item.version === release.version);
   const npmPackage = signedPackageCatalog.releases.find((item) => item.pluginId === release.pluginId && item.version === release.version);
   const channels = release.distributions.map((item) => item.kind);
-  if (channels.length !== Number(Boolean(linked)) + Number(Boolean(portable)) + Number(Boolean(npmPackage))
+  if (channels.length !== Number(Boolean(linked)) + Number(Boolean(portable))
+    + Number(Boolean(npmPackage)) + Number(Boolean(linked?.details?.npmDistributions.length))
     || (linked && !release.distributions.some((item) => item.kind === 'linked_cargo'
       && item.expiresAt === signedCatalog.expiresAt && item.release.crateDigest === linked.crateDigest))
     || (portable && !release.distributions.some((item) => item.kind === 'portable_bundle'
       && item.expiresAt === signedPortableCatalog.expiresAt && item.release.artifactDigest === portable.artifactDigest))
+    || (linked?.details?.npmDistributions.length && !release.distributions.some((item) => item.kind === 'npm_package'
+      && item.provenance === 'linked_release_details'
+      && item.baseReleaseIdentity === linked.details.baseReleaseIdentity
+      && item.catalogRevision === linked.details.revision && item.expiresAt === linked.details.expiresAt
+      && JSON.stringify(item.release.distributions) === JSON.stringify(linked.details.npmDistributions)))
     || (npmPackage && !release.distributions.some((item) => item.kind === 'npm_package'
       && item.expiresAt === signedPackageCatalog.expiresAt
       && JSON.stringify(item.release.distributions) === JSON.stringify(npmPackage.distributions)))) {
@@ -121,7 +127,8 @@ for (const release of pluginDirectory.releases) {
   }
   for (const distribution of release.distributions) {
     const source = distribution.kind === 'linked_cargo' ? linked
-      : distribution.kind === 'portable_bundle' ? portable : npmPackage;
+      : distribution.kind === 'portable_bundle' ? portable
+        : distribution.provenance === 'linked_release_details' ? linked?.details : npmPackage;
     for (const document of distribution.release.documentation) {
       const expected = source?.documentation.find((item) => item.slug === document.slug);
       const markdownPath = `/api/plugins/${release.pluginId}/${release.version}/docs/${document.slug}/content.md`;
@@ -129,6 +136,16 @@ for (const release of pluginDirectory.releases) {
         || document.markdownUrl !== markdownPath
         || document.pageUrl !== `/plugins/${release.pluginId}/${release.version}/docs/${document.slug}`) {
         failures.push(`out/api/plugins/catalog.json: versioned documentation mismatch for ${identity}`);
+      }
+    }
+    if (distribution.kind === 'linked_cargo') {
+      for (const document of distribution.release.details?.documentation ?? []) {
+        const expected = linked?.details?.documentation.find((item) => item.slug === document.slug);
+        const markdownPath = `/api/plugins/${release.pluginId}/${release.version}/docs/${document.slug}/content.md`;
+        if (!expected || expected.digest !== document.digest || document.markdownUrl !== markdownPath
+          || document.pageUrl !== `/plugins/${release.pluginId}/${release.version}/docs/${document.slug}`) {
+          failures.push(`out/api/plugins/catalog.json: linked details documentation mismatch for ${identity}`);
+        }
       }
     }
   }
@@ -162,6 +179,10 @@ for (const release of signedCatalog.releases) {
   requireReleaseNavigationPayload(release.pluginId, release.version);
   const html = requireFile(`${route}/index.html`);
   if (!html.includes(release.title) || !html.includes(release.crateDigest)) failures.push(`out/${route}/index.html: signed release evidence missing`);
+  if (release.details?.npmDistributions.length
+    && !release.details.npmDistributions.every((item) => html.includes(item.integrity))) {
+    failures.push(`out/${route}/index.html: signed linked release-details npm evidence missing`);
+  }
   if (!pluginIndex.includes(`/${route}`)) failures.push(`out/plugins/index.html: signed release link missing for ${route}`);
   if (!sitemap.includes(`/${route}`)) failures.push(`out/sitemap.xml: signed release missing for ${route}`);
   for (const document of release.documentation) {
@@ -173,10 +194,18 @@ for (const release of signedCatalog.releases) {
     if (!pluginSearch.includes(`/${documentRoute}`)) failures.push(`out/api/plugins/search: signed linked document missing for ${documentRoute}`);
     if (!sitemap.includes(`/${documentRoute}`)) failures.push(`out/sitemap.xml: signed document missing for ${documentRoute}`);
   }
+  for (const document of release.details?.documentation ?? []) {
+    const documentRoute = `${route}/docs/${document.slug}`;
+    const page = requireFile(`${documentRoute}/index.html`);
+    const markdown = requireFile(`api/${documentRoute}/content.md`);
+    if (!page.includes(document.topic) || !page.includes('linked Cargo release-details')) failures.push(`out/${documentRoute}/index.html: linked details document provenance missing`);
+    if (markdown !== signedDocuments[document.slug]?.content || signedDocuments[document.slug]?.channel !== 'linked_details') failures.push(`out/api/${documentRoute}/content.md: linked details verified Markdown mismatch`);
+    if (!pluginSearch.includes(`/${documentRoute}`)) failures.push(`out/api/plugins/search: linked details document missing for ${documentRoute}`);
+    if (!sitemap.includes(`/${documentRoute}`)) failures.push(`out/sitemap.xml: linked details document missing for ${documentRoute}`);
+  }
 }
 for (const release of signedPackageCatalog.releases) {
   const route = `plugins/${release.pluginId}/${release.version}`;
-  const joined = Boolean(signedPackageCatalog.joinedLinkedBaseIdentities?.[`${release.pluginId}@${release.version}`]);
   requireReleaseNavigationPayload(release.pluginId, release.version);
   const html = requireFile(`${route}/index.html`);
   if (!html.includes(release.title) || !release.distributions.every((item) => html.includes(item.integrity))) {
@@ -188,7 +217,7 @@ for (const release of signedPackageCatalog.releases) {
     const documentRoute = `${route}/docs/${document.slug}`;
     const page = requireFile(`${documentRoute}/index.html`);
     const markdown = requireFile(`api/${documentRoute}/content.md`);
-    if (!page.includes(document.topic) || !page.includes(joined ? 'npm package' : 'npm-only package')) failures.push(`out/${documentRoute}/index.html: npm document provenance missing`);
+    if (!page.includes(document.topic) || !page.includes('npm-only package')) failures.push(`out/${documentRoute}/index.html: npm-only document provenance missing`);
     if (markdown !== signedDocuments[document.slug]?.content || signedDocuments[document.slug]?.channel !== 'package') failures.push(`out/api/${documentRoute}/content.md: npm-only verified Markdown mismatch`);
     if (!pluginSearch.includes(`/${documentRoute}`)) failures.push(`out/api/plugins/search: signed npm-only document missing for ${documentRoute}`);
     if (!sitemap.includes(`/${documentRoute}`)) failures.push(`out/sitemap.xml: signed npm-only document missing for ${documentRoute}`);

@@ -4,7 +4,7 @@ import { verifyLinkedCatalog } from './linked-catalog.mjs';
 import { documentSlug, ingestVerifiedDocuments } from './linked-documents.mjs';
 import { verifyPortableCatalog } from './portable-catalog.mjs';
 import { assertIndependentPackageIdentities, verifyPackageCatalog } from './package-catalog.mjs';
-import { joinLinkedPackageReleaseDetails, joinPortableReleaseDetails, verifyReleaseDetails } from './release-details.mjs';
+import { joinLinkedReleaseDetails, joinPortableReleaseDetails, verifyReleaseDetails } from './release-details.mjs';
 import { joinReleaseContent, verifyReleaseContent } from './release-content.mjs';
 import { checkpointConfig, loadCheckpointBundle, nextCheckpointBundle, stageCheckpointBundle } from './catalog-checkpoint-files.mjs';
 
@@ -51,8 +51,7 @@ async function fetchSnapshot(endpoint) {
 
 let catalog = { catalogId: null, revision: null, expiresAt: null, releases: [] };
 let portableCatalog = { catalogId: null, revision: null, expiresAt: null, detailsRevision: null, detailsExpiresAt: null, releases: [] };
-let packageCatalog = { catalogId: null, revision: null, expiresAt: null,
-  linkedDetailsRevision: null, linkedDetailsExpiresAt: null, joinedLinkedBaseIdentities: {}, releases: [] };
+let packageCatalog = { catalogId: null, revision: null, expiresAt: null, releases: [] };
 let contentCatalog = { catalogId: null, revision: null, expiresAt: null, releases: [] };
 let linkedBase;
 let portableBase;
@@ -73,13 +72,20 @@ if (packageUrl) {
   packageBase = verifyPackageCatalog(await fetchSnapshot(packageUrl), trust, now, previous.bundle.package ?? null);
   updates.package = packageBase.checkpoint;
   packageCatalog = { catalogId: packageBase.catalogId, revision: packageBase.revision,
-    expiresAt: packageBase.expiresAt, linkedDetailsRevision: null,
-    linkedDetailsExpiresAt: null, joinedLinkedBaseIdentities: {}, releases: packageBase.releases };
+    expiresAt: packageBase.expiresAt, releases: packageBase.releases };
 }
 let details;
 if (detailsUrl) {
   details = verifyReleaseDetails(await fetchSnapshot(detailsUrl), trust, now, previous.bundle.release_details);
   updates.release_details = details.checkpoint;
+}
+if (linkedBase && details) {
+  catalog = joinLinkedReleaseDetails(linkedBase, details, portableBase);
+  catalog.releases = catalog.releases.map((release) => ({ ...release,
+    ...(release.details ? { details: { ...release.details,
+      documentation: release.details.documentation.map((document) => ({ ...document,
+        slug: documentSlug(release.pluginId, release.version, document, 'linked_details') })) } } : {}),
+  }));
 }
 if (portableBase) {
   portableCatalog = details
@@ -91,16 +97,7 @@ if (portableBase) {
     documentation: release.documentation.map((document) => ({ ...document,
       slug: documentSlug(release.pluginId, release.version, document, 'portable') })) }));
 }
-const linkedJoins = linkedBase && packageBase && details
-  ? joinLinkedPackageReleaseDetails(linkedBase, packageBase, details) : new Set();
-assertIndependentPackageIdentities(packageBase, linkedBase, portableBase, previous?.bundle, linkedJoins);
-if (linkedJoins.size > 0) {
-  packageCatalog.joinedLinkedBaseIdentities = Object.fromEntries(linkedBase.baseReleases
-    .filter((release) => linkedJoins.has(`${release.pluginId}@${release.version}`))
-    .map((release) => [`${release.pluginId}@${release.version}`, release.identity]));
-  packageCatalog.linkedDetailsRevision = details.revision;
-  packageCatalog.linkedDetailsExpiresAt = details.expiresAt;
-}
+assertIndependentPackageIdentities(packageBase, linkedBase, portableBase, previous?.bundle);
 if (contentUrl) {
   const content = verifyReleaseContent(await fetchSnapshot(contentUrl), trust, now,
     previous.bundle.release_content ?? null);
@@ -117,6 +114,9 @@ for (const host of allowedHosts) {
 const documents = await ingestVerifiedDocuments([
   { catalog, channel: 'linked' }, { catalog: portableCatalog, channel: 'portable' },
   { catalog: packageCatalog, channel: 'package' },
+  { catalog: { releases: catalog.releases.filter((release) => release.details?.documentation.length)
+    .map((release) => ({ pluginId: release.pluginId, version: release.version,
+      documentation: release.details.documentation })) }, channel: 'linked_details' },
 ], allowedHosts);
 await mkdir(resolve(import.meta.dirname, '../lib/.generated'), { recursive: true });
 await writeFile(resolve(import.meta.dirname, '../lib/.generated/linked-catalog.json'), `${JSON.stringify(catalog)}\n`);
@@ -126,4 +126,4 @@ await writeFile(resolve(import.meta.dirname, '../lib/.generated/release-content.
 await writeFile(resolve(import.meta.dirname, '../lib/.generated/linked-documents.json'), `${JSON.stringify(documents)}\n`);
 if (checkpoint) await stageCheckpointBundle(checkpoint,
   nextCheckpointBundle(previous.bundle, updates), previous.inputDigest);
-console.log(`Signed Site catalogs: linked ${catalog.catalogId ? `${catalog.catalogId} revision ${catalog.revision} (${catalog.releases.length} listed releases)` : 'not configured'}; portable ${portableCatalog.catalogId ? `${portableCatalog.catalogId} revision ${portableCatalog.revision} (${portableCatalog.releases.length} listed releases)` : 'not configured'}; package ${packageCatalog.catalogId ? `${packageCatalog.catalogId} revision ${packageCatalog.revision} (${packageCatalog.releases.length} listed releases)` : 'not configured'}; details ${details?.revision ?? 'not configured'}; linked+npm joins ${Object.keys(packageCatalog.joinedLinkedBaseIdentities).length}; content ${contentCatalog.revision ?? 'not configured'}; verified Markdown ${Object.keys(documents).length}.`);
+console.log(`Signed Site catalogs: linked ${catalog.catalogId ? `${catalog.catalogId} revision ${catalog.revision} (${catalog.releases.length} listed releases)` : 'not configured'}; portable ${portableCatalog.catalogId ? `${portableCatalog.catalogId} revision ${portableCatalog.revision} (${portableCatalog.releases.length} listed releases)` : 'not configured'}; package ${packageCatalog.catalogId ? `${packageCatalog.catalogId} revision ${packageCatalog.revision} (${packageCatalog.releases.length} listed releases)` : 'not configured'}; details ${details?.revision ?? 'not configured'}; linked+npm joins ${catalog.releases.filter((release) => release.details?.npmDistributions.length).length}; content ${contentCatalog.revision ?? 'not configured'}; verified Markdown ${Object.keys(documents).length}.`);

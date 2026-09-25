@@ -122,8 +122,7 @@ export function verifyPackageCatalog(raw, trust, now = Math.floor(Date.now() / 1
   return {
     catalogId: snapshot.catalog_id, revision: snapshot.revision, expiresAt: snapshot.expires_at,
     checkpoint,
-    baseReleases: snapshot.releases.map((release) => ({ pluginId: release.plugin_id,
-      version: release.version, source: release })),
+    baseReleases: snapshot.releases.map((release) => ({ pluginId: release.plugin_id, version: release.version })),
     releases: snapshot.releases.filter((release) => release.availability === 'listed').map((release) => ({
       pluginId: release.plugin_id, version: release.version, title: release.title,
       summary: release.summary, publisherId: release.publisher_id, sourceUrl: release.source_url,
@@ -140,20 +139,17 @@ export function verifyPackageCatalog(raw, trust, now = Math.floor(Date.now() / 1
   };
 }
 
-export function assertIndependentPackageIdentities(packageBase, linkedBase, portableBase, checkpoints = {}, linkedJoins = new Set()) {
+export function assertIndependentPackageIdentities(packageBase, linkedBase, portableBase, checkpoints = {}) {
   const identities = (base, checkpoint) => new Set([
     ...(base?.baseReleases ?? []).map((release) => `${release.pluginId}@${release.version}`),
     ...Object.keys(checkpoint?.release_identities ?? {}),
   ]);
   const packages = identities(packageBase, checkpoints.package);
-  const linked = identities(linkedBase, checkpoints.linked_cargo);
-  const portable = identities(portableBase, checkpoints.portable);
-  const currentPackage = identities(packageBase, null);
-  const currentLinked = identities(linkedBase, null);
+  const existing = new Set([
+    ...identities(linkedBase, checkpoints.linked_cargo),
+    ...identities(portableBase, checkpoints.portable),
+  ]);
   for (const identity of packages) {
-    if (portable.has(identity) || (linked.has(identity)
-      && !(linkedJoins.has(identity) && currentPackage.has(identity) && currentLinked.has(identity)))) {
-      throw new Error(`package identity conflicts with Portable or unjoined linked Cargo history: ${identity}`);
-    }
+    if (existing.has(identity)) throw new Error(`package-only identity conflicts with Portable or linked Cargo history: ${identity}`);
   }
 }
