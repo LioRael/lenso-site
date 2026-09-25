@@ -123,6 +123,7 @@ export function verifyLinkedCatalog(raw, trust, now = Math.floor(Date.now() / 10
       pluginId: release.plugin_id,
       version: release.version,
       identity: checkpoint.release_identities[`${release.plugin_id}@${release.version}`],
+      source: release,
     })),
     releases: snapshot.releases.filter((release) => release.availability === 'listed').map((release) => ({
       pluginId: release.plugin_id,

@@ -176,6 +176,7 @@ for (const release of signedCatalog.releases) {
 }
 for (const release of signedPackageCatalog.releases) {
   const route = `plugins/${release.pluginId}/${release.version}`;
+  const joined = Boolean(signedPackageCatalog.joinedLinkedBaseIdentities?.[`${release.pluginId}@${release.version}`]);
   requireReleaseNavigationPayload(release.pluginId, release.version);
   const html = requireFile(`${route}/index.html`);
   if (!html.includes(release.title) || !release.distributions.every((item) => html.includes(item.integrity))) {
@@ -187,7 +188,7 @@ for (const release of signedPackageCatalog.releases) {
     const documentRoute = `${route}/docs/${document.slug}`;
     const page = requireFile(`${documentRoute}/index.html`);
     const markdown = requireFile(`api/${documentRoute}/content.md`);
-    if (!page.includes(document.topic) || !page.includes('npm-only package')) failures.push(`out/${documentRoute}/index.html: npm-only document provenance missing`);
+    if (!page.includes(document.topic) || !page.includes(joined ? 'npm package' : 'npm-only package')) failures.push(`out/${documentRoute}/index.html: npm document provenance missing`);
     if (markdown !== signedDocuments[document.slug]?.content || signedDocuments[document.slug]?.channel !== 'package') failures.push(`out/api/${documentRoute}/content.md: npm-only verified Markdown mismatch`);
     if (!pluginSearch.includes(`/${documentRoute}`)) failures.push(`out/api/plugins/search: signed npm-only document missing for ${documentRoute}`);
     if (!sitemap.includes(`/${documentRoute}`)) failures.push(`out/sitemap.xml: signed npm-only document missing for ${documentRoute}`);

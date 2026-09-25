@@ -88,6 +88,9 @@ export type SignedPackageCatalog = {
   catalogId: string | null;
   revision: number | null;
   expiresAt: number | null;
+  linkedDetailsRevision: number | null;
+  linkedDetailsExpiresAt: number | null;
+  joinedLinkedBaseIdentities: Record<string, string>;
   releases: SignedPackageRelease[];
 };
 export const signedPackageCatalog = packageGenerated as SignedPackageCatalog;

@@ -31,7 +31,9 @@ export default async function SignedDocumentationPage({ params }: { params: Para
   const revision = document.channel === 'portable' ? signedPortableCatalog.detailsRevision : catalog.revision;
   const expiresAt = document.channel === 'portable' ? signedPortableCatalog.detailsExpiresAt : catalog.expiresAt;
   const channelLabel = document.channel === 'portable' ? 'Portable'
-    : document.channel === 'package' ? 'npm-only package' : 'linked Cargo';
+    : document.channel === 'package'
+      ? signedPackageCatalog.joinedLinkedBaseIdentities?.[`${pluginId}@${version}`] ? 'npm package' : 'npm-only package'
+      : 'linked Cargo';
   return <div className="linked-doc-shell">
     <SiteHeader active="plugins" />
     <main className="linked-doc-main">

@@ -160,3 +160,53 @@ export function joinPortableReleaseDetails(portable, details) {
       documentation: documentsByRelease.get(`${release.pluginId}@${release.version}`) ?? [] })),
   };
 }
+
+// Both catalogs and the details snapshot must be independently signature-verified
+// before calling this. An equal Plugin ID/version alone is never a join proof.
+export function joinLinkedPackageReleaseDetails(linked, packageBase, details) {
+  if (linked.catalogId !== packageBase.catalogId || linked.catalogId !== details.catalogId) {
+    throw new Error('linked, package, and release details catalogs differ');
+  }
+  const linkedReleases = new Map(linked.baseReleases.map((release) => [`${release.pluginId}@${release.version}`, release]));
+  const packageReleases = new Map(packageBase.baseReleases.map((release) => [`${release.pluginId}@${release.version}`, release]));
+  const detailReleases = new Map(details.releases.map((release) => [`${release.plugin_id}@${release.version}`, release]));
+  const joins = new Set();
+  const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+  for (const [identity, npm] of packageReleases) {
+    const cargo = linkedReleases.get(identity);
+    if (!cargo) continue;
+    const release = detailReleases.get(identity);
+    if (!release || release.base_release_identity !== cargo.identity) {
+      throw new Error(`release details do not bind immutable linked Cargo release: ${identity}`);
+    }
+    const linkedSource = cargo.source;
+    const npmSource = npm.source;
+    if (!linkedSource || !npmSource || !['publisher_id', 'title', 'summary', 'source_url', 'source_revision', 'license']
+      .every((field) => linkedSource[field] === npmSource[field])) {
+      throw new Error(`linked Cargo and npm package release provenance differs: ${identity}`);
+    }
+    if (linkedSource.availability !== 'listed' || npmSource.availability !== 'listed') {
+      throw new Error(`linked Cargo and npm package join requires both listed releases: ${identity}`);
+    }
+    if (release.distributions.some((distribution) => distribution.kind === 'portable_bundle')) {
+      throw new Error(`linked Cargo release details cannot claim Portable: ${identity}`);
+    }
+    const cargoMatches = release.distributions.filter((distribution) => distribution.kind === 'cargo_package'
+      && distribution.package === linkedSource.package && distribution.version === linkedSource.version
+      && distribution.registry_url === linkedSource.registry_url
+      && distribution.integrity === linkedSource.crate_digest
+      && same(distribution.targets ?? [], linkedSource.targets));
+    if (cargoMatches.length !== 1 || release.distributions.filter((distribution) => distribution.kind === 'cargo_package').length !== 1) {
+      throw new Error(`release details do not retain exact linked Cargo distribution: ${identity}`);
+    }
+    const npmDetails = release.distributions.filter((distribution) => distribution.kind === 'npm_package');
+    if (npmDetails.length !== npmSource.distributions.length || !npmSource.distributions.every((source) => npmDetails.some((distribution) =>
+      distribution.id === source.id && distribution.package === source.package
+      && distribution.version === source.version && distribution.registry_url === source.registry_url
+      && distribution.integrity === source.integrity && same(distribution.targets ?? [], source.targets ?? [])))) {
+      throw new Error(`release details do not retain exact npm package distributions: ${identity}`);
+    }
+    joins.add(identity);
+  }
+  return joins;
+}

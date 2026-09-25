@@ -66,6 +66,7 @@ const releases = new Map<string, {
   pageUrl: string;
   apiUrl: string;
   distributions: (ReturnType<typeof linkedDistribution> | ReturnType<typeof portableDistribution> | ReturnType<typeof packageDistribution>)[];
+  linkedPackageDetails: { baseReleaseIdentity: string; revision: number | null; expiresAt: number | null } | null;
   optionalSourceContent: {
     catalogId: string | null;
     catalogRevision: number | null;
@@ -82,6 +83,7 @@ for (const release of signedLinkedCatalog.releases) {
     pageUrl: linkedReleasePath(release.pluginId, release.version),
     apiUrl: `/api/plugins/releases/${encodeURIComponent(release.pluginId)}/${encodeURIComponent(release.version)}/release.json`,
     distributions: [linkedDistribution(release)],
+    linkedPackageDetails: null,
     optionalSourceContent: [],
   });
 }
@@ -95,18 +97,30 @@ for (const release of signedPortableCatalog.releases) {
     pageUrl: linkedReleasePath(release.pluginId, release.version),
     apiUrl: `/api/plugins/releases/${encodeURIComponent(release.pluginId)}/${encodeURIComponent(release.version)}/release.json`,
     distributions: [portableDistribution(release)],
+    linkedPackageDetails: null,
     optionalSourceContent: [],
   });
 }
 for (const release of signedPackageCatalog.releases) {
   const key = `${release.pluginId}\0${release.version}`;
-  if (releases.has(key)) throw new Error(`package-only release conflicts with an existing signed channel: ${release.pluginId}@${release.version}`);
-  releases.set(key, {
+  const identity = `${release.pluginId}@${release.version}`;
+  const existing = releases.get(key);
+  if (existing) {
+    const baseReleaseIdentity = signedPackageCatalog.joinedLinkedBaseIdentities?.[identity];
+    if (!baseReleaseIdentity || existing.distributions.some((item) => item.kind !== 'linked_cargo')) {
+      throw new Error(`npm package release conflicts with an unjoined signed channel: ${identity}`);
+    }
+    existing.distributions.push(packageDistribution(release));
+    existing.linkedPackageDetails = { baseReleaseIdentity,
+      revision: signedPackageCatalog.linkedDetailsRevision,
+      expiresAt: signedPackageCatalog.linkedDetailsExpiresAt };
+  } else releases.set(key, {
     pluginId: release.pluginId,
     version: release.version,
     pageUrl: linkedReleasePath(release.pluginId, release.version),
     apiUrl: `/api/plugins/releases/${encodeURIComponent(release.pluginId)}/${encodeURIComponent(release.version)}/release.json`,
     distributions: [packageDistribution(release)],
+    linkedPackageDetails: null,
     optionalSourceContent: [],
   });
 }
@@ -141,7 +155,8 @@ export function signedPluginDirectory() {
       portable: { catalogId: signedPortableCatalog.catalogId, revision: signedPortableCatalog.revision, expiresAt: signedPortableCatalog.expiresAt,
         detailsRevision: signedPortableCatalog.detailsRevision, detailsExpiresAt: signedPortableCatalog.detailsExpiresAt },
       package: { catalogId: signedPackageCatalog.catalogId, revision: signedPackageCatalog.revision,
-        expiresAt: signedPackageCatalog.expiresAt },
+        expiresAt: signedPackageCatalog.expiresAt, linkedDetailsRevision: signedPackageCatalog.linkedDetailsRevision,
+        linkedDetailsExpiresAt: signedPackageCatalog.linkedDetailsExpiresAt },
       optionalSourceContent: { catalogId: signedReleaseContent.catalogId, revision: signedReleaseContent.revision,
         expiresAt: signedReleaseContent.expiresAt },
     },

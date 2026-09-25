@@ -4,7 +4,7 @@ import { verifyLinkedCatalog } from './linked-catalog.mjs';
 import { documentSlug, ingestVerifiedDocuments } from './linked-documents.mjs';
 import { verifyPortableCatalog } from './portable-catalog.mjs';
 import { assertIndependentPackageIdentities, verifyPackageCatalog } from './package-catalog.mjs';
-import { joinPortableReleaseDetails, verifyReleaseDetails } from './release-details.mjs';
+import { joinLinkedPackageReleaseDetails, joinPortableReleaseDetails, verifyReleaseDetails } from './release-details.mjs';
 import { joinReleaseContent, verifyReleaseContent } from './release-content.mjs';
 import { checkpointConfig, loadCheckpointBundle, nextCheckpointBundle, stageCheckpointBundle } from './catalog-checkpoint-files.mjs';
 
@@ -23,7 +23,7 @@ if ([linkedUrl, portableUrl, packageUrl, detailsUrl, contentUrl, ...trustValues]
   && (!(linkedUrl || portableUrl || packageUrl) || trustValues.some((value) => !value))) {
   throw new Error(`signed catalog build requires at least one snapshot URL and all of ${trustNames.join(', ')}`);
 }
-if (detailsUrl && !portableUrl) throw new Error('release details require the signed Portable base snapshot');
+if (detailsUrl && !(portableUrl || linkedUrl)) throw new Error('release details require a signed Portable or linked Cargo base snapshot');
 if (contentUrl && !(linkedUrl || portableUrl)) throw new Error('release content requires a signed base snapshot');
 const trust = { catalogId: trustValues[0], keyId: trustValues[1], publicKeyHex: trustValues[2] };
 const checkpoint = checkpointConfig(process.env, Boolean(linkedUrl || portableUrl || packageUrl));
@@ -51,7 +51,8 @@ async function fetchSnapshot(endpoint) {
 
 let catalog = { catalogId: null, revision: null, expiresAt: null, releases: [] };
 let portableCatalog = { catalogId: null, revision: null, expiresAt: null, detailsRevision: null, detailsExpiresAt: null, releases: [] };
-let packageCatalog = { catalogId: null, revision: null, expiresAt: null, releases: [] };
+let packageCatalog = { catalogId: null, revision: null, expiresAt: null,
+  linkedDetailsRevision: null, linkedDetailsExpiresAt: null, joinedLinkedBaseIdentities: {}, releases: [] };
 let contentCatalog = { catalogId: null, revision: null, expiresAt: null, releases: [] };
 let linkedBase;
 let portableBase;
@@ -67,11 +68,20 @@ if (linkedUrl) {
 if (portableUrl) {
   portableBase = verifyPortableCatalog(await fetchSnapshot(portableUrl), trust, now, previous.bundle.portable);
   updates.portable = portableBase.checkpoint;
-  let details;
-  if (detailsUrl) {
-    details = verifyReleaseDetails(await fetchSnapshot(detailsUrl), trust, now, previous.bundle.release_details);
-    updates.release_details = details.checkpoint;
-  }
+}
+if (packageUrl) {
+  packageBase = verifyPackageCatalog(await fetchSnapshot(packageUrl), trust, now, previous.bundle.package ?? null);
+  updates.package = packageBase.checkpoint;
+  packageCatalog = { catalogId: packageBase.catalogId, revision: packageBase.revision,
+    expiresAt: packageBase.expiresAt, linkedDetailsRevision: null,
+    linkedDetailsExpiresAt: null, joinedLinkedBaseIdentities: {}, releases: packageBase.releases };
+}
+let details;
+if (detailsUrl) {
+  details = verifyReleaseDetails(await fetchSnapshot(detailsUrl), trust, now, previous.bundle.release_details);
+  updates.release_details = details.checkpoint;
+}
+if (portableBase) {
   portableCatalog = details
     ? joinPortableReleaseDetails(portableBase, details)
     : { catalogId: portableBase.catalogId, revision: portableBase.revision,
@@ -81,13 +91,16 @@ if (portableUrl) {
     documentation: release.documentation.map((document) => ({ ...document,
       slug: documentSlug(release.pluginId, release.version, document, 'portable') })) }));
 }
-if (packageUrl) {
-  packageBase = verifyPackageCatalog(await fetchSnapshot(packageUrl), trust, now, previous.bundle.package ?? null);
-  updates.package = packageBase.checkpoint;
-  packageCatalog = { catalogId: packageBase.catalogId, revision: packageBase.revision,
-    expiresAt: packageBase.expiresAt, releases: packageBase.releases };
+const linkedJoins = linkedBase && packageBase && details
+  ? joinLinkedPackageReleaseDetails(linkedBase, packageBase, details) : new Set();
+assertIndependentPackageIdentities(packageBase, linkedBase, portableBase, previous?.bundle, linkedJoins);
+if (linkedJoins.size > 0) {
+  packageCatalog.joinedLinkedBaseIdentities = Object.fromEntries(linkedBase.baseReleases
+    .filter((release) => linkedJoins.has(`${release.pluginId}@${release.version}`))
+    .map((release) => [`${release.pluginId}@${release.version}`, release.identity]));
+  packageCatalog.linkedDetailsRevision = details.revision;
+  packageCatalog.linkedDetailsExpiresAt = details.expiresAt;
 }
-assertIndependentPackageIdentities(packageBase, linkedBase, portableBase, previous?.bundle);
 if (contentUrl) {
   const content = verifyReleaseContent(await fetchSnapshot(contentUrl), trust, now,
     previous.bundle.release_content ?? null);
@@ -113,4 +126,4 @@ await writeFile(resolve(import.meta.dirname, '../lib/.generated/release-content.
 await writeFile(resolve(import.meta.dirname, '../lib/.generated/linked-documents.json'), `${JSON.stringify(documents)}\n`);
 if (checkpoint) await stageCheckpointBundle(checkpoint,
   nextCheckpointBundle(previous.bundle, updates), previous.inputDigest);
-console.log(`Signed Site catalogs: linked ${catalog.catalogId ? `${catalog.catalogId} revision ${catalog.revision} (${catalog.releases.length} listed releases)` : 'not configured'}; portable ${portableCatalog.catalogId ? `${portableCatalog.catalogId} revision ${portableCatalog.revision} (${portableCatalog.releases.length} listed releases)` : 'not configured'}; package ${packageCatalog.catalogId ? `${packageCatalog.catalogId} revision ${packageCatalog.revision} (${packageCatalog.releases.length} listed releases)` : 'not configured'}; details ${portableCatalog.detailsRevision ?? 'not configured'}; content ${contentCatalog.revision ?? 'not configured'}; verified Markdown ${Object.keys(documents).length}.`);
+console.log(`Signed Site catalogs: linked ${catalog.catalogId ? `${catalog.catalogId} revision ${catalog.revision} (${catalog.releases.length} listed releases)` : 'not configured'}; portable ${portableCatalog.catalogId ? `${portableCatalog.catalogId} revision ${portableCatalog.revision} (${portableCatalog.releases.length} listed releases)` : 'not configured'}; package ${packageCatalog.catalogId ? `${packageCatalog.catalogId} revision ${packageCatalog.revision} (${packageCatalog.releases.length} listed releases)` : 'not configured'}; details ${details?.revision ?? 'not configured'}; linked+npm joins ${Object.keys(packageCatalog.joinedLinkedBaseIdentities).length}; content ${contentCatalog.revision ?? 'not configured'}; verified Markdown ${Object.keys(documents).length}.`);

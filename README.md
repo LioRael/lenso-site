@@ -74,12 +74,20 @@ To include current Portable releases in a static build, set
 `/api/marketplace/v1/snapshot` endpoint. To include source-only linked Cargo
 releases, set `LENSO_MARKETPLACE_LINKED_CARGO_URL` to its HTTPS
 `/api/marketplace/v1/linked-cargo` endpoint. These inputs may be configured independently.
-For independently signed npm-only Plugin releases with no Portable base, set
+For independently signed npm Plugin releases with no Portable base, set
 `LENSO_MARKETPLACE_PACKAGE_URL` to an operator-approved HTTPS endpoint serving
-the raw `lenso.marketplace.package-snapshot.v1` envelope. This is a separate
-channel: if its Plugin ID and version occur in current or checkpointed Portable
-or linked Cargo history, the build fails rather than merging distributions.
-No public npm-only listing appears without this signed input. Site displays
+the raw `lenso.marketplace.package-snapshot.v1` envelope. A package-only
+identity remains independent. If its Plugin ID and version collide with
+current or checkpointed Portable history, or with unbound linked Cargo history,
+the build fails. To show one linked Cargo + npm release, configure both signed
+base snapshots and `LENSO_MARKETPLACE_RELEASE_DETAILS_URL`. Site only joins
+currently listed releases when their publisher/source metadata match and the
+signed details bind the exact immutable linked Cargo identity, Cargo package,
+registry, digest and targets, plus every exact npm distribution. Missing,
+expired, mismatched or unlisted join evidence fails closed. Release-details
+v1 requires npm package versions to equal the logical Plugin version for this
+join; independently versioned npm-only listings remain supported.
+No public npm listing appears without its signed input. Site displays
 the exact npm package version and SHA-256 separately from the logical Plugin
 version; it does not install packages or claim a public CLI adoption path.
 `pnpm check:package-site-integration` uses a temporary signing key and local
@@ -88,7 +96,8 @@ and checkpoint. It is not a published registry or operator trust root.
 To attach versioned Portable Markdown, also set
 `LENSO_MARKETPLACE_RELEASE_DETAILS_URL` to the raw signed HTTPS
 `/api/marketplace/v1/release-details` endpoint; this requires the Portable
-base snapshot. The build verifies the separate details signature, validity
+base snapshot. The same details endpoint can bind a linked Cargo + npm release
+without a Portable base. The build verifies the separate details signature, validity
 window and exact immutable base-release identity before displaying any
 document reference. The details endpoint supplies signed URL, byte length and
 SHA-256 metadata, **not** hosted or sanitized document bytes.
@@ -131,7 +140,7 @@ one of:
   only. Never use bootstrap to recover from a missing prior checkpoint.
 
 Site validates the previous Portable, release-details, linked Cargo, optional
-npm-only package, and optional release-content checkpoints, including historical immutable release,
+npm package, and optional release-content checkpoints, including historical immutable release,
 content and document identities, revision rollback and same-revision
 equivocation. An omitted channel keeps
 its previous history. Only after static generation and published-output checks
@@ -144,7 +153,10 @@ bootstrap reset, no cross-deployment anti-rollback guarantee exists. Unsigned
 local builds need none of these settings and retain an empty signed directory.
 The directory searches configured signed channels with the same filters
 and links each listed identity to an exact-version page,
-while labeling their different distribution and target evidence. A Portable
+while labeling their different distribution and target evidence. A verified
+linked Cargo + npm join appears as one release and one API entry with both
+distribution records; its distinct signed Markdown stays under separate
+channel-specific routes and search results. A Portable
 base snapshot does not declare target compatibility or carry versioned
 documentation. Without matching signed release details, its version page
 reports no versioned Markdown rather than substituting linked or candidate

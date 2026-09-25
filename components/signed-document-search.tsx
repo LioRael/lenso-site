@@ -32,7 +32,7 @@ type Props = {
   target?: string;
   distribution?: string;
   catalogStatus?: string;
-  currentSigned: { linked: boolean; portableDetails: boolean; package: boolean };
+  currentSigned: { linked: boolean; portableDetails: boolean; package: boolean; linkedPackageDetails: boolean };
 };
 
 export function SignedDocumentSearch({ query, target, distribution, catalogStatus, currentSigned }: Props) {
@@ -61,11 +61,13 @@ export function SignedDocumentSearch({ query, target, distribution, catalogStatu
       return currentSigned.portableDetails && !target && (!distribution || distribution === 'Portable') ? [{ url, ...entry }] : [];
     }
     if (entry.channel === 'package') {
+      const joined = Boolean(signedPackageCatalog.joinedLinkedBaseIdentities?.[`${entry.release.pluginId}@${entry.release.version}`]);
       const targets = entry.release.distributions.flatMap((item) => item.targets);
       const targetMatches = !target || (target === 'Native'
         ? targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value))
         : targets.some((value) => value === 'workers' || value === 'cloudflare-workers'));
-      return currentSigned.package && targetMatches && (!distribution || distribution === 'npm package') ? [{ url, ...entry }] : [];
+      return currentSigned.package && (!joined || (currentSigned.linked && currentSigned.linkedPackageDetails))
+        && targetMatches && (!distribution || distribution === 'npm package') ? [{ url, ...entry }] : [];
     }
     const native = entry.release.targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value));
     return currentSigned.linked && (!target || (target === 'Native' && native))

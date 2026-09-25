@@ -63,7 +63,10 @@ export default async function PluginReleasePage({ params }: { params: Params }) 
   const linked = findLinked(pluginId, version);
   const portable = findPortable(pluginId, version);
   const npmPackage = findPackage(pluginId, version);
-  if (linked) return <SignedReleasePage release={linked} portable={portable} />;
+  if (linked && npmPackage && (!signedPackageCatalog.joinedLinkedBaseIdentities?.[`${pluginId}@${version}`] || portable)) {
+    throw new Error(`npm package is not joined to the exact linked Cargo release: ${pluginId}@${version}`);
+  }
+  if (linked) return <SignedReleasePage release={linked} portable={portable} npmPackage={npmPackage} />;
   if (portable) return <SignedPortableReleasePage release={portable} />;
   if (npmPackage) return <SignedPackageReleasePage release={npmPackage} />;
   if (pluginId === candidateRelease.pluginId && version === candidateRelease.version) return <CandidateDocumentation />;
@@ -119,7 +122,9 @@ function SignedPackageReleasePage({ release }: { release: SignedPackageRelease }
   </div>;
 }
 
-function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease; portable?: SignedPortableRelease }) {
+function SignedReleasePage({ release, portable, npmPackage }: {
+  release: SignedLinkedRelease; portable?: SignedPortableRelease; npmPackage?: SignedPackageRelease;
+}) {
   const otherVersions = signedLinkedCatalog.releases.filter((item) => item.pluginId === release.pluginId && item.version !== release.version);
   const genericAdoption = release.integration === 'linked_plugin' && release.registryUrl === 'https://crates.io';
   const adoptCommand = `lenso app add ${release.pluginId}@${release.version} --linked-snapshot ./linked-cargo-snapshot.json --trust ./catalog-trust.json --crate ./${release.package}-${release.version}.crate`;
@@ -128,10 +133,12 @@ function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease
     <main className="linked-doc-main">
       <nav aria-label="Breadcrumb" className="linked-doc-breadcrumb"><Link href="/plugins">Plugins</Link><span>/</span><span>{release.pluginId}@{release.version}</span></nav>
       <header className="linked-doc-header">
-        <p className="linked-doc-eyebrow">{portable ? 'Listed in signed Portable and linked Cargo catalogs' : 'Listed in signed linked Cargo catalog'}</p>
+        <p className="linked-doc-eyebrow">{portable ? 'Listed in signed Portable and linked Cargo catalogs'
+          : npmPackage ? 'Listed in signed linked Cargo and npm package catalogs' : 'Listed in signed linked Cargo catalog'}</p>
         <h1>{release.title}</h1>
         <p>{release.summary}</p>
         {portable && <p>This identifier and version appear in two independently signed channels. Site does not claim their artifacts are interchangeable or derived from one another.</p>}
+        {npmPackage && <p>A separate signed release-details record binds the npm distribution to this exact immutable linked Cargo release. Each package still needs its own registry-byte and local build checks.</p>}
       </header>
       <aside className="linked-doc-provenance">
         <strong>Catalog evidence, not an installation</strong>
@@ -160,6 +167,7 @@ function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease
           <p>This is a local Host build input, not a portable runtime bundle. Inspect the resolved App and build/check it before use. The Site cannot grant local filesystem access.</p>
         </> : <p>This release requires a product Host-specific integration or a registry unsupported by generic <code>lenso app add</code>. Do not use the generic adoption command.</p>}
       </section>
+      {npmPackage && <NpmPackageAlongsideLinked release={npmPackage} />}
       <ReleaseContentFor pluginId={release.pluginId} version={release.version} baseKind="linked_cargo" />
       {portable && <><PortableAdoption release={portable} alongsideLinked />
         <ReleaseContentFor pluginId={portable.pluginId} version={portable.version} baseKind="portable" /></>}
@@ -169,9 +177,35 @@ function SignedReleasePage({ release, portable }: { release: SignedLinkedRelease
           <Link href={linkedDocumentPath(release.pluginId, release.version, document.slug)}>{document.topic}</Link> · {document.language} · revision {document.revision}{document.target ? ` · ${document.target}` : ''}
         </li>)}</ul>}
       </section>
+      {npmPackage && <section className="linked-release-section" aria-labelledby="npm-release-docs-heading">
+        <h2 id="npm-release-docs-heading">npm package documentation for {npmPackage.version}</h2>
+        {npmPackage.documentation.length > 0 ? <ul>{npmPackage.documentation.map((document) => <li key={`${document.id}@${document.revision}`}>
+          <Link href={linkedDocumentPath(npmPackage.pluginId, npmPackage.version, document.slug)}>{document.topic}</Link> · {document.language} · revision {document.revision}{document.target ? ` · ${document.target}` : ''}
+        </li>)}</ul> : <p>No versioned Markdown is attached to the npm package snapshot.</p>}
+      </section>}
       {portable && <PortableDocumentationState release={portable} />}
     </main>
   </div>;
+}
+
+function NpmPackageAlongsideLinked({ release }: { release: SignedPackageRelease }) {
+  const identity = `${release.pluginId}@${release.version}`;
+  const baseIdentity = signedPackageCatalog.joinedLinkedBaseIdentities?.[identity];
+  if (!baseIdentity) throw new Error(`missing signed linked Cargo details join: ${identity}`);
+  return <section className="linked-release-section" aria-labelledby="npm-adoption-heading">
+    <h2 id="npm-adoption-heading">Exact npm distribution</h2>
+    <p>This is a separate signed registry package reference, joined by release-details revision {signedPackageCatalog.linkedDetailsRevision} to linked Cargo base <code>{baseIdentity}</code>. The details snapshot expires {signedPackageCatalog.linkedDetailsExpiresAt ? new Date(signedPackageCatalog.linkedDetailsExpiresAt * 1000).toISOString() : 'at an unknown time'}; the package snapshot expires {signedPackageCatalog.expiresAt ? new Date(signedPackageCatalog.expiresAt * 1000).toISOString() : 'at an unknown time'}. Reverify both snapshots and registry bytes before adoption. This Site does not claim a public CLI npm adoption path or a Portable Bundle.</p>
+    {release.distributions.map((distribution) => <div key={distribution.id} className="linked-release-section release-content-entry">
+      <h3>{distribution.id}</h3>
+      <ProvenanceFacts items={[
+        ['npm package', <code key="package">{distribution.package}</code>],
+        ['npm package version', distribution.version],
+        ['Package integrity SHA-256', <code key="integrity">{distribution.integrity}</code>],
+        ['Declared targets', distribution.targets.length ? distribution.targets.join(', ') : 'Not declared'],
+        ['Registry', <a key="registry" href={distribution.registryUrl} rel="noopener noreferrer" target="_blank">{distribution.registryUrl}</a>],
+      ]} />
+    </div>)}
+  </section>;
 }
 
 function SignedPortableReleasePage({ release }: { release: SignedPortableRelease }) {
