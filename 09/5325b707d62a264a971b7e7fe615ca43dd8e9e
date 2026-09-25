@@ -1,0 +1,61 @@
+app/plugins/[pluginId]/[version]/page.tsx
+  s_7d146975368699::t_0e22f0d103f6e5 187
+  s_7d146975368699::t_eff099c4f204ca 70-71,128,130,139,143,172,182-186,193-195,199
+  s_7d146975368699::t_33e42ccd357fc1 14-17,106,116,198,208
+README.md
+  s_7d146975368699::t_f77687e0a3fb94 77,79-88,99,156
+  s_7d146975368699::t_7aa9e1ee996187 89
+scripts/release-details.mjs
+  s_7d146975368699::t_dd36f34f9887db 164-165,167,172-174,176,180-181,183,195-205
+  s_7d146975368699::t_0da88446cbfe92 166,170,177-179
+app/plugins/[pluginId]/[version]/docs/[slug]/page.tsx
+  s_7d146975368699::t_eff099c4f204ca 31-36,38-39,52-54
+scripts/package-catalog.mjs
+  s_7d146975368699::t_dd36f34f9887db 125,142,148-151,153
+components/signed-document-search.tsx
+  s_7d146975368699::t_c32862f0a88361 12,20-23,40,73-75,81,98
+  s_7d146975368699::t_c7595095eda8ab 76-77,82-83,99
+  s_7d146975368699::t_e993bd19617680 78-80
+lib/signed-plugin-directory.ts
+  s_7d146975368699::t_f4f36dcf70ed3b 31-32
+  s_7d146975368699::t_17d10c15f2cb72 37-57,95,106,112,131-132,172
+  s_7d146975368699::t_3197a6a86f7eb3 33-36
+lib/linked-documents.ts
+  s_7d146975368699::t_a98f8ad1cc938c 6
+components/plugin-directory.tsx
+  s_7d146975368699::t_a8ac21cb6e2399 12-13,15,27,42,45,47,56,59,65,84,159-160
+  s_7d146975368699::t_641824bc0d4df4 174-179
+  s_7d146975368699::t_cf69ac20854d9c 172-173
+lib/plugin-candidates.ts
+  s_7d146975368699::t_f5e01ca2f5f2ff 20-26
+scripts/check-published-output.mjs
+  s_7d146975368699::t_db064119ec7137 112-113,118-122,130-131,197-205,220
+  s_7d146975368699::t_f77687e0a3fb94 182-185
+  s_7d146975368699::t_f4f36dcf70ed3b 141-150
+scripts/linked-documents.mjs
+  s_7d146975368699::t_a98f8ad1cc938c 7,11-12
+scripts/linked-package-join.test.mjs
+  s_7d146975368699::t_daec7f3a61296c 3-5,7,51,53,110-172,175-176
+  s_7d146975368699::t_cd0aa0599d7c48 10,31,39-48,57-61,64-85,88-96,99,101,103-109
+scripts/linked-documents.test.mjs
+  s_7d146975368699::t_7aa9e1ee996187 68-72
+scripts/ingest-linked-catalog.mjs
+  s_7d146975368699::t_c47d6b9d164c75 7,54,75,82,84-89,100,117-119,129
+  s_7d146975368699::t_0da88446cbfe92 83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "095325b707d62a264a971b7e7fe615ca43dd8e9e",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
