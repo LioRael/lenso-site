@@ -8,12 +8,19 @@ import { CopyCommand } from '@/components/copy-command';
 import { SiteHeader } from '@/components/site-header';
 import { candidateRelease, signedLinkedCatalog, signedPackageCatalog, signedPortableCatalog, signedReleaseContent, type SignedLinkedRelease, type SignedPackageRelease, type SignedPortableRelease, type SignedReleaseContent } from '@/lib/plugin-candidates';
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
-import { npmTargetMatches } from '@/lib/plugin-targets';
 
 type Params = Promise<{ pluginId: string; version: string }>;
 
 function shellArgument(value: string) {
   return `'${value.replaceAll("'", "'\\''")}'`;
+}
+
+function hasGenericNativeTarget(targets: readonly string[]) {
+  return targets.length === 0 || targets.includes('*');
+}
+
+function TargetSpecificNpmNote({ targets }: { targets: readonly string[] }) {
+  return <p>Declared targets: <code>{targets.join(', ')}</code>. This Site cannot verify your Host target, so it does not offer a generic Native <code>lenso app add</code> command.</p>;
 }
 
 export const dynamicParams = false;
@@ -104,7 +111,7 @@ function SignedPackageReleasePage({ release }: { release: SignedPackageRelease }
       {otherVersions.length > 0 && <section className="linked-release-section"><h2>Other listed Plugin versions</h2><ul>{otherVersions.map((item) => <li key={item.version}><Link href={linkedReleasePath(item.pluginId, item.version)}>{item.version}</Link></li>)}</ul></section>}
       <section className="linked-release-section">
         <h2>Exact npm distributions</h2>
-        <p>These are signed registry package references. A package version can differ from the Plugin release version; the Site does not equate them. For a Native-compatible distribution, the source-built candidate CLI supports local package-only adoption from a current signed snapshot and exact <code>.tgz</code>, but this is not a claim that the CLI or package is publicly available. Verify registry availability, package bytes, lifecycle-script policy and runtime separately.</p>
+        <p>These are signed registry package references. A package version can differ from the Plugin release version; the Site does not equate them. For a distribution with no Native target restriction, the source-built candidate CLI supports local package-only adoption from a current signed snapshot and exact <code>.tgz</code>, but this is not a claim that the CLI or package is publicly available. Verify registry availability, package bytes, lifecycle-script policy and runtime separately.</p>
         {release.distributions.map((distribution) => <div key={distribution.id} className="linked-release-section release-content-entry">
           <h3>{distribution.id}</h3>
           <ProvenanceFacts items={[
@@ -114,9 +121,9 @@ function SignedPackageReleasePage({ release }: { release: SignedPackageRelease }
             ['Declared targets', distribution.targets.length ? distribution.targets.join(', ') : 'No Native restriction declared; Workers not declared'],
             ['Registry', <a key="registry" href={distribution.registryUrl} rel="noopener noreferrer" target="_blank">{distribution.registryUrl}</a>],
           ]} />
-          {npmTargetMatches([distribution], 'Native')
+          {hasGenericNativeTarget(distribution.targets)
             ? <AdoptionCommandPanel command={`lenso app add ${release.pluginId}@${release.version} --package-snapshot ./package-snapshot.json --trust ./catalog-trust.json --tgz ./exact-package.tgz --distribution ${shellArgument(distribution.id)}`} label="Source-built candidate CLI · local Native App" />
-            : <p>No generic <code>lenso app add</code> command is available for this non-Native distribution.</p>}
+            : <TargetSpecificNpmNote targets={distribution.targets} />}
         </div>)}
       </section>
       <section className="linked-release-section"><h2>Documentation for {release.version}</h2>
@@ -198,7 +205,7 @@ function NpmPackageAlongsideLinked({ release }: { release: SignedLinkedRelease }
   if (!details?.npmDistributions.length) throw new Error(`missing signed linked Cargo details join: ${release.pluginId}@${release.version}`);
   return <section className="linked-release-section" aria-labelledby="npm-adoption-heading">
     <h2 id="npm-adoption-heading">Exact npm distribution</h2>
-    <p>The signed release-details revision {details.revision} binds this npm reference to linked Cargo base <code>{details.baseReleaseIdentity}</code>; it expires {new Date(details.expiresAt * 1000).toISOString()}. For Native-compatible distributions, the source-built candidate CLI can check the exact signed snapshots and local <code>.tgz</code> shown below. A signed reference does not prove npm registry availability, a public CLI release or a Portable Bundle. Review build inputs and grant any later build trust separately.</p>
+    <p>The signed release-details revision {details.revision} binds this npm reference to linked Cargo base <code>{details.baseReleaseIdentity}</code>; it expires {new Date(details.expiresAt * 1000).toISOString()}. For distributions without a Native target restriction, the source-built candidate CLI can check the exact signed snapshots and local <code>.tgz</code> shown below. A signed reference does not prove npm registry availability, a public CLI release or a Portable Bundle. Review build inputs and grant any later build trust separately.</p>
     {details.npmDistributions.map((distribution) => <div key={distribution.id} className="linked-release-section release-content-entry">
       <h3>{distribution.id}</h3>
       <ProvenanceFacts items={[
@@ -208,9 +215,9 @@ function NpmPackageAlongsideLinked({ release }: { release: SignedLinkedRelease }
         ['Declared targets', distribution.targets.length ? distribution.targets.join(', ') : 'No Native restriction declared; Workers not declared'],
         ['Registry', <a key="registry" href={distribution.registryUrl} rel="noopener noreferrer" target="_blank">{distribution.registryUrl}</a>],
       ]} />
-      {npmTargetMatches([distribution], 'Native')
+      {hasGenericNativeTarget(distribution.targets)
         ? <AdoptionCommandPanel command={`lenso app add ${release.pluginId}@${release.version} --linked-snapshot ./linked-cargo-snapshot.json --release-details ./release-details-snapshot.json --trust ./catalog-trust.json --tgz ./exact-package.tgz --distribution ${shellArgument(distribution.id)}`} label="Source-built candidate CLI · local Native App" />
-        : <p>No generic <code>lenso app add</code> command is available for this non-Native distribution.</p>}
+        : <TargetSpecificNpmNote targets={distribution.targets} />}
     </div>)}
   </section>;
 }

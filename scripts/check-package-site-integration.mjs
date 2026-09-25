@@ -69,6 +69,9 @@ try {
             { id: 'native', kind: 'npm_package', package: '@example/bun-plugin',
               version: '2.1.0', integrity: `sha256:${'b'.repeat(64)}`,
               registry_url: 'https://registry.npmjs.org', targets: [] },
+            { id: 'linux', kind: 'npm_package', package: '@example/bun-plugin',
+              version: '2.1.0', integrity: `sha256:${'b'.repeat(64)}`,
+              registry_url: 'https://registry.npmjs.org', targets: ['aarch64-unknown-linux-gnu'] },
           ],
           documentation: [{ ...document, url: `https://127.0.0.1:${port}/quickstart.md` }],
         }],
@@ -116,7 +119,8 @@ try {
   assert.match(page, /2\.1\.0/);
   assert.match(page, /app add example\.bun@1\.0\.0[^<]*--distribution &#x27;native&#x27;/);
   assert.doesNotMatch(page, /--distribution &#x27;bun&#x27;/);
-  assert.match(page, /No generic <code>lenso app add<\/code> command is available for this non-Native distribution/);
+  assert.doesNotMatch(page, /--distribution &#x27;linux&#x27;/);
+  assert.match(page, /Declared targets: <code>aarch64-unknown-linux-gnu<\/code>\. This Site cannot verify your Host target/);
   assert.match(documentPage, /npm-only package/);
   assert.equal(markdown, body.toString());
   console.log('Signed npm-only fixture exposed an exact release and independently verified versioned Markdown without a Portable base.');
