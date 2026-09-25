@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign } from 'node:crypto';
 import { test } from 'node:test';
+import { validateCheckpoint } from './catalog-checkpoints.mjs';
 import { assertIndependentPackageIdentities, verifyPackageCatalog } from './package-catalog.mjs';
 
 const { privateKey, publicKey } = generateKeyPairSync('ed25519');
@@ -98,6 +99,21 @@ test('package documentation history keeps separator-bearing IDs distinct', () =>
   assert.equal(keys.length, 2);
   assert.ok(keys.includes(JSON.stringify(['example.bun', '1.0.0', 'a@b', 'c'])));
   assert.ok(keys.includes(JSON.stringify(['example.bun', '1.0.0', 'a', 'b@c'])));
+});
+
+test('valid long npm-only document identity fits the widened checkpoint key limit', () => {
+  const longPluginId = `${'a'.repeat(63)}.${'b'.repeat(63)}.${'c'.repeat(63)}.${'d'.repeat(61)}`;
+  const longVersion = `1.0.0+${'e'.repeat(122)}`;
+  const longDocument = { ...document, id: 'f'.repeat(128), revision: 'g'.repeat(128) };
+  const key = JSON.stringify([longPluginId, longVersion, longDocument.id, longDocument.revision]);
+  assert.ok(Buffer.byteLength(key) > 640 && Buffer.byteLength(key) <= 1024);
+  const verified = verifyPackageCatalog(envelope({ ...snapshot, releases: [{ ...release,
+    plugin_id: longPluginId, version: longVersion, documentation: [longDocument] }] }), trust, 150);
+  assert.ok(verified.checkpoint.document_identities[key]);
+  assert.throws(() => validateCheckpoint(verified.checkpoint, 'linked', 'test'), /identity/);
+  assert.throws(() => validateCheckpoint({ ...verified.checkpoint,
+    document_identities: { ['x'.repeat(1025)]: `sha256:${'a'.repeat(64)}` },
+  }, 'package', 'test'), /identity/);
 });
 
 test('explicit nullable document target matches Rust optional-field identity', () => {

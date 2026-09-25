@@ -12,11 +12,11 @@ const object = (value) => value !== null && typeof value === 'object' && !Array.
 const exactKeys = (value, keys) => object(value)
   && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
 
-function validateHistory(map, limit, maxBytes = Infinity) {
+function validateHistory(map, limit, maxBytes = Infinity, maxIdentityBytes = 640) {
   if (!object(map) || Object.keys(map).length > limit) throw new Error('catalog checkpoint history exceeds entry limit');
   let bytes = 0;
   for (const [identity, identityDigest] of Object.entries(map)) {
-    if (!identity || Buffer.byteLength(identity, 'utf8') > 640 || !digest.test(identityDigest)) {
+    if (!identity || Buffer.byteLength(identity, 'utf8') > maxIdentityBytes || !digest.test(identityDigest)) {
       throw new Error('invalid catalog checkpoint history identity or digest');
     }
     bytes += Buffer.byteLength(identity, 'utf8') + Buffer.byteLength(identityDigest, 'utf8');
@@ -37,14 +37,15 @@ export function validateCheckpoint(checkpoint, channel, catalogId) {
   }
   const maxReleases = channel === 'portable' ? 65_536 : 16_384;
   const maxDocuments = channel === 'portable' ? 0 : 65_536;
+  const maxIdentityBytes = channel === 'package' ? 1024 : 640;
   validateHistory(checkpoint.release_identities, maxReleases,
-    channel === 'portable' ? Infinity : 8 * 1024 * 1024);
+    channel === 'portable' ? Infinity : 8 * 1024 * 1024, maxIdentityBytes);
   if (channel === 'content' && Object.keys(checkpoint.release_identities)
     .some((identity) => Buffer.byteLength(identity, 'utf8') > 512)) {
     throw new Error('release content checkpoint identity exceeds limit');
   }
   if (documents) {
-    validateHistory(checkpoint.document_identities, maxDocuments);
+    validateHistory(checkpoint.document_identities, maxDocuments, Infinity, maxIdentityBytes);
     const totalBytes = [...Object.entries(checkpoint.release_identities), ...Object.entries(checkpoint.document_identities)]
       .reduce((sum, [identity, value]) => sum + Buffer.byteLength(identity) + Buffer.byteLength(value), 0);
     if (totalBytes > 8 * 1024 * 1024) throw new Error(`${channel} catalog checkpoint history exceeds byte limit`);
