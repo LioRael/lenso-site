@@ -1,0 +1,24 @@
+README.md
+  s_7d146975368699::t_942f1ba420bbd8 149-164
+package.json
+  s_7d146975368699::t_942f1ba420bbd8 13
+scripts/check-real-linked-adoption.mjs
+  s_7d146975368699::t_e731d1967f5f02 147
+  s_7d146975368699::t_ccbaf9ba17c209 1-146,148-189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "237ff5500cba9cb74b6d3337f81688b69f21cb6f",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
