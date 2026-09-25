@@ -124,6 +124,7 @@ export function PluginDirectory() {
           </article>)}
         </section>
         <h2>Candidate releases</h2>
+        <p>The unsigned Web 0.4.5 candidate is a migration-era example from the former <code>lenso-web</code> repository. <a href={candidateRelease.maintainedSourceUrl}>Current Web source lives in the consolidated Rust repository</a>; this historical entry is not a current signed release.</p>
         <div className="release-table" role="table" aria-label="Candidate Plugin releases">
           <div className="release-row release-head" role="row">
             <span role="columnheader">Plugin ID</span><span role="columnheader">Description</span><span role="columnheader">Version</span><span role="columnheader">Distribution</span><span role="columnheader">Target</span><span role="columnheader">Catalog status</span><span role="columnheader">Action</span>

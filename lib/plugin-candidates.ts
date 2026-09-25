@@ -74,4 +74,5 @@ export const candidateRelease = {
   sourceTag: 'lenso-web-ingress-plugin-v0.4.5',
   sourceRevision: '0e93f1149ac1b0905a51d76692d369a028f3a532',
   sourceUrl: 'https://github.com/LioRael/lenso-web/commit/0e93f1149ac1b0905a51d76692d369a028f3a532',
+  maintainedSourceUrl: 'https://github.com/LioRael/lenso/tree/main/crates/lenso-web-ingress-plugin',
 } as const;

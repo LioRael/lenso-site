@@ -19,6 +19,7 @@ export function CandidateDocumentation() {
           <p className="breadcrumbs"><Link href="/plugins">Plugins</Link><span>/</span><span>{release.pluginId}</span><span>/</span><span>{release.version}</span></p>
           <div className="candidate-title-row"><div><h1 id="overview">{release.pluginId}</h1><p>{release.summary}</p></div><div className="candidate-selectors"><label>Version<select defaultValue={release.version}><option>{release.version}</option></select></label><label>Language<select defaultValue="English"><option>English</option></select></label></div></div>
           <p className="candidate-warning"><CircleAlert size={23} />Candidate documentation · not yet catalog-signed</p>
+          <p>This 0.4.5 page preserves migration-era source evidence from the former <code>lenso-web</code> repository. <a href={release.maintainedSourceUrl}>Current Web development lives in the consolidated Rust repository</a>. The current source is not evidence that this historical candidate is signed or compatible with your App.</p>
           <hr />
           <h2 id="get-started">Get started</h2>
           <p>This candidate claims a linked Rust distribution. The Host must build and register it for the declared Native target; no signed catalog availability decision is present.</p>
@@ -33,7 +34,7 @@ export function CandidateDocumentation() {
           <h2 id="upgrade-or-remove">Upgrade or remove</h2>
           <p>Change or remove the exact dependency and Plugin Root selection together, rebuild the Host, then inspect the resolved plan before activation. Do not treat an unselected package or this unsigned candidate claim as available.</p>
         </article>
-        <aside className="facts-rail"><h2>Candidate claims</h2><dl><Fact term="Plugin ID" value={release.pluginId} /><Fact term="Version" value={release.version} /><Fact term="Distribution" value={release.distribution} /><Fact term="Declared target" value={release.target} /><Fact term="Catalog status" value="Not yet signed" /><Fact term="Source tag" value={release.sourceTag} /><Fact term="Source revision" value={release.sourceRevision} /></dl><a href={release.sourceUrl}>Immutable source revision<ExternalLink size={15} /></a><p>Candidate content is isolated from signed catalog documentation and does not establish availability.</p><Link href="/plugins"><ArrowLeft size={18} />Back to candidate</Link><a href={release.registryUrl}>Published crate docs<ExternalLink size={17} /></a></aside>
+        <aside className="facts-rail"><h2>Candidate claims</h2><dl><Fact term="Plugin ID" value={release.pluginId} /><Fact term="Version" value={release.version} /><Fact term="Distribution" value={release.distribution} /><Fact term="Declared target" value={release.target} /><Fact term="Catalog status" value="Not yet signed" /><Fact term="Source tag" value={release.sourceTag} /><Fact term="Source revision" value={release.sourceRevision} /></dl><a href={release.sourceUrl}>Immutable 0.4.5 source revision (former repository)<ExternalLink size={15} /></a><p>Candidate content is isolated from signed catalog documentation and does not establish availability.</p><Link href="/plugins"><ArrowLeft size={18} />Back to candidate</Link><a href={release.registryUrl}>Published crate docs<ExternalLink size={17} /></a></aside>
       </div>
     </div>
   );

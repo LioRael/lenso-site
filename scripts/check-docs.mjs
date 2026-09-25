@@ -280,8 +280,20 @@ for (const requiredMarker of ["Build apps", "Develop plugins", "Extend the frame
   if (!navigation.includes(requiredMarker)) failures.push(`lib/layout.shared.tsx: missing navigation marker ${JSON.stringify(requiredMarker)}`);
 }
 const pluginCandidate = read("lib/plugin-candidates.ts");
-for (const requiredMarker of ["lenso.web-ingress", "0.4.5", "Not yet catalog-signed"]) {
+for (const requiredMarker of ["lenso.web-ingress", "0.4.5", "Not yet catalog-signed",
+  "github.com/LioRael/lenso-web/commit/0e93f1149ac1b0905a51d76692d369a028f3a532",
+  "github.com/LioRael/lenso/tree/main/crates/lenso-web-ingress-plugin"]) {
   if (!pluginCandidate.includes(requiredMarker)) failures.push(`lib/plugin-candidates.ts: missing honest candidate marker ${JSON.stringify(requiredMarker)}`);
+}
+for (const component of ["components/plugin-directory.tsx", "components/candidate-documentation.tsx"]) {
+  if (!read(component).includes("migration-era")) failures.push(`${component}: former-repository candidate must be identified as historical`);
+}
+for (const locale of ["", "zh/"]) {
+  const path = `content/docs/${locale}build-apps.mdx`;
+  const content = read(path);
+  if (!content.includes("0.4.5") || !content.includes("github.com/LioRael/lenso/tree/main/crates/lenso-web-ingress-plugin")) {
+    failures.push(`${path}: migration-era Web example must point to current monorepo source`);
+  }
 }
 for (const locale of ["", "zh/"]) {
   const compositionPath = `content/docs/${locale}core/(plugins)/plugin-composition.mdx`;

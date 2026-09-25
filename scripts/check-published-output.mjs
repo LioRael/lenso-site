@@ -71,9 +71,14 @@ function requireReleaseNavigationPayload(pluginId, version) {
 }
 requireReleaseNavigationPayload('lenso.web-ingress', '0.4.5');
 if (!candidateSigned) {
-  if (!requireFile('plugins/index.html').includes('Not yet catalog-signed')) failures.push('out/plugins/index.html: unsigned candidate marker missing');
+  const directory = requireFile('plugins/index.html');
+  for (const marker of ['Not yet catalog-signed', 'migration-era example', 'github.com/LioRael/lenso/tree/main/crates/lenso-web-ingress-plugin']) {
+    if (!directory.includes(marker)) failures.push(`out/plugins/index.html: unsigned historical candidate marker missing ${JSON.stringify(marker)}`);
+  }
   const html = requireFile('plugins/lenso.web-ingress/0.4.5/index.html');
-  for (const marker of ['Candidate documentation', 'lenso-web-ingress-plugin', 'No implicit portable fallback']) {
+  for (const marker of ['Candidate documentation', 'migration-era source evidence', 'lenso-web-ingress-plugin', 'No implicit portable fallback',
+    'github.com/LioRael/lenso-web/commit/0e93f1149ac1b0905a51d76692d369a028f3a532',
+    'github.com/LioRael/lenso/tree/main/crates/lenso-web-ingress-plugin']) {
     if (!html.includes(marker)) failures.push(`out/plugins/lenso.web-ingress/0.4.5/index.html: missing ${JSON.stringify(marker)}`);
   }
 }
