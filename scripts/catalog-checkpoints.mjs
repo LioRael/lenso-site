@@ -153,7 +153,8 @@ export function packageCheckpoint(snapshot, payload, previous = null) {
     retain(state.releaseIdentities, identity, immutable, 'published package release changed');
     for (const document of release.documentation ?? []) {
       const documentIdentity = JSON.stringify([release.plugin_id, release.version, document.id, document.revision]);
-      retain(state.documentIdentities, documentIdentity, hashJson(canonicalDocument(document)),
+      retain(state.documentIdentities, documentIdentity,
+        hashJson(canonicalDocument(document.target === null ? { ...document, target: undefined } : document)),
         'published package documentation changed');
     }
   }

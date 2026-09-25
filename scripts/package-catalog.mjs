@@ -24,8 +24,10 @@ function httpsUrl(value) {
 
 function version(value) {
   if (typeof value !== 'string' || value.length > 128) return false;
-  const match = /^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(value);
-  return Boolean(match) && !(match[1]?.split('.').some((part) => /^[0-9]+$/.test(part) && part.length > 1 && part.startsWith('0')));
+  const match = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(value);
+  return Boolean(match)
+    && match.slice(1, 4).every((part) => BigInt(part) <= 18_446_744_073_709_551_615n)
+    && !(match[4]?.split('.').some((part) => /^[0-9]+$/.test(part) && part.length > 1 && part.startsWith('0')));
 }
 
 function pluginId(value) {
@@ -35,7 +37,7 @@ function pluginId(value) {
 
 function npmPackage(value) {
   return typeof value === 'string' && Buffer.byteLength(value, 'utf8') <= 214
-    && /^(?:@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*|[a-z0-9][a-z0-9._-]*)$/.test(value);
+    && /^(?:@[-a-z0-9][-a-z0-9._]*\/[-a-z0-9][-a-z0-9._]*|[-a-z0-9][-a-z0-9._]*)$/.test(value);
 }
 
 function distributionValid(item) {
@@ -53,7 +55,7 @@ function documentValid(item) {
   if (item?.target !== undefined) keys.push('target');
   return exactKeys(item, keys) && boundedText(item.id, 128) && boundedText(item.revision, 128)
     && boundedText(item.language, 32) && boundedText(item.topic, 128)
-    && (item.target === undefined || boundedText(item.target, 128)) && httpsUrl(item.url)
+    && (item.target === undefined || item.target === null || boundedText(item.target, 128)) && httpsUrl(item.url)
     && sha256.test(item.digest) && Number.isSafeInteger(item.size)
     && item.size > 0 && item.size <= 1024 * 1024 && item.media_type === 'text/markdown';
 }
@@ -128,8 +130,11 @@ export function verifyPackageCatalog(raw, trust, now = Math.floor(Date.now() / 1
       distributions: release.distributions.map((item) => ({ id: item.id, kind: item.kind,
         package: item.package, version: item.version, integrity: item.integrity,
         registryUrl: item.registry_url, targets: item.targets ?? [] })),
-      documentation: (release.documentation ?? []).map((document) => ({ ...document,
-        slug: documentSlug(release.plugin_id, release.version, document, 'package') })),
+      documentation: (release.documentation ?? []).map((document) => {
+        const { target, ...metadata } = document;
+        return { ...metadata, ...(target == null ? {} : { target }),
+          slug: documentSlug(release.plugin_id, release.version, document, 'package') };
+      }),
     })),
   };
 }

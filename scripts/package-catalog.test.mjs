@@ -54,11 +54,27 @@ test('rejects untrusted, expired, tampered or invalid package-only data', () => 
     { ...release, distributions: [{ ...distribution, kind: 'portable_bundle' }] },
     { ...release, distributions: [{ ...distribution, artifact: {} }] },
     { ...release, distributions: [{ ...distribution, package: '@Bad/Name' }] },
+    { ...release, distributions: [{ ...distribution, version: '18446744073709551616.0.0' }] },
+    { ...release, version: '18446744073709551616.0.0' },
+    { ...release, version: '1.0.0-01' },
     { ...release, documentation: [{ ...document, size: 0 }] },
     { ...release, documentation: [document, document] },
     { ...release, plugin_id: '../escape' },
   ]) {
     assert.throws(() => verifyPackageCatalog(envelope({ ...snapshot, releases: [invalid] }), trust, 150));
+  }
+});
+
+test('matches Rust npm-name and semver boundaries', () => {
+  for (const packageName of ['-plugin', '@-team/-plugin']) {
+    const verified = verifyPackageCatalog(envelope({ ...snapshot, releases: [{ ...release,
+      version: '18446744073709551615.0.0-0+build.01',
+      distributions: [{ ...distribution, package: packageName }] }] }), trust, 150);
+    assert.equal(verified.releases[0].distributions[0].package, packageName);
+  }
+  for (const packageName of ['.plugin', '_plugin', '@.team/plugin', '@team/_plugin']) {
+    assert.throws(() => verifyPackageCatalog(envelope({ ...snapshot, releases: [{ ...release,
+      distributions: [{ ...distribution, package: packageName }] }] }), trust, 150));
   }
 });
 
@@ -82,6 +98,15 @@ test('package documentation history keeps separator-bearing IDs distinct', () =>
   assert.equal(keys.length, 2);
   assert.ok(keys.includes(JSON.stringify(['example.bun', '1.0.0', 'a@b', 'c'])));
   assert.ok(keys.includes(JSON.stringify(['example.bun', '1.0.0', 'a', 'b@c'])));
+});
+
+test('explicit nullable document target matches Rust optional-field identity', () => {
+  const first = verifyPackageCatalog(envelope({ ...snapshot, releases: [release] }), trust, 150);
+  const withNull = verifyPackageCatalog(envelope({ ...snapshot, revision: 3, releases: [{ ...release,
+    documentation: [{ ...document, target: null }] }] }), trust, 150, first.checkpoint);
+  const identity = JSON.stringify(['example.bun', '1.0.0', 'quickstart', 'v1']);
+  assert.equal(withNull.checkpoint.document_identities[identity], first.checkpoint.document_identities[identity]);
+  assert.ok(!Object.hasOwn(withNull.releases[0].documentation[0], 'target'));
 });
 
 test('npm-only identity cannot collide with current or checkpointed other channels', () => {
