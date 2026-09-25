@@ -18,8 +18,19 @@ test('does not replace an unknown exact version with a candidate or latest versi
   );
 });
 
+test('keeps a plain legacy search query on the signed Site directory', () => {
+  assert.deepEqual(legacyMarketplaceDestination('?q=web', releases), { kind: 'browse', href: '/plugins/?q=web' });
+  assert.deepEqual(legacyMarketplaceDestination('?view=browse&q=hello%20world', releases), { kind: 'browse', href: '/plugins/?q=hello%20world' });
+});
+
+test('does not silently translate unsupported legacy filters or views', () => {
+  for (const query of ['?q=web&publisher=example', '?q=web&license=MIT', '?q=web&offset=30', '?view=saved&q=web', '?q=one&q=two']) {
+    assert.equal(legacyMarketplaceDestination(query, releases), null, query);
+  }
+});
+
 test('keeps ordinary homepage and incomplete or ambiguous legacy links separate', () => {
-  assert.equal(legacyMarketplaceDestination('?q=web', releases), null);
+  assert.equal(legacyMarketplaceDestination('?utm_source=old-market', releases), null);
   assert.deepEqual(legacyMarketplaceDestination('?plugin=example.web', releases), { kind: 'unavailable' });
   assert.deepEqual(legacyMarketplaceDestination('?plugin=example.web&plugin=other&version=1.0.0', releases), { kind: 'unavailable' });
 });

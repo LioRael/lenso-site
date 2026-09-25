@@ -21,12 +21,12 @@ export function LegacyMarketplaceEntry({ children, releases }: {
 }) {
   const search = useSyncExternalStore(subscribe, currentSearch, () => '');
   const destination = legacyMarketplaceDestination(search, releases);
-  const releaseHref = destination?.kind === 'release' ? destination.href : undefined;
+  const redirectHref = destination?.kind === 'release' || destination?.kind === 'browse' ? destination.href : undefined;
   useEffect(() => {
-    if (releaseHref) window.location.replace(releaseHref);
-  }, [releaseHref]);
+    if (redirectHref) window.location.replace(redirectHref);
+  }, [redirectHref]);
 
-  if (!destination) return children;
+  if (!destination || destination.kind === 'browse') return children;
   return <div className="linked-release-shell">
     <SiteHeader active="plugins" />
     <main className="linked-doc-main">

@@ -20,6 +20,10 @@ export function PluginDirectory() {
     portableDetails: Boolean(signedPortableCatalog.detailsExpiresAt),
   });
   useEffect(() => {
+    const queries = new URLSearchParams(window.location.search).getAll('q');
+    if (queries.length === 1 && queries[0].length <= 256) setQuery(queries[0]);
+  }, []);
+  useEffect(() => {
     let timer: number | undefined;
     const update = () => {
       window.clearTimeout(timer);
@@ -62,8 +66,16 @@ export function PluginDirectory() {
       && (!distribution || distribution === candidateRelease.distribution);
   }, [candidateSuperseded, catalogStatus, distribution, query, target]);
 
+  const updateQuery = (value: string) => {
+    setQuery(value);
+    const url = new URL(window.location.href);
+    if (value) url.searchParams.set('q', value);
+    else url.searchParams.delete('q');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  };
+
   const clearFilters = () => {
-    setQuery('');
+    updateQuery('');
     setTarget(undefined);
     setDistribution(undefined);
     setCatalogStatus(undefined);
@@ -76,7 +88,7 @@ export function PluginDirectory() {
           <h1>Plugins</h1>
           <p>Find a compatible release, inspect its exact distribution, then adopt it through the same reviewed project path.</p>
         </div>
-        <label className="directory-search"><Search size={20} /><span className="sr-only">Search Plugins</span><input onChange={(event) => setQuery(event.target.value)} placeholder="Search Plugin IDs, packages, or verified docs" value={query} /></label>
+        <label className="directory-search"><Search size={20} /><span className="sr-only">Search Plugins</span><input maxLength={256} onChange={(event) => updateQuery(event.target.value)} placeholder="Search Plugin IDs, packages, or verified docs" value={query} /></label>
         <div aria-label="Directory filters" className="filter-rail">
           <Filter label="Target" onSelect={setTarget} options={['Native', 'Workers']} selected={target} />
           <Filter label="Distribution" onSelect={setDistribution} options={['Linked Rust', 'Portable']} selected={distribution} />
