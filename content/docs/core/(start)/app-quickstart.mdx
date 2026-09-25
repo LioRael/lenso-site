@@ -6,9 +6,14 @@ description: Select the linked Web starter, add a second Web Plugin, and check b
 > **Local candidate preview.** The `lenso-cli` crate in the current `lenso`
 > source checkout implements the `app create --web` path, but this page does
 > not claim that an npm/Cargo release contains it or that every generated
-> dependency is published. Use a
-> matching local CLI build. If a dependency is unavailable, stop and record its
-> exact version; a source scaffold is not a successful independent build.
+> dependency is published. Use a matching local CLI build and a separately
+> supplied Cargo source containing the generated App's exact dependencies.
+> The current Web scaffold pins
+> `lenso 0.5.26`, HTTP Endpoint `0.3.4`, and Web Host `0.2.3`; its Host build
+> selects Web Ingress `0.4.8`. This candidate cohort is not yet fully published
+> on crates.io. If an exact dependency is unavailable, stop
+> and record its version. Do not change the generated pins to make this preview
+> pass against an older release.
 
 This path explicitly selects the linked Web starter with `--web`, uses its
 browser form to make a real `POST /greetings` request, then adds a second
@@ -34,8 +39,9 @@ LENSO_CLI="$(pwd)/target/debug/lenso"
 Confirm that `app create --help` succeeds. The installed `lenso` on your
 `PATH` may be an older public release; use the absolute `LENSO_CLI` path for
 every step here.
-The starter runs a Cargo check during creation, so its pinned dependencies
-must be available before this preview can continue.
+The starter runs a Cargo check during creation. Building the CLI from source
+does not provide the generated App's pinned packages; arrange the matching
+local Cargo dependency source before continuing.
 
 ## 2. Create and run the same App
 
@@ -118,16 +124,20 @@ use this bounded request:
 
 ```text
 Create the local Web App using the manual commands in this page, with the
-source-built lenso CLI from this checkout. Keep the App outside the framework
-source tree. Use app create hello-web --web, then app dev. A bare app create
-instead makes a root Process notes Plugin and is not this tutorial. In a real
-browser, submit Ada and show the Hello, Ada! result and any console errors.
+source-built lenso CLI from this checkout and a separately supplied exact local
+Cargo dependency source. If the pinned cohort is unavailable, stop and report
+the missing package and version without changing the generated manifest or
+trying another release. Keep the App outside the framework source tree: run
+APP_PARENT="$(mktemp -d)"; run "$LENSO_CLI" app create "$APP_PARENT/hello-web" --web;
+cd "$APP_PARENT/hello-web"; then run "$LENSO_CLI" app dev.
+A bare app create instead makes a root Process notes Plugin and is not this
+tutorial. In a real browser, submit Ada and show the Hello, Ada! result and
+any console errors.
 Stop dev, create example.second-http with plugin new --web --repo-root ./app,
 give its routes distinct IDs and paths, add the GET /second route, and update
 its tests. Run discover, the second Plugin's tests, build, check, show,
 start --check, and live GETs for / and /second. Report the exact CLI revision,
-commands, output path, browser URL, and failures. If the pinned dependency cohort is
-unavailable, stop and report that boundary; do not substitute another release.
+commands, App path, output path, browser URL, and failures.
 ```
 
 The agent may edit ordinary business code in `app/local.starter/` and
