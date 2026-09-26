@@ -14,9 +14,9 @@ description: 检查八条核心路径，同时区分本地样例、签名发布�
 | P3 | [向 App 添加 Plugin](/docs/zh/core/plugin-composition) |
 | P4 | [编写第一个 Plugin](/docs/zh/core/quickstart) |
 | P5 | [连接 React/Vite 前端](/docs/zh/core/react-vite-app) |
-| P6 | [配置 Agent](/docs/zh/agent/agent-configuration) |
-| P7 | [构建并检查 App](/docs/zh/core/app-quickstart) |
-| P8 | [在 Host App 中禁用并移除 Plugin](/docs/zh/core/first-app-change) |
+| P6 | [配置 App 中的 Plugin](/docs/zh/core/plugin-configuration) |
+| P7 | [构建知识库 App](/docs/zh/core/react-vite-app) |
+| P8 | [禁用或撤出 Plugin](/docs/zh/core/plugin-lifecycle) |
 
 ## P1. 首个可运行 App
 
@@ -58,35 +58,51 @@ PostgreSQL。
 
 ## P6. 配置与动态来源
 
-**Smoke：** 发布带修订栅栏的有效 Proposal，拒绝无效值与旧修订；确认秘密引用
-不泄漏，外部来源不可用时不默许新值。
+**Smoke：** 在本地 App 中修改一个有类型的 Instance Patch，拒绝无效值，并通过
+`app show` 与 `app check` 检查结果。Secret 值留在 Plugin Root 外。需要具体验证
+修订栅栏的远程来源时，使用[单资源 Agent 配置服务](/docs/zh/agent/agent-configuration)：
+发布已审查的 Proposal，拒绝旧 revision，并确认服务不可用时会拒绝操作。
 
-**边界：** 源码构建的默认 App 已通过本地版本化文件快照的激活测试；本页没有证明
-配置来源插件已发布，也没有部署跨环境配置服务。
+**边界：** Agent 服务只管理一个命名资源，不是通用 App 配置 Provider 或已部署的
+多环境控制面。源码构建的默认 App 已有本地版本化文件快照激活测试；这条 Site
+路径不证明配置 Provider 已公开发布。
 
 ## P7. 构建并运行分发产物
 
-**Smoke：** 构建、检查并查看分发产物；复制到框架及兄弟仓库之外，在无源码路径
-依赖时启动并重复真实请求。
+**Smoke：** 在匹配的候选 Checkout 中阅读
+`lenso-examples/fixtures/vnext-knowledge-base-app/README.md` 的
+`Exact package inputs for external providers` 一节。在断网、限资源容器中运行
+`verify.py --package-only`，提供同一份签名 `--linked-snapshot`、独立的
+`--trust`，以及准确的 `--auth-crate`、`--jobs-crate`、`--secrets-crate`，并显式
+使用 `--trust-linked-build-from-crates`。验证器从这些归档采用 Provider，构建
+Host，运行 `app check` 和 `app show`，删除临时 App 源码，再经受控重启复验真实
+HTTP 与 PostgreSQL 数据。
 
-**边界：** 源码本地教程中的 `app start --from` 只是第一关，不是仅靠发布包的
-独立消费证据。
+**边界：** package-only 只指三个外部 Provider，不包括 App 自身的 Rust 和
+TypeScript 源码。仍需匹配的源码构建 CLI 与离线依赖闭包。本地候选测试不能证明
+这些包或 CLI 已在 crates.io 发布，也不能证明最终候选 SHA 已通过同一验收。
+[Web App 快速开始](/docs/zh/core/app-quickstart)中的简单 `app start --from`
+不能代替这项检查。
 
 ## P8. 升级、禁用与卸载
 
-**Smoke：** 取得准确的 Host 可执行文件及与其匹配的 Host Catalog 后，运行
-`lenso plugins disable example.echo default --root ./my-app`，通过 `app show`
-检查，再启用并移除 Plugin。重新检查解析后的 App，另行验证业务数据保留。
+**Smoke：** 在已选中 Plugin 的源码 App 中添加 `default.disabled` Marker，构建
+新的分发目录，并执行 `app build`、`app check` 和 `app show`。移除 Marker 可在
+下一次构建中重新启用。对于已采用的精确签名 linked Cargo 或 Portable 来源，
+使用相应的 `app unadopt` 路径，再构建并检查下一份分发产物。切换 Host 前，另行
+验证业务数据。
 
-**边界：** 通用已发布 CLI 不附带这对 Host/Catalog。
-[准确 Linked 源码撤出](/docs/zh/core/plugin-lifecycle)是另一条仅在源码本地验证的
-`app unadopt` 路径。升级与数据迁移仍需独立审查；这里不承诺自动可逆迁移。
+**边界：** `app unadopt` 仅针对先前采用的精确签名来源，不会移除本地 Plugin
+或逆转数据迁移。升级需要另行审查新版本采用与应用迁移；当前没有自动或可逆的
+CLI 升级操作。这是本地候选路径，不证明对应包已公开发布。
 
 ## 分层运行
 
 1. 在 Site Checkout 中运行 `pnpm build` 生成公开页面，再运行
    `pnpm check:learning-paths`，检查八个入口、中英文页面及教程链接是否出现在
-   发布输出中。这**不会**启动 App 或发出浏览器请求。
+   发布输出中。构建 Site 前可运行
+   `node scripts/check-learning-paths.mjs --source-only`，只检查源码链接与路径边界，
+   不宣称已验证渲染页面。两者都**不会**启动 App 或发出浏览器请求。
 2. 只有具备各教程列出的输入时，才运行其命令与浏览器检查。缺失依赖、签名发布
    或外部服务时，记录明确边界，不能记为通过。
 3. 独立的框架扩展路径见[编写本地 Engine 扩展](/docs/zh/core/first-engine-extension)

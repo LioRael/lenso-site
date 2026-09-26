@@ -16,9 +16,9 @@ Site link check.
 | P3 | [Add Plugins to an App](/docs/core/plugin-composition) |
 | P4 | [Create your first Plugin](/docs/core/quickstart) |
 | P5 | [Connect a React/Vite frontend](/docs/core/react-vite-app) |
-| P6 | [Configure an Agent](/docs/agent/agent-configuration) |
-| P7 | [Build and inspect the App](/docs/core/app-quickstart) |
-| P8 | [Disable and remove in a Host App](/docs/core/first-app-change) |
+| P6 | [Configure a Plugin in an App](/docs/core/plugin-configuration) |
+| P7 | [Build the knowledge-base App](/docs/core/react-vite-app) |
+| P8 | [Disable or withdraw a Plugin](/docs/core/plugin-lifecycle) |
 
 ## P1. First runnable App
 
@@ -65,41 +65,58 @@ inputs, credentials, and disposable PostgreSQL.
 
 ## P6. Configuration and dynamic sources
 
-**Smoke:** Publish a valid revision-fenced proposal. Reject an invalid value
-and old revision. Verify secret references stay private and an unavailable
-external source does not silently authorize a new value.
+**Smoke:** In a local App, change one typed Instance patch, reject an invalid
+value, and inspect the result with `app show` and `app check`. Keep secret values
+outside the Plugin Root. For a concrete revision-fenced remote source, follow
+the [single-resource Agent configuration service](/docs/agent/agent-configuration):
+publish a reviewed proposal, reject a stale revision, then verify that a
+service outage fails closed.
 
-**Boundary:** The source-built default App has local, versioned file-snapshot
-activation tests. This page does not demonstrate a published configuration
-provider or a deployed cross-environment service.
+**Boundary:** The Agent service is one named resource, not a general App
+configuration provider or deployed multi-environment control plane. The
+source-built default App has local, versioned file-snapshot activation tests;
+this Site path does not establish a published provider.
 
 ## P7. Build and run a distribution
 
-**Smoke:** Build, check, and show a distribution. Copy it outside the
-framework and sibling checkouts, then start it and repeat the real request
-without source-path dependencies.
+**Smoke:** Use the `Exact package inputs for external providers` section of
+`lenso-examples/fixtures/vnext-knowledge-base-app/README.md` from a matching
+candidate checkout. In a network-disabled, resource-limited container, run
+`verify.py --package-only` with one signed `--linked-snapshot`, independent
+`--trust`, exact `--auth-crate`, `--jobs-crate`, and `--secrets-crate` inputs,
+and `--trust-linked-build-from-crates`. The verifier adopts those archives,
+builds the Host, runs `app check` and `app show`, deletes the disposable App
+source, and repeats real HTTP and PostgreSQL checks after a controlled restart.
 
-**Boundary:** `app start --from` in the source-local tutorial is a first
-check, not yet a package-only independent-consumer receipt.
+**Boundary:** Package-only describes the three external providers, not the
+App's own Rust and TypeScript source. Supply a matching source-built CLI and
+offline dependency closure. The local candidate test does not prove these
+packages or the CLI are published on crates.io, nor that the final candidate
+SHA has passed the same run. The simpler `app start --from` in the
+[Web App quickstart](/docs/core/app-quickstart) does not replace this check.
 
 ## P8. Upgrade, disable, and uninstall
 
-**Smoke:** With an exact Host executable and its matching Host Catalog, use
-`lenso plugins disable example.echo default --root ./my-app`, inspect with
-`app show`, then enable and remove the Plugin. Check the derived App again and
-verify business data separately.
+**Smoke:** In a source App with a selected Plugin, add its `default.disabled`
+marker and run `app build`, `app check`, and `app show` on a new distribution.
+Remove the marker to enable it again. For an exactly signed linked Cargo or
+Portable adoption, use the matching `app unadopt` path, then build and inspect
+the next distribution. Verify business data separately before switching Hosts.
 
-**Boundary:** The generic published CLI does not provide that Host/Catalog
-pair. [Exact linked-source withdrawal](/docs/core/plugin-lifecycle) is a
-different, source-local `app unadopt` path. Upgrade and data migration still
-need separate review; no automatic reversible migration is promised.
+**Boundary:** `app unadopt` applies only to the exact signed source it
+previously adopted; it does not remove a local Plugin or reverse a migration.
+An upgrade is a separately reviewed version adoption and application migration,
+not an automatic or reversible CLI operation. This is a local candidate path,
+not proof of a published package cohort.
 
 ## Run the checks in layers
 
 1. `pnpm build` in the Site checkout generates the public pages. Then
    `pnpm check:learning-paths` checks that all eight entries, English/Chinese
-   routes, and linked tutorials are present in the published output. It does
-   **not** run an App or issue a browser request.
+   routes, and linked tutorials are present in the published output. Before a
+   Site build, `node scripts/check-learning-paths.mjs --source-only` checks
+   source links and path boundaries without claiming a rendered-page pass.
+   Neither check runs an App or issues a browser request.
 2. Run the command and browser check in each linked tutorial only after its
    stated inputs exist. A failed dependency, missing signed release, or missing
    external service is a named boundary, not a pass.
