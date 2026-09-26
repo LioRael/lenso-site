@@ -1,0 +1,21 @@
+content/docs/zh/core/(start)/app-quickstart.mdx
+  s_7d146975368699::t_eb3a2ef6dddebb 10-11
+content/docs/core/(start)/app-quickstart.mdx
+  s_7d146975368699::t_eb3a2ef6dddebb 12-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d74b696ed2de43cc6d28ec7f4741c16d5f9c5034",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
