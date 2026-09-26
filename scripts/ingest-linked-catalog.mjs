@@ -117,7 +117,7 @@ const documents = await ingestVerifiedDocuments([
   { catalog: { releases: catalog.releases.filter((release) => release.details?.documentation.length)
     .map((release) => ({ pluginId: release.pluginId, version: release.version,
       documentation: release.details.documentation })) }, channel: 'linked_details' },
-], allowedHosts);
+], allowedHosts, fetch, process.env.LENSO_MARKETPLACE_DOCUMENT_MIRROR_ORIGIN ?? null);
 await mkdir(resolve(import.meta.dirname, '../lib/.generated'), { recursive: true });
 await writeFile(resolve(import.meta.dirname, '../lib/.generated/linked-catalog.json'), `${JSON.stringify(catalog)}\n`);
 await writeFile(resolve(import.meta.dirname, '../lib/.generated/portable-catalog.json'), `${JSON.stringify(portableCatalog)}\n`);

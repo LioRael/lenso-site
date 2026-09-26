@@ -14,7 +14,19 @@ export function documentSlug(pluginId, version, document, channel = 'linked') {
 }
 
 /** Fetch only operator-approved hosts and persist nothing until every body verifies. */
-export async function ingestVerifiedDocuments(catalogs, allowedHosts, fetcher = fetch) {
+export async function ingestVerifiedDocuments(catalogs, allowedHosts, fetcher = fetch, mirrorOrigin = null) {
+  let mirror = null;
+  if (mirrorOrigin !== null) {
+    try {
+      mirror = new URL(mirrorOrigin);
+    } catch {
+      throw new Error('document mirror must be a plain HTTPS origin');
+    }
+    if (mirror.protocol !== 'https:' || mirror.username || mirror.password
+      || mirror.pathname !== '/' || mirror.search || mirror.hash) {
+      throw new Error('document mirror must be a plain HTTPS origin');
+    }
+  }
   const selected = catalogs.flatMap(({ catalog, channel }) => catalog.releases.flatMap((release) =>
     release.documentation.map((document) => ({ channel, release, document }))));
   if (selected.some(({ document }) => !Number.isSafeInteger(document.size)
@@ -25,19 +37,26 @@ export async function ingestVerifiedDocuments(catalogs, allowedHosts, fetcher = 
   if (selected.length > maxDocuments || selected.reduce((sum, { document }) => sum + document.size, 0) > maxTotalBytes) {
     throw new Error('signed documentation exceeds Site build limits');
   }
-  if (selected.length > 0 && allowedHosts.size === 0) {
+  if (selected.length > 0 && !mirror && allowedHosts.size === 0) {
     throw new Error('LENSO_MARKETPLACE_DOCUMENT_HOSTS is required for signed documentation');
   }
   const result = {};
   for (const { channel, release, document } of selected) {
-    const url = new URL(document.url);
-    if (url.protocol !== 'https:' || url.username || url.password || url.hash || !allowedHosts.has(url.host)) {
-      throw new Error(`signed documentation host is not approved: ${url.host}`);
+    const sourceUrl = new URL(document.url);
+    if (sourceUrl.protocol !== 'https:' || sourceUrl.username || sourceUrl.password || sourceUrl.hash
+      || (!mirror && !allowedHosts.has(sourceUrl.host))) {
+      throw new Error(`signed documentation host is not approved: ${sourceUrl.host}`);
     }
+    const url = mirror
+      ? new URL(`/documents/sha256/${document.digest.slice('sha256:'.length)}.md`, mirror)
+      : sourceUrl;
     const response = await fetcher(url, { signal: AbortSignal.timeout(10_000), redirect: 'error' });
     if (!response.ok || !response.body || response.redirected
       || (response.url && response.url !== url.toString())) {
       throw new Error(`signed documentation fetch failed or redirected: ${response.status}`);
+    }
+    if (mirror && response.headers.get('x-lenso-document-digest') !== document.digest) {
+      throw new Error('document mirror digest header differs from signed metadata');
     }
     const advertised = Number(response.headers.get('content-length'));
     if (Number.isFinite(advertised) && advertised > document.size) throw new Error('signed documentation exceeds declared size');
@@ -73,6 +92,6 @@ export async function ingestVerifiedDocuments(catalogs, allowedHosts, fetcher = 
   return result;
 }
 
-export async function ingestLinkedDocuments(catalog, allowedHosts, fetcher = fetch) {
-  return ingestVerifiedDocuments([{ catalog, channel: 'linked' }], allowedHosts, fetcher);
+export async function ingestLinkedDocuments(catalog, allowedHosts, fetcher = fetch, mirrorOrigin = null) {
+  return ingestVerifiedDocuments([{ catalog, channel: 'linked' }], allowedHosts, fetcher, mirrorOrigin);
 }

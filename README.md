@@ -176,7 +176,14 @@ registry or an installation authority; refresh the Site build to pick up a
 new signed snapshot or documentation revision. Set
 `LENSO_MARKETPLACE_DOCUMENT_HOSTS` to a comma-separated exact host:port
 allowlist for documentation, using only operator-trusted document
-infrastructure. The build never follows redirects, rejects unapproved hosts,
+infrastructure. When the public Marketplace document mirror is populated, set
+`LENSO_MARKETPLACE_DOCUMENT_MIRROR_ORIGIN` to its plain HTTPS origin. In that
+mode the build fetches `/documents/sha256/<signed digest>.md` from that origin
+instead of the publisher URL, requires the mirror's digest header, and still
+checks the signed size and SHA-256 body. A missing mirrored revision fails the
+build; there is no fallback to a newer revision or an external URL. Without
+the mirror setting, the exact-host allowlist remains required. The build never
+follows redirects, rejects unapproved fetch targets,
 and enforces per-document and aggregate byte limits before rendering Markdown
 with HTML, images and executable MDX disabled. A DNS name allowlist alone
 does not prevent a trusted host from resolving to a private/rebound address or

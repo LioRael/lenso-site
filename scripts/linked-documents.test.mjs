@@ -39,6 +39,29 @@ test('an empty signed directory needs no document host configuration', async () 
   assert.deepEqual(await ingestLinkedDocuments({ releases: [] }, new Set()), {});
 });
 
+test('an exact digest mirror keeps signed provenance and never fetches the publisher URL', async () => {
+  const seen = [];
+  const result = await ingestLinkedDocuments(catalog, new Set(), async (url, options) => {
+    seen.push(url.toString());
+    assert.equal(options.redirect, 'error');
+    return new Response(body, { status: 200, headers: { 'x-lenso-document-digest': digest } });
+  }, 'https://market.example.test');
+  assert.deepEqual(seen, [`https://market.example.test/documents/sha256/${digest.slice(7)}.md`]);
+  assert.equal(result[documentSlug('example.web', '1.0.0', document)].sourceUrl, document.url);
+});
+
+test('the exact digest mirror fails closed on missing content, wrong header or invalid origin', async () => {
+  const mirror = 'https://market.example.test';
+  const fetcher = async () => new Response('missing', { status: 404 });
+  await assert.rejects(ingestLinkedDocuments(catalog, new Set(), fetcher, mirror), /fetch failed/);
+  await assert.rejects(ingestLinkedDocuments(catalog, new Set(),
+    async () => new Response(body, { status: 200 }), mirror), /mirror digest header/);
+  for (const origin of ['', 'http://market.example.test', 'https://user@market.example.test',
+    'https://market.example.test/path', 'https://market.example.test/?latest=1']) {
+    await assert.rejects(ingestLinkedDocuments(catalog, new Set(), fetcher, origin), /plain HTTPS origin/);
+  }
+});
+
 test('same Plugin/version/document revision in Portable and linked channels never shares a route or body', async () => {
   const portableBody = Buffer.from('# Portable content\n');
   const portableDocument = { ...document, url: 'https://docs.example.test/portable.md',
