@@ -205,6 +205,21 @@ try {
   const markdown = await readFile(join(root, `out/api/plugins/${pluginId}/${version}/docs/${slug}/content.md`), 'utf8');
   const portablePage = await readFile(join(root, `out/plugins/${pluginId}/${version}/docs/${portableSlug}/index.html`), 'utf8');
   const portableMarkdown = await readFile(join(root, `out/api/plugins/${pluginId}/${version}/docs/${portableSlug}/content.md`), 'utf8');
+  const documentationIndex = JSON.parse(await readFile(
+    join(root, `out/api/plugins/releases/${pluginId}/${version}/docs.json`), 'utf8'));
+  assert.equal(documentationIndex.pluginId, pluginId);
+  assert.equal(documentationIndex.version, version);
+  assert.equal(documentationIndex.selection, 'exact-version-only');
+  assert.ok(documentationIndex.documents.some((item) => item.channel === 'linked'
+    && item.documentId === document.id && item.revision === document.revision
+    && item.digest === document.digest
+    && item.pageUrl === `/plugins/${pluginId}/${version}/docs/${slug}`
+    && item.markdownUrl === `/api/plugins/${pluginId}/${version}/docs/${slug}/content.md`));
+  assert.ok(documentationIndex.documents.some((item) => item.channel === 'portable'
+    && item.documentId === portableDocument.id && item.revision === portableDocument.revision
+    && item.digest === portableDocument.digest
+    && item.pageUrl === `/plugins/${pluginId}/${version}/docs/${portableSlug}`
+    && item.markdownUrl === `/api/plugins/${pluginId}/${version}/docs/${portableSlug}/content.md`));
   const searchIndex = JSON.parse(await readFile(join(root, 'out/api/plugins/search'), 'utf8'));
   const searchDatabase = create({ schema: { _: 'string' } });
   load(searchDatabase, searchIndex);
@@ -269,6 +284,14 @@ try {
     firstCheckpoint.linked_cargo.document_identities[`${pluginId}@${version}/quickstart@rev-1`]);
   assert.ok(secondCheckpoint.linked_cargo.document_identities[`${pluginId}@${version}/quickstart@rev-2`]);
   const revisedSlug = documentSlug(pluginId, version, revisedDocument);
+  const revisedDocumentationIndex = JSON.parse(await readFile(
+    join(root, `out/api/plugins/releases/${pluginId}/${version}/docs.json`), 'utf8'));
+  assert.ok(revisedDocumentationIndex.documents.some((item) => item.channel === 'linked'
+    && item.documentId === document.id && item.revision === document.revision
+    && item.digest === document.digest));
+  assert.ok(revisedDocumentationIndex.documents.some((item) => item.channel === 'linked'
+    && item.documentId === revisedDocument.id && item.revision === revisedDocument.revision
+    && item.digest === revisedDocument.digest));
   assert.equal(await readFile(join(root, `out/api/plugins/${pluginId}/${version}/docs/${slug}/content.md`), 'utf8'), body.toString());
   assert.equal(await readFile(join(root, `out/api/plugins/${pluginId}/${version}/docs/${revisedSlug}/content.md`), 'utf8'), revisedBody.toString());
   assert.match(await readFile(join(root, `out/plugins/${pluginId}/${version}/index.html`), 'utf8'), /Revised getting started/);
