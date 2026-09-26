@@ -1,0 +1,24 @@
+scripts/check-learning-paths.mjs
+  s_7d146975368699::t_82271f3b7bf574 64
+  s_7d146975368699::t_936f1387a68439 9-14,21-23,27-33,45-46,58,62-63,65-72,109
+content/docs/zh/learning-path-smoke.mdx
+  s_7d146975368699::t_0affd055ae6919 17-19,61-64,66-68,72-85,89-93,95-97,103-105
+content/docs/learning-path-smoke.mdx
+  s_7d146975368699::t_9be5c45fbde80a 19-21,68-73,75-78,82-96,100-104,106-110,116-119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ae4b5d1f90a9136ae5bc0a36171ec57aa1390c8a",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
