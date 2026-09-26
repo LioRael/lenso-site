@@ -7,7 +7,7 @@ import {
   type SignedPackageRelease,
   type SignedPortableRelease,
 } from '@/lib/plugin-candidates';
-import { linkedDocumentApiPath, linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
+import { linkedDocumentApiPath, linkedDocumentPath, linkedReleasePath, versionedDocumentIndexApiPath } from '@/lib/linked-document-paths';
 
 type Document = SignedLinkedRelease['documentation'][number];
 
@@ -20,16 +20,17 @@ function documents(pluginId: string, version: string, items: Document[]) {
 }
 
 function linkedDistribution(release: SignedLinkedRelease) {
+  const { details, ...baseRelease } = release;
   return {
     kind: 'linked_cargo' as const,
     catalogId: signedLinkedCatalog.catalogId,
     catalogRevision: signedLinkedCatalog.revision,
     expiresAt: signedLinkedCatalog.expiresAt,
     release: {
-      ...release,
+      ...baseRelease,
       documentation: documents(release.pluginId, release.version, release.documentation),
-      ...(release.details ? { details: { ...release.details,
-        documentation: documents(release.pluginId, release.version, release.details.documentation) } } : {}),
+      ...(details ? { details: { ...details,
+        documentation: documents(release.pluginId, release.version, details.documentation) } } : {}),
     },
   };
 }
@@ -92,6 +93,7 @@ const releases = new Map<string, {
   version: string;
   pageUrl: string;
   apiUrl: string;
+  documentationIndexUrl: string;
   distributions: (ReturnType<typeof linkedDistribution> | ReturnType<typeof portableDistribution> | ReturnType<typeof packageDistribution> | NonNullable<ReturnType<typeof linkedDetailsDistribution>>)[];
   optionalSourceContent: {
     catalogId: string | null;
@@ -109,6 +111,7 @@ for (const release of signedLinkedCatalog.releases) {
     version: release.version,
     pageUrl: linkedReleasePath(release.pluginId, release.version),
     apiUrl: `/api/plugins/releases/${encodeURIComponent(release.pluginId)}/${encodeURIComponent(release.version)}/release.json`,
+    documentationIndexUrl: versionedDocumentIndexApiPath(release.pluginId, release.version),
     distributions: [linkedDistribution(release), ...(detailsNpm ? [detailsNpm] : [])],
     optionalSourceContent: [],
   });
@@ -122,6 +125,7 @@ for (const release of signedPortableCatalog.releases) {
     version: release.version,
     pageUrl: linkedReleasePath(release.pluginId, release.version),
     apiUrl: `/api/plugins/releases/${encodeURIComponent(release.pluginId)}/${encodeURIComponent(release.version)}/release.json`,
+    documentationIndexUrl: versionedDocumentIndexApiPath(release.pluginId, release.version),
     distributions: [portableDistribution(release)],
     optionalSourceContent: [],
   });
@@ -134,6 +138,7 @@ for (const release of signedPackageCatalog.releases) {
     version: release.version,
     pageUrl: linkedReleasePath(release.pluginId, release.version),
     apiUrl: `/api/plugins/releases/${encodeURIComponent(release.pluginId)}/${encodeURIComponent(release.version)}/release.json`,
+    documentationIndexUrl: versionedDocumentIndexApiPath(release.pluginId, release.version),
     distributions: [packageDistribution(release)],
     optionalSourceContent: [],
   });
@@ -157,6 +162,12 @@ export const signedPluginReleases = [...releases.values()]
 
 export function signedPluginRelease(pluginId: string, version: string) {
   return releases.get(`${pluginId}\0${version}`);
+}
+
+export function staticSignedPluginReleaseParams() {
+  return signedPluginReleases.length > 0
+    ? signedPluginReleases.map(({ pluginId, version }) => ({ pluginId, version }))
+    : [{ pluginId: '_no-signed-release', version: '_none' }];
 }
 
 export function signedPluginDirectory() {

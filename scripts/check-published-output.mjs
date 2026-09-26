@@ -105,6 +105,28 @@ for (const release of pluginDirectory.releases) {
   if (JSON.stringify(exact) !== JSON.stringify(release) || release.apiUrl !== `/${exactPath}`) {
     failures.push(`out/${exactPath}: exact version does not match unified catalog`);
   }
+  const documentationIndexPath = `api/plugins/releases/${release.pluginId}/${release.version}/docs.json`;
+  const documentationIndex = JSON.parse(requireFile(documentationIndexPath));
+  const expectedDocuments = Object.values(signedDocuments)
+    .filter((document) => document.pluginId === release.pluginId && document.version === release.version);
+  if (release.documentationIndexUrl !== `/${documentationIndexPath}`
+    || documentationIndex.schema !== 'lenso.site.plugin-documents.v1'
+    || documentationIndex.pluginId !== release.pluginId || documentationIndex.version !== release.version
+    || documentationIndex.releaseApiUrl !== release.apiUrl
+    || documentationIndex.selection !== 'exact-version-only'
+    || documentationIndex.documents.length !== expectedDocuments.length) {
+    failures.push(`out/${documentationIndexPath}: exact signed documentation index mismatch`);
+  } else {
+    for (const document of expectedDocuments) {
+      const entry = documentationIndex.documents.find((item) => item.channel === document.channel
+        && item.documentId === document.documentId && item.revision === document.revision);
+      if (!entry || entry.digest !== document.digest || entry.sourceUrl !== document.sourceUrl
+        || entry.pageUrl !== `/plugins/${release.pluginId}/${release.version}/docs/${document.slug}`
+        || entry.markdownUrl !== `/api/plugins/${release.pluginId}/${release.version}/docs/${document.slug}/content.md`) {
+        failures.push(`out/${documentationIndexPath}: document ${document.slug} is not exact`);
+      }
+    }
+  }
   const linked = signedCatalog.releases.find((item) => item.pluginId === release.pluginId && item.version === release.version);
   const portable = signedPortableCatalog.releases.find((item) => item.pluginId === release.pluginId && item.version === release.version);
   const npmPackage = signedPackageCatalog.releases.find((item) => item.pluginId === release.pluginId && item.version === release.version);
