@@ -8,12 +8,12 @@ description: Select the linked Web starter, add a second Web Plugin, and check b
 > not claim that an npm/Cargo release contains it or that every generated
 > dependency is published. Use a matching local CLI build and a separately
 > supplied Cargo source containing the generated App's exact dependencies.
-> The current Web scaffold pins
-> `lenso 0.5.27`, HTTP Endpoint `0.3.4`, and Web Host `0.2.4`; its Host build
-> selects Web Ingress `0.4.9`. This candidate cohort is not yet fully published
-> on crates.io. If an exact dependency is unavailable, stop
-> and record its version. Do not change the generated pins to make this preview
-> pass against an older release.
+> The CLI-generated `app/local.starter/Cargo.toml` is the source of truth for
+> exact framework, HTTP Endpoint, and Web Host pins. The matching Host build
+> selects its own exact Web Ingress release. This candidate cohort is not yet
+> fully published on crates.io. If an exact dependency is unavailable, stop,
+> inspect the generated manifest, and report the missing package and version.
+> Do not change its pins to make this preview pass against an older release.
 
 This path explicitly selects the linked Web starter with `--web`, uses its
 browser form to make a real `POST /greetings` request, then adds a second
