@@ -6,10 +6,11 @@ description: 显式选择 Linked Web Starter，添加第二个 Web Plugin，并�
 > **本地候选预览。** 当前 `lenso` 源码 Checkout 中的 `lenso-cli` Crate 已实现
 > `app create --web` 路径，但本页
 > 不声称 npm/Cargo 已发布包含该命令的版本，也不声称生成项目的全部依赖均已发布。请使用
-> 匹配源码构建的 CLI，并为生成的 App 提供精确匹配的本地 Cargo 依赖源。当前 Web 脚手架锁定
-> `lenso 0.5.26`、HTTP Endpoint `0.3.4` 和 Web Host `0.2.3`，Host 构建还会选中
-> Web Ingress `0.4.8`。这组候选依赖尚未完整发布到 crates.io。若精确依赖
-> 不可用，应停下并记录版本，不要把生成的依赖锁定改成旧版来勉强通过预览。
+> 匹配源码构建的 CLI，并为生成的 App 提供精确匹配的本地 Cargo 依赖源。
+> 生成后的 `app/local.starter/Cargo.toml` 是框架、HTTP Endpoint 和 Web Host
+> 精确版本的依据；匹配的 Host 构建会选择自己的 Web Ingress 精确版本。
+> 这组候选依赖尚未完整发布到 crates.io。若精确依赖不可用，应停下，检查生成的
+> Manifest 并报告缺少的包和版本，不要改成旧版来勉强通过预览。
 
 这条路径用 `--web` 显式创建 Linked Web Starter，从浏览器表单发出真正的 `POST /greetings`
 请求，再添加第二个 Linked Web Plugin。它不需要 Marketplace 条目。手工开发与
