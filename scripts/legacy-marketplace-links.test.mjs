@@ -1,8 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { legacyMarketplaceDestination } from '../lib/legacy-marketplace-links.mjs';
+import { legacyMarketplaceDestination, signedLegacyMarketplaceReleases } from '../lib/legacy-marketplace-links.mjs';
 
 const releases = [['lenso.web-ingress', '0.4.5'], ['example.web', '1.0.0']];
+
+test('collects signed npm-only releases without treating an unsigned candidate as a legacy release', () => {
+  const signed = signedLegacyMarketplaceReleases(
+    [{ pluginId: 'example.linked', version: '1.0.0' }],
+    [{ pluginId: 'example.portable', version: '2.0.0' }],
+    [{ pluginId: 'example.npm-only', version: '3.0.0' }],
+  );
+  assert.deepEqual(legacyMarketplaceDestination('?plugin=example.npm-only&version=3.0.0', signed),
+    { kind: 'release', href: '/plugins/example.npm-only/3.0.0/' });
+  assert.deepEqual(legacyMarketplaceDestination('?plugin=lenso.web-ingress&version=0.4.5', signed),
+    { kind: 'unavailable', pluginId: 'lenso.web-ingress', version: '0.4.5' });
+});
 
 test('keeps exact legacy release identity while discarding browse filters', () => {
   assert.deepEqual(

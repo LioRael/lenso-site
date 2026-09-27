@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { ArrowRight, Boxes, Braces, Cog, Copy, FileCode2, Folder, Terminal } from 'lucide-react';
 import { LegacyMarketplaceEntry } from '@/components/legacy-marketplace-entry';
 import { SiteHeader } from '@/components/site-header';
-import { candidateRelease, signedLinkedCatalog, signedPortableCatalog } from '@/lib/plugin-candidates';
+import { signedLinkedCatalog, signedPackageCatalog, signedPortableCatalog } from '@/lib/plugin-candidates';
+import { signedLegacyMarketplaceReleases } from '@/lib/legacy-marketplace-links.mjs';
 
 const paths = [
   { title: 'Build an app', body: 'Preview a local Web App and complete one browser request. Matching source CLI required.', href: '/docs/build-apps', Icon: Braces },
@@ -11,11 +12,9 @@ const paths = [
 ];
 
 export default function Home() {
-  const releases = [...signedLinkedCatalog.releases, ...signedPortableCatalog.releases]
-    .map(({ pluginId, version }) => [pluginId, version] as const);
-  if (!releases.some(([pluginId, version]) => pluginId === candidateRelease.pluginId && version === candidateRelease.version)) {
-    releases.push([candidateRelease.pluginId, candidateRelease.version]);
-  }
+  const releases = signedLegacyMarketplaceReleases(
+    signedLinkedCatalog.releases, signedPortableCatalog.releases, signedPackageCatalog.releases,
+  );
   return (
     <LegacyMarketplaceEntry releases={releases}>
     <div className="marketing-shell">

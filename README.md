@@ -8,11 +8,12 @@ authority remain in the Marketplace and the adopting Host.
 
 The old Marketplace UI used `/?plugin=ID&version=VERSION` for exact release
 links. If such a link reaches this Site, the browser opens the same exact
-version only when this build has its release page. Otherwise it shows an
-unavailable state; it never substitutes a different version or presents an
+version only when this build has its signed linked Cargo, Portable, or npm-only
+release page. An unsigned candidate page does not qualify. Otherwise it shows
+an unavailable state; it never substitutes a different version or presents an
 omitted release as signed. This is client-side link handling, not a Marketplace
-host or API cutover. The old
-Marketplace remains in place until a separately verified deployment change.
+host or API cutover. The old Marketplace remains in place until a separately
+verified deployment change.
 Plain `/?q=TERM` browse links open the Site Plugin directory with that search
 term. Publisher, license, pagination, saved, and sample-catalog views are not
 translated because the static signed Site directory does not reproduce their
