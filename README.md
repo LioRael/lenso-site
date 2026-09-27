@@ -14,10 +14,12 @@ an unavailable state; it never substitutes a different version or presents an
 omitted release as signed. This is client-side link handling, not a Marketplace
 host or API cutover. The old Marketplace remains in place until a separately
 verified deployment change.
-Plain `/?q=TERM` browse links open the Site Plugin directory with that search
-term. Publisher, license, pagination, saved, and sample-catalog views are not
-translated because the static signed Site directory does not reproduce their
-live Marketplace semantics.
+Plain `/?q=TERM` and `/?view=browse` links open the Site Plugin directory.
+Publisher, license, pagination, saved, guide, and sample-catalog links show an
+explicit unsupported state because the static signed Site directory does not
+reproduce their live Marketplace semantics. That state links to the existing
+Marketplace host with the original query. Before changing that host's routing,
+verify this link and the fallback path again.
 
 The documentation tree describes the current Lenso architecture only. Retired product generations
 are intentionally excluded from the public site. `/docs` and `/docs/zh` are explicitly

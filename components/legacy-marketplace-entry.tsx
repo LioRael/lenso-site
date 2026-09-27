@@ -31,7 +31,13 @@ export function LegacyMarketplaceEntry({ children, releases }: {
     <SiteHeader active="plugins" />
     <main className="linked-doc-main">
       <nav aria-label="Breadcrumb" className="linked-doc-breadcrumb"><Link href="/plugins">Plugins</Link><span>/</span><span>Legacy link</span></nav>
-      {destination.kind === 'release' ? <><h1>Opening exact Plugin release</h1><p role="status">Taking you to the same Plugin ID and version in this Site build.</p></> : <>
+      {destination.kind === 'release' ? <><h1>Opening exact Plugin release</h1><p role="status">Taking you to the same Plugin ID and version in this Site build.</p></> : destination.kind === 'unsupported' ? <>
+        <h1>Marketplace view not available here</h1>
+        <p role="status">This legacy link uses a view or filter that the Site Plugin directory does not reproduce. No catalog result was substituted.</p>
+        <p>The existing Marketplace still handles this view.</p>
+        <p><a href={`https://marketplace.lenso.dev/${search}`}>Open this view in the Marketplace</a></p>
+        <p><Link href="/plugins">Open the Site Plugin directory</Link></p>
+      </> : <>
         <h1>Exact Plugin release unavailable</h1>
         <p role="status">{destination.pluginId && destination.version
           ? <>The exact release <code>{destination.pluginId}@{destination.version}</code> is not in this Site build. No other version is substituted.</>

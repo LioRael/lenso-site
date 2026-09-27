@@ -33,11 +33,15 @@ test('does not replace an unknown exact version with a candidate or latest versi
 test('keeps a plain legacy search query on the signed Site directory', () => {
   assert.deepEqual(legacyMarketplaceDestination('?q=web', releases), { kind: 'browse', href: '/plugins/?q=web' });
   assert.deepEqual(legacyMarketplaceDestination('?view=browse&q=hello%20world', releases), { kind: 'browse', href: '/plugins/?q=hello%20world' });
+  assert.deepEqual(legacyMarketplaceDestination('?view=browse', releases), { kind: 'browse', href: '/plugins/' });
+  assert.deepEqual(legacyMarketplaceDestination('?q=', releases), { kind: 'browse', href: '/plugins/' });
 });
 
-test('does not silently translate unsupported legacy filters or views', () => {
-  for (const query of ['?q=web&publisher=example', '?q=web&license=MIT', '?q=web&offset=30', '?view=saved&q=web', '?q=one&q=two']) {
-    assert.equal(legacyMarketplaceDestination(query, releases), null, query);
+test('shows an explicit state for unsupported legacy filters or views', () => {
+  for (const query of ['?q=web&publisher=example', '?q=web&license=MIT', '?q=web&offset=30',
+    '?view=saved&q=web', '?view=publishers', '?view=guide', '?catalog=sample', '?q=one&q=two',
+    '?view=browse&view=saved']) {
+    assert.deepEqual(legacyMarketplaceDestination(query, releases), { kind: 'unsupported' }, query);
   }
 });
 
