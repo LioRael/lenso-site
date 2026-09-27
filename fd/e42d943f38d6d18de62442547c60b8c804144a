@@ -1,0 +1,28 @@
+README.md
+  s_7d146975368699::t_dee87cce12c097 20-22
+  s_7d146975368699::t_049205905c6e41 17-19
+lib/legacy-marketplace-links.mjs
+  s_7d146975368699::t_049205905c6e41 15,23-33
+components/legacy-marketplace-entry.tsx
+  s_7d146975368699::t_2ec7dd52dc869a 38-39
+  s_7d146975368699::t_dee87cce12c097 37
+  s_7d146975368699::t_049205905c6e41 34-36,40
+scripts/legacy-marketplace-links.test.mjs
+  s_7d146975368699::t_049205905c6e41 36-37,40-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fde42d943f38d6d18de62442547c60b8c804144a",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
