@@ -139,5 +139,10 @@ unsigned candidate documentation is not one of those inputs. A signed
 listing without its `.crate` and trust material is still not an installation
 result; a successful adoption still needs the build, check, and real App call.
 
+For an npm-only distribution or editable source-content release, follow
+[Adopt a signed npm or source-content release](/docs/core/adopt-signed-sources).
+These paths use different signed inputs and removal rules; neither is an
+implicit linked Cargo fallback.
+
 The Kernel never reads this directory and never installs a package. It receives
 only the resolved Plan selected for one App Generation.

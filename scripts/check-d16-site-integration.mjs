@@ -20,8 +20,12 @@ const trust = {
 };
 const packageSchema = 'lenso.marketplace.package-snapshot.v1';
 const contentSchema = 'lenso.marketplace.release-content.v2';
-const packageDoc = Buffer.from('# Package start\n');
-const sourceDoc = Buffer.from('# Source start\n');
+const documentationTopics = ['getting-started', 'configuration', 'limitations'];
+const documentationBodies = new Map(await Promise.all(['package', 'source'].flatMap((channel) =>
+  documentationTopics.map(async (topic) => {
+    const path = `/${channel}/${topic}.md`;
+    return [path, await readFile(join(root, 'scripts/fixtures/d16-docs', channel, `${topic}.md`))];
+  }))));
 let packageBytes;
 let contentBytes;
 let server;
@@ -44,11 +48,18 @@ function envelope(schema, releases) {
   }));
 }
 
-function document(url, bytes) {
+function document(url, bytes, topic) {
   return {
-    id: 'start', revision: 'r1', language: 'en', topic: 'getting-started',
+    id: topic, revision: 'r1', language: 'en', topic,
     url, digest: digest(bytes), size: bytes.length, media_type: 'text/markdown',
   };
+}
+
+function documentsFor(channel, url) {
+  return documentationTopics.map((topic) => {
+    const path = `/${channel}/${topic}.md`;
+    return document(url(path), documentationBodies.get(path), topic);
+  });
 }
 
 async function run() {
@@ -62,9 +73,7 @@ async function run() {
   server = createServer({ key: await readFile(key), cert: await readFile(certificate) },
     (request, response) => {
       const bytes = request.url === '/package' ? packageBytes
-        : request.url === '/content' ? contentBytes
-          : request.url === '/package-start.md' ? packageDoc
-            : request.url === '/source-start.md' ? sourceDoc : null;
+        : request.url === '/content' ? contentBytes : documentationBodies.get(request.url);
       if (!bytes) { response.writeHead(404).end(); return; }
       response.writeHead(200, { 'content-type': request.url.endsWith('.md') ? 'text/markdown' : 'application/json',
         'content-length': bytes.length });
@@ -76,19 +85,20 @@ async function run() {
   const url = (path) => `https://${host}${path}`;
   const packageRelease = {
     plugin_id: 'example.editor', version: '1.0.0', publisher_id: 'example',
-    title: 'Editor package', summary: 'Signed npm-only package fixture',
+    title: 'D16 npm package fixture', summary: 'Test-only signed npm record with versioned Markdown',
     source_url: 'https://example.test/editor', source_revision: 'a'.repeat(40),
     license: 'MIT', distributions: [{
       id: 'npm', kind: 'npm_package', package: '@example/editor', version: '1.0.0',
       integrity: digest(Buffer.from('npm tarball fixture')), registry_url: 'https://registry.npmjs.org',
-    }], availability: 'listed', documentation: [document(url('/package-start.md'), packageDoc)],
+    }], availability: 'listed', documentation: documentsFor('package', url),
   };
   packageBytes = envelope(packageSchema, [packageRelease]);
   const packages = verifyPackageCatalog(packageBytes, trust);
   const sourceMetadata = {
-    publisher_id: 'example', title: 'Editor source', summary: 'Editable source fixture',
+    publisher_id: 'example', title: 'D16 editable source fixture',
+    summary: 'Test-only signed source-content record',
     source_url: 'https://example.test/editor-source', source_revision: 'b'.repeat(40),
-    license: 'MIT', documentation: [document(url('/source-start.md'), sourceDoc)],
+    license: 'MIT', documentation: documentsFor('source', url),
   };
   const starterBytes = Buffer.from('starter archive fixture');
   const extensionBytes = Buffer.from('extension archive fixture');
@@ -173,24 +183,46 @@ async function run() {
   assert.ok(packagePage.includes('--package-snapshot') && packagePage.includes(packageRelease.distributions[0].integrity));
   assert.ok(sourcePage.includes(sourceMetadata.title) && sourcePage.includes(sourceIdentity));
   assert.ok(sourcePage.includes('--content-preview') && !sourcePage.includes('--linked-snapshot'));
+  for (const topic of documentationTopics) {
+    assert.ok(packagePage.includes(topic), `package version page omits ${topic}`);
+    assert.ok(sourcePage.includes(topic), `source-content version page omits ${topic}`);
+  }
   assert.equal(savedCheckpoint.package.revision, 1);
   assert.equal(savedCheckpoint.release_content.revision, 1);
-  for (const release of joined.releases.filter((item) => item.baseKind === 'content_only')) {
-    for (const signedDocument of release.metadata.documentation) {
-      const markdown = await readOutput(`api/plugins/${release.pluginId}/${release.version}/docs/${signedDocument.slug}/content.md`);
-      assert.equal(markdown, sourceDoc.toString());
-    }
-  }
-  for (const signedDocument of packages.releases[0].documentation) {
-    const markdown = await readOutput(`api/plugins/${packageRelease.plugin_id}/${packageRelease.version}/docs/${signedDocument.slug}/content.md`);
-    assert.equal(markdown, packageDoc.toString());
+  const signedDocuments = [
+    ...packages.releases[0].documentation.map((item) => ({
+      pluginId: packageRelease.plugin_id, version: packageRelease.version, item,
+    })),
+    ...joined.releases.filter((item) => item.baseKind === 'content_only').flatMap((release) =>
+      release.metadata.documentation.map((item) => ({
+        pluginId: release.pluginId, version: release.version, item,
+      }))),
+  ];
+  assert.equal(signedDocuments.length, 6);
+  const search = JSON.parse(await readOutput('api/plugins/search'));
+  const indexedDocuments = Object.values(search.docs.docs);
+  assert.equal(indexedDocuments.length, signedDocuments.length);
+  for (const { pluginId, version, item } of signedDocuments) {
+    const expected = documentationBodies.get(new URL(item.url).pathname).toString();
+    const markdown = await readOutput(`api/plugins/${pluginId}/${version}/docs/${item.slug}/content.md`);
+    assert.equal(markdown, expected);
+    const page = await readOutput(`plugins/${pluginId}/${version}/docs/${item.slug}/index.html`);
+    assert.ok(page.includes(item.topic), `${pluginId} ${item.topic} page missing`);
+    const bodyExcerpt = expected.split('\n').map((line) => line.trim())
+      .find((line) => line.length >= 30 && !/[`#]/.test(line));
+    assert.ok(bodyExcerpt, `${pluginId} ${item.topic} has no plain body excerpt`);
+    assert.ok(page.includes(bodyExcerpt.slice(0, 24)), `${pluginId} ${item.topic} body missing`);
+    const indexed = indexedDocuments.find((entry) => entry.url === `/plugins/${pluginId}/${version}/docs/${item.slug}`);
+    assert.ok(indexed, `${pluginId} ${item.topic} search entry missing`);
+    assert.equal(indexed.content, expected);
+    assert.equal(indexed.locale, item.language);
   }
   console.log(JSON.stringify({
     status: 'PASS', packageIdentity: packages.baseReleases[0].identity,
     sourceIdentity, catalogReleases: directory.releases.length,
     packagePath: '/plugins/example.editor/1.0.0',
     sourcePath: '/plugins/example.editor.source/1.0.0',
-    markdownBodies: 2, checkpointChannels: ['package', 'release_content'],
+    markdownBodies: signedDocuments.length, checkpointChannels: ['package', 'release_content'],
   }));
 }
 

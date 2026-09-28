@@ -125,5 +125,8 @@ Portable Release 已公开发布。
 目标。本站未签名的候选文档不能作为这些输入。仅有签名列表、缺少 `.crate` 或
 信任材料仍不算安装成功；采用成功之后还需构建、检查并真实调用 App。
 
+仅含 npm 包的分发与可编辑源码内容，见[采用签名 npm 或源码内容](/docs/zh/core/adopt-signed-sources)。
+它们使用不同的签名输入和移除规则，不能隐式退回 linked Cargo 路径。
+
 Kernel 从不读取该目录，也不安装 Package；它只接收某个 App Generation 选择的
 Resolved Plan。

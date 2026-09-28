@@ -12,5 +12,6 @@ export default {
     "document-sync",
     "plugin-configuration",
     "plugin-composition",
+    "adopt-signed-sources",
   ],
 };

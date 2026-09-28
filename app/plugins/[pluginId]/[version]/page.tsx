@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { DescriptionListDescription, DescriptionListItem, DescriptionListRoot, DescriptionListTerm } from '@lenso/ui/description-list';
 import { CandidateDocumentation } from '@/components/candidate-documentation';
 import { CopyCommand } from '@/components/copy-command';
+import { PluginDocumentTools } from '@/components/plugin-document-tools';
 import { SiteHeader } from '@/components/site-header';
 import { candidateRelease, signedLinkedCatalog, signedPortableCatalog, signedPackageCatalog, signedReleaseContent, type SignedLinkedRelease, type SignedPortableRelease, type SignedPackageRelease, type SignedReleaseContent } from '@/lib/plugin-candidates';
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
@@ -94,6 +95,7 @@ function SignedReleasePage({ release, portable, packageRelease }: {
         <p>{release.summary}</p>
         {portable && <p>This identifier and version appear in two independently signed channels. Site does not claim their artifacts are interchangeable or derived from one another.</p>}
       </header>
+      <PluginDocumentTools pluginId={release.pluginId} version={release.version} />
       <aside className="linked-doc-provenance">
         <strong>Catalog evidence, not an installation</strong>
         <p>This exact release was verified against the configured catalog public key when Site was built. The snapshot expires {signedLinkedCatalog.expiresAt ? new Date(signedLinkedCatalog.expiresAt * 1000).toISOString() : 'at an unknown time'}. Reverify it locally before adoption; a signed listing does not establish source-code safety or compatibility with your Host.</p>
@@ -152,6 +154,7 @@ function SignedPortableReleasePage({ release, packageRelease }: {
         <h1>{release.title}</h1>
         <p>{release.summary}</p>
       </header>
+      <PluginDocumentTools pluginId={release.pluginId} version={release.version} />
       <PortableProvenance release={release} />
       {packageRelease && <PackageProvenance release={packageRelease} />}
       {otherVersions.length > 0 && <section className="linked-release-section"><h2>Other listed versions</h2><ul>{otherVersions.map((item) => <li key={item.version}><Link href={linkedReleasePath(item.pluginId, item.version)}>{item.version}</Link></li>)}</ul></section>}
@@ -177,6 +180,7 @@ function SignedPackageReleasePage({ release }: { release: SignedPackageRelease }
         <h1>{release.title}</h1>
         <p>{release.summary}</p>
       </header>
+      <PluginDocumentTools pluginId={release.pluginId} version={release.version} />
       <PackageProvenance release={release} />
       {otherVersions.length > 0 && <section className="linked-release-section"><h2>Other listed versions</h2><ul>{otherVersions.map((item) =>
         <li key={item.version}><Link href={linkedReleasePath(item.pluginId, item.version)}>{item.version}</Link></li>)}</ul></section>}
@@ -201,6 +205,7 @@ function SignedContentOnlyPage({ pluginId, version }: { pluginId: string; versio
         <p>{metadata.summary}</p>
         <p>This release contains editable source content. The signed record does not claim a runtime Bundle, Cargo crate or npm package.</p>
       </header>
+      <PluginDocumentTools pluginId={pluginId} version={version} />
       <aside className="linked-doc-provenance">
         <strong>Signed content reference, not an installation</strong>
         <p>The content snapshot was verified when Site was built. Its self-bound identity covers this exact Plugin ID, version, publisher metadata, versioned documentation, and ordered archive references. Reverify the signature and archive bytes locally before copying any files.</p>

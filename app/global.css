@@ -29,11 +29,16 @@ button, a, input, select { outline-offset: 3px; }
 
 .marketing-shell { min-height: 100vh; background: #fff; }
 .plugin-shell, .linked-release-shell { --ink: var(--color-content-primary); --muted: var(--color-content-tertiary); --line: var(--color-border-secondary); --soft: var(--color-surface-canvas); --surface: var(--color-surface-panel); --blue-soft: color-mix(in srgb, var(--color-surface-panel) 90%, #0668f7); min-height: 100vh; background: var(--color-surface-canvas); color: var(--ink); }
+.linked-doc-shell { --ink: var(--color-content-primary); --muted: var(--color-content-tertiary); --line: var(--color-border-secondary); --soft: var(--color-surface-canvas); --surface: var(--color-surface-panel); --blue-soft: color-mix(in srgb, var(--color-surface-panel) 90%, #0668f7); min-height: 100vh; background: var(--color-surface-canvas); color: var(--ink); }
 .plugin-shell { --color-action-primary: #0668f7; --color-action-primary-hover: #005bdd; --color-action-primary-content: #fff; }
 .plugin-shell .site-nav a, .linked-release-shell .site-nav a { color: var(--ink); }
+.linked-doc-shell .site-nav a { color: var(--ink); }
 .plugin-shell .site-nav a:hover, .plugin-shell .site-nav a.is-active, .linked-release-shell .site-nav a:hover, .linked-release-shell .site-nav a.is-active { color: var(--blue); }
+.linked-doc-shell .site-nav a:hover, .linked-doc-shell .site-nav a.is-active { color: var(--blue); }
 .plugin-shell .mobile-nav nav, .linked-release-shell .mobile-nav nav { background: var(--surface); }
+.linked-doc-shell .mobile-nav nav { background: var(--surface); }
 :root[data-theme="dark"] .plugin-shell, :root[data-theme="dark"] .linked-release-shell { --blue: #7cb4ff; }
+:root[data-theme="dark"] .linked-doc-shell { --blue: #7cb4ff; }
 :root[data-theme="dark"] .plugin-shell { --color-action-primary: #7cb4ff; --color-action-primary-hover: #a9d0ff; --color-action-primary-content: #111318; }
 :root[data-theme="dark"] .plugin-shell .button-primary { color: #111318; }
 :root[data-theme="dark"] .plugin-shell .filter-rail > [data-slot="button"] { color: var(--muted); }

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import ReactMarkdown from 'react-markdown';
+import { PluginDocumentTools } from '@/components/plugin-document-tools';
 import { SiteHeader } from '@/components/site-header';
 import { signedLinkedCatalog, signedPortableCatalog, signedPackageCatalog, signedReleaseContent } from '@/lib/plugin-candidates';
 import { linkedDocumentApiPath, linkedReleasePath } from '@/lib/linked-document-paths';
@@ -44,6 +45,7 @@ export default async function SignedDocumentationPage({ params }: { params: Para
         <p>{pluginId}@{version} · document {document.documentId}@{document.revision}</p>
         {document.target && <p>Target: {document.target}</p>}
       </header>
+      <PluginDocumentTools pluginId={pluginId} version={version} documentSlug={slug} />
       <aside className="linked-doc-provenance">
         <strong>Content verified at Site build</strong>
         <p>The signed {document.channel === 'portable' ? 'release details and exact Portable base' : document.channel === 'package' ? 'npm package catalog' : document.channel === 'content' ? 'source-content record' : 'linked Cargo catalog'} names this exact revision, size and SHA-256. This third-party Markdown is displayed as data; HTML, images and executable MDX are disabled.</p>
