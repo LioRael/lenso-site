@@ -32,7 +32,7 @@ Web Plugin 脚手架。它的 `lenso plugin dev` 命令可以启动临时 Develo
 当前 Authoring Surface 包括：
 
 - 使用 `lenso-capability-http-endpoint` 编写强类型 Route 与 Extractor；
-- 使用 `lenso-web-ingress` 提供入站 HTTP Transport；
+- 使用 `lenso-web-ingress-plugin` 提供入站 HTTP Transport；
 - 使用 Host 现有的 Linked Native Factory、Registry 与 Catalog Path。
 
 App Configuration 无法让实现凭空出现在 Host Build 中。Endpoint Plugin 与
@@ -62,7 +62,7 @@ Ingress 必须先由 Host Catalog 提供。
 在目标仓库确认：
 
 1. 仓库选择 Rust 1.94 或更高版本。
-2. Lock 已包含 `lenso-capability-http-endpoint` 与 `lenso-web-ingress`，或
+2. Lock 已包含 `lenso-capability-http-endpoint` 与 `lenso-web-ingress-plugin`，或
    Host Owner 已批准添加它们。
 3. Host Registry 可以链接新的 Native Factory。
 4. Host Catalog 可以提供 `company.greetings-http`，并把它绑定到 Ingress 的
@@ -70,9 +70,10 @@ Ingress 必须先由 Host Catalog 提供。
 5. 真实 Host 或 Integration Test 可以暴露 Listener Address。
 
 遇到缺失项时，在那里停下并与 Host Owner 解决。当前 Web Capability 与 Transport
-Crate 由 `LioRael/lenso` Monorepo 持有；已发布 Cohort 使用
-`lenso-capability-http-endpoint` 0.2.3 和 `lenso-web-ingress` 0.3.3。其他 Host
-应使用自身 Lock 选择的准确版本。
+Crate 由 `LioRael/lenso` Monorepo 持有；当前 Crate 版本为
+`lenso-capability-http-endpoint` 0.3.4 和 `lenso-web-ingress-plugin` 0.4.9。
+合并前已发布的旧 Cohort 使用 `lenso-capability-http-endpoint` 0.2.3 与
+`lenso-web-ingress` 0.3.3。目标 Host 应使用自身 Lock 选择的准确版本。
 
 ## 完成条件
 

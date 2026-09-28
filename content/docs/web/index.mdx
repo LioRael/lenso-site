@@ -34,7 +34,7 @@ relationship described below.
 The current authoring surface is:
 
 - `lenso-capability-http-endpoint` for typed routes and extractors;
-- `lenso-web-ingress` for inbound HTTP transport; and
+- `lenso-web-ingress-plugin` for inbound HTTP transport; and
 - the Host's linked native factory, registry, and Catalog path.
 
 App configuration cannot make an implementation appear in a Host build. The
@@ -66,7 +66,7 @@ Confirm these conditions in the target repository:
 
 1. The repository selects Rust 1.94 or newer.
 2. Its lock contains `lenso-capability-http-endpoint` and
-   `lenso-web-ingress`, or the Host owner approved adding them.
+   `lenso-web-ingress-plugin`, or the Host owner approved adding them.
 3. The Host registry can link another native factory.
 4. The Host Catalog can expose `company.greetings-http` and bind it to the
    Ingress `many lenso.http.endpoint@1` requirement.
@@ -74,9 +74,11 @@ Confirm these conditions in the target repository:
 
 Stop at the first missing prerequisite and resolve it with the Host owner. The
 current `LioRael/lenso` monorepo owns the Web Capability and transport crates.
-The published cohort used `lenso-capability-http-endpoint` 0.2.3 and
-`lenso-web-ingress` 0.3.3. Another Host should use the exact versions selected
-by its own lock.
+Its current crate versions are `lenso-capability-http-endpoint` 0.3.4 and
+`lenso-web-ingress-plugin` 0.4.9. The earlier, pre-consolidation published
+cohort used `lenso-capability-http-endpoint` 0.2.3 and
+`lenso-web-ingress` 0.3.3. Use the exact versions selected by the target
+Host's own lock.
 
 ## Definition of done
 
