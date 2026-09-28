@@ -22,9 +22,9 @@ export function CandidateDocumentation() {
           <p>This 0.4.5 page preserves migration-era source evidence from the former <code>lenso-web</code> repository. <a href={release.maintainedSourceUrl}>Current Web development lives in the consolidated Rust repository</a>. The current source is not evidence that this historical candidate is signed or compatible with your App.</p>
           <hr />
           <h2 id="get-started">Get started</h2>
-          <p>This candidate claims a linked Rust distribution. The Host must build and register it for the declared Native target; no signed catalog availability decision is present.</p>
+          <p>This candidate declares a Host-provided linked Rust integration. A product-specific Host adapter must build and register its factory for the declared Native target. Generic <code>lenso app add</code> cannot adopt it, and no signed catalog availability decision is present.</p>
           <div className="code-panel"><div className="code-panel-head"><span>Cargo.toml</span><CopyCommand value={dependency} /></div><pre><code>{`[dependencies]\n${dependency}`}</code></pre></div>
-          <aside className="adopt-callout"><CircleAlert size={25} /><div><h3>Before you adopt</h3><ul><li>Requires a Host build</li><li>Native is a candidate claim</li><li>No implicit portable fallback</li></ul></div></aside>
+          <aside className="adopt-callout"><CircleAlert size={25} /><div><h3>Before you adopt</h3><ul><li>Requires a product-specific Host adapter and build</li><li>Not available through generic <code>lenso app add</code></li><li>No implicit portable fallback</li></ul></div></aside>
           <h3 id="public-interfaces" className="article-subheading">Create the native factory</h3>
           <div className="code-panel"><div className="code-panel-head"><span>src/main.rs</span><CopyCommand value={'use lenso_web_ingress_plugin::WebIngressFactory;\n\nlet ingress = WebIngressFactory::new();'} /></div><pre><code>{`use lenso_web_ingress_plugin::WebIngressFactory;\n\nlet ingress = WebIngressFactory::new();`}</code></pre></div>
           <h2 id="configuration">Configuration</h2>

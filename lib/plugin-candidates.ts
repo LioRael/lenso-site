@@ -126,7 +126,7 @@ export const candidateRelease = {
   pluginId: 'lenso.web-ingress',
   package: 'lenso-web-ingress-plugin',
   version: '0.4.5',
-  summary: 'General-purpose linked Rust HTTP Ingress Plugin for Lenso backends.',
+  summary: 'Linked Rust HTTP Ingress Plugin for Lenso backends. Requires a product-specific Host adapter.',
   distribution: 'Linked Rust',
   target: 'Native',
   catalogStatus: 'Not yet catalog-signed',
