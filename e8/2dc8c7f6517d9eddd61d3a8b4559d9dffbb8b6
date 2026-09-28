@@ -1,0 +1,20 @@
+app/global.css
+  s_7d146975368699::t_43f78e263a3b77 41,51-52
+  s_7d146975368699::t_7f895f1aa0610a 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e82dc8c7f6517d9eddd61d3a8b4559d9dffbb8b6",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
