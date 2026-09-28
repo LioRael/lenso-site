@@ -3,14 +3,17 @@ title: 构建 App
 description: 从本地 App 的实际结果开始，再采用 Plugin、接入前端并检查构建产物。
 ---
 
-当前 App 教程是**从源码构建的本地预览**，不代表 CLI 或生成项目的每项依赖都已在
-公开 Registry 发布。手工与 Coding Agent 使用同一个 App、同一组命令和成功检查。
+Web App 教程使用匹配源码构建的 CLI 和已发布的 Rust 依赖。仓库外新建的 App 从
+crates.io 解析生成的 Lenso 精确版本，通过 `app build`、`app check` 和 `app show`，
+并通过第一个 Web Plugin 完成真实问候请求。这不代表 Plugin 已进入签名目录、
+React 客户端或外部 Provider 已公开发布，也不代表应用已部署。手工与 Coding Agent
+使用同一个 App、同一组命令和成功检查。
 
 ## 教程：在浏览器完成一次请求
 
 [创建本地 Web App](/docs/zh/core/app-quickstart)用 `--web` 显式选择 Linked Web Starter，
-运行 App，在浏览器提交问候，然后检查第二个 Linked Plugin 的结果。如果精确的源码
-版本组合无法构建，应停在教程注明的依赖边界。
+运行 App，在浏览器提交问候，然后检查第二个 Linked Plugin 的结果。如果生成的
+精确依赖不可用，应停止并报告，不要改成旧版。
 
 ## 完成首个结果后的任务
 

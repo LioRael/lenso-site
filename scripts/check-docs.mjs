@@ -377,7 +377,7 @@ for (const marker of ["Resolved App Plan", "Runtime Driver", "Execution Adapter"
 
 for (const [file, markers] of [
   ["content/docs/core/(start)/app-quickstart.mdx", [
-    "Local candidate preview",
+    "Published Rust dependencies, source-built CLI",
     'app create "$APP_PARENT/hello-web" --web',
     "plugin new example.second-http --web --repo-root ./app",
     "app dev",
@@ -387,7 +387,7 @@ for (const [file, markers] of [
     "Use a coding agent for these same steps",
   ]],
   ["content/docs/zh/core/(start)/app-quickstart.mdx", [
-    "本地候选预览",
+    "Rust 依赖已发布，CLI 从源码构建",
     'app create "$APP_PARENT/hello-web" --web',
     "plugin new example.second-http --web --repo-root ./app",
     "app dev",

@@ -3,17 +3,20 @@ title: Build an App
 description: Start with a local App result, then adopt Plugins, connect a frontend, and inspect the built App.
 ---
 
-The current App tutorial is a **source-built local preview**. It does not
-promise that the CLI or every generated dependency is available from a public
-registry. The manual and coding-agent routes use the same App, commands, and
+The Web App tutorial uses a matching source-built CLI and published Rust
+dependencies. A fresh external App resolved its generated Lenso pins from
+crates.io, passed `app build`, `app check`, and `app show`, and served a real
+greeting request through the first Web Plugin. That result does not establish
+a signed Plugin listing, a public React client or external Provider releases,
+or deployment. Manual and coding-agent routes use the same App, commands, and
 success checks.
 
 ## Tutorial: complete one browser request
 
 [Create a local Web App](/docs/core/app-quickstart) selects the linked Web
 starter explicitly with `--web`, runs the App, submits a greeting from the
-browser, and checks the result of a second linked Plugin. Stop at the page's
-dependency boundary if the exact source cohort cannot build.
+browser, and checks the result of a second linked Plugin. Stop if an exact
+generated dependency is unavailable; do not repin it to an older release.
 
 ## Tasks after the first result
 

@@ -3,14 +3,14 @@ title: 创建本地 Web App
 description: 显式选择 Linked Web Starter，添加第二个 Web Plugin，并在本地检查两条路由。
 ---
 
-> **本地候选预览。** 当前 `lenso` 源码 Checkout 中的 `lenso-cli` Crate 已实现
-> `app create --web` 路径，但本页
-> 不声称 npm/Cargo 已发布包含该命令的版本，也不声称生成项目的全部依赖均已发布。请使用
-> 匹配源码构建的 CLI，并为生成的 App 提供精确匹配的本地 Cargo 依赖源。
-> 生成后的 `app/local.starter/Cargo.toml` 是框架、HTTP Endpoint 和 Web Host
-> 精确版本的依据；匹配的 Host 构建会选择自己的 Web Ingress 精确版本。
-> 这组候选依赖尚未完整发布到 crates.io。若精确依赖不可用，应停下，检查生成的
-> Manifest 并报告缺少的包和版本，不要改成旧版来勉强通过预览。
+> **Rust 依赖已发布，CLI 从源码构建。** 本教程使用合并后的 `lenso` 仓库中
+> 匹配的 `lenso-cli` 源码。仓库外新建的 App 在没有 Lenso path 或 Git 覆盖的情况下
+> 从 crates.io 解析依赖，并通过 `app build`、`app check`、`app show` 和真实问候请求。
+> 这项验证只覆盖生成的第一个 Web Plugin，不代表下文第二个 Plugin 流程或预装
+> CLI 二进制也已验收。生成的 `app/local.starter/Cargo.toml` 是精确版本依据；
+> 生成的 Host 会选择自己的 Web Ingress 版本。若某个精确依赖不可用，应停下并
+> 报告包名和版本，不要改动版本。Rust Crate 公开发布不等于 Marketplace 签名
+> 列表已生成，也不等于 Site 已部署。
 
 这条路径用 `--web` 显式创建 Linked Web Starter，从浏览器表单发出真正的 `POST /greetings`
 请求，再添加第二个 Linked Web Plugin。它不需要 Marketplace 条目。手工开发与
@@ -31,8 +31,9 @@ LENSO_CLI="$(pwd)/target/debug/lenso"
 ```
 
 确认 `app create --help` 能正常执行。`PATH` 中安装的 `lenso` 可能是旧公开版本；
-本页后续命令均使用绝对路径 `LENSO_CLI`。创建时脚手架会运行 Cargo check。从源码构建 CLI
-并不会同时提供生成 App 所锁定的包；继续前需准备匹配的本地 Cargo 依赖源。
+本页后续命令均使用绝对路径 `LENSO_CLI`。创建时脚手架会运行 Cargo check。
+Cargo 从 crates.io 获取生成 App 锁定的包；离线开发可使用经审查且包含相同版本的
+镜像，不要改用本地 path 或 Git 覆盖。
 
 ## 2. 创建并运行同一个 App
 
@@ -98,8 +99,8 @@ cargo test --locked --manifest-path app/example.second-http/Cargo.toml
 
 `app build` 不覆盖已有输出目录。`app check` 以分发目录为根，核对 Host Bundle 清单；
 `app show` 则以其中的 `intent/` Plugin Root 为根，查看解析结果。`start --check` 完成激活并关闭。
-源码构建成功仍不等于有公开可下载
-Release 或已部署。要检查真实 HTTP，运行 `"$LENSO_CLI" app start --from dist-review`，
+App 构建成功不会生成签名 Catalog Release，也不会部署 App。要检查真实 HTTP，运行
+`"$LENSO_CLI" app start --from dist-review`，
 并在它打印的地址访问 `/` 和 `/second`。
 
 ## 让 Coding Agent 执行相同步骤
@@ -107,9 +108,10 @@ Release 或已部署。要检查真实 HTTP，运行 `"$LENSO_CLI" app start --f
 向 Agent 提供匹配源码 Checkout 和一个本地空父目录，然后使用以下有边界的请求：
 
 ```text
-按本页手工命令创建本地 Web App，使用这个 Checkout 源码构建的 lenso CLI，以及
-另行提供的精确匹配本地 Cargo 依赖源。若锁定的依赖组不可用，应停止并报告缺少的包和版本，
-不要修改生成的依赖清单或改用其他 Release。App 必须放在框架源码树外：先运行
+按本页手工命令创建本地 Web App，使用这个 Checkout 源码构建的 lenso CLI。
+从 crates.io 或经审查的离线镜像解析生成项目锁定的 Cargo 版本。若某个版本不可用，
+应停止并报告缺少的包和版本，不要修改生成的依赖清单或使用本地 path、Git 覆盖。
+App 必须放在框架源码树外：先运行
 APP_PARENT="$(mktemp -d)"，再运行 "$LENSO_CLI" app create "$APP_PARENT/hello-web" --web，
 然后 cd "$APP_PARENT/hello-web"，最后运行 "$LENSO_CLI" app dev。
 不带 --web 的 app create 会生成根目录 Process notes Plugin，不属于本教程。
@@ -126,11 +128,11 @@ Agent 可以编辑 `app/local.starter/` 和 `app/example.second-http/` 中的普
 
 ## 仅在真实可用时采用其他 Plugin
 
-[浏览 Plugin](/plugins)，查看分发方式、版本、Target 与文档。候选
-`lenso.web-ingress` 页面**不是**已签名 Catalog Release，不能当作安装说明。
-即使看到已签名的 Linked Cargo 列表，CLI 仍须校验精确 Snapshot、公钥信任、
-`.crate`、Host Target、构建和解析后的 App，才能确认采用。完成本地问候无需
-采用目录 Plugin。
+[浏览 Plugin](/plugins)，查看分发方式、版本、Target 与文档。历史
+`lenso.web-ingress` 0.4.5 候选页面**不是**已签名 Catalog Release，不能当作
+安装说明。即使看到已签名的 Linked Cargo 列表，Plugin 也并未自动安装；CLI
+仍须校验精确 Snapshot、公钥信任、`.crate`、Host Target、构建和解析后的 App。
+完成本地问候无需采用目录 Plugin。
 
 已发布 CLI 的独立 Plugin 工作流仍见[Plugin 快速开始](/docs/zh/core/quickstart)。
 本地 App 的发现与打包原理见[本地 App 开发](/docs/zh/core/engine-dx)。

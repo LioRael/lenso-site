@@ -3,17 +3,17 @@ title: Create a local Web App
 description: Select the linked Web starter, add a second Web Plugin, and check both routes locally.
 ---
 
-> **Local candidate preview.** The `lenso-cli` crate in the current `lenso`
-> source checkout implements the `app create --web` path, but this page does
-> not claim that an npm/Cargo release contains it or that every generated
-> dependency is published. Use a matching local CLI build and a separately
-> supplied Cargo source containing the generated App's exact dependencies.
-> The CLI-generated `app/local.starter/Cargo.toml` is the source of truth for
-> exact framework, HTTP Endpoint, and Web Host pins. The matching Host build
-> selects its own exact Web Ingress release. This candidate cohort is not yet
-> fully published on crates.io. If an exact dependency is unavailable, stop,
-> inspect the generated manifest, and report the missing package and version.
-> Do not change its pins to make this preview pass against an older release.
+> **Published Rust dependencies, source-built CLI.** This tutorial builds a
+> matching `lenso-cli` from the consolidated `lenso` source. A fresh App outside
+> that checkout resolved its Lenso packages from crates.io without Lenso path
+> or Git overrides, then passed `app build`, `app check`, `app show`, and a real
+> greeting request. That check covers the generated first Web Plugin, not the
+> second-Plugin steps below or an installed CLI binary. The generated
+> `app/local.starter/Cargo.toml` is the source of truth for exact pins; the
+> generated Host selects its own Web Ingress version. If an exact dependency
+> is unavailable, stop and report its name and version without changing the
+> pins. Public crates do not create a signed Marketplace listing or deploy
+> this Site.
 
 This path explicitly selects the linked Web starter with `--web`, uses its
 browser form to make a real `POST /greetings` request, then adds a second
@@ -39,9 +39,10 @@ LENSO_CLI="$(pwd)/target/debug/lenso"
 Confirm that `app create --help` succeeds. The installed `lenso` on your
 `PATH` may be an older public release; use the absolute `LENSO_CLI` path for
 every step here.
-The starter runs a Cargo check during creation. Building the CLI from source
-does not provide the generated App's pinned packages; arrange the matching
-local Cargo dependency source before continuing.
+The starter runs a Cargo check during creation. Cargo obtains the generated
+App's pinned packages from crates.io. For offline work, supply a reviewed
+mirror with those same versions; do not replace them with local path or Git
+overrides.
 
 ## 2. Create and run the same App
 
@@ -113,8 +114,8 @@ cargo test --locked --manifest-path app/example.second-http/Cargo.toml
 `app build` refuses to overwrite an existing output directory. `app check` takes
 the distribution root and verifies its Host bundle inventory; `app show` takes
 the distribution's `intent/` Plugin Root to inspect the resolved result.
-`start --check` activates and shuts down. A successful source build is still
-not proof of a publicly downloadable release or deployment. To check live HTTP,
+`start --check` activates and shuts down. A successful App build does not
+create a signed catalog release or deploy the App. To check live HTTP,
 run `"$LENSO_CLI" app start --from dist-review` and visit `/` and `/second` at
 the address it prints.
 
@@ -125,10 +126,11 @@ use this bounded request:
 
 ```text
 Create the local Web App using the manual commands in this page, with the
-source-built lenso CLI from this checkout and a separately supplied exact local
-Cargo dependency source. If the pinned cohort is unavailable, stop and report
-the missing package and version without changing the generated manifest or
-trying another release. Keep the App outside the framework source tree: run
+source-built lenso CLI from this checkout. Resolve the generated exact Cargo
+pins from crates.io or a reviewed offline mirror. If a pin is unavailable,
+stop and report the missing package and version without changing the generated
+manifest or using a local path or Git override. Keep the App outside the
+framework source tree: run
 APP_PARENT="$(mktemp -d)"; run "$LENSO_CLI" app create "$APP_PARENT/hello-web" --web;
 cd "$APP_PARENT/hello-web"; then run "$LENSO_CLI" app dev.
 A bare app create instead makes a root Process notes Plugin and is not this
@@ -149,11 +151,11 @@ The Site cannot operate your local files or approve installation for you.
 ## Add another Plugin only when it is real
 
 [Browse Plugins](/plugins) to inspect distribution, version, targets, and
-documentation. The candidate `lenso.web-ingress` page is **not** a signed
-catalog release and is not an installation instruction. A signed linked Cargo
-listing also remains only a candidate until your CLI verifies the exact
-snapshot, public trust, `.crate`, Host target, build, and resolved App. The
-local starter needs no catalog adoption to complete its greeting.
+documentation. The historical `lenso.web-ingress` 0.4.5 candidate page is
+**not** a signed catalog release or an installation instruction. Even a signed
+linked Cargo listing is not an installed Plugin: your CLI must verify the
+exact snapshot, public trust, `.crate`, Host target, build, and resolved App.
+The local starter needs no catalog adoption to complete its greeting.
 
 For the standalone Plugin workflow, keep using the existing
 [Plugin quickstart](/docs/core/quickstart). To understand how local App
