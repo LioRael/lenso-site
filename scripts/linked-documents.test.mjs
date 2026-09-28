@@ -58,6 +58,18 @@ test('same Plugin/version/document revision in Portable and linked channels neve
   assert.notEqual(result[linkedSlug].content, result[portableSlug].content);
 });
 
+test('npm and source-only Markdown retain channel-specific paths', async () => {
+  const result = await ingestVerifiedDocuments([
+    { channel: 'linked', catalog },
+    { channel: 'package', catalog },
+    { channel: 'content', catalog },
+  ], new Set(['docs.example.test']), fetcher);
+  const slugs = ['linked', 'package', 'content'].map((channel) =>
+    documentSlug('example.web', '1.0.0', document, channel));
+  assert.equal(new Set(slugs).size, 3);
+  assert.deepEqual(slugs.map((slug) => result[slug].channel), ['linked', 'package', 'content']);
+});
+
 test('rejects changed hosts, credentialed URLs, redirects and excessive signed sizes', async () => {
   for (const url of ['https://user@docs.example.test/quickstart.md',
     'https://docs.example.test.evil.test/quickstart.md', 'http://docs.example.test/quickstart.md']) {

@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { generateKeyPairSync, sign } from 'node:crypto';
+import { createHash, generateKeyPairSync, sign } from 'node:crypto';
 import { test } from 'node:test';
 import { verifyLinkedCatalog } from './linked-catalog.mjs';
 import { verifyPortableCatalog } from './portable-catalog.mjs';
+import { verifyPackageCatalog } from './package-catalog.mjs';
 import { joinReleaseContent, verifyReleaseContent } from './release-content.mjs';
 
 const { privateKey, publicKey } = generateKeyPairSync('ed25519');
@@ -23,6 +24,15 @@ const content = [
   { id: 'dev-extension', kind: 'development_extension', url: 'https://example.test/extension.tar.gz',
     digest: `sha256:${'d'.repeat(64)}`, size: 456 },
 ];
+const sourceMetadata = {
+  publisher_id: 'example', title: 'Source content', summary: 'Editable source',
+  source_url: 'https://example.test/source', source_revision: 'a'.repeat(40),
+  license: 'MIT', documentation: [{
+    id: 'start', revision: 'r1', language: 'en', topic: 'getting-started',
+    url: 'https://example.test/start.md', digest: `sha256:${'e'.repeat(64)}`,
+    size: 12, media_type: 'text/markdown',
+  }],
+};
 
 function envelope(schema, snapshot) {
   const payload = Buffer.from(JSON.stringify(snapshot));
@@ -91,6 +101,74 @@ test('portable content uses its own exact base identity and never borrows linked
   assert.throws(() => joinReleaseContent(base, { ...portable,
     baseReleases: [{ ...portable.baseReleases[0], identity: `sha256:${'0'.repeat(64)}` }] }, verified),
   /immutable portable base/);
+});
+
+test('package content joins only exact signed npm base, while pure content self-binds without one', () => {
+  const packageSchema = 'lenso.marketplace.package-snapshot.v1';
+  const npmRelease = {
+    plugin_id: 'example.npm', version: '1.2.3', publisher_id: 'example',
+    title: 'Npm source', summary: 'Npm source package',
+    source_url: 'https://example.test/npm', source_revision: 'a'.repeat(40),
+    license: 'MIT', distributions: [{
+      id: 'npm', kind: 'npm_package', package: '@example/npm', version: '1.2.3',
+      integrity: `sha256:${'e'.repeat(64)}`, registry_url: 'https://registry.npmjs.org',
+    }], availability: 'listed',
+  };
+  const packages = verifyPackageCatalog(envelope(packageSchema, {
+    schema: packageSchema, catalog_id: trust.catalogId,
+    revision: 1, issued_at: 100, expires_at: 200, releases: [npmRelease],
+  }), trust, 150);
+  const attached = verifyReleaseContent(signed({ releases: [{
+    plugin_id: npmRelease.plugin_id, version: npmRelease.version,
+    base_kind: 'package', base_release_identity: packages.baseReleases[0].identity,
+    content: [content[0]],
+  }] }), trust, 150);
+  assert.equal(joinReleaseContent({ catalogId: null, releases: [] },
+    { catalogId: null, releases: [] }, attached, packages).releases[0].baseKind, 'package');
+  assert.equal(joinReleaseContent({ catalogId: null, releases: [] },
+    { catalogId: null, releases: [] }, attached).releases.length, 0);
+  assert.throws(() => joinReleaseContent({ catalogId: null, releases: [] },
+    { catalogId: null, releases: [] }, attached, { ...packages,
+      baseReleases: [{ ...packages.baseReleases[0], identity: `sha256:${'0'.repeat(64)}` }] }),
+  /immutable package base/);
+
+  const source = {
+    plugin_id: 'example.source', version: '3.0.0', base_kind: 'content_only',
+    base_release_identity: `sha256:${createHash('sha256').update(JSON.stringify([
+      'example.source', '3.0.0',
+      [
+        sourceMetadata.publisher_id, sourceMetadata.title, sourceMetadata.summary,
+        sourceMetadata.source_url, sourceMetadata.source_revision, sourceMetadata.license,
+        sourceMetadata.documentation.map((document) => [
+          document.id, document.revision, document.language, document.topic, null,
+          document.url, document.digest, document.size, document.media_type,
+        ]),
+      ],
+      content.map((item) =>
+        [item.id, item.kind, item.url, item.digest, item.size]),
+    ])).digest('hex')}`,
+    content, metadata: sourceMetadata,
+  };
+  const sourceOnly = verifyReleaseContent(signed({ releases: [source] }), trust, 150);
+  const standalone = joinReleaseContent({ catalogId: null, releases: [] },
+    { catalogId: null, releases: [] }, sourceOnly).releases[0];
+  assert.equal(standalone.baseKind, 'content_only');
+  assert.equal(standalone.metadata.documentation[0].slug.startsWith('content-'), true);
+  assert.throws(() => joinReleaseContent({ catalogId: null, releases: [] },
+    { catalogId: null, releases: [] }, sourceOnly, {
+      catalogId: trust.catalogId, releases: [],
+      baseReleases: [{ pluginId: 'example.source', version: '3.0.0',
+        identity: `sha256:${'0'.repeat(64)}` }],
+    }), /collides with a published base release/);
+  assert.throws(() => verifyReleaseContent(signed({ releases: [{
+    ...source, base_release_identity: `sha256:${'f'.repeat(64)}`,
+  }] }), trust, 150), /invalid signed release content/);
+  assert.throws(() => verifyReleaseContent(signed({ releases: [{
+    ...source, metadata: { ...sourceMetadata, documentation: [] },
+  }] }), trust, 150), /invalid signed release content/);
+  assert.throws(() => verifyReleaseContent(signed({ releases: [{
+    ...release, metadata: sourceMetadata,
+  }] }), trust, 150), /invalid signed release content/);
 });
 
 test('rejects modified, untrusted, stale, duplicate, or malformed signed content', () => {

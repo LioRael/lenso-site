@@ -71,9 +71,12 @@ build, AI-readable catalogs, and draft exclusion.
 The Plugin page keeps its registry candidate separate from signed results.
 To include current Portable releases in a static build, set
 `LENSO_MARKETPLACE_PORTABLE_URL` to the Marketplace HTTPS
-`/api/marketplace/v1/snapshot` endpoint. To include source-only linked Cargo
+`/api/marketplace/v1/snapshot` endpoint. To include linked Cargo
 releases, set `LENSO_MARKETPLACE_LINKED_CARGO_URL` to its HTTPS
-`/api/marketplace/v1/linked-cargo` endpoint. Either or both may be configured.
+`/api/marketplace/v1/linked-cargo` endpoint. npm-only releases use
+`LENSO_MARKETPLACE_PACKAGE_URL` and the signed HTTPS
+`/api/marketplace/v1/package` endpoint. Configure only the channels the
+operator intends to publish; an omitted channel retains its checkpoint history.
 To attach versioned Portable Markdown, also set
 `LENSO_MARKETPLACE_RELEASE_DETAILS_URL` to the raw signed HTTPS
 `/api/marketplace/v1/release-details` endpoint; this requires the Portable
@@ -83,13 +86,17 @@ document reference. The details endpoint supplies signed URL, byte length and
 SHA-256 metadata, **not** hosted or sanitized document bytes.
 To display optional editable templates or development extensions, set
 `LENSO_MARKETPLACE_RELEASE_CONTENT_URL` to a raw signed HTTPS
-`release-content.v2` endpoint alongside at least one base snapshot. Site
-checks its separate signature, expiry, checkpoint history and exact immutable
-Portable or linked Cargo base identity before showing a content reference on
-an exact-version page. Site does not fetch the archive. The page shows its
-signed URL, size, digest and separate CLI preview/copy commands. A copied
-template becomes App-owned editable source; a copied development extension
-remains inactive until the App owner explicitly selects it after review.
+`/api/marketplace/v1/release-content` endpoint. Attached content must match
+the exact immutable Portable, linked Cargo or npm package base identity.
+A `content_only` release instead binds its own Plugin ID, version, signed
+publisher/source metadata, versioned Markdown references and ordered archives
+into one identity; it cannot share that ID/version with a base release. Site
+checks signature, expiry and checkpoint history in either case. The Site build
+verifies the signed Markdown bytes from approved hosts, but does not fetch
+archives. Each page shows the signed archive URL, size, digest and separate CLI
+preview/copy commands. A copied template becomes App-owned editable source;
+a copied development extension remains inactive until the App owner reviews
+and explicitly selects it. No source-content listing is a runtime installation.
 For a local same-input check, generate a temporary signed fixture with absolute
 `LENSO_SITE_LINKED_SNAPSHOT` and `LENSO_SITE_CONTENT_FIXTURE_PARENT` set for
 `node scripts/create-release-content-fixture.mjs`. Set the resulting absolute
@@ -119,8 +126,8 @@ one of:
 - `LENSO_MARKETPLACE_CHECKPOINT_BOOTSTRAP=1`: an explicit first trusted build
   only. Never use bootstrap to recover from a missing prior checkpoint.
 
-Site validates the previous Portable, release-details, linked Cargo and
-optional release-content checkpoints, including historical immutable release,
+Site validates the previous Portable, release-details, linked Cargo, npm
+package and release-content checkpoints, including historical immutable release,
 content and document identities, revision rollback and same-revision
 equivocation. An omitted channel keeps
 its previous history. Only after static generation and published-output checks
@@ -131,7 +138,7 @@ new candidate as the next INPUT **only after the matching Site deployment
 succeeds**. Without that external continuity, including after an accidental
 bootstrap reset, no cross-deployment anti-rollback guarantee exists. Unsigned
 local builds need none of these settings and retain an empty signed directory.
-The directory searches both signed channels with the same filters
+The directory searches the configured signed channels with the same filters
 and links each listed identity to an exact-version page,
 while labeling their different distribution and target evidence. A Portable
 base snapshot does not declare target compatibility or carry versioned

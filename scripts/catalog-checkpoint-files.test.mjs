@@ -67,3 +67,17 @@ test('optional content history preserves the old bundle shape and survives chann
   assert.throws(() => validateCheckpointBundle({ ...next,
     release_content: { ...content, document_identities: {} } }, 'catalog'));
 });
+
+test('package checkpoint keeps npm-only history when a later build omits that channel', () => {
+  const oldBundle = emptyCheckpointBundle('catalog');
+  const packageHistory = {
+    catalog_id: 'catalog', revision: 3, payload_digest: `sha256:${'a'.repeat(64)}`,
+    release_identities: { 'example.npm@1.0.0': `sha256:${'b'.repeat(64)}` },
+    document_identities: {},
+  };
+  const next = nextCheckpointBundle(oldBundle, { package: packageHistory });
+  assert.deepEqual(validateCheckpointBundle(next, 'catalog').package, packageHistory);
+  assert.deepEqual(nextCheckpointBundle(next, {}).package, packageHistory);
+  assert.throws(() => validateCheckpointBundle({ ...next,
+    package: { ...packageHistory, unknown: true } }, 'catalog'));
+});

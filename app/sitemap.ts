@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { source } from '@/lib/source';
-import { signedLinkedCatalog, signedPortableCatalog } from '@/lib/plugin-candidates';
+import { signedLinkedCatalog, signedPortableCatalog, signedPackageCatalog, signedReleaseContent } from '@/lib/plugin-candidates';
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
 
 export const dynamic = 'force-static';
@@ -14,6 +14,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     linkedReleasePath(release.pluginId, release.version),
     ...release.documentation.map((document) => linkedDocumentPath(release.pluginId, release.version, document.slug)),
   ]);
-  return [...new Set(['/', '/plugins', '/docs/versions', '/docs/zh/versions', ...source.getPages().map((page) => page.url), ...linked, ...portable])]
+  const packages = signedPackageCatalog.releases.flatMap((release) => [
+    linkedReleasePath(release.pluginId, release.version),
+    ...release.documentation.map((document) => linkedDocumentPath(release.pluginId, release.version, document.slug)),
+  ]);
+  const contentOnly = signedReleaseContent.releases.filter((release) => release.baseKind === 'content_only')
+    .flatMap((release) => [
+      linkedReleasePath(release.pluginId, release.version),
+      ...(release.metadata?.documentation ?? []).map((document) =>
+        linkedDocumentPath(release.pluginId, release.version, document.slug)),
+    ]);
+  return [...new Set(['/', '/plugins', '/docs/versions', '/docs/zh/versions', ...source.getPages().map((page) => page.url), ...linked, ...portable, ...packages, ...contentOnly])]
     .map((path) => ({ url: new URL(path, 'https://lenso.dev').toString() }));
 }

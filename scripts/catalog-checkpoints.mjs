@@ -12,11 +12,11 @@ const object = (value) => value !== null && typeof value === 'object' && !Array.
 const exactKeys = (value, keys) => object(value)
   && Object.keys(value).sort().join(',') === [...keys].sort().join(',');
 
-function validateHistory(map, limit, maxBytes = Infinity) {
+function validateHistory(map, limit, maxBytes = Infinity, maxIdentityBytes = 640) {
   if (!object(map) || Object.keys(map).length > limit) throw new Error('catalog checkpoint history exceeds entry limit');
   let bytes = 0;
   for (const [identity, identityDigest] of Object.entries(map)) {
-    if (!identity || Buffer.byteLength(identity, 'utf8') > 640 || !digest.test(identityDigest)) {
+    if (!identity || Buffer.byteLength(identity, 'utf8') > maxIdentityBytes || !digest.test(identityDigest)) {
       throw new Error('invalid catalog checkpoint history identity or digest');
     }
     bytes += Buffer.byteLength(identity, 'utf8') + Buffer.byteLength(identityDigest, 'utf8');
@@ -44,7 +44,8 @@ export function validateCheckpoint(checkpoint, channel, catalogId) {
     throw new Error('release content checkpoint identity exceeds limit');
   }
   if (documents) {
-    validateHistory(checkpoint.document_identities, maxDocuments);
+    validateHistory(checkpoint.document_identities, maxDocuments, Infinity,
+      channel === 'package' ? 1024 : 640);
     const totalBytes = [...Object.entries(checkpoint.release_identities), ...Object.entries(checkpoint.document_identities)]
       .reduce((sum, [identity, value]) => sum + Buffer.byteLength(identity) + Buffer.byteLength(value), 0);
     if (totalBytes > 8 * 1024 * 1024) throw new Error(`${channel} catalog checkpoint history exceeds byte limit`);
@@ -141,6 +142,27 @@ export function linkedCheckpoint(snapshot, payload, previous = null) {
   return finish(snapshot, previous, 'linked', state);
 }
 
+export function packageCheckpoint(snapshot, payload, previous = null) {
+  const state = begin(snapshot, payload, previous, 'package');
+  for (const release of snapshot.releases) {
+    const identity = `${release.plugin_id}@${release.version}`;
+    const immutable = hashJson([
+      release.plugin_id, release.version, release.publisher_id, release.title,
+      release.summary, release.source_url, release.source_revision, release.license,
+      release.distributions.map(canonicalDistribution),
+    ]);
+    retain(state.releaseIdentities, identity, immutable, 'published package release changed');
+    for (const document of release.documentation ?? []) {
+      const documentIdentity = JSON.stringify([
+        release.plugin_id, release.version, document.id, document.revision,
+      ]);
+      retain(state.documentIdentities, documentIdentity, hashJson(canonicalDocument(document)),
+        'published package documentation changed');
+    }
+  }
+  return finish(snapshot, previous, 'package', state);
+}
+
 export function detailsCheckpoint(snapshot, payload, previous = null) {
   const state = begin(snapshot, payload, previous, 'details');
   for (const release of snapshot.releases) {
@@ -173,8 +195,10 @@ export function releaseContentCheckpoint(snapshot, payload, previous = null) {
 }
 
 export function validateCheckpointBundle(bundle, catalogId) {
-  if (!exactKeys(bundle, ['schema', 'catalog_id', 'portable', 'release_details', 'linked_cargo'])
-    && !exactKeys(bundle, ['schema', 'catalog_id', 'portable', 'release_details', 'linked_cargo', 'release_content'])) {
+  const keys = ['schema', 'catalog_id', 'portable', 'release_details', 'linked_cargo'];
+  if (Object.hasOwn(bundle, 'release_content')) keys.push('release_content');
+  if (Object.hasOwn(bundle, 'package')) keys.push('package');
+  if (!exactKeys(bundle, keys)) {
     throw new Error('invalid Site catalog checkpoint bundle');
   }
   if (bundle.schema !== checkpointSchema || bundle.catalog_id !== catalogId
@@ -185,6 +209,7 @@ export function validateCheckpointBundle(bundle, catalogId) {
   validateCheckpoint(bundle.release_details, 'details', catalogId);
   validateCheckpoint(bundle.linked_cargo, 'linked', catalogId);
   if (Object.hasOwn(bundle, 'release_content')) validateCheckpoint(bundle.release_content, 'content', catalogId);
+  if (Object.hasOwn(bundle, 'package')) validateCheckpoint(bundle.package, 'package', catalogId);
   return bundle;
 }
 

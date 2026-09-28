@@ -4,13 +4,13 @@ const maxDocuments = 512;
 const maxTotalBytes = 32 * 1024 * 1024;
 
 export function documentSlug(pluginId, version, document, channel = 'linked') {
-  if (!['linked', 'portable'].includes(channel)) throw new Error('unknown signed documentation channel');
+  if (!['linked', 'portable', 'package', 'content'].includes(channel)) throw new Error('unknown signed documentation channel');
   const digest = createHash('sha256')
     .update(`${pluginId}\0${version}\0${document.id}\0${document.revision}`)
     .digest('hex');
   // Existing linked URLs stay stable. Portable URLs cannot collide even when
   // the signed catalogs use the same Plugin/version/document identities.
-  return channel === 'portable' ? `portable-${digest}` : digest;
+  return channel === 'linked' ? digest : `${channel}-${digest}`;
 }
 
 /** Fetch only operator-approved hosts and persist nothing until every body verifies. */

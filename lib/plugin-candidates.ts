@@ -1,5 +1,6 @@
 import generated from './.generated/linked-catalog.json';
 import portableGenerated from './.generated/portable-catalog.json';
+import packageGenerated from './.generated/package-catalog.json';
 import contentGenerated from './.generated/release-content.json';
 
 export type SignedLinkedRelease = {
@@ -63,11 +64,48 @@ export type SignedPortableCatalog = {
 };
 export const signedPortableCatalog = portableGenerated as SignedPortableCatalog;
 
+export type SignedPackageRelease = {
+  pluginId: string;
+  version: string;
+  title: string;
+  summary: string;
+  publisherId: string;
+  sourceUrl: string;
+  sourceRevision: string;
+  license: string;
+  distributions: {
+    id: string;
+    kind: 'npm_package';
+    package: string;
+    version: string;
+    integrity: string;
+    registryUrl: string;
+    targets: string[];
+  }[];
+  documentation: SignedLinkedRelease['documentation'];
+};
+export type SignedPackageCatalog = {
+  catalogId: string | null;
+  revision: number | null;
+  expiresAt: number | null;
+  releases: SignedPackageRelease[];
+};
+export const signedPackageCatalog = packageGenerated as SignedPackageCatalog;
+
 export type SignedReleaseContent = {
   pluginId: string;
   version: string;
-  baseKind: 'linked_cargo' | 'portable';
+  baseKind: 'linked_cargo' | 'portable' | 'package' | 'content_only';
   baseReleaseIdentity: string;
+  metadata?: {
+    publisherId: string;
+    title: string;
+    summary: string;
+    sourceUrl: string;
+    sourceRevision: string;
+    license: string;
+    documentation: SignedLinkedRelease['documentation'];
+  };
   content: {
     id: string;
     kind: 'editable_template' | 'development_extension';

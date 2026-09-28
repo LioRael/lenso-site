@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import ReactMarkdown from 'react-markdown';
 import { SiteHeader } from '@/components/site-header';
-import { signedLinkedCatalog, signedPortableCatalog } from '@/lib/plugin-candidates';
+import { signedLinkedCatalog, signedPortableCatalog, signedPackageCatalog, signedReleaseContent } from '@/lib/plugin-candidates';
 import { linkedDocumentApiPath, linkedReleasePath } from '@/lib/linked-document-paths';
 import { staticVerifiedDocumentParams, verifiedSignedDocuments } from '@/lib/linked-documents';
 
@@ -26,22 +26,27 @@ export default async function SignedDocumentationPage({ params }: { params: Para
   const { pluginId, version, slug } = await params;
   const document = verifiedSignedDocuments[slug];
   if (!document || document.pluginId !== pluginId || document.version !== version) notFound();
-  const catalog = document.channel === 'portable' ? signedPortableCatalog : signedLinkedCatalog;
-  const revision = document.channel === 'portable' ? signedPortableCatalog.detailsRevision : signedLinkedCatalog.revision;
-  const expiresAt = document.channel === 'portable' ? signedPortableCatalog.detailsExpiresAt : signedLinkedCatalog.expiresAt;
+  const catalog = document.channel === 'portable' ? signedPortableCatalog
+    : document.channel === 'package' ? signedPackageCatalog
+      : document.channel === 'content' ? signedReleaseContent : signedLinkedCatalog;
+  const revision = document.channel === 'portable' ? signedPortableCatalog.detailsRevision : catalog.revision;
+  const expiresAt = document.channel === 'portable' ? signedPortableCatalog.detailsExpiresAt : catalog.expiresAt;
+  const sourceName = document.channel === 'portable' ? 'Portable'
+    : document.channel === 'package' ? 'npm package'
+      : document.channel === 'content' ? 'source content' : 'linked Cargo';
   return <div className="linked-doc-shell">
     <SiteHeader active="plugins" />
     <main className="linked-doc-main">
       <nav aria-label="Breadcrumb" className="linked-doc-breadcrumb"><Link href="/plugins">Plugins</Link><span>/</span><Link href={linkedReleasePath(pluginId, version)}>{pluginId}@{version}</Link></nav>
       <header className="linked-doc-header">
-        <p className="linked-doc-eyebrow">Verified {document.channel === 'portable' ? 'Portable' : 'linked Cargo'} versioned Markdown · {document.language}</p>
+        <p className="linked-doc-eyebrow">Verified {sourceName} versioned Markdown · {document.language}</p>
         <h1>{document.topic}</h1>
         <p>{pluginId}@{version} · document {document.documentId}@{document.revision}</p>
         {document.target && <p>Target: {document.target}</p>}
       </header>
       <aside className="linked-doc-provenance">
         <strong>Content verified at Site build</strong>
-        <p>The signed {document.channel === 'portable' ? 'release details and exact Portable base' : 'linked Cargo catalog'} name this exact revision, size and SHA-256. This third-party Markdown is displayed as data; HTML, images and executable MDX are disabled.</p>
+        <p>The signed {document.channel === 'portable' ? 'release details and exact Portable base' : document.channel === 'package' ? 'npm package catalog' : document.channel === 'content' ? 'source-content record' : 'linked Cargo catalog'} names this exact revision, size and SHA-256. This third-party Markdown is displayed as data; HTML, images and executable MDX are disabled.</p>
         <dl><div><dt>Digest</dt><dd><code>{document.digest}</code></dd></div><div><dt>Catalog</dt><dd>{catalog.catalogId}</dd></div><div><dt>{document.channel === 'portable' ? 'Details revision' : 'Catalog revision'}</dt><dd>{revision}</dd></div><div><dt>{document.channel === 'portable' ? 'Signed details expire' : 'Signed catalog expires'}</dt><dd>{expiresAt ? new Date(expiresAt * 1000).toISOString() : 'unknown'}</dd></div></dl>
         <a href={linkedDocumentApiPath(pluginId, version, slug)}>Read verified Markdown API</a>
       </aside>
