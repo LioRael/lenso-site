@@ -152,7 +152,7 @@ export function signedPluginDirectory() {
   return {
     schema: 'lenso.site.signed-plugin-directory.v1',
     verification: 'signature-verified-at-build',
-    note: 'Snapshot expiry, registry availability, and project compatibility must be checked before adoption. Unsigned candidates are excluded.',
+    note: 'Historical signature-verified records remain readable after snapshot expiry. This API does not confirm current availability or authorize new adoption. Current catalog status, registry availability, and project compatibility must be checked by the CLI before adoption. Unsigned candidates are excluded.',
     catalogs: {
       linkedCargo: { catalogId: signedLinkedCatalog.catalogId, revision: signedLinkedCatalog.revision, expiresAt: signedLinkedCatalog.expiresAt },
       portable: { catalogId: signedPortableCatalog.catalogId, revision: signedPortableCatalog.revision, expiresAt: signedPortableCatalog.expiresAt,

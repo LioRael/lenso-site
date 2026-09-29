@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { DescriptionListDescription, DescriptionListItem, DescriptionListRoot, DescriptionListTerm } from '@lenso/ui/description-list';
 import { CandidateDocumentation } from '@/components/candidate-documentation';
-import { CopyCommand } from '@/components/copy-command';
+import { AdoptionCommandPanel, CatalogCurrentness } from '@/components/catalog-currentness';
 import { PluginDocumentTools } from '@/components/plugin-document-tools';
 import { SiteHeader } from '@/components/site-header';
 import { candidateRelease, signedLinkedCatalog, signedPortableCatalog, signedPackageCatalog, signedReleaseContent, type SignedLinkedRelease, type SignedPortableRelease, type SignedPackageRelease, type SignedReleaseContent } from '@/lib/plugin-candidates';
@@ -98,6 +98,7 @@ function SignedReleasePage({ release, portable, packageRelease }: {
       <PluginDocumentTools pluginId={release.pluginId} version={release.version} />
       <aside className="linked-doc-provenance">
         <strong>Catalog evidence, not an installation</strong>
+        <CatalogCurrentness expirations={[signedLinkedCatalog.expiresAt]} />
         <p>This exact release was verified against the configured catalog public key when Site was built. The snapshot expires {signedLinkedCatalog.expiresAt ? new Date(signedLinkedCatalog.expiresAt * 1000).toISOString() : 'at an unknown time'}. Reverify it locally before adoption; a signed listing does not establish source-code safety or compatibility with your Host.</p>
         <ProvenanceFacts items={[
           ['Plugin ID', <code>{release.pluginId}</code>],
@@ -120,7 +121,7 @@ function SignedReleasePage({ release, portable, packageRelease }: {
         <h2 id="adoption-heading">{portable ? 'Adopt the linked Cargo distribution' : 'Adopt this exact version'}</h2>
         {genericAdoption ? <>
           <p>Download the signed snapshot, its independently trusted public-key configuration and the exact registry <code>.crate</code> to your own project. The CLI checks the signature, validity window, Host target, archive digest and package identity before changing your App.</p>
-          <AdoptionCommandPanel command={adoptCommand} />
+          <AdoptionCommandPanel command={adoptCommand} expirations={[signedLinkedCatalog.expiresAt]} />
           <p>This is a local Host build input, not a portable runtime bundle. Inspect the resolved App and build/check it before use. The Site cannot grant local filesystem access.</p>
         </> : <p>This release requires a product Host-specific integration or a registry unsupported by generic <code>lenso app add</code>. Do not use the generic adoption command.</p>}
       </section>
@@ -238,7 +239,7 @@ function PortableAdoption({ release, alongsideLinked = false }: { release: Signe
     <h2 id="portable-adoption-heading">{alongsideLinked ? 'Adopt the Portable distribution' : 'Adopt this exact Portable version'}</h2>
     <p>Use the published <code>@lenso/cli@0.17.2</code> release with native CLI <code>0.6.3</code> to adopt an independently trusted signed Portable snapshot and the exact <code>.lenso-plugin</code> archive into a source App. Review the declared target, runtime and permissions before adoption. A native Process Bundle runs trusted code without a sandbox; the local Host still checks target and permission compatibility.</p>
     {alongsideLinked && <p>The linked Cargo snapshot and <code>.crate</code> above do not verify this Portable Bundle. Use the Portable snapshot and archive named below.</p>}
-    <AdoptionCommandPanel command={adoptCommand} />
+    <AdoptionCommandPanel command={adoptCommand} expirations={[signedPortableCatalog.expiresAt]} />
     <p><code>app add</code> checks the signature, freshness, exact identity, archive digest, and manifest before recording local source intent. Then build the App and use <code>app check</code>/<code>app show</code> on the new distribution, followed by a real Plugin call. The App owner can edit local sources; a later build checks archive drift against its local lock, not a new independent signature authority. This page records the signed release; local adoption and execution require your own review.</p>
   </section>;
 }
@@ -246,6 +247,7 @@ function PortableAdoption({ release, alongsideLinked = false }: { release: Signe
 function PortableProvenance({ release }: { release: SignedPortableRelease }) {
   return <aside className="linked-doc-provenance">
     <strong>Signed Portable catalog evidence, not an installation</strong>
+    <CatalogCurrentness expirations={[signedPortableCatalog.expiresAt]} />
     <p>This exact release was verified against the configured catalog public key when Site was built. The snapshot expires {signedPortableCatalog.expiresAt ? new Date(signedPortableCatalog.expiresAt * 1000).toISOString() : 'at an unknown time'}. Reverify it locally before adoption; the base snapshot does not establish target compatibility.</p>
     <ProvenanceFacts items={[
       ['Signed title', release.title],
@@ -268,6 +270,7 @@ function PortableProvenance({ release }: { release: SignedPortableRelease }) {
 function PackageProvenance({ release }: { release: SignedPackageRelease }) {
   return <aside className="linked-doc-provenance">
     <strong>Signed npm package catalog evidence, not an installation</strong>
+    <CatalogCurrentness expirations={[signedPackageCatalog.expiresAt]} />
     <p>This exact release was verified against the configured catalog public key when Site was built. The snapshot expires {signedPackageCatalog.expiresAt ? new Date(signedPackageCatalog.expiresAt * 1000).toISOString() : 'at an unknown time'}. Reverify it locally before adoption; the signed package digest does not establish source safety or Host compatibility.</p>
     <ProvenanceFacts items={[
       ['Signed title', release.title],
@@ -298,7 +301,7 @@ function PackageAdoption({ release }: { release: SignedPackageRelease }) {
           ['Declared targets', distribution.targets.length ? distribution.targets.join(', ') : 'None declared'],
           ['Registry', <a key="registry" href={distribution.registryUrl} rel="noopener noreferrer" target="_blank">{distribution.registryUrl}</a>],
         ]} />
-        <AdoptionCommandPanel command={command} />
+        <AdoptionCommandPanel command={command} expirations={[signedPackageCatalog.expiresAt]} />
       </div>;
     })}
   </section>;
@@ -327,8 +330,13 @@ function ReleaseContentFor({ pluginId, version, baseKind }: {
   const baseName = release.baseKind === 'linked_cargo' ? 'linked Cargo'
     : release.baseKind === 'portable' ? 'Portable'
       : release.baseKind === 'package' ? 'npm package' : 'source-only';
+  const expirations = [signedReleaseContent.expiresAt, ...(release.baseKind === 'linked_cargo'
+    ? [signedLinkedCatalog.expiresAt] : release.baseKind === 'portable'
+      ? [signedPortableCatalog.expiresAt] : release.baseKind === 'package'
+        ? [signedPackageCatalog.expiresAt] : [])];
   return <section className="linked-release-section" aria-labelledby={`release-content-${release.baseKind}`}>
     <h2 id={`release-content-${release.baseKind}`}>{release.baseKind === 'content_only' ? 'Editable source content' : 'Optional source content'}</h2>
+    <CatalogCurrentness expirations={expirations} />
     <p>These archive references come from a signed content snapshot for this exact {baseName} release. Site does not download or inspect the archives. Download the exact archive, review its source, and use the CLI to verify it locally. A listing does not activate an extension or install a runtime Plugin.</p>
     <p>Content snapshot revision {signedReleaseContent.revision}; expires {signedReleaseContent.expiresAt ? new Date(signedReleaseContent.expiresAt * 1000).toISOString() : 'at an unknown time'}. Reverify {release.baseKind === 'content_only' ? 'the content snapshot' : 'both snapshots'} when copying content.</p>
     {release.content.map((item) => {
@@ -344,15 +352,11 @@ function ReleaseContentFor({ pluginId, version, baseKind }: {
           ['Archive SHA-256', <code key="digest">{item.digest}</code>],
           ['Archive size', `${item.size} bytes`],
         ]} />
-        <AdoptionCommandPanel command={`${command} --content-preview`} label="CLI preview command" />
-        <AdoptionCommandPanel command={command} label="CLI copy command" />
+        <AdoptionCommandPanel command={`${command} --content-preview`} expirations={expirations} label="CLI preview command" />
+        <AdoptionCommandPanel command={command} expirations={expirations} label="CLI copy command" />
       </div>;
     })}
   </section>;
-}
-
-function AdoptionCommandPanel({ command, label = 'Local project · replace paths with verified files' }: { command: string; label?: string }) {
-  return <div className="code-panel"><div className="code-panel-head"><span>{label}</span><CopyCommand value={command} /></div><pre><code>{command}</code></pre></div>;
 }
 
 function PortableDocumentationState({ release }: { release: SignedPortableRelease }) {

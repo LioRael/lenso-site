@@ -8,60 +8,33 @@ import { useEffect, useMemo, useState } from 'react';
 import { candidateRelease, signedLinkedCatalog, signedPortableCatalog, signedPackageCatalog, signedReleaseContent } from '@/lib/plugin-candidates';
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
 import { SignedDocumentSearch } from '@/components/signed-document-search';
+import { CatalogCurrentness } from '@/components/catalog-currentness';
 
 export function PluginDirectory() {
   const [query, setQuery] = useState('');
   const [target, setTarget] = useState<string | undefined>();
   const [distribution, setDistribution] = useState<string | undefined>();
   const [catalogStatus, setCatalogStatus] = useState<string | undefined>();
-  const [currentSigned, setCurrentSigned] = useState({
-    linked: Boolean(signedLinkedCatalog.expiresAt),
-    portable: Boolean(signedPortableCatalog.expiresAt),
-    portableDetails: Boolean(signedPortableCatalog.detailsExpiresAt),
-    package: Boolean(signedPackageCatalog.expiresAt),
-    content: Boolean(signedReleaseContent.expiresAt),
-  });
   useEffect(() => {
     const queries = new URLSearchParams(window.location.search).getAll('q');
     if (queries.length === 1 && queries[0].length <= 256) setQuery(queries[0]);
   }, []);
-  useEffect(() => {
-    let timer: number | undefined;
-    const update = () => {
-      window.clearTimeout(timer);
-      const now = Date.now();
-      const linkedRemaining = (signedLinkedCatalog.expiresAt ?? 0) * 1000 - now;
-      const portableRemaining = (signedPortableCatalog.expiresAt ?? 0) * 1000 - now;
-      const detailsRemaining = (signedPortableCatalog.detailsExpiresAt ?? 0) * 1000 - now;
-      const packageRemaining = (signedPackageCatalog.expiresAt ?? 0) * 1000 - now;
-      const contentRemaining = (signedReleaseContent.expiresAt ?? 0) * 1000 - now;
-      setCurrentSigned({ linked: linkedRemaining > 0, portable: portableRemaining > 0,
-        portableDetails: portableRemaining > 0 && detailsRemaining > 0,
-        package: packageRemaining > 0, content: contentRemaining > 0 });
-      const next = [linkedRemaining, portableRemaining, detailsRemaining, packageRemaining, contentRemaining]
-        .filter((remaining) => remaining > 0);
-      if (next.length > 0) timer = window.setTimeout(update, Math.min(...next, 2_147_483_647));
-    };
-    update();
-    document.addEventListener('visibilitychange', update);
-    return () => { window.clearTimeout(timer); document.removeEventListener('visibilitychange', update); };
-  }, []);
   const signedLinked = signedLinkedCatalog.releases.filter((release) => {
     const normalized = query.trim().toLowerCase();
-    return currentSigned.linked && (!normalized || [release.pluginId, release.package, release.title, release.summary].some((value) => value.toLowerCase().includes(normalized)))
+    return (!normalized || [release.pluginId, release.package, release.title, release.summary].some((value) => value.toLowerCase().includes(normalized)))
       && (!target || (target === 'Native' && release.targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value))))
       && (!distribution || distribution === 'Linked Rust')
       && (!catalogStatus || catalogStatus === 'Signed');
   });
   const signedPortable = signedPortableCatalog.releases.filter((release) => {
     const normalized = query.trim().toLowerCase();
-    return currentSigned.portable && (!normalized || [release.pluginId, release.title, release.summary, release.publisherId].some((value) => value.toLowerCase().includes(normalized)))
+    return (!normalized || [release.pluginId, release.title, release.summary, release.publisherId].some((value) => value.toLowerCase().includes(normalized)))
       && !target && (!distribution || distribution === 'Portable')
       && (!catalogStatus || catalogStatus === 'Signed');
   });
   const signedPackage = signedPackageCatalog.releases.filter((release) => {
     const normalized = query.trim().toLowerCase();
-    return currentSigned.package && (!normalized || [release.pluginId, release.title, release.summary,
+    return (!normalized || [release.pluginId, release.title, release.summary,
       release.publisherId, ...release.distributions.map((item) => item.package)].some((value) =>
       value.toLowerCase().includes(normalized)))
       && (!target || release.distributions.some((item) => item.targets.some((value) =>
@@ -72,20 +45,20 @@ export function PluginDirectory() {
   const signedSource = signedReleaseContent.releases.filter((release) => {
     if (release.baseKind !== 'content_only' || !release.metadata) return false;
     const normalized = query.trim().toLowerCase();
-    return currentSigned.content && (!normalized || [
+    return (!normalized || [
       release.pluginId, release.metadata.title, release.metadata.summary,
       release.metadata.publisherId, ...release.content.map((item) => item.id),
     ].some((value) => value.toLowerCase().includes(normalized)))
       && !target && (!distribution || distribution === 'Source content')
       && (!catalogStatus || catalogStatus === 'Signed');
   });
-  const candidateSuperseded = (currentSigned.linked && signedLinkedCatalog.releases.some((release) =>
+  const candidateSuperseded = (signedLinkedCatalog.releases.some((release) =>
     release.pluginId === candidateRelease.pluginId && release.version === candidateRelease.version))
-    || (currentSigned.portable && signedPortableCatalog.releases.some((release) =>
+    || (signedPortableCatalog.releases.some((release) =>
       release.pluginId === candidateRelease.pluginId && release.version === candidateRelease.version))
-    || (currentSigned.package && signedPackageCatalog.releases.some((release) =>
+    || (signedPackageCatalog.releases.some((release) =>
       release.pluginId === candidateRelease.pluginId && release.version === candidateRelease.version))
-    || (currentSigned.content && signedReleaseContent.releases.some((release) =>
+    || (signedReleaseContent.releases.some((release) =>
       release.baseKind === 'content_only' && release.pluginId === candidateRelease.pluginId
       && release.version === candidateRelease.version));
   const visible = useMemo(() => {
@@ -126,14 +99,15 @@ export function PluginDirectory() {
           <Filter label="Catalog status" onSelect={setCatalogStatus} options={['Signed', 'Candidate']} selected={catalogStatus} />
           <Button onClick={clearFilters} size="default" type="button" variant="ghost">Clear filters</Button>
         </div>
-        <SignedDocumentSearch query={query} target={target} distribution={distribution} catalogStatus={catalogStatus} currentSigned={currentSigned} />
+        <SignedDocumentSearch query={query} target={target} distribution={distribution} catalogStatus={catalogStatus} />
         <section className="signed-release-state" aria-labelledby="signed-release-heading">
           <h2 id="signed-release-heading">Signed releases</h2>
           {signedLinked.length === 0 && signedPortable.length === 0 && signedPackage.length === 0 && signedSource.length === 0 && <ContentState.Root align="start" role="status">
             <ContentState.Title as="h3">No signed releases to show</ContentState.Title>
-            <ContentState.Description>{currentSigned.linked || currentSigned.portable || currentSigned.package || currentSigned.content ? 'No signed release matches the current filters.' : 'No current signed Plugin catalog is available. Candidate claims are separate.'}</ContentState.Description>
+            <ContentState.Description>{signedLinkedCatalog.releases.length || signedPortableCatalog.releases.length || signedPackageCatalog.releases.length || signedReleaseContent.releases.length ? 'No verified signed release matches the current filters.' : 'No verified signed Plugin catalog is available. Candidate claims are separate.'}</ContentState.Description>
           </ContentState.Root>}
           {signedPackage.map((release) => <article className="signed-release" key={`package:${release.pluginId}@${release.version}`}>
+            <CatalogCurrentness expirations={[signedPackageCatalog.expiresAt]} />
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.summary}</p>
             <dl><div><dt>Distribution</dt><dd>npm package</dd></div><div><dt>Publisher</dt><dd>{release.publisherId}</dd></div><div><dt>Package</dt><dd>{release.distributions.map((item) => <code key={item.id}>{item.package}@{item.version}</code>)}</dd></div><div><dt>Catalog</dt><dd>Signed revision {signedPackageCatalog.revision}</dd></div></dl>
@@ -141,6 +115,7 @@ export function PluginDirectory() {
             <Link href={linkedReleasePath(release.pluginId, release.version)}>Inspect exact signed npm version</Link>
           </article>)}
           {signedSource.map((release) => <article className="signed-release" key={`content:${release.pluginId}@${release.version}`}>
+            <CatalogCurrentness expirations={[signedReleaseContent.expiresAt]} />
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.metadata?.summary}</p>
             <dl><div><dt>Distribution</dt><dd>Editable source content</dd></div><div><dt>Publisher</dt><dd>{release.metadata?.publisherId}</dd></div><div><dt>Content</dt><dd>{release.content.map((item) => item.kind.replaceAll('_', ' ')).join(', ')}</dd></div><div><dt>Catalog</dt><dd>Signed revision {signedReleaseContent.revision}</dd></div></dl>
@@ -148,6 +123,7 @@ export function PluginDirectory() {
             <Link href={linkedReleasePath(release.pluginId, release.version)}>Inspect exact signed source version</Link>
           </article>)}
           {signedPortable.map((release) => <article className="signed-release" key={`portable:${release.pluginId}@${release.version}`}>
+            <CatalogCurrentness expirations={[signedPortableCatalog.expiresAt]} />
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.summary}</p>
             <dl><div><dt>Distribution</dt><dd>Portable Bundle</dd></div><div><dt>Publisher</dt><dd>{release.publisherId}</dd></div><div><dt>Bundle SHA-256</dt><dd><code>{release.artifactDigest}</code></dd></div><div><dt>Source revision</dt><dd><code>{release.sourceRevision}</code></dd></div><div><dt>Catalog</dt><dd>Signed revision {signedPortableCatalog.revision}</dd></div></dl>
@@ -163,6 +139,7 @@ export function PluginDirectory() {
             </div>}
           </article>)}
           {signedLinked.map((release) => <article className="signed-release" key={`linked:${release.pluginId}@${release.version}`}>
+            <CatalogCurrentness expirations={[signedLinkedCatalog.expiresAt]} />
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.summary}</p>
             <dl><div><dt>Distribution</dt><dd>Linked Rust · {release.integration === 'host_provided' ? 'Host-provided integration' : 'linked Plugin'}</dd></div><div><dt>Package</dt><dd><code>{release.package}</code></dd></div><div><dt>Exact targets</dt><dd>{release.targets.join(', ')}</dd></div><div><dt>Catalog</dt><dd>Signed revision {signedLinkedCatalog.revision}</dd></div></dl>
@@ -191,7 +168,7 @@ export function PluginDirectory() {
               <code data-label="Plugin ID" role="cell">{candidateRelease.pluginId}</code><span data-label="Description" role="cell">{candidateRelease.summary}</span><code data-label="Version" role="cell">{candidateRelease.version}</code><span data-label="Distribution" role="cell">{candidateRelease.distribution}</span><span data-label="Target" role="cell">{candidateRelease.target}</span><span data-label="Catalog status" role="cell">{candidateRelease.catalogStatus}</span>
               <span data-label="Action" role="cell"><Link className="button button-primary button-small" href="/plugins/lenso.web-ingress/0.4.5">Inspect candidate</Link></span>
             </div>
-          ) : <p className="no-results" role="status">{candidateSuperseded ? 'This Plugin ID and version have a current signed listing above; candidate claims remain separate.' : 'No candidate matches the current search and filters.'}</p>}
+          ) : <p className="no-results" role="status">{candidateSuperseded ? 'This Plugin ID and version have a verified signed record above; candidate claims remain separate.' : 'No candidate matches the current search and filters.'}</p>}
         </div>
         <p className="compatibility-note"><CircleAlert size={23} />Unknown compatibility is never treated as available.</p>
       </section>

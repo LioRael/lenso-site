@@ -38,12 +38,11 @@ type Props = {
   target?: string;
   distribution?: string;
   catalogStatus?: string;
-  currentSigned: { linked: boolean; portableDetails: boolean; package: boolean; content: boolean };
 };
 
-export function SignedDocumentSearch({ query, target, distribution, catalogStatus, currentSigned }: Props) {
+export function SignedDocumentSearch({ query, target, distribution, catalogStatus }: Props) {
   const term = query.trim();
-  const searchable = currentSigned.linked || currentSigned.portableDetails || currentSigned.package || currentSigned.content;
+  const searchable = documentDetails.size > 0;
   const [completed, setCompleted] = useState<CompletedSearch | null>(null);
   useEffect(() => {
     if (!term || !searchable || catalogStatus === 'Candidate') return;
@@ -64,24 +63,24 @@ export function SignedDocumentSearch({ query, target, distribution, catalogStatu
     const entry = documentDetails.get(url);
     if (!entry) return [];
     if (entry.channel === 'portable') {
-      return currentSigned.portableDetails && !target && (!distribution || distribution === 'Portable') ? [{ url, ...entry }] : [];
+      return !target && (!distribution || distribution === 'Portable') ? [{ url, ...entry }] : [];
     }
     if (entry.channel === 'package') {
-      return currentSigned.package && !target && (!distribution || distribution === 'npm package')
+      return !target && (!distribution || distribution === 'npm package')
         ? [{ url, ...entry }] : [];
     }
     if (entry.channel === 'content') {
-      return currentSigned.content && !target && (!distribution || distribution === 'Source content')
+      return !target && (!distribution || distribution === 'Source content')
         ? [{ url, ...entry }] : [];
     }
     const native = entry.release.targets.some((value) => /-(?:apple-darwin|unknown-linux-gnu|pc-windows-msvc)$/.test(value));
-    return currentSigned.linked && (!target || (target === 'Native' && native))
+    return (!target || (target === 'Native' && native))
       && (!distribution || distribution === 'Linked Rust') ? [{ url, ...entry }] : [];
   }).slice(0, 24);
 
   return <section className="signed-document-search" aria-labelledby="signed-document-search-heading">
     <h2 id="signed-document-search-heading">Versioned documentation</h2>
-    {!searchable ? <p role="status">No current signed documentation is available. Existing version pages remain historical build records.</p>
+    {!searchable ? <p role="status">No build-verified documentation is available.</p>
       : completed?.query !== term ? <p role="status">Searching build-verified Plugin Markdown…</p>
         : completed.error ? <p role="alert">The verified-document search index could not load. Refresh this page or follow the release links below.</p>
           : matches.length === 0 ? <p role="status">No versioned documentation matches this search and the selected filters.</p>
