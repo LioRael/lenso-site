@@ -7,6 +7,11 @@ import { verifyPackageCatalog } from './package-catalog.mjs';
 import { joinPortableReleaseDetails, verifyReleaseDetails } from './release-details.mjs';
 import { joinReleaseContent, verifyReleaseContent } from './release-content.mjs';
 import { checkpointConfig, loadCheckpointBundle, nextCheckpointBundle, stageCheckpointBundle } from './catalog-checkpoint-files.mjs';
+import { ingestKeylessCatalog } from './ingest-keyless-catalog.mjs';
+
+if (process.env.LENSO_MARKETPLACE_KEYLESS === '1') {
+  await ingestKeylessCatalog();
+} else {
 
 const linkedUrl = process.env.LENSO_MARKETPLACE_LINKED_CARGO_URL;
 const portableUrl = process.env.LENSO_MARKETPLACE_PORTABLE_URL;
@@ -116,3 +121,4 @@ await writeFile(resolve(import.meta.dirname, '../lib/.generated/linked-documents
 if (checkpoint) await stageCheckpointBundle(checkpoint,
   nextCheckpointBundle(previous.bundle, updates), previous.inputDigest);
 console.log(`Signed Site catalogs: linked ${catalog.catalogId ? `${catalog.catalogId} revision ${catalog.revision} (${catalog.releases.length} listed releases)` : 'not configured'}; portable ${portableCatalog.catalogId ? `${portableCatalog.catalogId} revision ${portableCatalog.revision} (${portableCatalog.releases.length} listed releases)` : 'not configured'}; package ${packageCatalog.catalogId ? `${packageCatalog.catalogId} revision ${packageCatalog.revision} (${packageCatalog.releases.length} listed releases)` : 'not configured'}; details ${portableCatalog.detailsRevision ?? 'not configured'}; content ${contentCatalog.revision ?? 'not configured'}; verified Markdown ${Object.keys(documents).length}.`);
+}

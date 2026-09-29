@@ -31,8 +31,9 @@ export default async function SignedDocumentationPage({ params }: { params: Para
   const catalog = document.channel === 'portable' ? signedPortableCatalog
     : document.channel === 'package' ? signedPackageCatalog
       : document.channel === 'content' ? signedReleaseContent : signedLinkedCatalog;
-  const revision = document.channel === 'portable' ? signedPortableCatalog.detailsRevision : catalog.revision;
+  const revision = document.channel === 'portable' && !catalog.provenance ? signedPortableCatalog.detailsRevision : catalog.revision;
   const expiresAt = document.channel === 'portable' ? signedPortableCatalog.detailsExpiresAt : catalog.expiresAt;
+  const releaseStatus = catalog.releases.find((release) => release.pluginId === pluginId && release.version === version)?.status;
   const sourceName = document.channel === 'portable' ? 'Portable'
     : document.channel === 'package' ? 'npm package'
       : document.channel === 'content' ? 'source content' : 'linked Cargo';
@@ -49,9 +50,9 @@ export default async function SignedDocumentationPage({ params }: { params: Para
       <PluginDocumentTools pluginId={pluginId} version={version} documentSlug={slug} />
       <aside className="linked-doc-provenance">
         <strong>Content verified at Site build</strong>
-        <CatalogCurrentness expirations={document.channel === 'portable' ? [catalog.expiresAt, expiresAt] : [expiresAt]} />
+        <CatalogCurrentness status={releaseStatus} expirations={document.channel === 'portable' ? [catalog.expiresAt, expiresAt] : [expiresAt]} />
         <p>The signed {document.channel === 'portable' ? 'release details and exact Portable base' : document.channel === 'package' ? 'npm package catalog' : document.channel === 'content' ? 'source-content record' : 'linked Cargo catalog'} names this exact revision, size and SHA-256. This third-party Markdown is displayed as data; HTML, images and executable MDX are disabled.</p>
-        <dl><div><dt>Digest</dt><dd><code>{document.digest}</code></dd></div><div><dt>Catalog</dt><dd>{catalog.catalogId}</dd></div><div><dt>{document.channel === 'portable' ? 'Details revision' : 'Catalog revision'}</dt><dd>{revision}</dd></div><div><dt>{document.channel === 'portable' ? 'Signed details expire' : 'Signed catalog expires'}</dt><dd>{expiresAt ? new Date(expiresAt * 1000).toISOString() : 'unknown'}</dd></div></dl>
+        <dl><div><dt>Digest</dt><dd><code>{document.digest}</code></dd></div><div><dt>Catalog</dt><dd>{catalog.catalogId}</dd></div><div><dt>{document.channel === 'portable' && !catalog.provenance ? 'Details revision' : 'Catalog revision'}</dt><dd>{revision}</dd></div>{catalog.provenance ? <div><dt>Verified catalog SHA-256</dt><dd><code>{catalog.provenance.catalogDigest}</code></dd></div> : <div><dt>{document.channel === 'portable' ? 'Signed details expire' : 'Signed catalog expires'}</dt><dd>{expiresAt ? new Date(expiresAt * 1000).toISOString() : 'unknown'}</dd></div>}</dl>
         <a href={linkedDocumentApiPath(pluginId, version, slug)}>Read verified Markdown API</a>
       </aside>
       <article className="linked-doc-body">

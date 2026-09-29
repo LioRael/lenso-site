@@ -86,33 +86,7 @@ export function verifyLinkedCatalog(raw, trust, now = Math.floor(Date.now() / 10
     || !Array.isArray(snapshot.releases) || snapshot.releases.length > 4096) {
     throw new Error('linked catalog payload is not current or valid');
   }
-  const identities = new Set();
-  for (const release of snapshot.releases) {
-    if (!exactKeys(release, release?.documentation === undefined
-      ? ['plugin_id', 'version', 'publisher_id', 'title', 'summary', 'source_url', 'source_revision', 'license', 'package', 'registry_url', 'crate_digest', 'integration', 'targets', 'availability']
-      : ['plugin_id', 'version', 'publisher_id', 'title', 'summary', 'source_url', 'source_revision', 'license', 'package', 'registry_url', 'crate_digest', 'integration', 'targets', 'availability', 'documentation'])
-      || !pluginId(release.plugin_id) || !version(release.version)
-      || !boundedText(release.publisher_id, 128) || !boundedText(release.title, 160)
-      || !boundedText(release.summary, 640) || !boundedText(release.license, 128)
-      || !httpsUrl(release.source_url) || !/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(release.source_revision)
-      || !boundedText(release.package, 128) || !httpsUrl(release.registry_url)
-      || !digest(release.crate_digest)
-      || !['listed', 'yanked', 'revoked'].includes(release.availability)
-      || !['linked_plugin', 'host_provided'].includes(release.integration)
-      || !Array.isArray(release.targets) || release.targets.length === 0 || release.targets.length > 32
-      || release.targets.some((target) => !boundedText(target, 128))
-      || new Set(release.targets).size !== release.targets.length
-      || (release.documentation !== undefined && !Array.isArray(release.documentation))
-      || (release.documentation ?? []).length > 64
-      || (release.documentation ?? []).some((document) => !documentationValid(document))) {
-      throw new Error('invalid linked catalog release');
-    }
-    const documents = (release.documentation ?? []).map((document) => `${document.id}\0${document.revision}`);
-    if (new Set(documents).size !== documents.length) throw new Error('duplicate linked catalog document revision');
-    const identity = `${release.plugin_id}@${release.version}`;
-    if (identities.has(identity)) throw new Error('duplicate linked catalog release');
-    identities.add(identity);
-  }
+  validateLinkedRecords(snapshot.releases);
   const checkpoint = linkedCheckpoint(snapshot, payload, previous);
   return {
     catalogId: snapshot.catalog_id,
@@ -144,4 +118,36 @@ export function verifyLinkedCatalog(raw, trust, now = Math.floor(Date.now() / 10
       })),
     })),
   };
+}
+
+// Record schema admission only; callers must separately verify catalog provenance.
+export function validateLinkedRecords(releases) {
+  if (!Array.isArray(releases) || releases.length > 4096) throw new Error('Record collection exceeds limit');
+  const identities = new Set();
+  for (const release of releases) {
+    if (!exactKeys(release, release?.documentation === undefined
+      ? ['plugin_id', 'version', 'publisher_id', 'title', 'summary', 'source_url', 'source_revision', 'license', 'package', 'registry_url', 'crate_digest', 'integration', 'targets', 'availability']
+      : ['plugin_id', 'version', 'publisher_id', 'title', 'summary', 'source_url', 'source_revision', 'license', 'package', 'registry_url', 'crate_digest', 'integration', 'targets', 'availability', 'documentation'])
+      || !pluginId(release.plugin_id) || !version(release.version)
+      || !boundedText(release.publisher_id, 128) || !boundedText(release.title, 160)
+      || !boundedText(release.summary, 640) || !boundedText(release.license, 128)
+      || !httpsUrl(release.source_url) || !/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(release.source_revision)
+      || !boundedText(release.package, 128) || !httpsUrl(release.registry_url)
+      || !digest(release.crate_digest)
+      || !['listed', 'yanked', 'revoked'].includes(release.availability)
+      || !['linked_plugin', 'host_provided'].includes(release.integration)
+      || !Array.isArray(release.targets) || release.targets.length === 0 || release.targets.length > 32
+      || release.targets.some((target) => !boundedText(target, 128))
+      || new Set(release.targets).size !== release.targets.length
+      || (release.documentation !== undefined && !Array.isArray(release.documentation))
+      || (release.documentation ?? []).length > 64
+      || (release.documentation ?? []).some((document) => !documentationValid(document))) {
+      throw new Error('invalid linked catalog release');
+    }
+    const documents = (release.documentation ?? []).map((document) => `${document.id}\0${document.revision}`);
+    if (new Set(documents).size !== documents.length) throw new Error('duplicate linked catalog document revision');
+    const identity = `${release.plugin_id}@${release.version}`;
+    if (identities.has(identity)) throw new Error('duplicate linked catalog release');
+    identities.add(identity);
+  }
 }

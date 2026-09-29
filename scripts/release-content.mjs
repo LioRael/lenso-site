@@ -141,13 +141,7 @@ export function verifyReleaseContent(raw, trust, now = Math.floor(Date.now() / 1
     || !Array.isArray(snapshot.releases) || snapshot.releases.length > 4096) {
     throw new Error('release content payload is not current or valid');
   }
-  const identities = new Set();
-  for (const release of snapshot.releases) {
-    if (!releaseValid(release)) throw new Error('invalid signed release content');
-    const identity = `${release.plugin_id}@${release.version}`;
-    if (identities.has(identity)) throw new Error('duplicate signed release content identity');
-    identities.add(identity);
-  }
+  validateContentRecords(snapshot.releases);
   const checkpoint = releaseContentCheckpoint(snapshot, payload, previous);
   return { catalogId: snapshot.catalog_id, revision: snapshot.revision,
     expiresAt: snapshot.expires_at, releases: snapshot.releases, checkpoint };
@@ -210,4 +204,16 @@ export function joinReleaseContent(linked, portable, content, packages = { catal
   }
   return { catalogId: content.catalogId, revision: content.revision,
     expiresAt: content.expiresAt, releases };
+}
+
+// Record schema admission only; callers must separately verify catalog provenance.
+export function validateContentRecords(releases) {
+  if (!Array.isArray(releases) || releases.length > 4096) throw new Error('Record collection exceeds limit');
+  const identities = new Set();
+  for (const release of releases) {
+    if (!releaseValid(release)) throw new Error('invalid signed release content');
+    const identity = `${release.plugin_id}@${release.version}`;
+    if (identities.has(identity)) throw new Error('duplicate signed release content identity');
+    identities.add(identity);
+  }
 }

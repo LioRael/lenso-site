@@ -107,7 +107,7 @@ export function PluginDirectory() {
             <ContentState.Description>{signedLinkedCatalog.releases.length || signedPortableCatalog.releases.length || signedPackageCatalog.releases.length || signedReleaseContent.releases.length ? 'No verified signed release matches the current filters.' : 'No verified signed Plugin catalog is available. Candidate claims are separate.'}</ContentState.Description>
           </ContentState.Root>}
           {signedPackage.map((release) => <article className="signed-release" key={`package:${release.pluginId}@${release.version}`}>
-            <CatalogCurrentness expirations={[signedPackageCatalog.expiresAt]} />
+            <CatalogCurrentness status={release.status} expirations={[signedPackageCatalog.expiresAt]} />
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.summary}</p>
             <dl><div><dt>Distribution</dt><dd>npm package</dd></div><div><dt>Publisher</dt><dd>{release.publisherId}</dd></div><div><dt>Package</dt><dd>{release.distributions.map((item) => <code key={item.id}>{item.package}@{item.version}</code>)}</dd></div><div><dt>Catalog</dt><dd>Signed revision {signedPackageCatalog.revision}</dd></div></dl>
@@ -115,7 +115,7 @@ export function PluginDirectory() {
             <Link href={linkedReleasePath(release.pluginId, release.version)}>Inspect exact signed npm version</Link>
           </article>)}
           {signedSource.map((release) => <article className="signed-release" key={`content:${release.pluginId}@${release.version}`}>
-            <CatalogCurrentness expirations={[signedReleaseContent.expiresAt]} />
+            <CatalogCurrentness status={release.status} expirations={[signedReleaseContent.expiresAt]} />
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.metadata?.summary}</p>
             <dl><div><dt>Distribution</dt><dd>Editable source content</dd></div><div><dt>Publisher</dt><dd>{release.metadata?.publisherId}</dd></div><div><dt>Content</dt><dd>{release.content.map((item) => item.kind.replaceAll('_', ' ')).join(', ')}</dd></div><div><dt>Catalog</dt><dd>Signed revision {signedReleaseContent.revision}</dd></div></dl>
@@ -123,7 +123,7 @@ export function PluginDirectory() {
             <Link href={linkedReleasePath(release.pluginId, release.version)}>Inspect exact signed source version</Link>
           </article>)}
           {signedPortable.map((release) => <article className="signed-release" key={`portable:${release.pluginId}@${release.version}`}>
-            <CatalogCurrentness expirations={[signedPortableCatalog.expiresAt]} />
+            <CatalogCurrentness status={release.status} expirations={[signedPortableCatalog.expiresAt]} />
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.summary}</p>
             <dl><div><dt>Distribution</dt><dd>Portable Bundle</dd></div><div><dt>Publisher</dt><dd>{release.publisherId}</dd></div><div><dt>Bundle SHA-256</dt><dd><code>{release.artifactDigest}</code></dd></div><div><dt>Source revision</dt><dd><code>{release.sourceRevision}</code></dd></div><div><dt>Catalog</dt><dd>Signed revision {signedPortableCatalog.revision}</dd></div></dl>
@@ -139,7 +139,7 @@ export function PluginDirectory() {
             </div>}
           </article>)}
           {signedLinked.map((release) => <article className="signed-release" key={`linked:${release.pluginId}@${release.version}`}>
-            <CatalogCurrentness expirations={[signedLinkedCatalog.expiresAt]} />
+            <CatalogCurrentness status={release.status} expirations={[signedLinkedCatalog.expiresAt]} />
             <h3><Link href={linkedReleasePath(release.pluginId, release.version)}><code>{release.pluginId}</code> <span>{release.version}</span></Link></h3>
             <p>{release.summary}</p>
             <dl><div><dt>Distribution</dt><dd>Linked Rust · {release.integration === 'host_provided' ? 'Host-provided integration' : 'linked Plugin'}</dd></div><div><dt>Package</dt><dd><code>{release.package}</code></dd></div><div><dt>Exact targets</dt><dd>{release.targets.join(', ')}</dd></div><div><dt>Catalog</dt><dd>Signed revision {signedLinkedCatalog.revision}</dd></div></dl>

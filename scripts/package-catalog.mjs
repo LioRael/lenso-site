@@ -126,13 +126,7 @@ export function verifyPackageCatalog(raw, trust, now = Math.floor(Date.now() / 1
     || !Array.isArray(snapshot.releases) || snapshot.releases.length > 4096) {
     throw new Error('package catalog payload is not current or valid');
   }
-  const identities = new Set();
-  for (const release of snapshot.releases) {
-    if (!releaseValid(release)) throw new Error('invalid package catalog release');
-    const identity = `${release.plugin_id}@${release.version}`;
-    if (identities.has(identity)) throw new Error('duplicate package catalog release');
-    identities.add(identity);
-  }
+  validatePackageRecords(snapshot.releases);
   const checkpoint = packageCheckpoint(snapshot, payload, previous);
   return {
     catalogId: snapshot.catalog_id,
@@ -161,4 +155,16 @@ export function verifyPackageCatalog(raw, trust, now = Math.floor(Date.now() / 1
       })),
     })),
   };
+}
+
+// Record schema admission only; callers must separately verify catalog provenance.
+export function validatePackageRecords(releases) {
+  if (!Array.isArray(releases) || releases.length > 4096) throw new Error('Record collection exceeds limit');
+  const identities = new Set();
+  for (const release of releases) {
+    if (!releaseValid(release)) throw new Error('invalid package catalog release');
+    const identity = `${release.plugin_id}@${release.version}`;
+    if (identities.has(identity)) throw new Error('duplicate package catalog release');
+    identities.add(identity);
+  }
 }

@@ -8,7 +8,7 @@
     "check:legacy-links": "node --test scripts/legacy-marketplace-links.test.mjs",
     "check:learning-paths": "node scripts/check-learning-paths.mjs",
     "check:engine-extension": "node scripts/smoke-engine-extension.mjs",
-    "check:linked-catalog": "node --test scripts/catalog-currentness.test.mjs scripts/catalog-checkpoint-files.test.mjs scripts/linked-catalog.test.mjs scripts/linked-documents.test.mjs scripts/portable-catalog.test.mjs scripts/package-catalog.test.mjs scripts/release-details.test.mjs scripts/release-content.test.mjs",
+    "check:linked-catalog": "node --test scripts/keyless-publisher/verify.test.mjs scripts/keyless-checkpoint.test.mjs scripts/keyless-catalog.test.mjs scripts/catalog-currentness.test.mjs scripts/catalog-checkpoint-files.test.mjs scripts/linked-catalog.test.mjs scripts/linked-documents.test.mjs scripts/portable-catalog.test.mjs scripts/package-catalog.test.mjs scripts/release-details.test.mjs scripts/release-content.test.mjs",
     "check:linked-site-integration": "node scripts/check-linked-site-integration.mjs",
     "check:real-linked-adoption": "node scripts/check-real-linked-adoption.mjs",
     "check:release-content-integration": "node scripts/check-release-content-site-integration.mjs",

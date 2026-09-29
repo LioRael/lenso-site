@@ -6,6 +6,7 @@ import {
   type SignedLinkedRelease,
   type SignedPortableRelease,
   type SignedPackageRelease,
+  type KeylessProvenance,
 } from '@/lib/plugin-candidates';
 import { linkedDocumentApiPath, linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
 
@@ -25,6 +26,7 @@ function linkedDistribution(release: SignedLinkedRelease) {
     catalogId: signedLinkedCatalog.catalogId,
     catalogRevision: signedLinkedCatalog.revision,
     expiresAt: signedLinkedCatalog.expiresAt,
+    provenance: signedLinkedCatalog.provenance,
     release: {
       ...release,
       documentation: documents(release.pluginId, release.version, release.documentation),
@@ -38,6 +40,7 @@ function portableDistribution(release: SignedPortableRelease) {
     catalogId: signedPortableCatalog.catalogId,
     catalogRevision: signedPortableCatalog.revision,
     expiresAt: signedPortableCatalog.expiresAt,
+    provenance: signedPortableCatalog.provenance,
     detailsRevision: signedPortableCatalog.detailsRevision,
     detailsExpiresAt: signedPortableCatalog.detailsExpiresAt,
     release: {
@@ -53,6 +56,7 @@ function packageDistribution(release: SignedPackageRelease) {
     catalogId: signedPackageCatalog.catalogId,
     catalogRevision: signedPackageCatalog.revision,
     expiresAt: signedPackageCatalog.expiresAt,
+    provenance: signedPackageCatalog.provenance,
     release: {
       ...release,
       documentation: documents(release.pluginId, release.version, release.documentation),
@@ -71,6 +75,7 @@ const releases = new Map<string, {
     catalogId: string | null;
     catalogRevision: number | null;
     expiresAt: number | null;
+    provenance?: KeylessProvenance;
     release: (typeof signedReleaseContent.releases)[number];
   }[];
 }>();
@@ -133,6 +138,7 @@ for (const content of signedReleaseContent.releases) {
     catalogId: signedReleaseContent.catalogId,
     catalogRevision: signedReleaseContent.revision,
     expiresAt: signedReleaseContent.expiresAt,
+    provenance: signedReleaseContent.provenance,
     release: content,
   });
 }
@@ -151,8 +157,11 @@ export function signedPluginRelease(pluginId: string, version: string) {
 export function signedPluginDirectory() {
   return {
     schema: 'lenso.site.signed-plugin-directory.v1',
-    verification: 'signature-verified-at-build',
-    note: 'Historical signature-verified records remain readable after snapshot expiry. This API does not confirm current availability or authorize new adoption. Current catalog status, registry availability, and project compatibility must be checked by the CLI before adoption. Unsigned candidates are excluded.',
+    verification: signedLinkedCatalog.provenance ? 'publisher-provenance-verified-at-build' : 'signature-verified-at-build',
+    provenance: signedLinkedCatalog.provenance,
+    note: signedLinkedCatalog.provenance
+      ? 'Historical publisher-provenance-verified records remain readable. This static API does not confirm current availability or authorize adoption. The CLI must verify the current official catalog, release status, exact artifacts and project compatibility. Unsigned candidates are excluded.'
+      : 'Historical signature-verified records remain readable after snapshot expiry. This API does not confirm current availability or authorize new adoption. Current catalog status, registry availability, and project compatibility must be checked by the CLI before adoption. Unsigned candidates are excluded.',
     catalogs: {
       linkedCargo: { catalogId: signedLinkedCatalog.catalogId, revision: signedLinkedCatalog.revision, expiresAt: signedLinkedCatalog.expiresAt },
       portable: { catalogId: signedPortableCatalog.catalogId, revision: signedPortableCatalog.revision, expiresAt: signedPortableCatalog.expiresAt,

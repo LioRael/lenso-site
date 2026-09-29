@@ -121,13 +121,7 @@ export function verifyPortableCatalog(raw, trust, now = Math.floor(Date.now() / 
     || !Array.isArray(snapshot.releases) || snapshot.releases.length > 4096) {
     throw new Error('portable catalog payload is not current or valid');
   }
-  const identities = new Set();
-  for (const release of snapshot.releases) {
-    if (!releaseValid(release)) throw new Error('invalid portable catalog release');
-    const identity = `${release.plugin_id}@${release.version}`;
-    if (identities.has(identity)) throw new Error('duplicate portable catalog release');
-    identities.add(identity);
-  }
+  validatePortableRecords(snapshot.releases);
   const checkpoint = portableCheckpoint(snapshot, payload, previous);
   return {
     catalogId: snapshot.catalog_id,
@@ -159,4 +153,16 @@ export function verifyPortableCatalog(raw, trust, now = Math.floor(Date.now() / 
       manifestDigest: release.artifact.manifest_digest,
     })),
   };
+}
+
+// Record schema admission only; callers must separately verify catalog provenance.
+export function validatePortableRecords(releases) {
+  if (!Array.isArray(releases) || releases.length > 4096) throw new Error('Record collection exceeds limit');
+  const identities = new Set();
+  for (const release of releases) {
+    if (!releaseValid(release)) throw new Error('invalid portable catalog release');
+    const identity = `${release.plugin_id}@${release.version}`;
+    if (identities.has(identity)) throw new Error('duplicate portable catalog release');
+    identities.add(identity);
+  }
 }

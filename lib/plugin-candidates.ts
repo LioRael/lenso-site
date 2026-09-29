@@ -3,9 +3,13 @@ import portableGenerated from './.generated/portable-catalog.json';
 import packageGenerated from './.generated/package-catalog.json';
 import contentGenerated from './.generated/release-content.json';
 
+export type KeylessProvenance = { kind: 'keyless'; catalogId: string; revision: number; catalogDigest: string; sourceSha: string;
+  catalogSize: number; bundleDigest: string; bundleSize: number };
+
 export type SignedLinkedRelease = {
   pluginId: string;
   version: string;
+  status?: 'listed' | 'yanked' | 'revoked';
   title: string;
   summary: string;
   publisherId: string;
@@ -34,6 +38,7 @@ export type SignedLinkedCatalog = {
   catalogId: string | null;
   revision: number | null;
   expiresAt: number | null;
+  provenance?: KeylessProvenance;
   releases: SignedLinkedRelease[];
 };
 // Build-time ingestion validates the signed wire payload before writing this JSON.
@@ -42,6 +47,7 @@ export const signedLinkedCatalog = generated as SignedLinkedCatalog;
 export type SignedPortableRelease = {
   pluginId: string;
   version: string;
+  status?: 'listed' | 'yanked' | 'revoked';
   title: string;
   summary: string;
   publisherId: string;
@@ -58,6 +64,7 @@ export type SignedPortableCatalog = {
   catalogId: string | null;
   revision: number | null;
   expiresAt: number | null;
+  provenance?: KeylessProvenance;
   detailsRevision: number | null;
   detailsExpiresAt: number | null;
   releases: SignedPortableRelease[];
@@ -67,6 +74,7 @@ export const signedPortableCatalog = portableGenerated as SignedPortableCatalog;
 export type SignedPackageRelease = {
   pluginId: string;
   version: string;
+  status?: 'listed' | 'yanked' | 'revoked';
   title: string;
   summary: string;
   publisherId: string;
@@ -88,6 +96,7 @@ export type SignedPackageCatalog = {
   catalogId: string | null;
   revision: number | null;
   expiresAt: number | null;
+  provenance?: KeylessProvenance;
   releases: SignedPackageRelease[];
 };
 export const signedPackageCatalog = packageGenerated as SignedPackageCatalog;
@@ -95,6 +104,7 @@ export const signedPackageCatalog = packageGenerated as SignedPackageCatalog;
 export type SignedReleaseContent = {
   pluginId: string;
   version: string;
+  status?: 'listed' | 'yanked' | 'revoked';
   baseKind: 'linked_cargo' | 'portable' | 'package' | 'content_only';
   baseReleaseIdentity: string;
   metadata?: {
@@ -118,6 +128,7 @@ export type SignedReleaseContentCatalog = {
   catalogId: string | null;
   revision: number | null;
   expiresAt: number | null;
+  provenance?: KeylessProvenance;
   releases: SignedReleaseContent[];
 };
 export const signedReleaseContent = contentGenerated as SignedReleaseContentCatalog;
