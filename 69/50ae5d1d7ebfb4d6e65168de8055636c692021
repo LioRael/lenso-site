@@ -1,0 +1,85 @@
+content/docs/zh/core/(reference)/management-glossary.mdx
+  s_f4202e28c6b5b1::t_6b803ec8d3de65 1-38
+content/docs/zh/web/(management)/mixed-pg-d1.mdx
+  s_f4202e28c6b5b1::t_7eda480359d9e9 1-53
+content/docs/web/(management)/controlled-console.mdx
+  s_f4202e28c6b5b1::t_0274167866295c 1-60
+content/docs/zh/web/(management)/controlled-console.mdx
+  s_f4202e28c6b5b1::t_e1a54a8ca33606 1-45
+content/docs/zh/core/(contribute)/agent-skills.mdx
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 110-114
+content/docs/zh/core/(reference)/meta.ts
+  s_f4202e28c6b5b1::t_6b803ec8d3de65 6
+content/docs/web/(management)/operators-auth.mdx
+  s_f4202e28c6b5b1::t_3d10ae74eba6cd 1-73
+content/docs/web/(management)/mixed-pg-d1.mdx
+  s_f4202e28c6b5b1::t_695dac106a91f7 1-65
+content/docs/web/meta.ts
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 5
+content/docs/zh/web/(management)/business-source-on-workers.mdx
+  s_f4202e28c6b5b1::t_e7374c5881450a 1-105
+content/docs/zh/web/(management)/external-management-agent.mdx
+  s_f4202e28c6b5b1::t_e4a6733db91f00 1-51
+content/docs/core/(reference)/host-support.mdx
+  s_f4202e28c6b5b1::t_6b803ec8d3de65 1-81
+content/docs/zh/web/(management)/minimal-native-backend.mdx
+  s_f4202e28c6b5b1::t_5b1eed414ba20d 1-87
+content/docs/core/(reference)/management-glossary.mdx
+  s_f4202e28c6b5b1::t_6b803ec8d3de65 1-41
+content/docs/core/(reference)/meta.ts
+  s_f4202e28c6b5b1::t_6b803ec8d3de65 6
+content/docs/zh/web/(management)/meta.ts
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 1-13
+content/docs/web/(management)/minimal-native-backend.mdx
+  s_f4202e28c6b5b1::t_bb622af645b6c1 1-102
+content/docs/web/(management)/business-source-on-workers.mdx
+  s_f4202e28c6b5b1::t_c7df2c47a2ac2a 1-118
+content/docs/web/(management)/external-management-agent.mdx
+  s_f4202e28c6b5b1::t_a8713a30b03b88 1-67
+.github/workflows/quality.yml
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 4,8
+content/docs/zh/core/(reference)/host-support.mdx
+  s_f4202e28c6b5b1::t_6b803ec8d3de65 1-66
+content/docs/web/(management)/meta.ts
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 1-13
+content/docs/zh/core/(reference)/supported-workflows.mdx
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 11-15,66-69
+content/docs/zh/web/(management)/operators-auth.mdx
+  s_f4202e28c6b5b1::t_92c75ed2430be2 1-58
+content/docs/zh/web/meta.ts
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 5
+content/docs/core/(reference)/supported-workflows.mdx
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 11-16,81-85
+content/docs/core/(contribute)/agent-skills.mdx
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 118-124
+content/docs/agent/(extend)/mcp-servers.mdx
+  s_f4202e28c6b5b1::t_5c6aa6cd9dd240 10-16
+content/docs/core/(operate)/app-console.mdx
+  s_f4202e28c6b5b1::t_339f8d1a46c5cd 18
+content/docs/zh/agent/(extend)/mcp-servers.mdx
+  s_f4202e28c6b5b1::t_59a40bc21764c1 10-14
+content/docs/zh/core/(operate)/app-console.mdx
+  s_f4202e28c6b5b1::t_63324be76683e0 16
+package.json
+  s_f4202e28c6b5b1::t_fba323f682ce41 27
+pnpm-lock.yaml
+  s_f4202e28c6b5b1::t_3ce686452b55d0 13,31-32,402-403,411-412,417-418,423-424,429-430,435-436,472-474,665-670,683-688,694-698,709-713,724-728,741-746,759-764,777-782,795-800,813-818,831-836,849-854,867-872,887-893,908-914,929-935,950-956,971-977,992-998,1013-1019,1034-1040,1050-1053,1059-1063,1076-1081,1094-1099,1112-1117,4062-4063,4646-4654,4940-4943,5279-5280,5284-5285,5289,5509-5510,5513-5519,5527,5537-5538,5557,5560-5561,5563,5569,5579,5582-5583,5592,5597,5625,5628,5630,5632,5799,5804,5808,5812,5837,5839,5844,5846-5847,5849,5870,5872,5875,5877,5886,5894,5956,5960,5962,5965,5968,5971,5974,6015-6019,6131-6135,6146-6150,6156-6160,6167-6169,6176-6178,6185-6187,6194-6196,6203-6205,6212-6214,6221-6223,6230-6232,6239-6241,6248-6250,6261-6265,6276-6280,6291-6295,6306-6310,6321-6325,6336-6340,6351-6355,6366-6370,6381-6385,6391-6395,6402-6404,6411-6413,6420-6422,6469,6473,6482,6494,6499-6501,6516,6526-6527,6706,6709,6812,6816,7426,7428,7440,7442,7445,7447,7466,7468,7500,7502-7504,7514-7515,7525,7528-7529,7537,7546,7675,7731,7803,7807-7810,7816,7819,7823,7827,7829,7849-7850,7878,7940,7944,8351,8718,8720-8721,8726,8729,8734,8739,8750-8752,8816,8818,9012,9022-9024,9047,9056-9058,9119,9122,9494,9501,9519,9523,9529,9532,9537,9542,9547,9551,9556,9558,9560-9563,9568,9574,9579,9587,9596,9598-9601,9606,9612,9928,9931,9960,9963-9965,9969,10007,10016,10397,10401,10411,10414,10416,10422,10424,10429,10432,10528,10530,10595,10597,10611,10616,10678,10713-10745,10895,10900,10976,10978,11075-11076,11222,11228,11230,11237,11239,11245,11247,11251,11254,11258,11260,11269,11271,11276,11382,11384-11388,11390,11393,11396,11399,11403
+pnpm-workspace.yaml
+  s_f4202e28c6b5b1::t_54384abbee43b1 10-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6950ae5d1d7ebfb4d6e65168de8055636c692021",
+  "prompts": {},
+  "sessions": {
+    "s_f4202e28c6b5b1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ee9e-623b-7d12-a648-d8b462390eec",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
