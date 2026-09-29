@@ -34,7 +34,13 @@ export function CatalogCurrentness({ expirations }: { expirations: readonly (num
 export function AdoptionCommandPanel({ command, expirations, label = 'Local project · replace paths with verified files' }: {
   command: string; expirations: readonly (number | null)[]; label?: string;
 }) {
+  return <AdoptionCommandGroup commands={[{ command, label }]} expirations={expirations} />;
+}
+
+export function AdoptionCommandGroup({ commands, expirations }: {
+  commands: readonly { command: string; label: string }[]; expirations: readonly (number | null)[];
+}) {
   const current = useCurrentCatalog(expirations);
   if (!current) return <p className="signed-release-note" role="status">Adoption command unavailable: current catalog status is not confirmed. Obtain a current verified catalog before adding or copying this release. Existing locked Apps are unchanged.</p>;
-  return <div className="code-panel"><div className="code-panel-head"><span>{label}</span><CopyCommand value={command} canCopy={() => adoptionIsCurrent(expirations)} /></div><pre><code>{command}</code></pre></div>;
+  return <>{commands.map(({ command, label }) => <div className="code-panel" key={label}><div className="code-panel-head"><span>{label}</span><CopyCommand value={command} canCopy={() => adoptionIsCurrent(expirations)} /></div><pre><code>{command}</code></pre></div>)}</>;
 }

@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { DescriptionListDescription, DescriptionListItem, DescriptionListRoot, DescriptionListTerm } from '@lenso/ui/description-list';
 import { CandidateDocumentation } from '@/components/candidate-documentation';
-import { AdoptionCommandPanel, CatalogCurrentness } from '@/components/catalog-currentness';
+import { AdoptionCommandGroup, AdoptionCommandPanel, CatalogCurrentness } from '@/components/catalog-currentness';
 import { PluginDocumentTools } from '@/components/plugin-document-tools';
 import { SiteHeader } from '@/components/site-header';
 import { candidateRelease, signedLinkedCatalog, signedPortableCatalog, signedPackageCatalog, signedReleaseContent, type SignedLinkedRelease, type SignedPortableRelease, type SignedPackageRelease, type SignedReleaseContent } from '@/lib/plugin-candidates';
@@ -352,8 +352,10 @@ function ReleaseContentFor({ pluginId, version, baseKind }: {
           ['Archive SHA-256', <code key="digest">{item.digest}</code>],
           ['Archive size', `${item.size} bytes`],
         ]} />
-        <AdoptionCommandPanel command={`${command} --content-preview`} expirations={expirations} label="CLI preview command" />
-        <AdoptionCommandPanel command={command} expirations={expirations} label="CLI copy command" />
+        <AdoptionCommandGroup commands={[
+          { command: `${command} --content-preview`, label: 'CLI preview command' },
+          { command, label: 'CLI copy command' },
+        ]} expirations={expirations} />
       </div>;
     })}
   </section>;

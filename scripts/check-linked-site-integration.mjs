@@ -239,10 +239,16 @@ try {
   const portableAdoption = release.match(/<section class="linked-release-section" aria-labelledby="portable-adoption-heading">([\s\S]*?)<\/section>/)?.[1];
   assert.ok(linkedAdoption, 'a shared release must retain its linked Cargo adoption panel');
   assert.ok(portableAdoption, 'a shared release must expose its separate Portable adoption panel');
-  assert.match(linkedAdoption, /lenso app add example\.web@1\.0\.0 --linked-snapshot [^<]*--trust [^<]*--crate [^<]*\.crate/);
+  assert.match(linkedAdoption, /Adoption command unavailable: current catalog status is not confirmed/);
+  assert.doesNotMatch(linkedAdoption, /class="code-panel"|class="copy-command"/);
+  assert.ok(release.includes('lenso app add example.web@1.0.0 --linked-snapshot ./linked-cargo-snapshot.json --trust ./catalog-trust.json --crate ./example-web-1.0.0.crate'),
+    'the fresh signed fixture must serialize the exact linked command for the guarded client panel');
   assert.doesNotMatch(linkedAdoption, /--portable-snapshot|--archive/);
   assert.match(portableAdoption, /Adopt the Portable distribution/);
-  assert.match(portableAdoption, /lenso app add example\.web@1\.0\.0 --portable-snapshot [^<]*--trust [^<]*--archive [^<]*\.lenso-plugin/);
+  assert.match(portableAdoption, /Adoption command unavailable: current catalog status is not confirmed/);
+  assert.doesNotMatch(portableAdoption, /class="code-panel"|class="copy-command"/);
+  assert.ok(release.includes('lenso app add example.web@1.0.0 --portable-snapshot ./portable-snapshot.json --trust ./catalog-trust.json --archive ./exact-release.lenso-plugin'),
+    'the fresh signed fixture must serialize its separate exact Portable command for the guarded client panel');
   assert.match(portableAdoption, /linked Cargo snapshot and <code>\.crate<\/code> above do not verify this Portable Bundle/);
   assert.doesNotMatch(portableAdoption, /--linked-snapshot|--crate/);
   assert.match(release, /Getting started/);
