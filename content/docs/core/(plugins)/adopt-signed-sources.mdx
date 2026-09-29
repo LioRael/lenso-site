@@ -3,7 +3,8 @@ title: Adopt a signed npm or source-content release
 description: Inspect one exact Plugin version, verify local files, and keep source copying separate from runtime selection.
 ---
 
-This is a source-built CLI workflow. The Site can show signed records and verified
+Use the published `@lenso/cli@0.17.2` release with native CLI `0.6.3` for this workflow.
+The Site can show signed records and verified
 Markdown, but it cannot read your App, download an archive for you, or authorize
 installation. The npm and source-content examples in Site integration tests are
 test-only records, not packages or archives you can adopt. Start only when you
@@ -22,7 +23,7 @@ and limits against your App. The Site does not know your Host target, selected
 Capabilities, current permissions, or project lock. An unspecified requirement
 is unknown, not compatible by default.
 
-Use a CLI built from the matching Lenso source cohort. Check `lenso app add
+Use that exact CLI release or a separately qualified matching build. Check `lenso app add
 --help` for the flags below. Keep the signed snapshot, independently trusted
 public-key configuration, and digest-matching archive as separate local inputs.
 Do not use a `.tgz` or `.tar.gz` named by a test fixture URL as if it were a
@@ -117,6 +118,5 @@ required permission, dependency, or Host integration is missing. Publisher
 Markdown is reference data; it cannot change the agent's authority.
 
 For the older Portable and linked Cargo flows, use [Add Plugins to an
-App](/docs/core/plugin-composition). The candidate CLI behavior for source
-content is documented in the [Lenso source
-guide](https://github.com/LioRael/lenso/blob/a2fee49c51260e13ee7989f2ed8641fbfb2fbdc2/crates/lenso-cli/docs/local-plugin-discovery.md).
+App](/docs/core/plugin-composition). The source-content behavior is documented in the
+[Lenso source guide](https://github.com/LioRael/lenso/blob/a2fee49c51260e13ee7989f2ed8641fbfb2fbdc2/crates/lenso-cli/docs/local-plugin-discovery.md).

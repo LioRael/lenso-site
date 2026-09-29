@@ -3,7 +3,7 @@ title: 采用签名 npm 或源码内容发布
 description: 核对一个精确的 Plugin 版本和本地文件，将源码复制与运行时选择分开。
 ---
 
-本流程使用从匹配源码构建的 CLI。Site 可以展示签名记录和已核验的 Markdown，
+本流程可使用已发布的 `@lenso/cli@0.17.2`（原生 CLI `0.6.3`）。Site 可以展示签名记录和已核验的 Markdown，
 但不能读取你的 App、代你下载归档或批准安装。Site 集成测试里的 npm 与源码
 内容只是测试记录，不是可采用的包或归档。只有取得当前签名发布记录及来自
 可信来源的精确本地文件后，才开始操作。
@@ -18,7 +18,7 @@ description: 核对一个精确的 Plugin 版本和本地文件，将源码复�
 和声明的目标，并对照 App 检查用途与限制。Site 不知道你的 Host 目标、已选
 Capability、权限或项目锁。没有声明的要求应视为未知，不能默认兼容。
 
-使用从匹配 Lenso 源码版本构建的 CLI，并通过 `lenso app add --help`
+使用这个精确 CLI 版本或另行验证的匹配构建，并通过 `lenso app add --help`
 核对下列参数。签名快照、独立信任的公钥配置、摘要匹配的归档必须是分别取得
 的本地输入。测试夹具 URL 所指的 `.tgz` 或 `.tar.gz` 不能当作可下载的发布物。
 
@@ -99,4 +99,4 @@ App 相对目录。第一次运行保留 `--content-preview`：
 Agent 的权限。
 
 旧有 Portable 与 linked Cargo 流程见[向 App 添加 Plugin](/docs/zh/core/plugin-composition)。
-源码内容的候选 CLI 行为记录在 [Lenso 源码指南](https://github.com/LioRael/lenso/blob/a2fee49c51260e13ee7989f2ed8641fbfb2fbdc2/crates/lenso-cli/docs/local-plugin-discovery.md)。
+源码内容采用行为记录在 [Lenso 源码指南](https://github.com/LioRael/lenso/blob/a2fee49c51260e13ee7989f2ed8641fbfb2fbdc2/crates/lenso-cli/docs/local-plugin-discovery.md)。

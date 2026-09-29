@@ -236,10 +236,10 @@ function PortableAdoption({ release, alongsideLinked = false }: { release: Signe
   const adoptCommand = `lenso app add ${release.pluginId}@${release.version} --portable-snapshot ./portable-snapshot.json --trust ./catalog-trust.json --archive ./exact-release.lenso-plugin`;
   return <section className="linked-release-section" aria-labelledby="portable-adoption-heading">
     <h2 id="portable-adoption-heading">{alongsideLinked ? 'Adopt the Portable distribution' : 'Adopt this exact Portable version'}</h2>
-    <p>In a source App, the source-built candidate CLI accepts an independently trusted signed Portable snapshot and the exact <code>.lenso-plugin</code> archive. Obtain both from an approved source and review the declared runtime and permissions before adoption. This Site page grants neither trust nor local filesystem access.</p>
+    <p>Use the published <code>@lenso/cli@0.17.2</code> release with native CLI <code>0.6.3</code> to adopt an independently trusted signed Portable snapshot and the exact <code>.lenso-plugin</code> archive into a source App. Review the declared target, runtime and permissions before adoption. A native Process Bundle runs trusted code without a sandbox; the local Host still checks target and permission compatibility.</p>
     {alongsideLinked && <p>The linked Cargo snapshot and <code>.crate</code> above do not verify this Portable Bundle. Use the Portable snapshot and archive named below.</p>}
     <AdoptionCommandPanel command={adoptCommand} />
-    <p><code>app add</code> checks the signature, freshness, exact identity, archive digest, and manifest before recording local source intent. Then build the App and use <code>app check</code>/<code>app show</code> on the new distribution. The App owner can edit local sources; a later build checks archive drift against its local lock, not a new independent signature authority. This candidate path is not a claim that the CLI or release is publicly published.</p>
+    <p><code>app add</code> checks the signature, freshness, exact identity, archive digest, and manifest before recording local source intent. Then build the App and use <code>app check</code>/<code>app show</code> on the new distribution, followed by a real Plugin call. The App owner can edit local sources; a later build checks archive drift against its local lock. This page records the signed release; local adoption and execution require your own review.</p>
   </section>;
 }
 

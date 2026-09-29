@@ -1,13 +1,15 @@
 ---
 title: 接入 React/Vite 前端
-description: 使用本地知识库 App 候选，预览有类型、有认证的浏览器调用路径。
+description: 从已签名的知识库源码模板开始，为准备好的本地 App 接入有类型的 React 调用。
 ---
 
-> **本地候选，并非已发布脚手架。** 本教程使用相互匹配的 `lenso`、`lenso-js` 与
-> `lenso-examples` 源码 Checkout。示例的 `@lenso/web-client` 依赖是记录在
-> `bun.lock` 中的精确本地 Tarball；这条路径不会从公共 Registry 下载它。
-> Auth、Jobs、Secrets 还需要显式 Provider 输入和可丢弃的 PostgreSQL 数据库。
-> 缺少任何输入就停下，不要擅自替换 Release。
+已签名的 [Knowledge Base Starter 0.1.0](/plugins/lenso.reference.knowledge-base-starter/0.1.0)
+提供可编辑的 Rust、Bun 与 React 源码。先按[签名源码内容采用流程](/docs/zh/core/adopt-signed-sources)
+预览并复制精确归档。使用已发布的 `@lenso/cli@0.17.2`（原生 CLI `0.6.3`）、
+Rust/Cargo、Bun 和可丢弃的 PostgreSQL 数据库。Provider 初始化与凭据仍需显式准备。
+
+参考 App 需要构建能接入 Bun Excerpt Plugin 的 linked Web Host。
+仅支持 Process 的预编译 Host 无法运行这个 Bun Plugin。签名源码模板本身不会提供或激活 Host。
 
 [本地 Web App 快速开始](/docs/zh/core/app-quickstart)先验证一次问候。本篇继续展示
 普通 React 页面如何通过生成的类型调用 App **明确公开的** API。对于已准备的
@@ -16,21 +18,38 @@ description: 使用本地知识库 App 候选，预览有类型、有认证的�
 
 ## 1. 启动前确认输入
 
-在匹配的 `lenso-examples` 源码 Checkout 中，先读
-`fixtures/vnext-knowledge-base-app/README.md`。其中的 `project/` 是 App Root，
-`project/frontend/` 是普通 Vite/React 项目。你需要匹配源码构建的 `lenso` CLI、
-Rust/Cargo、Bun、与 `project/frontend/bun.lock` 匹配且独立打包的
-`@lenso/web-client` 候选、匹配的框架与 Agent Tool Provider 候选源码，以及 Auth API-token、Jobs、Secrets Provider 源码
-（或它们精确的已签名 `.crate` 输入）。请使用可丢弃的 PostgreSQL 数据库。
+模板归档对应 Fixture 的 `project/` 目录；复制后根目录包含 `app/` 与 `frontend/`。
+先读精确源码版本的
+[`fixtures/vnext-knowledge-base-app/README.md`](https://github.com/LioRael/lenso-examples/blob/93d366522d7f33bd3f6ca79786beb165bbe52f5c/fixtures/vnext-knowledge-base-app/README.md)，
+了解 Provider 配置与独立 Fixture 验证器。
+
+公开包输入包括 [@lenso/web-client 0.1.0](https://www.npmjs.com/package/@lenso/web-client/v/0.1.0)、
+[@lenso/knowledge-excerpt 0.1.2](/plugins/lenso.reference.knowledge-excerpt/0.1.2)、
+[Auth API-token 0.1.2](https://crates.io/crates/lenso-auth-api-token-plugin/0.1.2)、
+[Jobs 0.1.8](https://crates.io/crates/lenso-jobs-plugin/0.1.8) 与
+[Secrets Env 0.1.7](/plugins/lenso.secrets.env/0.1.7)。采用前核对每个精确归档和签名身份；
+Registry 中存在某个包，不代表该 Provider 已有当前有效的签名目录条目。
+
+原前端锁文件 `project/frontend/bun.lock` 指向本地 `vendor/lenso-web-client.tgz`，其字节与公开 npm 归档不同。
+对于复制后归 App 所有的项目，可选择公开版本并审查 Manifest 与锁文件变更：
+
+```sh
+cd frontend
+bun add --exact @lenso/web-client@0.1.0 --ignore-scripts
+bun install --frozen-lockfile --ignore-scripts
+bun run generate && bun run typecheck
+```
+
+下方原 Fixture 验证路径仍使用匹配的本地 Tarball，以及显式源码或签名 `.crate` Provider 输入。
 验证器会创建 Schema 并留供检查，结束后不会重置数据库。
 这条交互式凭据 Handoff 需要 POSIX no-follow 文件 API，不支持 Windows。
 
 干净的 Fixture Checkout **不能直接**运行 `lenso app dev`：Provider Plugin、
 Operator 初始化、凭据与数据库配置均未准备。Fixture README 说明源码候选模式
-与签名包模式。package-only 仍是验收门禁，不能据此声称精确 Provider 组合已经
-公开发布。
+与签名包模式。采用包时使用当前签名记录和公开归档摘要；`AGENT_INPUT.md` 中的
+历史测试签名候选属于另一组输入。
 
-## 2. 运行有边界的参考流程
+## 2. 选择原 Fixture 验证路径
 
 审查候选源码并准备隔离的本地构建环境后，Fixture 验证器可以在临时 App 中准备
 Provider、从指定 Tarball 构建 React 页面、签发短期测试凭据、构建 Host，并通过
@@ -73,7 +92,7 @@ Provider 和 App 构建可能执行包内构建脚本；未经审查的输入只
 
 对于 Provider、Schema Operator、凭据、Excerpt Plugin 和数据库设置都**已经准备好**的 App，
 先将精确 Tarball 放到 Fixture 锁定的本地依赖路径。从 Fixture 目录使用
-匹配源码构建的 CLI 执行：
+匹配的 CLI 和原 Fixture 的精确本地 Tarball 执行：
 
 ```sh
 LENSO_CLI=/absolute/path/to/lenso
@@ -123,8 +142,9 @@ Fixture 的公开 notes、settings、jobs 和 attachment 路径，不开放 Host
 ## 让 Agent 完成同一任务
 
 ```text
-使用本页 React/Vite 知识库候选，准备匹配的源码 Checkout 和隔离的可丢弃数据库。
-先核对精确 CLI、Provider 输入，以及锁定的 @lenso/web-client Tarball。
+使用已签名的知识库源码模板和隔离的可丢弃数据库。
+先核对已发布的 CLI、精确 Provider 输入与 npm 归档。
+若选择原 Fixture 流程，保留匹配的源码版本和本地 Tarball，不要把公开字节直接替换进旧锁文件。
 用私有浏览器 Handoff 运行 Fixture 验证器；在真实浏览器完成 Token 验证、
 创建与读回笔记、上传文件，并检查验证器的跨用户拒绝结果。对于另外准备好的 App，
 运行冻结的前端安装、generate/typecheck 和 app dev；修改后重新构建静态资源，

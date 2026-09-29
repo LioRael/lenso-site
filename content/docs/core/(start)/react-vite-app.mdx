@@ -1,14 +1,18 @@
 ---
 title: Connect a React/Vite frontend
-description: Preview typed React calls against a local knowledge-base App candidate.
+description: Start from signed knowledge-base source content and connect typed React calls to a prepared local App.
 ---
 
-> **Local candidate, not a published starter.** This lesson uses matching source
-> checkouts of `lenso`, `lenso-js`, and `lenso-examples`. The example's
-> `@lenso/web-client` dependency is an exact local tarball recorded in
-> `bun.lock`; it is not fetched as a public package by this path. Auth, Jobs,
-> and Secrets also need explicit provider inputs and a disposable PostgreSQL
-> database. Stop at any missing input instead of substituting a release.
+The signed [Knowledge Base Starter 0.1.0](/plugins/lenso.reference.knowledge-base-starter/0.1.0)
+contains editable Rust, Bun and React source. Preview and copy its exact archive
+with the [signed source-content workflow](/docs/core/adopt-signed-sources).
+Use the published `@lenso/cli@0.17.2` release with native CLI `0.6.3`, Rust/Cargo,
+Bun and a disposable PostgreSQL database. Provider setup and credentials remain
+explicit App inputs.
+
+The reference App needs a built linked Web Host that admits its Bun Excerpt
+Plugin. A Process-only precompiled Host cannot run that Bun Plugin. A signed
+source template does not supply or activate a Host.
 
 The [local Web App quickstart](/docs/core/app-quickstart) proves one greeting.
 This follow-up shows how a normal React page calls an App's **public** API with
@@ -18,25 +22,44 @@ authentication and authorization.
 
 ## 1. Identify the inputs before starting
 
-In the matching `lenso-examples` source checkout, open
-`fixtures/vnext-knowledge-base-app/README.md`. The fixture's `project/` is the
-App root, while `project/frontend/` is the ordinary Vite/React project. You
-need a matching source-built `lenso` CLI, Rust/Cargo, Bun, an independently
-packed `@lenso/web-client` candidate matching `project/frontend/bun.lock`,
-the matching framework and Agent Tool Provider candidate sources, and the Auth
-API-token, Jobs, and Secrets provider sources (or their exact signed `.crate`
-inputs). Use a disposable PostgreSQL database. The verifier
+The starter archive is the fixture's `project/` tree; after copying, its root
+contains `app/` and `frontend/`. Read the exact source revision's
+[`fixtures/vnext-knowledge-base-app/README.md`](https://github.com/LioRael/lenso-examples/blob/93d366522d7f33bd3f6ca79786beb165bbe52f5c/fixtures/vnext-knowledge-base-app/README.md)
+for provider configuration and the separate fixture verifier.
+
+Public package inputs include [@lenso/web-client 0.1.0](https://www.npmjs.com/package/@lenso/web-client/v/0.1.0),
+[@lenso/knowledge-excerpt 0.1.2](/plugins/lenso.reference.knowledge-excerpt/0.1.2),
+[Auth API-token 0.1.2](https://crates.io/crates/lenso-auth-api-token-plugin/0.1.2),
+[Jobs 0.1.8](https://crates.io/crates/lenso-jobs-plugin/0.1.8) and
+[Secrets Env 0.1.7](/plugins/lenso.secrets.env/0.1.7).
+Check each exact archive and signed identity before adoption. Registry presence
+does not prove that a provider has a current signed directory record.
+
+The original `project/frontend/bun.lock` names a local `vendor/lenso-web-client.tgz` whose
+bytes differ from the public npm archive. For a copied App, select the public
+version and review the resulting App-owned manifest and lock change:
+
+```sh
+cd frontend
+bun add --exact @lenso/web-client@0.1.0 --ignore-scripts
+bun install --frozen-lockfile --ignore-scripts
+bun run generate && bun run typecheck
+```
+
+The original fixture verification path below keeps its matching local tarball
+and explicit source or signed `.crate` provider inputs. Its verifier
 creates schemas and leaves them available for inspection; it does not reset
 the database afterward. This interactive credential handoff requires POSIX
 no-follow file APIs; it is not a Windows path.
 
 A clean fixture checkout is **not** ready for `lenso app dev`: the provider
 Plugins, their operator setup, credentials, and database configuration have
-not been prepared. The fixture README explains both source-candidate and
-signed-package input modes. The package-only mode remains an acceptance gate,
-not proof that the exact provider cohort is publicly available.
+not been prepared. The fixture README explains both source and signed-package
+input modes. Use the current signed records and public archive digests for
+package adoption; the historical test-signed candidates in `AGENT_INPUT.md`
+are separate inputs.
 
-## 2. Run the bounded reference flow
+## 2. Run the fixture verification alternative
 
 After reviewing the candidate source and arranging an isolated local build
 environment, the fixture verifier can prepare a temporary App, build the
@@ -88,7 +111,7 @@ Neither path proves a published package, a deployed Site, or production support.
 For an App **already prepared** with those providers, schema operators,
 credentials, excerpt Plugin, and database settings, put the exact tarball at
 the fixture's locked local dependency path. From the fixture directory, use
-the matching source-built CLI:
+the matching CLI and the fixture's exact local tarball:
 
 ```sh
 LENSO_CLI=/absolute/path/to/lenso
@@ -143,9 +166,10 @@ that check; it does not claim those steps have been run for your checkout.
 ## Give an agent the same task
 
 ```text
-Use the React/Vite knowledge-base candidate from this page with matching
-source checkouts and an isolated disposable database. First verify the exact
-CLI, provider inputs, and locked @lenso/web-client tarball. Run the fixture
+Use the signed knowledge-base source template and an isolated disposable
+database. Verify the published CLI, exact provider inputs and npm archives.
+For the original fixture workflow, retain its matching local tarball and
+source revision rather than substituting public bytes into the old lock. Run the fixture
 verifier with a private browser handoff; exercise token verification, note creation,
 readback, and upload in a real browser, and inspect the verifier's cross-user
 denial result. For a separately prepared App, run the frozen frontend install,
