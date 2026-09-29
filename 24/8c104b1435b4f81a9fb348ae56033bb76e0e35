@@ -1,0 +1,41 @@
+scripts/catalog-currentness.mjs
+  s_7d146975368699::t_f6a80199115415 1-7
+package.json
+  s_7d146975368699::t_b46a2b7ade1ab6 11
+components/catalog-currentness.tsx
+  s_7d146975368699::t_f6a80199115415 1-38,40
+  s_7d146975368699::t_a5996217fa853d 39
+app/plugins/[pluginId]/[version]/page.tsx
+  s_7d146975368699::t_b46a2b7ade1ab6 7,101,124,242,250,273,304,333-336,339,355-356
+components/copy-command.tsx
+  s_7d146975368699::t_a5996217fa853d 6,8
+components/plugin-directory.tsx
+  s_7d146975368699::t_f6a80199115415 11,24,31,37,48,55,57,59,61,102,110,118,126,142,171
+  s_7d146975368699::t_b46a2b7ade1ab6 107
+lib/signed-plugin-directory.ts
+  s_7d146975368699::t_a5996217fa853d 155
+scripts/catalog-currentness.test.mjs
+  s_7d146975368699::t_b46a2b7ade1ab6 1-23
+app/plugins/[pluginId]/[version]/docs/[slug]/page.tsx
+  s_7d146975368699::t_a5996217fa853d 6,52
+components/signed-document-search.tsx
+  s_7d146975368699::t_f6a80199115415 43,45,66,69,73,77,83
+scripts/catalog-currentness.d.mts
+  s_7d146975368699::t_f6a80199115415 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "248c104b1435b4f81a9fb348ae56033bb76e0e35",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
