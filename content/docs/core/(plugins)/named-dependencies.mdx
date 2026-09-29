@@ -25,6 +25,12 @@ use `dependencies.requirement("source")` for the corresponding dependency view.
 The Host authorizes candidates and the Resolver records exact choices in the
 immutable Plan. Plugin code does not discover providers or choose accounts at call time.
 
+Rust `#[dependency(id = "source")]` uses that explicit public requirement ID.
+An older unmarked `Port<T>` uses the Descriptor's implicit ID: `~` followed by
+the Capability ID, such as `~lenso.secrets@1`. Its private field name is not the
+saved choice key. Read the exact ID from `app show --json` or the Descriptor
+before binding; moving to a named dependency requires migrating saved choices.
+
 ## Select providers for an existing App
 
 These commands assume the Host permits both requirements of

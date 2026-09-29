@@ -23,6 +23,11 @@ const destination = dependency({ id: "destination", contract: DOCUMENT_STORE_CON
 `dependencies.requirement("source")` 获得相应依赖视图。Plugin 不查询全局 Provider，
 也不在调用时决定账户；Host 授权候选，Resolver 将最终选择写进不可变 Plan。
 
+Rust 的 `#[dependency(id = "source")]` 使用这个显式公共 requirement ID。
+旧式未标记的 `Port<T>` 使用 Descriptor 的隐式 ID：`~` 加 Capability ID，
+例如 `~lenso.secrets@1`。私有字段名不是已保存选择的键。绑定前从
+`app show --json` 或 Descriptor 读取准确 ID；改为命名依赖时需要迁移已保存选择。
+
 ## 为已有 App 选择 Provider
 
 以下命令假设 Host 已允许 `company.copy/default` 的两个 requirement 在指定 Store
