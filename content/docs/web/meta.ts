@@ -1,4 +1,4 @@
 export default {
   title: "Web",
-  pages: ["index", "(tutorial)", "(guides)", "(operate)", "(understand)"],
+  pages: ["index", "(tutorial)", "(management)", "(guides)", "(operate)", "(understand)"],
 };

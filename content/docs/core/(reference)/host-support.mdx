@@ -1,0 +1,81 @@
+---
+title: Host profiles and qualification
+description: Separate published tooling, source candidates, database proofs, and deployment qualification.
+---
+
+Choose a Host profile before building the App. A successful target build does not
+establish database connectivity, deployment support, or authorization for a
+management operation. Keep each result attached to its source and artifact.
+
+## Published tools and source candidates
+
+| Tool or package | Version | What the version identifies |
+| --- | --- | --- |
+| `@lenso/cli` | `0.17.3` | Published npm launcher. |
+| Native `lenso --version` | `0.6.3` | Native CLI version, independent of the npm launcher. |
+| `lenso` Rust facade | `0.5.27` | Published Rust package. |
+| `@lenso/workers-runtime` source candidate | `0.1.6` | Candidate event-scoped facility support; registry publication is separate. |
+
+The new static Workers graph, owner facilities, Host clock and request-admission
+options belong to an exact Core source candidate. Installing the published npm
+launcher does not select that candidate. The Examples owner's
+`fixtures/ops-reference/candidate-inputs.json` records the Core and JavaScript
+commits; its `prepare.py` builds an isolated native executable and packs the
+selected runtime. Use that source pair together and keep `tools.json` with the
+consumer receipt. A developer's sibling checkout is not an installation input.
+
+## Assess each boundary separately
+
+| Profile or combination | Observed boundary | Remaining boundary |
+| --- | --- | --- |
+| Ordinary Native source App, simulated state | HTTP graph, two named dependencies, configured Instances, CAS and receipts | State resets on Instance recreation. |
+| Ordinary Native source App, PostgreSQL owner | Real PG, two schemas, durable receipts and Host restart | Operator setup and DB permissions remain explicit. |
+| Static linked Rust Workers candidate | Wasm build and actual local workerd HTTP routing | Request-only graph; Plugin memory belongs to one event. |
+| Workers candidate with owner D1 facilities | Local D1 emulation and deployed real D1 are separate receipts | Neither establishes Hyperdrive or management security qualification. |
+| Workers with Hyperdrive/PG | `not_run`; acceptance deferred by the owner | No remote PG qualification is claimed. |
+| One Worker mixing PG and D1 | `unassessed` | Assess the actual driver, bindings and scope lifecycle together. |
+| Workers Auth, management, approvals and Agent tools (G4-W) | `unassessed` as one ordinary source App | Native component tests do not close this boundary. |
+
+The operations reference uses the normal source App path, typed Capability
+clients and Kernel routing. Source portability does not imply every execution
+class is available on Workers. This profile rejects unsupported streams,
+events, dynamic loading and restart policy rather than replacing them with
+request behavior. Bun authoring remains a separate environment.
+
+The owner keeps the executable guide, selected source inputs and receipts in
+[Lenso Examples](https://github.com/LioRael/lenso-examples). Its operations
+reference is a candidate until the exact clean-consumer receipt and source
+commit are retained. The six new task tutorials stay out of the published
+catalog while their own consumer boundary is pending.
+
+## Configuration and readiness
+
+Offline `app explain --json` checks persisted target, selected Instances,
+named providers and authorized facility names without constructing owner
+handles or querying a database. It does not validate credentials or establish
+live readiness. Source-candidate `--host-facilities` and
+`--workers-facilities` are Host inputs, separate from business configuration
+and Capability selections.
+
+The owner validates its facility configuration and prepares its selected
+backend before the App becomes Ready. Startup does not run DDL or migrate
+data. Operator setup is explicit; changing a binding does not move business
+state. A missing saved selection fails rather than selecting the first new
+resource. An optional cache is absent only when its owner accepts an explicit
+`none` grant; it is not inferred from registration order.
+
+Host grants select what a trusted owner receives. They do not sandbox native
+code or replace database privileges. Hyperdrive supplies a connection path to
+PostgreSQL. KV can hold data whose owner permits staleness; it does not replace
+authoritative session revocation or atomic challenge consumption.
+
+## Recover an uncertain write
+
+When a commit may have succeeded but its response is lost, retain the original
+idempotency key and query the owner's receipt. Cancellation or a disconnected
+connection is not proof of rollback. Do not execute the write again to discover
+its outcome. The receipt and current state determine the next action.
+
+See the [management vocabulary](/docs/core/management-glossary) for identity,
+approval and invocation terms, and [supported workflows](/docs/core/supported-workflows)
+for the existing published entry points.

@@ -1,0 +1,58 @@
+---
+title: 分离 App 与 operators 认证
+description: 校验当前人类 Account Session，不把 App 登录当作管理授权。
+draft: true
+---
+
+本候选教程等待普通源码 App 的认证回执。目标是拒绝 App Assertion，同时让独立准入的
+operators Session 创建受限个人 API Token。Native Owner 的真实 PG Fixture 证明组件
+边界，不等于完成浏览器登录旅程或 Workers 管理装配。
+
+## 先选择 Authority，再选择 Session
+
+App 与 operators Realm 分别选择可信 Issuer/Public Key、Audience 和 Session 策略。
+服务端校验 Ed25519 签名与精确 Operation Audience；Claim 中的 Realm 字符串不授权。
+术语见[公共管理词汇](/docs/zh/core/management-glossary)。
+
+候选 Human Token Plugin 通过生成的精确 Dependency Port 绑定 Account CredentialState、
+内部 API Token Admin 和 Access Control。它不持有用户、Session、Token 记录或 Grant。
+浏览器请求不能提供 Subject、Target URL 或自选 Realm；Subject 来自已验证 Account
+Assertion 及当前 Credential State。
+
+Account 显式的 `management_session_ceiling` 限制 Deployment、Permission 和
+Resource Scope。存储的签发上限与当前配置取交集；降低或移除 Host 策略会收窄已有
+Session，不会扩大它。Login Method 不得提供保留的 Credential Binding 或 Management
+Ceiling Claim。
+
+## 准入一次个人 Token 请求
+
+Owner Fixture 实测以下顺序：
+
+1. 通过选定 Account Login Method 认证，得到精确 Human Token Operation Audience 的 Assertion；
+2. 通过已配置 CredentialState Caller 检查真实 Session 引用、身份状态、撤销与过期；
+3. 将请求权限与签名上限、当前上限取交集，再对每个 Permission/Resource 组合检查当前 RBAC；
+4. 签发前重新检查父 Session，通过绑定的内部 API Token Admin Port 提交派生 Subject；
+5. 在同一事务提交 Token Verifier、Session 和幂等回执。
+
+只有首次成功提交返回原始 Token。同 Intent 重放只返回无 Secret 的 Metadata；
+List/Revoke 同时限定派生 Subject 与精确 Deployment。内部 API Token Admin 默认 Caller
+Allowlist 为空，不得直接暴露给浏览器、MCP 或 Agent。
+
+Membership 与 Grant 仍属于各自 Owner。认证本身不允许管理操作。签名无效、错误
+Audience/Realm、Human Route 使用机器凭证、Subject Disabled、Session 撤销或过期
+均拒绝准入。当前上限不能抬高已签发权限。
+
+## 已验证与待验证边界
+
+Auth Owner 保留 `crates/lenso-auth-human-api-token-plugin/tests/postgres_lifecycle.rs`。
+其真实临时 PG Fixture 覆盖精确 Caller、实时 Session 引用、Realm 隔离、当前上限、
+一次性 Secret 与撤销。已有 Store 在运行时启动前需执行 Owner 的显式 Migration。
+
+普通浏览器/源码 App 回执、Login Method 配置和 Operator Setup 命令仍需补齐，本页
+暂不进入发布目录。MFA 与 Idle Timeout 尚不支持，Assurance 字符串不能启用它们。
+D1 API Token Profile 的 Human Token 生命周期返回 `UnsupportedProfile`，不回退写入。
+各 D1 Owner 的测试不证明完整 Workers 安全闭包。
+
+签发结果不确定时保留 Idempotency Key，先检查当前 Metadata 再决定是否新建 Key。
+丢失的原始 Token 无法恢复；必要时对账后显式撤销。Token、Assertion Body、数据库
+URI 和 Issuer Private Key 不进入日志或回执。

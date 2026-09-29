@@ -1,0 +1,38 @@
+---
+title: 身份与管理术语
+description: 找到身份、基础设施、审批和调用事实的 owner。
+---
+
+[心智模型](/docs/zh/core/mental-model)定义 Host、Plugin Instance、Capability 和
+Resolved App Plan。[Plugin Root](/docs/zh/core/plugin-composition)保存可见选择与配置。
+[具名依赖 Port](/docs/zh/core/named-dependencies)在多个 provider 提供同一 Capability 时
+保留 requirement identity。这些概念同时适用于业务 App 和可选管理入口。
+
+| 术语 | 含义与 owner |
+| --- | --- |
+| 私有基础设施 | Owner 的后端 handle，例如选定的 PG pool 或事件范围 D1 adapter。它不是公共 SQL Capability，也不是 Kernel Resource Port。 |
+| Realm | Auth 的本地准入策略，选择可信 issuer/key、audience 和 session 规则。Realm 名称或 `claims.realm` 字符串不会授予角色。 |
+| Subject | 选定 Auth authority 建立的身份。Token 字符串不是主体。 |
+| Audience | Assertion 面向的资源或精确 Capability operation。OAuth resource audience 与 Lenso operation audience 是不同边界。 |
+| Credential ceiling | 已验证凭证可行使的部署、permission 和 resource scope 上限。当前凭证状态与当前 grant 只能进一步收窄它。 |
+| Grant | Access Control 针对 subject、permission 和 owner scope 的授权决定。认证建立身份，grant 允许具体动作。 |
+| Approval | Approval owner 针对不可变 operation intent 的决定。Entry、schema、参数、目标 revision 或 scope 改变后，旧批准意图失效。 |
+| Invocation receipt | Owner 持久记录的已接受操作及其结果。`unknown` 需要核对，不能证明失败或授权重放。 |
+| Audit event | Audit 与操作 owner 持有的归因记录。真实 caller provenance 来自已接受调用，不由用户伪造。 |
+| Management catalog | Owner 已发布操作的过滤投射。目录中可见的 entry 在执行时仍需重新授权。 |
+
+Management 组合这些 authority。Console 展示操作；MCP server 与 Agent tool adapter
+通过相同 guard 投射它们。它们不会成为第二套身份目录、数据库、grant store 或审批
+owner。App 可以选择管理能力而不安装 Console 或模型。
+
+## 三种不同的 MCP 角色
+
+| 角色 | 用途 |
+| --- | --- |
+| 框架开发 MCP | 帮助 coding agent 检查或开发框架源码，不授予应用业务权限。 |
+| Agent MCP client | 将 Agent 连接到选定的外部 server 并投射其 tool。见 [MCP server](/docs/zh/agent/mcp-servers)。 |
+| 应用管理 MCP server | 使用已验证的受限凭证和当前管理策略暴露选定 owner 操作，部署与授权需单独验收。 |
+
+修改代码时，先通过[仓库地图](/docs/zh/core/repository-map)找到 owner，读取其版本化
+source contract，做最小改动并执行 owner 消费方检查。生成目录、TypeScript 投射、
+raw Markdown 与 `llms.txt` 应跟随同一份文档和契约 source。

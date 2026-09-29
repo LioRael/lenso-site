@@ -7,6 +7,13 @@ An MCP server is an opt-in Plugin Instance, not a special Agent mode. One
 configured `lenso.agent.mcp-client` Instance owns one transport, server
 identity, namespace, lifecycle, and bounded catalog.
 
+This page configures the Agent **MCP client**: it consumes an external server.
+A framework development MCP helps edit Lenso source; an application management
+MCP server lets an external client invoke that application's authorized
+Management operations. These are separate installation choices. Enabling this
+client does not publish an application management endpoint or grant administrator
+permission.
+
 ## 1. Choose one transport
 
 For a local stdio server, pin the exact executable and its visible environment:

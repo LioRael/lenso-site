@@ -1,0 +1,53 @@
+---
+title: 在同一 Worker 选择 PG 与 D1
+description: 明确每个 Instance 的绑定与可选缓存边界，不把未验收组合写成可用教程。
+draft: true
+---
+
+本篇仍是草稿，目标是一个 Worker 中两个业务 Instance 使用不同的私有 Backend。
+PG+D1 组合 Consumer 为 `unassessed`；Owner 明确暂缓远端 Hyperdrive，状态是
+`not_run`。它们还不是已发布 Quickstart，也不能据此断言实现失败。
+
+## 已有证明覆盖什么
+
+Operations Reference 分别通过 Native PostgreSQL 和 Workers D1 Owner Adapter
+运行同一类型化业务图，共享业务配置、具名依赖和领域回执语义。这些回执不证明混合
+Worker；必须在该组合中实测 Driver、连接生命周期和 Event Cleanup。
+
+Hyperdrive 提供 PostgreSQL 连通性。Owner 要求当前事务读取时必须明确关闭其缓存；
+未选择缓存并不等于配置了 Hyperdrive Cache。D1 使用自己的 Batch 事务语义。KV 允许
+过时读取，不能替代 Session、Challenge 或 Revocation 的原子权威状态。
+
+## 区分三种选择
+
+| 选择 | Owner 与含义 |
+| --- | --- |
+| 业务 Profile | 业务 Plugin 校验实现、Label 和状态策略。 |
+| 具名 Capability Requirement | App 为每个 Requirement ID 选择精确 Provider Instance。 |
+| Host Facility | Host 向一个 Instance 的一个 Slot 提供授权的私有 Backend Handle。 |
+
+当前 Facility Schema 是 `lenso.host-facilities.v1`。Instance Slot Grant 包含选中的
+Binding 名称或 `null`，以及 Owner 校验的配置。可空 Binding 不是通用 Cache API：
+选中的 Owner 必须显式支持缺省。Operations Reference 仅在模拟状态 Profile 接受
+`binding: null`；不要将其推广为生产缓存声明，也不要发明 Kernel Resource Port。
+
+检查这些输入时，参考[具名依赖](/docs/zh/core/named-dependencies)和
+[Host 验收边界](/docs/zh/core/host-support)。完整 Workers Env 留在 Host；
+每个 Owner 只收到授权 Binding 与 Event Scope。
+
+## 转为公开教程前的 Consumer 要求
+
+Owner 需要保留一个干净源码 App 和普通构建命令，证明：
+
+1. 一个 Instance 选 PG、另一个选 D1，不改变共同业务契约；
+2. 两个测试资源的 Setup 均在启动前显式执行；
+3. 各 Backend 的读取、CAS 写入、回执重放和重启都通过；
+4. 缺失或错误选择在写入前失败，可选缓存显式缺省不会选中另一资源；
+5. 选定 Event 和连接预算内的取消 Cleanup 与 Unknown Commit 对账成立。
+
+Fixture 记录精确 Driver、Runtime、源码输入，并分别保留本地、真实数据库和部署回执。
+Parser、Owner Factory 和 Consumer 尚未通过前，本页不发布混合 Binding 配置或部署
+命令；D1 结果不能替代缺失的远端 PG 证据。
+
+改变 Binding 不迁移数据。Operator 单独规划迁移，保留领域回执，验证后只删除自有
+测试资源。

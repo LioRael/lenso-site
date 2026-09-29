@@ -1,0 +1,73 @@
+---
+title: Separate App and operators authentication
+description: Admit a current human Account session without treating an App login as an administration grant.
+draft: true
+---
+
+This candidate tutorial awaits the ordinary source App authentication receipt.
+Its result will be rejection of an App assertion while an independently
+admitted operators session can issue a scoped personal API token. Native owner
+PostgreSQL fixtures are evidence for their components, not a completed browser
+login journey or Workers management assembly.
+
+## Choose the authority, then the session
+
+App and operators realms select trusted issuer/public key, audience and session
+policy independently. The server verifies an Ed25519 signature and exact
+operation audience; a realm string inside claims grants no authority.
+Use the [shared vocabulary](/docs/core/management-glossary).
+
+The candidate human-token Plugin binds Account CredentialState, internal API
+Token Admin and Access Control through exact generated dependency Ports.
+It owns no users, sessions, token records or grants. A browser-facing request
+does not accept a subject, target URL or caller-selected realm; subject comes
+from the verified Account assertion and current credential state.
+
+Account's explicit `management_session_ceiling` limits deployment,
+permissions and resource scopes. Its stored issuance ceiling is intersected
+with current configuration. Reducing or removing Host policy narrows existing
+sessions rather than expanding them. Login methods cannot supply the reserved
+credential-binding or management-ceiling claims.
+
+## Admit one personal token request
+
+The owner fixture exercises this sequence:
+
+1. Authenticate through the selected Account login method and receive an
+   assertion for the exact human-token operation audience.
+2. Inspect the actual stored session reference, identity state, revocation and
+   expiry through the configured CredentialState caller.
+3. Intersect requested token authority with signed and current ceilings and
+   check each permission/resource pair against current RBAC.
+4. Reinspect the parent session before issuance and call the bound internal
+   API Token Admin port with the derived subject.
+5. Commit the token verifier, session and idempotency receipt together.
+
+Only the first committed issuance returns the raw token. Same-intent replay
+returns secret-free metadata; token lists and revoke use the derived subject
+and exact deployment. Internal API Token Admin has an empty caller allowlist
+by default and must not be exposed directly to a browser, MCP or Agent.
+
+Membership and grants remain with their owners. Authentication alone never
+allows a management operation. Invalid signature, wrong audience/realm,
+machine credentials on the human route, disabled subjects and revoked/expired
+sessions fail admission. Current ceilings cannot raise old issued authority.
+
+## What is qualified, and what is pending
+
+The Auth owner retains `crates/lenso-auth-human-api-token-plugin/tests/postgres_lifecycle.rs`.
+Its disposable real-PG fixture covers exact callers, live session references,
+realm isolation, current ceilings, one-time secret handling and revocation.
+Existing stores need the owner's explicit migration before runtime startup.
+
+The ordinary browser/source App receipt, login method configuration and
+operator setup commands are still required before this page enters the
+published catalog. MFA and idle timeout are unsupported; an assurance string
+cannot enable them. Human token lifecycle on the D1 API Token profile returns
+`UnsupportedProfile`; there is no fallback write. Individual D1 owner tests
+do not establish the complete Workers security closure.
+
+After an uncertain issuance, preserve the idempotency key and inspect current
+metadata before requesting a fresh key. A lost raw token is not recoverable;
+reconcile and explicitly revoke it if necessary. Do not write tokens, assertion
+bodies, database URIs or issuer private keys into logs or receipts.

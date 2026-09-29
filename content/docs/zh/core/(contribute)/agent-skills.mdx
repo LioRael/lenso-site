@@ -107,6 +107,11 @@ Kernel 语义不是常规的第七工作流。图校验、生命周期、准入�
 
 ## 4. 实现前必须检查源码
 
+从[仓库地图](/docs/zh/core/repository-map)找到 Owner，再读取其版本化源码契约。
+用 [Host 验收边界](/docs/zh/core/host-support)选择目标，用[管理术语](/docs/zh/core/management-glossary)
+确认身份、授权、审批和回执的所有者。修改正确的 Owner，运行它的真实 Consumer 检查；
+不要把整套契约复制到第二个 Agent 专用文档库。生成的 Markdown 和 `llms.txt` 使用同一批页面。
+
 Agent 应按以下顺序检查：
 
 1. 仓库说明与 Dirty Worktree；

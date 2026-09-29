@@ -7,6 +7,11 @@ MCP Server 是可选 Plugin Instance，不是特殊 Agent 模式。一个配置�
 `lenso.agent.mcp-client` Instance 只拥有一个 Transport、Server Identity、Namespace、
 Lifecycle 与有边界的 Catalog。
 
+本页配置 Agent 的 **MCP client**，用于消费外部服务。框架开发 MCP 帮助修改
+Lenso 源码；应用管理 MCP Server 让外部客户端调用该应用已授权的 Management
+操作。三者分别选择安装；开启这里的 client 不会发布应用管理入口，也不会授予
+管理员权限。
+
 ## 1. 选择一个 Transport
 
 本地 stdio Server 需要固定准确 Executable 与可见环境：

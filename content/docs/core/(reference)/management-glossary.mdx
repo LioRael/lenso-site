@@ -1,0 +1,41 @@
+---
+title: Identity and management vocabulary
+description: Identify the owner of identity, infrastructure, approval and invocation facts.
+---
+
+The [mental model](/docs/core/mental-model) defines the Host, Plugin Instance,
+Capability and Resolved App Plan. A [Plugin Root](/docs/core/plugin-composition)
+holds visible selections and configuration. [Named dependency Ports](/docs/core/named-dependencies)
+keep requirement identity when several providers implement the same Capability.
+Those concepts apply to a business App and to an optional management surface.
+
+| Term | Meaning and owner |
+| --- | --- |
+| Private infrastructure | An owner's backend handle, such as its selected PG pool or event-scoped D1 adapter. It is not a public SQL Capability or a Kernel Resource Port. |
+| Realm | A local Auth admission policy selecting trusted issuer/key, audience and session rules. A realm name or a `claims.realm` string grants no role. |
+| Subject | The identity established by the selected Auth authority. A token string is not a subject. |
+| Audience | The intended resource or exact Capability operation of an assertion. An OAuth resource audience is separate from a Lenso operation audience. |
+| Credential ceiling | The maximum deployment, permissions and resource scopes that a verified credential may exercise. Current credential state and current grants can narrow it. |
+| Grant | An Access Control decision for a subject, permission and owner-defined scope. Authentication establishes identity; a grant permits a particular action. |
+| Approval | A decision owned by Approval for immutable operation intent. An entry, schema, parameters, target revision or scope change invalidates the approved intent. |
+| Invocation receipt | An owner's durable account of an accepted operation and its result. `unknown` requires reconciliation; it does not prove failure or authorize replay. |
+| Audit event | An attributed record owned by Audit and the operation owner. Its caller provenance comes from the accepted invocation, not user-supplied attribution. |
+| Management catalog | A filtered projection of owner-published operations. A visible catalog entry still needs fresh authorization when invoked. |
+
+Management composes these authorities. Console presents the operations; an MCP
+server and an Agent tool adapter project them through the same guard. They do
+not become a second identity directory, database, grant store or approval owner.
+An App can select management without selecting Console or a model.
+
+## Three different MCP roles
+
+| Role | Purpose |
+| --- | --- |
+| Framework development MCP | Helps a coding agent inspect or develop framework source. It does not grant an application's business permissions. |
+| Agent MCP client | Connects the Agent to a selected external server and projects its tools. See [MCP servers](/docs/agent/mcp-servers). |
+| Application management MCP server | Exposes selected owner operations using verified, scoped credentials and current management policy. Its deployment and authorization need their own proof. |
+
+For code changes, find the owner in the [repository map](/docs/core/repository-map),
+read its versioned source contract, make the smallest change and run the owner's
+consumer checks. Generated catalogs, TypeScript projections, raw Markdown and
+`llms.txt` should all follow the same documentation and contract sources.

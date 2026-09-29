@@ -1,0 +1,102 @@
+---
+title: Run a minimal Native Web backend
+description: Build an ordinary source App with two named dependencies and durable PostgreSQL state.
+draft: true
+---
+
+This candidate tutorial awaits the final Examples source commit and its
+clean-consumer receipt. It stays outside the published catalog until that pair
+is retained. The result is an HTTP update whose domain receipt survives a
+Native Host restart.
+
+## Prepare the exact source pair
+
+The published launcher is `@lenso/cli@0.17.3`; its native executable reports
+`lenso 0.6.3`. The Rust facade is `lenso = 0.5.27`. Owner facilities require
+the Core candidate. Installing the launcher alone does not select it.
+See [Host qualification](/docs/core/host-support).
+
+Use the qualified Examples commit supplied with the consumer receipt. From a
+clean clone's `fixtures/ops-reference/` directory:
+
+```sh
+python3 prepare.py --cache candidate-tools
+```
+
+This source build needs Git, Cargo, Python 3.12+ and npm. The owner's
+`candidate-inputs.json` pins Core and JavaScript; `candidate-tools/tools.json`
+records the built CLI path and digest. Use its absolute `cli` path below.
+The helper does not change the global CLI or require sibling checkouts.
+
+## Build and read two Instances
+
+```sh
+/absolute/path/to/lenso app build --root project --out dist
+/absolute/path/to/lenso app check --root dist
+/absolute/path/to/lenso app explain --root dist --host-facilities profiles/simulated-native.json --json
+/absolute/path/to/lenso app start --from dist --host-facilities profiles/simulated-native.json
+```
+
+GET `/state/primary` and `/state/secondary` at the printed HTTP address.
+They begin with different labels and values 11 and 29, both revision zero.
+One Endpoint depends on two Instances of the same business Plugin. The CLI
+discovers source contracts and derives the App without a custom resolver or
+handwritten Plan.
+
+`project/plugins/.dependencies.json` selects exact `primary` and
+`secondary` requirement IDs. Business configuration selects each label,
+initial value and explicit backend profile. A Host facility supplies the
+private state handle separately from Capability selections.
+
+POST this body to `/state/primary`:
+
+```json
+{"value":47,"expected_revision":0,"idempotency_key":"write-1"}
+```
+
+Expect revision one and a receipt. Same-key, same-intent replay returns that
+receipt without another revision. A changed intent under that key or a stale
+revision returns 409. Invalid input returns 400; an unknown Instance returns 404.
+GET `/receipts/primary/write-1` reads the receipt. Integers stay within
+JavaScript's exact integer range.
+
+## Verify the ordinary consumer path
+
+Stop the interactive Host, then run:
+
+```sh
+python3 verify.py --cli /absolute/path/to/lenso --receipt native-receipt.json
+```
+
+The verifier copies the business fixture, removes generated contract
+projections and builds through the ordinary CLI. It removes source and
+toolchains before startup, exercises HTTP configuration, named routing,
+idempotency and concurrent CAS, and checks graceful shutdown. Simulated Native
+state resets when its Instance is recreated; this proves no persistence.
+
+For durable state, place an authorized test PostgreSQL URI in a private file:
+
+```sh
+python3 verify_pg.py --cli /absolute/path/to/lenso \
+  --database-url-file /private/path/test-postgres-uri \
+  --receipt native-pg-receipt.json
+```
+
+The verifier creates two owned temporary schemas, runs owner SQL before
+startup and removes those schemas afterward. Runtime startup checks readiness
+without DDL. A row lock serializes CAS; state and receipt commit together.
+After source deletion, a second Host reads prior state and the same receipt.
+Keep candidate inputs, artifact digest and receipt together; the database URI
+is never a receipt field.
+
+## Recover and remove
+
+A dispatched write with a lost response may have committed. Query its stable
+key before deciding what to do; cancellation is not rollback evidence. Do not
+blindly replay an unknown write. A missing or mismatched facility fails rather
+than switching to memory or another database.
+
+Management and Console are optional. This business verifier selects neither
+and does not establish operators authentication, approval, audit or Workers
+management support. Stop the Host, retain receipts, and delete only the output
+and temporary resources created for this run.

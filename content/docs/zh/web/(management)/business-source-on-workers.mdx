@@ -1,0 +1,105 @@
+---
+title: 在 Workers 运行同一业务图
+description: 把相同 Linked Rust 源码构建为 Request Graph，并验证显式 D1 绑定。
+draft: true
+---
+
+本候选教程等待最终 Examples 源码提交和 Consumer 回执，暂不进入发布目录。
+本篇观察真实 Worker 通过具名依赖访问两个业务 Instance，重部署后仍能读取 D1 状态
+与回执。Hyperdrive 和完整 Workers 管理装配仍是独立、尚未验收的边界。
+
+## 构建已支持的 Profile
+
+按 Native 教程准备精确候选工具。安装 `wasm32-unknown-unknown` Target 和
+`wasm-bindgen 0.2.127`；Runtime 目录来自 `candidate-tools/tools.json`。
+在 `fixtures/ops-reference/` 运行：
+
+```sh
+/absolute/path/to/lenso app build --root project --target workers \
+  --workers-runtime /absolute/path/to/candidate-tools/workers-runtime/package \
+  --workers-facilities profiles/simulated-workers.json \
+  --workers-host-limits profiles/workers-host-limits.json \
+  --out dist-workers
+```
+
+普通 CLI 编译 Linked Rust Graph 并打包带 Scope 的 Runtime；类型化 Client、Kernel
+和精确具名选择仍生效。此 Profile 支持一个 HTTP Endpoint 及静态 Request 依赖；
+Stream、Event、动态安装和任意 TypeScript Workers Plugin Authoring 不在支持范围内。
+
+用 Wrangler `4.143.1` 启动 Artifact：
+
+```sh
+cd dist-workers
+npx wrangler@4.143.1 dev --port 8787
+```
+
+在另一终端的 Fixture 目录验证：
+
+```sh
+python3 verify.py --cli /absolute/path/to/lenso --url http://127.0.0.1:8787 \
+  --artifact dist-workers --static --receipt workers-routing-receipt.json
+```
+
+两 Instance 初值不同，具名选择准确，未知路由返回 404。Plugin 内存在每个 Request
+Event 重新构造，模拟 Profile 不提供持久 CAS 或回执存储。
+
+## 为每个 Instance 选择 D1
+
+复制 Project 作为测试输入，将两个 State Instance Profile 改为 `workers-d1`，
+保留不同 Label 和初值。Facility 文件指定精确 Instance 与 Slot：
+
+```json
+{
+  "schema": "lenso.host-facilities.v1",
+  "instances": {
+    "example.ops-state/primary": {
+      "state": {"binding": "OPS_PRIMARY", "configuration": {"profile": "workers-d1"}}
+    },
+    "example.ops-state/secondary": {
+      "state": {"binding": "OPS_SECONDARY", "configuration": {"profile": "workers-d1"}}
+    }
+  }
+}
+```
+
+用此文件作为 `--workers-facilities` 构建复制的 Project。使用
+`profiles/workers-host-limits.json`：显式十秒 Event Budget 包含 Ready 和数据库调用，
+Cleanup 有独立的有限预算。Artifact 回执绑定预算和授权 Binding 名称；私有 Owner
+Factory 只收到其选中的 Binding、Scope 和配置。
+
+创建两个已获授权的测试 D1 数据库，分别运行 `storage/d1/schema.sql`；Primary 初值
+为 11，Secondary 为 29，Revision 均为零。然后在 Artifact 的 Wrangler 文件配置
+`OPS_PRIMARY`、`OPS_SECONDARY`。精确 SQL 与清理命令按 Owner 指南执行；
+运行时启动不创建表。Compatibility Date 为 `2026-09-26`。
+
+## 分别保存本地与部署证明
+
+用本地 Workerd 运行 D1 Artifact：
+
+```sh
+python3 verify.py --cli /absolute/path/to/lenso --url http://127.0.0.1:8787 \
+  --artifact dist-d1 --profile workers-d1 --receipt d1-local-receipt.json
+```
+
+这使用本地 D1 模拟。只部署到获授权的测试 Worker 和数据库，再验证远端 URL：
+
+```sh
+python3 verify.py --cli /absolute/path/to/lenso --url https://your-test-worker.example \
+  --artifact dist-d1 --profile workers-d1 --infrastructure cloudflare \
+  --receipt d1-remote-receipt.json
+```
+
+预期配置隔离、同 Key 重放、不同 Intent 冲突、并发 CAS 一个提交一个过时。
+不重置数据库，重启 Workerd 或重部署同一 Artifact，再加 `--after-restart` 读取原状态
+与回执。构建、本地、远端和重启回执分别保存。
+
+## 处理不确定结果
+
+Owner 在同一 D1 Batch 提交条件式回执插入与状态更新。派发后丢失响应或 Cleanup 失败
+可能留下 Unknown 结果。查询原 Idempotency Key，不通过重放写入判断是否提交。
+Ready 失败、无效输入、过时 Revision 和 Unknown Commit 保持可区分。
+
+Hyperdrive 提供 PostgreSQL 连接路径；Owner 明确暂缓验收，状态是 `not_run`。
+切换 Binding 不会迁移数据。Native PG、本地 D1、部署 D1 不能证明彼此环境，也不证明
+Auth、审批、Console、Agent 和 MCP 完整闭包。保存回执后停止 Workerd，仅删除本次
+创建的测试资源。

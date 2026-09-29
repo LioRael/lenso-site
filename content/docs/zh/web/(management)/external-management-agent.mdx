@@ -1,0 +1,51 @@
+---
+title: 授权外部管理 Agent
+description: 通过受限凭证向真实外部客户端提供过滤 Catalog、审批与实时撤销。
+draft: true
+---
+
+本候选教程等待普通源码 App 与真实外部客户端回执。目标是在不依赖 Console 的条件
+下完成受限读取、显式审批写入，并在凭证撤销后拒绝请求。MCP SDK Transport Fixture
+与 ToolProvider 测试只证明组件，不等于完整旅程。
+
+## 选择管理 Server
+
+应用管理 MCP Server 与 Console、Agent Adapter 使用同一个 Management Guard
+暴露 Owner 操作。它不同于框架开发 MCP 和 [Agent MCP Client](/docs/zh/agent/mcp-servers)；
+术语见[三个 MCP 角色](/docs/zh/core/management-glossary)。
+
+选择精确 Server Resource URI 和可信 operators Auth Authority。Token 值是凭证，
+不是主体。当前 CredentialState 确认 Session、Subject、Kind 与 Deployment；签名
+上限和当前 RBAC 限制每个 Entry 与 Resource Scope。App 登录不授予管理权限。
+
+候选 Transport 使用 Streamable HTTP、精确 Origin 策略和 OAuth Resource Audience
+绑定。Transport 准入与各 Lenso Operation Audience 分开；客户端不能选择 Target URL
+重定向已绑定 Capability 调用。
+
+## 从只读 Catalog 开始
+
+Owner 工作流必须证明：
+
+1. 显式 Operator Setup 与 Auth Owner 签发的受限凭证；人类个人 Token 通过实时 Account Route，机器凭证不能冒充人类；
+2. 真实 MCP Client 对选定 Server Resource 和独立 Realm 初始化，Entry Policy 默认只读；
+3. Catalog 仅保留当前允许的 Permission/Scope，含精确 Entry Version 与生成的 Input Schema；
+4. Invoke 时重新授权；Catalog 可见不保留稍后调用的权限；
+5. 每个写 Entry 显式启用，使用不可变审批和回执对账，模型不能审批自己的写入；
+6. Auth Owner 撤销凭证后，下次 Catalog 或 Invoke 被拒绝。
+
+MCP 和 Agent Adapter 不把缓存 Grant 当最终权威，不绕过实时检查。Unknown 写入
+保留 Identity，经业务 Owner 对账；Transport 重连不是重放许可。
+
+## 分开证明客户端与模型行为
+
+真实 SDK Client 可以在不启动模型的情况下验证管理 Transport。Agent 可以通过
+类型化 Port 消费 ToolProvider，它仍是同一 Guard 的另一投影，不是独立权限系统。
+Coding、File、Shell Tool 保留各自 Opt-in 边界，不会默认变成业务管理 Tool。
+
+Console 是可选的，但无 Console 的凭证/Bootstrap 命令仍需 Owner 验收步骤。本页
+不声称存在通用 Token Minting CLI。精确源码 App、Setup、Bootstrap、Client 连接、
+审批与撤销命令在最终 Consumer 回执保留前仍为草稿。Native 或各 D1 Owner 测试
+不能推出人类 D1 生命周期与完整 Workers 管理图成立。
+
+保存无 Secret 的 Invocation 与领域回执，撤销测试凭证，停止 Client/Server，
+仅删除本次创建的测试资源。

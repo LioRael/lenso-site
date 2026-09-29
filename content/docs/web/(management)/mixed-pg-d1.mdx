@@ -1,0 +1,65 @@
+---
+title: Select PG and D1 in one Worker
+description: Design explicit per-Instance bindings and optional cache selection without claiming an unqualified combination.
+draft: true
+---
+
+This tutorial is a draft. The intended result is one Worker whose two business
+Instances use different private backends. The combined PG+D1 consumer is
+`unassessed`; remote Hyperdrive acceptance is `not_run` at the owner's request.
+Neither is a published quickstart or a failed implementation claim.
+
+## What the existing proof establishes
+
+The operations reference runs one typed business graph with Native PostgreSQL
+and, separately, a Workers D1 owner adapter. Its business configuration,
+named dependencies and domain receipt semantics are shared. Those receipts do
+not establish a mixed Worker: driver behavior, connection lifetime and event
+cleanup must be exercised in that combination.
+
+Hyperdrive supplies connectivity to PostgreSQL. Its cache must be explicitly
+disabled where the owner requires current transactional reads; an absent cache
+selection alone does not configure Hyperdrive caching. D1 has its own batch
+transaction semantics. KV permits staleness and cannot substitute for atomic
+session, challenge or revocation state.
+
+## Keep three selections separate
+
+| Selection | Owner and meaning |
+| --- | --- |
+| Business profile | The business Plugin accepts its implementation, label and state policy. |
+| Named Capability requirement | The App selects an exact provider Instance for each requirement ID. |
+| Host facility | The Host supplies an authorized private backend handle to one Instance and slot. |
+
+The current Host facility schema is `lenso.host-facilities.v1`. An Instance
+slot grant contains a selected binding name or `null` plus owner-validated
+configuration. A nullable binding is not a universal cache API: the selected
+owner must explicitly support absence. The operations reference accepts
+`binding: null` only for its simulated state profile. Do not turn that example
+into a production cache declaration or invent a Kernel Resource Port.
+
+Use [named dependencies](/docs/core/named-dependencies) and
+[Host qualification](/docs/core/host-support) when inspecting these inputs.
+The full Workers environment remains in the Host; each owner receives only its
+authorized binding and event scope.
+
+## Required consumer before promotion
+
+The owner must retain one clean source App and normal build command that:
+
+1. selects PG for one Instance and D1 for another without changing the shared
+   business contract;
+2. performs explicit setup for both test resources before startup;
+3. exercises a read, CAS write, receipt replay and restart in each backend;
+4. proves missing/wrong selections fail before a write, and explicit absence
+   of an optional cache does not choose another resource; and
+5. confirms cancellation cleanup and uncertain-commit reconciliation within
+   the selected event and connection budgets.
+
+The fixture must record exact driver/runtime/source inputs and distinct local,
+real-database and deployed receipts. No mixed binding file or deploy command is
+published here until its parser and owner factories accept it and the consumer
+runs. The missing remote PG evidence is not replaced by the D1 result.
+
+Changing a binding does not move data. Operators plan migration separately,
+retain domain receipts and delete only owned test resources after verification.

@@ -1,0 +1,67 @@
+---
+title: Authorize an external management Agent
+description: Project one filtered catalog to an external client with scoped credentials, approval and current revocation.
+draft: true
+---
+
+This candidate tutorial awaits an ordinary source App and real external-client
+receipt. Its result will be a scoped read, an explicitly approved write and
+denial after credential revocation, without requiring Console. MCP SDK transport
+fixtures and ToolProvider tests are component proofs, not that complete journey.
+
+## Select the management server
+
+An application management MCP server exposes owner operations through the same
+management guard as Console and the Agent adapter. It differs from framework
+development MCP and the [Agent MCP client](/docs/agent/mcp-servers).
+Use the [three-role vocabulary](/docs/core/management-glossary).
+
+Choose one exact server resource URI and trusted operators Auth authority.
+Token values are credentials, not subjects. Current CredentialState establishes
+the session, subject, kind and deployment; signed ceilings and current RBAC
+limit each entry and resource scope. App login does not grant management access.
+
+The candidate transport uses Streamable HTTP, exact Origin policy and OAuth
+resource audience binding. Transport admission is separate from each Lenso
+operation audience. A client cannot choose a target URL to redirect a bound
+Capability call.
+
+## Begin with a read-only catalog
+
+The owner workflow must establish:
+
+1. Explicit operator setup and a scoped credential issued by its owning Auth
+   authority. Human personal-token issuance uses the live Account route; a
+   machine credential cannot impersonate that human.
+2. A real MCP client initialized against the selected server resource and
+   independent realm, with read-only entry policy by default.
+3. A filtered catalog containing only the current permissions and scopes,
+   including the exact entry version and generated input schema.
+4. Fresh authorization on invocation. Catalog visibility does not reserve
+   permission for a later call.
+5. Explicit opt-in for each write entry, immutable approval and receipt-based
+   reconciliation. The model cannot approve its own write.
+6. Credential revocation at the Auth owner followed by denial of the next
+   catalog or invoke request.
+
+MCP and Agent adapters do not cache a grant as final authority or bypass live
+inspection. Unknown writes keep their identity and reconcile through the
+business owner; transport reconnect is not permission to replay.
+
+## Separate client proof from model behavior
+
+A real SDK client can verify the management transport without starting a model.
+An Agent may consume the ToolProvider through a typed port; that is another
+projection of the same guard, rather than an independent permission system.
+Coding, file and shell tools retain separate opt-in boundaries and do not
+become business management tools by default.
+
+Console is optional, but a no-Console credential/bootstrap command needs its
+own owner-qualified recipe. No universal token-minting CLI is claimed here.
+The exact source App, setup, bootstrap, client connection, approval and
+revocation commands remain draft until the final consumer receipt is retained.
+Human D1 lifecycle and the complete Workers management graph are not inferred
+from Native or individual D1 owner tests.
+
+Retain secret-free invocation and domain receipts, revoke test credentials,
+stop the client/server and remove only the test resources created for this run.

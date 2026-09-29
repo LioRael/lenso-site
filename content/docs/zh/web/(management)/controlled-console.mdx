@@ -1,0 +1,45 @@
+---
+title: 为一个审批操作添加 Console
+description: 保持 Console 可选，让 Auth、Access Control、Approval、Audit 和业务 Owner 守住写入。
+draft: true
+---
+
+本候选教程等待普通 Management 源码 App 回执和浏览器旅程。目标是完成一次审批后的
+业务更新并保留可审计领域回执，再关闭 Console 确认业务 App 仍可运行。页面渲染或
+Owner 独立 PG 测试不能完成这条旅程。
+
+## 选择可选 Surface
+
+现有 [App Console](/docs/zh/core/app-console)描述单独验收的开发套件与 Contribution
+Compiler。其中服务 Allow/Deny 是演示业务规则；添加页面不会提供生产身份认证或
+管理权限。
+
+候选装配中的业务 App 可以不启动 Console，也不启动 Agent。Console 展示 Owner
+发布的管理 Entry 和审批操作，不持有业务表、登录状态、Grant 或 Decision。选择 Web
+Surface 不能改变私有 Backend 选择。
+
+## 审阅不可变操作
+
+Guard 必须针对选中 Deployment 与 Entry 完成：
+
+1. 验证 operators Assertion 与当前 CredentialState；
+2. 对 Credential Ceiling、当前 RBAC 和 Host 准入的 Entry Policy 取交集，包含目标 Resource Scope；
+3. 发布精确版本的输入 Schema，创建带 Operation ID 与预期 Resource Revision 的不可变写入 Intent；
+4. 通过当前有效的人类 Route，由 Approval 决定精确 Intent；自报 Caller、Approver 或 Assurance 不授权；
+5. 执行时重新检查权限，调用业务 Owner 的生成 Port，保留领域回执与带来源的 Management Audit。
+
+Target、Schema、参数、Scope 或 Revision 改变会使已审批 Intent 失效。取消、拒绝和
+过期决定不执行。复杂领域页面仍需编写 Contribution；Catalog 不会生成完整业务 UI。
+
+## 恢复 Unknown Invocation
+
+派发后响应中断可能留下 `unknown` 结果。Console 必须保留 Invocation Identity，
+展示状态，并向同一业务 Owner 请求回执对账，不能标为失败或自动重新提交。
+持久领域回执与 Audit 来源是不同事实，页面不能伪造其中任何一种。
+
+Console Owner 有 Native PG Authority Fixture，管理 Surface 有浏览器检查；它们
+只证明各自记录的边界。精确干净源码 App 的 Setup、独立 Realm 准入、审批写入、来源、
+对账及关闭 Console 后的行为仍是本页公开门槛；Workers 管理组合仍未验收。
+
+保存回执后按 Owner 步骤停止 Host 并清理测试资源。关闭 Console 移除可选体验，
+不删除业务 Plugin、其状态或独立授权规则。

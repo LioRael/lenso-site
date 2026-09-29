@@ -1,0 +1,118 @@
+---
+title: Run the business graph on Workers
+description: Build the same linked Rust source as a request graph and verify explicit D1 bindings.
+draft: true
+---
+
+This candidate tutorial awaits the final Examples source commit and consumer
+receipt. The result is two named business Instances routed through an actual
+Worker, with D1 state and receipts preserved after redeploy. Hyperdrive and the
+complete Workers management assembly remain separate, unqualified boundaries.
+
+## Build the supported profile
+
+Prepare the exact tools as in the Native tutorial. Install
+`wasm32-unknown-unknown` and `wasm-bindgen 0.2.127`; the runtime directory
+comes from `candidate-tools/tools.json`. From `fixtures/ops-reference/`:
+
+```sh
+/absolute/path/to/lenso app build --root project --target workers \
+  --workers-runtime /absolute/path/to/candidate-tools/workers-runtime/package \
+  --workers-facilities profiles/simulated-workers.json \
+  --workers-host-limits profiles/workers-host-limits.json \
+  --out dist-workers
+```
+
+The ordinary CLI compiles the linked Rust graph and bundles the scoped runtime.
+Typed clients, the Kernel and exact named selections remain in use. This
+profile supports one HTTP Endpoint and static request dependencies. Streams,
+events, dynamic installation and arbitrary TypeScript Workers Plugin authoring
+are outside it.
+
+Run the artifact using Wrangler `4.143.1`:
+
+```sh
+cd dist-workers
+npx wrangler@4.143.1 dev --port 8787
+```
+
+In another terminal, from the fixture directory:
+
+```sh
+python3 verify.py --cli /absolute/path/to/lenso --url http://127.0.0.1:8787 \
+  --artifact dist-workers --static --receipt workers-routing-receipt.json
+```
+
+Initial values differ, named selection remains precise and the unknown route
+returns 404. Plugin memory is recreated for each request event. This simulated
+profile provides no durable CAS or receipt store.
+
+## Choose each D1 binding
+
+Copy the project for this test and set both state Instance profiles to
+`workers-d1`, preserving their distinct labels and initial values. Supply
+this facility file with exact Instance and slot identities:
+
+```json
+{
+  "schema": "lenso.host-facilities.v1",
+  "instances": {
+    "example.ops-state/primary": {
+      "state": {"binding": "OPS_PRIMARY", "configuration": {"profile": "workers-d1"}}
+    },
+    "example.ops-state/secondary": {
+      "state": {"binding": "OPS_SECONDARY", "configuration": {"profile": "workers-d1"}}
+    }
+  }
+}
+```
+
+Build the copied project with that file as `--workers-facilities`. Use
+`profiles/workers-host-limits.json`: its explicit 10-second event budget includes
+readiness and database calls, with a separate bounded cleanup budget. The
+artifact receipt binds these limits and authorized binding names. The private
+owner factory receives only its selected binding, scope and configuration.
+
+Create two authorized test D1 databases. Run `storage/d1/schema.sql` in each,
+seed primary state at value 11 and secondary at 29, both revision zero, then
+configure `OPS_PRIMARY` and `OPS_SECONDARY` in the artifact's Wrangler file.
+Use the owner guide for exact SQL and cleanup; runtime startup never creates
+tables. The artifact selects compatibility date `2026-09-26`.
+
+## Keep local and deployed proof separate
+
+With local workerd serving the D1 artifact:
+
+```sh
+python3 verify.py --cli /absolute/path/to/lenso --url http://127.0.0.1:8787 \
+  --artifact dist-d1 --profile workers-d1 --receipt d1-local-receipt.json
+```
+
+This uses local D1 emulation. Deploy only to your authorized test Worker and
+databases, then verify the remote URL:
+
+```sh
+python3 verify.py --cli /absolute/path/to/lenso --url https://your-test-worker.example \
+  --artifact dist-d1 --profile workers-d1 --infrastructure cloudflare \
+  --receipt d1-remote-receipt.json
+```
+
+Expect isolated configuration, same-key replay, changed-intent conflict and
+one committed concurrent CAS with one stale result. Restart workerd or redeploy
+the same artifact without resetting databases, then add `--after-restart`
+to read prior state and the original receipt. Retain build, local, remote and
+restart receipts separately.
+
+## Handle an uncertain outcome
+
+The owner commits conditional receipt insertion and state update in one D1
+batch. A lost response or cleanup failure after dispatch can leave the outcome
+unknown. Query the original idempotency key; do not replay the write to find out
+whether it committed. Readiness, invalid input, stale revision and unknown
+commit remain distinguishable.
+
+Hyperdrive supplies a PostgreSQL connection path; its acceptance is `not_run`
+at the owner's request. Changing a binding is not migration. Native PG, local
+D1 and deployed D1 do not prove each other's environments or the full Auth,
+approval, Console, Agent and MCP closure. Save receipts, stop workerd and delete
+only the test resources you created.

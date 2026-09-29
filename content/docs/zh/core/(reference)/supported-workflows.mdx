@@ -8,6 +8,11 @@ description: 为 Plugin Authoring、App Composition、Web 后端或 Agent 产品
 先选择想得到的结果。下面每条路径都指向一套完整工作流，并在开始前说明真正相关的
 运行环境边界。
 
+使用较新的源码候选时，先读 [Host Profile 与验收边界](/docs/zh/core/host-support)。
+它区分已发布 launcher 与精确的 Core/runtime 配对，并分别说明 Native PG、本地 D1
+模拟、真实部署 D1 和暂缓的 Hyperdrive。组合身份、当前授权、审批与执行回执时，使用
+[管理术语](/docs/zh/core/management-glossary)。
+
 ## 构建本地 App（候选预览）
 
 源码构建的 CLI 已有 `app create --web`、`app dev`、`app build`、
@@ -65,8 +70,10 @@ Root 与 SQLite Authority 支持。它支持只读检查、Change Watching、受
 - Browser JavaScript 与 WASIp2 是 Host Profile，不提供敌对代码隔离；WASIp2 Component
   Packaging 目前也不是 Starter Workflow。
 - 当前维护的 Web Auth 路径是 PostgreSQL 支持的 API Token 验证，以及组合式外部 OIDC
-  浏览器 Session Flow。`lenso.auth@1` 仍保持 Wire-neutral；通用 OAuth/Password/Cookie
-  行为与 Organization/RBAC Policy 是独立或 Deferred 的边界。
+  浏览器 Session Flow。`lenso.auth@1` 仍保持 Wire-neutral。Account、Organization
+  Membership 和 RBAC 分别由对应 Plugin 持有；App 登录不会自动获得 operators 权限。
+  候选的人类个人 Token 路径要求当前仍有效的 Account Session 和 RBAC；它还不是已发布
+  的浏览器登录或 Workers 管理 Quickstart。
 - Secrets 可由 Environment Allowlist Provider 提供，但不包含生产 Cloud Secrets Provider。
 - Agent 配置服务是单 Resource Desired State Service，不会变成 Distributed Control Plane、
   Hosted Tenant Service 或 Console 持有的 Plugin Business Store。

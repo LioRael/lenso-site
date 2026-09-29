@@ -1,0 +1,87 @@
+---
+title: 运行最小 Native Web 后端
+description: 通过普通源码 App 绑定两个具名依赖，再验证真实 PostgreSQL 持久状态。
+draft: true
+---
+
+本候选教程等待最终 Examples 源码提交与干净 Consumer 回执配对，暂不进入发布目录。
+本篇要观察的结果是：通过 HTTP 更新业务状态，重启 Native Host 后仍能读取领域回执。
+
+## 准备精确源码配对
+
+已发布的 launcher 是 `@lenso/cli@0.17.3`，其中 Native Binary 显示 `lenso 0.6.3`；
+Rust facade 是 `lenso = 0.5.27`。Owner Facility 属于 Core 源码候选，只安装 launcher
+不会选中这些功能。见 [Host 验收边界](/docs/zh/core/host-support)。
+
+使用 Consumer 回执指定的 Examples 提交。在干净 Clone 的
+`fixtures/ops-reference/` 运行：
+
+```sh
+python3 prepare.py --cache candidate-tools
+```
+
+源码构建需要 Git、Cargo、Python 3.12+ 和 npm。`candidate-inputs.json` 固定 Core
+与 JavaScript；`candidate-tools/tools.json` 记录 CLI 路径与摘要。下文使用其中的
+绝对 `cli` 路径。脚本不会改变全局 CLI，也不要求相邻仓库 Checkout。
+
+## 构建并读取两个 Instance
+
+```sh
+/absolute/path/to/lenso app build --root project --out dist
+/absolute/path/to/lenso app check --root dist
+/absolute/path/to/lenso app explain --root dist --host-facilities profiles/simulated-native.json --json
+/absolute/path/to/lenso app start --from dist --host-facilities profiles/simulated-native.json
+```
+
+向打印的 HTTP 地址请求 `/state/primary` 和 `/state/secondary`。两者 Label 不同，
+初值分别为 11、29，Revision 都是零。一个 Endpoint 依赖同类业务 Plugin 的两个
+Instance。CLI 发现源码契约并派生 App，不需要自定义 Resolver 或手写 Plan。
+
+`project/plugins/.dependencies.json` 为 `primary`、`secondary` Requirement ID
+选择精确 Provider。业务配置选择 Label、初值和显式 Backend Profile。Host Facility
+单独提供私有状态 Handle，不改变 Capability 依赖选择。
+
+向 `/state/primary` POST：
+
+```json
+{"value":47,"expected_revision":0,"idempotency_key":"write-1"}
+```
+
+预期返回 Revision 一和领域回执。同 Key 与 Intent 重放返回原回执，不增加 Revision。
+同 Key 不同 Intent 或过时 Revision 返回 409；无效输入返回 400；未知 Instance 返回 404。
+`/receipts/primary/write-1` 查询该回执。整数限制在 JavaScript 精确整数范围内。
+
+## 验证普通 Consumer 路径
+
+停止交互 Host，然后运行：
+
+```sh
+python3 verify.py --cli /absolute/path/to/lenso --receipt native-receipt.json
+```
+
+Verifier 复制业务 Fixture，删除生成的契约 Projection，通过普通 CLI 构建。
+启动前移除源码和 Toolchain，实测配置、具名路由、幂等和并发 CAS，并确认优雅退出。
+Native 模拟状态在 Instance 重建后重置，因此这一步不证明持久性。
+
+要验证持久状态，把已获授权的测试 PostgreSQL URI 放入私有文件：
+
+```sh
+python3 verify_pg.py --cli /absolute/path/to/lenso \
+  --database-url-file /private/path/test-postgres-uri \
+  --receipt native-pg-receipt.json
+```
+
+Verifier 创建两个自有临时 Schema，启动前运行 Owner SQL，结束后删除这些 Schema。
+运行时启动只检查 Ready，不执行 DDL。CAS 使用 Row Lock；状态与回执在同一事务提交。
+删除源码后，第二个 Host 读取原状态和原回执。保留候选输入、Artifact 摘要与回执的
+配对；数据库 URI 不进入回执。
+
+## 恢复与移除
+
+已派发的写操作丢失响应时，提交可能已经发生。先查询原 Stable Key 再决定下一步；
+取消不是回滚证据，不盲目重放 Unknown 写入。Facility 缺失或不匹配会失败，不会切换到
+内存或另一数据库。
+
+Management 和 Console 是可选装配。业务 Verifier 不选择它们，也不证明 operators
+认证、审批、审计或 Workers 管理支持。停止 Host、保存回执，再删除本次创建的输出
+与临时资源。

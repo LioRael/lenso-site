@@ -1,10 +1,10 @@
 name: quality
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches:
-      - main
       - "candidate/**"
 
 permissions:

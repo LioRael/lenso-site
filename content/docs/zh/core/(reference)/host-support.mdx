@@ -1,0 +1,66 @@
+---
+title: Host profile 与验收边界
+description: 分清已发布工具、源码候选、真实数据库证明和部署资格。
+---
+
+构建 App 前先选择 Host profile。目标编译成功不能证明数据库可连接、部署平台已支持，
+也不能授予管理操作权限。每个结果都应绑定到对应源码和产物。
+
+## 已发布工具与源码候选
+
+| 工具或包 | 版本 | 版本标识的内容 |
+| --- | --- | --- |
+| `@lenso/cli` | `0.17.3` | 已发布的 npm launcher。 |
+| Native `lenso --version` | `0.6.3` | Native CLI 版本，与 npm launcher 独立。 |
+| `lenso` Rust facade | `0.5.27` | 已发布的 Rust 包。 |
+| `@lenso/workers-runtime` 源码候选 | `0.1.6` | 事件范围 facility 接入候选；registry 发布是另一件事。 |
+
+新的静态 Workers 图、owner facility、Host clock 和 request admission 选项属于精确的
+Core 源码候选。安装已发布 npm launcher 不会自动选择该候选。Examples owner 的
+`fixtures/ops-reference/candidate-inputs.json` 记录 Core 与 JavaScript commit；
+`prepare.py` 会构建隔离的 Native executable，并打包选定 runtime。一起使用这份配对，
+将 `tools.json` 与消费方 receipt 保存下来。开发者的相邻 checkout 不属于安装输入。
+
+## 分别验证各个边界
+
+| Profile 或组合 | 已观察的边界 | 仍需区分的边界 |
+| --- | --- | --- |
+| 普通 Native 源码 App，模拟 state | HTTP 图、两个具名依赖、配置后的 Instance、CAS 与 receipt | Instance 重建后模拟状态重置。 |
+| 普通 Native 源码 App，PostgreSQL owner | 真实 PG、两个 schema、持久 receipt 与 Host 重启 | Operator setup 与 DB 权限仍需显式提供。 |
+| 静态 linked Rust Workers 候选 | Wasm 构建与真实本地 workerd HTTP 路由 | 仅支持 request 图；Plugin 内存属于单次事件。 |
+| Workers 候选及 owner D1 facility | 本地 D1 模拟与部署后的真实 D1 分别记录 receipt | 两者都不证明 Hyperdrive 或管理安全资格。 |
+| Workers 经 Hyperdrive/PG | `not_run`；owner 暂缓验收 | 不声明远端 PG 已通过。 |
+| 一个 Worker 混用 PG 与 D1 | `unassessed` | 需一起验证实际 driver、binding 和 scope 生命周期。 |
+| Workers Auth、管理、审批及 Agent tool（G4-W） | 作为一个普通源码 App 仍为 `unassessed` | Native 部件测试不能关闭该边界。 |
+
+Operations reference 使用正常源码 App、类型化 Capability client 和 Kernel 路由。
+源码可移植不代表 Workers 支持所有 execution class。这个 profile 会拒绝未支持的
+stream、event、动态装载和 restart policy。Bun authoring 仍是独立环境。
+
+Owner 在 [Lenso Examples](https://github.com/LioRael/lenso-examples) 中维护可执行指南、
+源码输入和 receipt。Operations reference 在保留精确的干净消费方 receipt 与源码
+commit 前仍是候选。六篇新任务教程会在各自消费边界通过后才进入发布目录。
+
+## 配置与 readiness
+
+离线 `app explain --json` 检查持久化的 target、选定 Instance、具名 provider 和已授权
+facility 名称，不构造 owner handle，也不查询数据库。它不会验证凭证或证明 live readiness。
+源码候选的 `--host-facilities` 与 `--workers-facilities` 是 Host 输入，与业务配置及
+Capability 选择分开处理。
+
+Owner 校验自己的 facility 配置，并在 App Ready 前准备选定后端。启动不执行 DDL 或
+迁移数据。Operator setup 必须显式进行；更换 binding 不会搬运业务状态。保存的选择
+失效时应拒绝，而不是选择新资源列表的第一项。只有 owner 接受显式 `none` grant 时，
+可选 cache 才为空；不能根据注册顺序推断。
+
+Host grant 限定可信 owner 获得哪些输入，不会沙箱化 Native 代码或替代数据库权限。
+Hyperdrive 提供到 PostgreSQL 的连接路径。KV 只适合 owner 允许陈旧的数据，不能替代
+权威会话撤销或原子 challenge 消费。
+
+## 恢复不确定的写入
+
+提交可能成功但响应丢失时，保留原 idempotency key，查询 owner receipt。取消或连接
+断开不能证明回滚。不要再次执行写入来探测结果；receipt 与当前状态决定下一步操作。
+
+身份、审批和调用状态见[管理术语](/docs/zh/core/management-glossary)；现有已发布入口见
+[受支持的工作流](/docs/zh/core/supported-workflows)。
