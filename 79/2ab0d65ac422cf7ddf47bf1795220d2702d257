@@ -1,0 +1,421 @@
+content/docs/zh/web/meta.ts
+  s_f4202e28c6b5b1::t_634739e24dfdea 1,4
+package.json
+  s_f4202e28c6b5b1::t_1fd3b59d6cad2f 6-19,21,24-27,30-40,43-49,51-52
+content/docs/zh/core/(reference)/meta.ts
+  s_f4202e28c6b5b1::t_a40f8945b5cd04 1,5
+content/docs/core/(reference)/supported-workflows.mdx
+  s_f4202e28c6b5b1::t_d96ce1dc6e7322 17-27
+content/docs/zh/core/(reference)/supported-workflows.mdx
+  s_f4202e28c6b5b1::t_e5702fc5065b87 16-22
+.github/workflows/quality.yml
+  s_f4202e28c6b5b1::t_ebf543bf2c37ac 8,33-51
+content/docs/web/(management)/meta.ts
+  s_f4202e28c6b5b1::t_c0686255844fbf 1,11
+content/docs/core/(reference)/meta.ts
+  s_f4202e28c6b5b1::t_2c28b17e2f1dca 1,5
+content/docs/zh/web/(management)/meta.ts
+  s_f4202e28c6b5b1::t_eb9f0c002a7d39 1,11
+content/docs/web/meta.ts
+  s_f4202e28c6b5b1::t_1c8d0efc93171a 1,4
+.gitignore
+  s_f4202e28c6b5b1::t_dece36625a81be 6
+AGENTS.md
+  s_f4202e28c6b5b1::t_9eeafb4f64c3b2 18-27
+README.md
+  s_f4202e28c6b5b1::t_46c98bbfcb0b74 3-19,22-36,56,66-68,70-194
+app/api/docs/versions/route.ts
+  s_f4202e28c6b5b1::t_63e664e8a962d2 1-8
+app/api/plugins/[pluginId]/[version]/docs/[slug]/content.md/route.ts
+  s_f4202e28c6b5b1::t_d4865eb441e163 1-24
+app/api/plugins/catalog.json/route.ts
+  s_f4202e28c6b5b1::t_42ba69ce6867ed 1-7
+app/api/plugins/releases/[pluginId]/[version]/release.json/route.ts
+  s_f4202e28c6b5b1::t_8d5cd4d24ce7a2 1-17
+app/api/plugins/search/route.ts
+  s_f4202e28c6b5b1::t_87a4a5bad7094c 1-23
+app/api/search/route.ts
+  s_f4202e28c6b5b1::t_56726b4c864847 1-21
+app/docs/[[...slug]]/page.tsx
+  s_f4202e28c6b5b1::t_e5fe48e41c964f 1-46
+app/docs/layout.tsx
+  s_f4202e28c6b5b1::t_92554827c9682d 1-7
+app/docs/versions/page.tsx
+  s_f4202e28c6b5b1::t_621044a2de96df 1-10
+app/docs/zh/versions/page.tsx
+  s_f4202e28c6b5b1::t_bbc337124ea293 1-10
+app/global.css
+  s_f4202e28c6b5b1::t_52d4b0326a825b 1-187
+app/layout.tsx
+  s_f4202e28c6b5b1::t_34f67fe7a378bc 1-21
+app/llms-full.txt/route.ts
+  s_f4202e28c6b5b1::t_474f1d0113d4ff 1-8
+app/llms.mdx/docs/[[...slug]]/route.ts
+  s_f4202e28c6b5b1::t_5cf7225c8d9b06 1-11
+app/llms.txt/route.ts
+  s_f4202e28c6b5b1::t_8754ccc2e952be 1-8
+app/page.tsx
+  s_f4202e28c6b5b1::t_d17ef3ed6dcdad 1-66
+app/plugins/[pluginId]/[version]/docs/[slug]/page.tsx
+  s_f4202e28c6b5b1::t_6bf59c3eb86fbf 1-81
+app/plugins/[pluginId]/[version]/page.tsx
+  s_f4202e28c6b5b1::t_d9d3c926cbe503 1-371
+app/plugins/page.tsx
+  s_f4202e28c6b5b1::t_6b40292f3f9463 1-9
+app/robots.ts
+  s_f4202e28c6b5b1::t_b92704a9a19cf4 1-5
+app/sitemap.ts
+  s_f4202e28c6b5b1::t_58ad3ac895c5ed 1-29
+components/candidate-documentation.tsx
+  s_f4202e28c6b5b1::t_25a93f64954251 1-43
+components/copy-command.tsx
+  s_f4202e28c6b5b1::t_2a12f8305b8690 1-9
+components/framework-doc-version-lookup.tsx
+  s_f4202e28c6b5b1::t_4027d98c5ccf57 1-9
+components/framework-doc-versions-page.tsx
+  s_f4202e28c6b5b1::t_8b9df1234c1a19 1-72
+components/legacy-marketplace-entry.tsx
+  s_f4202e28c6b5b1::t_c8e4ef34f8d517 1-44
+components/mdx.tsx
+  s_f4202e28c6b5b1::t_75c1f58e1fb809 1-35
+components/plugin-directory.tsx
+  s_f4202e28c6b5b1::t_fc85061a7ca959 1-215
+components/plugin-document-tools-client.tsx
+  s_f4202e28c6b5b1::t_ae9f9758a29ca6 1-90
+components/plugin-document-tools.module.css
+  s_f4202e28c6b5b1::t_ce5cb8126e3681 1-7,10,12,14-15,18-21,24-27,30-33,35,38-39,42-45,48-55,59-61,64,66-67,70,74-75,78-85,88-89,92-93,96-99,102-105,108-112,115-116,119-124,127-132
+components/plugin-document-tools.tsx
+  s_f4202e28c6b5b1::t_804c798f3074de 1-39
+components/provider.tsx
+  s_f4202e28c6b5b1::t_cf4229ce3aff85 1-15
+components/signed-document-search.tsx
+  s_f4202e28c6b5b1::t_62e322f006263d 3-47,49-67,69-71,73-75,77-92
+components/site-header.tsx
+  s_f4202e28c6b5b1::t_04dac5dc37aead 1-40
+content/docs/agent/(configure)/meta.ts
+  s_f4202e28c6b5b1::t_79cd11b662efb4 1,5
+content/docs/agent/(extend)/meta.ts
+  s_f4202e28c6b5b1::t_a6d650d33d970a 1,5
+content/docs/agent/(start)/meta.ts
+  s_f4202e28c6b5b1::t_bd4d36279448e5 1,5
+content/docs/agent/(use)/meta.ts
+  s_f4202e28c6b5b1::t_da9902c2d9592a 1,5
+content/docs/agent/meta.ts
+  s_f4202e28c6b5b1::t_4c2bb0ab5afb47 1,4
+content/docs/build-apps.mdx
+  s_f4202e28c6b5b1::t_f667fce638f465 1-47
+content/docs/core/(building-blocks)/meta.ts
+  s_f4202e28c6b5b1::t_a5a0175f7af267 1,5
+content/docs/core/(capabilities)/capability-authoring.mdx
+  s_f4202e28c6b5b1::t_79d01e99090a9d 105,109-110
+content/docs/core/(capabilities)/meta.ts
+  s_f4202e28c6b5b1::t_85bdc57f69bba3 1,5
+content/docs/core/(contribute)/meta.ts
+  s_f4202e28c6b5b1::t_0efa1ceb4e29cd 1,5
+content/docs/core/(operate)/console.mdx
+  s_f4202e28c6b5b1::t_684058520829b4 121-125
+content/docs/core/(operate)/meta.ts
+  s_f4202e28c6b5b1::t_e6110e525089ca 1,4-5
+content/docs/core/(operate)/plugin-lifecycle.mdx
+  s_f4202e28c6b5b1::t_a695a09ca61923 1-95
+content/docs/core/(plugins)/adopt-signed-sources.mdx
+  s_f4202e28c6b5b1::t_02f56a191a7222 1-126
+content/docs/core/(plugins)/bun-plugin-authoring.mdx
+  s_f4202e28c6b5b1::t_6620571494e346 127-131,173
+content/docs/core/(plugins)/meta.ts
+  s_f4202e28c6b5b1::t_8a083341c90ffe 1,15,17
+content/docs/core/(plugins)/named-dependencies.mdx
+  s_f4202e28c6b5b1::t_e86687b1dc9975 82
+content/docs/core/(plugins)/plugin-authoring.mdx
+  s_f4202e28c6b5b1::t_20f9dfdc1b2ae9 57
+content/docs/core/(plugins)/plugin-composition.mdx
+  s_f4202e28c6b5b1::t_66e9abe51a38a2 10,13-14,68-72,85-145
+content/docs/core/(reference)/architecture-decisions.mdx
+  s_f4202e28c6b5b1::t_7807115ee4b13d 6,34-36,39-41
+content/docs/core/(reference)/repository-map.mdx
+  s_f4202e28c6b5b1::t_d07a5593566d30 6-11,15-16,18-19
+content/docs/core/(runtime)/execution-adapters.mdx
+  s_f4202e28c6b5b1::t_466aa3ea2a553b 28-31
+content/docs/core/(runtime)/first-engine-extension.mdx
+  s_f4202e28c6b5b1::t_57763aa076d225 1-96
+content/docs/core/(runtime)/meta.ts
+  s_f4202e28c6b5b1::t_8e9252fb39fb8b 1,4-5
+content/docs/core/(runtime)/runtime-lifecycle.mdx
+  s_f4202e28c6b5b1::t_a9badf10a9ffd1 55-57
+content/docs/core/(runtime)/typescript-host.mdx
+  s_f4202e28c6b5b1::t_ccb65d1570c617 3,14-17,42-44,47,51,159,185,242
+content/docs/core/(start)/app-quickstart.mdx
+  s_f4202e28c6b5b1::t_1ad83ad258ca57 1-167
+content/docs/core/(start)/engine-dx.mdx
+  s_f4202e28c6b5b1::t_327508eb58fdbc 6,8-10,17,25-58,76,107-109
+content/docs/core/(start)/meta.ts
+  s_f4202e28c6b5b1::t_25c0c640dd5144 1,4-5
+content/docs/core/(start)/quickstart.mdx
+  s_f4202e28c6b5b1::t_56f75b6bada44b 91-93
+content/docs/core/(start)/react-vite-app.mdx
+  s_f4202e28c6b5b1::t_a9c4f55707664f 1-187
+content/docs/core/index.mdx
+  s_f4202e28c6b5b1::t_8597bf84153b67 9-11,32-33,112-114
+content/docs/core/meta.ts
+  s_f4202e28c6b5b1::t_b455eb0123aa99 1,14
+content/docs/develop-plugins.mdx
+  s_f4202e28c6b5b1::t_5229590f67a5cd 1-38
+content/docs/extend-framework.mdx
+  s_f4202e28c6b5b1::t_ed2b55ac0707ca 1-57
+content/docs/index.mdx
+  s_f4202e28c6b5b1::t_f8b72b97c8351f 3,6,8-9,12-14,17-33
+content/docs/learning-path-smoke.mdx
+  s_f4202e28c6b5b1::t_3462cf49684504 1-133
+content/docs/meta.ts
+  s_f4202e28c6b5b1::t_74bff60de5b1be 1-3
+content/docs/web/(guides)/meta.ts
+  s_f4202e28c6b5b1::t_425884f9d291a1 1,5
+content/docs/web/(guides)/web-capabilities.mdx
+  s_f4202e28c6b5b1::t_123de252f19e97 57
+content/docs/web/(operate)/meta.ts
+  s_f4202e28c6b5b1::t_37c3b8eebd5945 1,5
+content/docs/web/(tutorial)/meta.ts
+  s_f4202e28c6b5b1::t_ccb5d1c1a1ccb7 1,5
+content/docs/web/(tutorial)/web-endpoint-plugin.mdx
+  s_f4202e28c6b5b1::t_5b12a4f6105e64 46-49,139-142
+content/docs/web/(tutorial)/web-testing.mdx
+  s_f4202e28c6b5b1::t_8ffa56dac0b042 72
+content/docs/web/(understand)/meta.ts
+  s_f4202e28c6b5b1::t_9121af65531d26 1,5
+content/docs/web/index.mdx
+  s_f4202e28c6b5b1::t_cbc867b8d7a78d 37,69,76-81
+content/docs/zh/agent/(configure)/meta.ts
+  s_f4202e28c6b5b1::t_401463066afc5d 1,5
+content/docs/zh/agent/(extend)/meta.ts
+  s_f4202e28c6b5b1::t_02b5a976813d90 1,5
+content/docs/zh/agent/(start)/meta.ts
+  s_f4202e28c6b5b1::t_35c7c382f6d636 1,5
+content/docs/zh/agent/(use)/meta.ts
+  s_f4202e28c6b5b1::t_ed4c7cf114db8a 1,5
+content/docs/zh/agent/meta.ts
+  s_f4202e28c6b5b1::t_813697481006c1 1,4
+content/docs/zh/build-apps.mdx
+  s_f4202e28c6b5b1::t_2c34eb4dec165a 1-41
+content/docs/zh/core/(building-blocks)/meta.ts
+  s_f4202e28c6b5b1::t_7fda4230b9dfc7 1,5
+content/docs/zh/core/(capabilities)/capability-authoring.mdx
+  s_f4202e28c6b5b1::t_4c78ae6982e4b0 99,102-103
+content/docs/zh/core/(capabilities)/meta.ts
+  s_f4202e28c6b5b1::t_d47ef17b2f2d8f 1,5
+content/docs/zh/core/(contribute)/meta.ts
+  s_f4202e28c6b5b1::t_72fa2c7eaa0b75 1,5
+content/docs/zh/core/(operate)/console.mdx
+  s_f4202e28c6b5b1::t_cfb9726ba17c20 106-108
+content/docs/zh/core/(operate)/meta.ts
+  s_f4202e28c6b5b1::t_62389a7bfeda72 1,4-5
+content/docs/zh/core/(operate)/plugin-lifecycle.mdx
+  s_f4202e28c6b5b1::t_0d8f962691c1fa 1-85
+content/docs/zh/core/(plugins)/adopt-signed-sources.mdx
+  s_f4202e28c6b5b1::t_0ac5760460fa04 1-105
+content/docs/zh/core/(plugins)/bun-plugin-authoring.mdx
+  s_f4202e28c6b5b1::t_664db71f6fff3d 120-122,161
+content/docs/zh/core/(plugins)/meta.ts
+  s_f4202e28c6b5b1::t_db71f4caebbfa6 1,15,17
+content/docs/zh/core/(plugins)/named-dependencies.mdx
+  s_f4202e28c6b5b1::t_829de29fd4b96e 75
+content/docs/zh/core/(plugins)/plugin-authoring.mdx
+  s_f4202e28c6b5b1::t_866c75b64a48f5 54
+content/docs/zh/core/(plugins)/plugin-composition.mdx
+  s_f4202e28c6b5b1::t_9f11ab0c288313 10-13,63-67,79-129
+content/docs/zh/core/(reference)/architecture-decisions.mdx
+  s_f4202e28c6b5b1::t_4e53ac69ffc77c 6,33-35,37-39
+content/docs/zh/core/(reference)/repository-map.mdx
+  s_f4202e28c6b5b1::t_dd6342e53dde8e 6-10,14-15,17-18
+content/docs/zh/core/(runtime)/execution-adapters.mdx
+  s_f4202e28c6b5b1::t_8118b59cd9f182 27-30
+content/docs/zh/core/(runtime)/first-engine-extension.mdx
+  s_f4202e28c6b5b1::t_617d8d2f22bd21 1-86
+content/docs/zh/core/(runtime)/meta.ts
+  s_f4202e28c6b5b1::t_e64e1c4d3b7266 1,4-5
+content/docs/zh/core/(runtime)/runtime-lifecycle.mdx
+  s_f4202e28c6b5b1::t_d473296d5ed069 46-47
+content/docs/zh/core/(runtime)/typescript-host.mdx
+  s_f4202e28c6b5b1::t_f9d6b13279f690 3,12-14,37-39,42,46,146,170,222
+content/docs/zh/core/(start)/app-quickstart.mdx
+  s_f4202e28c6b5b1::t_d92b49350ac2c1 1-142
+content/docs/zh/core/(start)/engine-dx.mdx
+  s_f4202e28c6b5b1::t_a10f1ec10e9e63 6-8,15,23-53,70,95-96
+content/docs/zh/core/(start)/meta.ts
+  s_f4202e28c6b5b1::t_8d30ad13987599 1,4-5
+content/docs/zh/core/(start)/quickstart.mdx
+  s_f4202e28c6b5b1::t_1e7ba3c9072ea8 84-85
+content/docs/zh/core/(start)/react-vite-app.mdx
+  s_f4202e28c6b5b1::t_1ecf147157834e 1-159
+content/docs/zh/core/index.mdx
+  s_f4202e28c6b5b1::t_f3d7652d99f5f0 9-11,29-30,100-102
+content/docs/zh/core/meta.ts
+  s_f4202e28c6b5b1::t_1e27719db4bc48 1,14
+content/docs/zh/develop-plugins.mdx
+  s_f4202e28c6b5b1::t_2dfc3379689679 1-33
+content/docs/zh/extend-framework.mdx
+  s_f4202e28c6b5b1::t_ca2fed87cccfc0 1-50
+content/docs/zh/index.mdx
+  s_f4202e28c6b5b1::t_f1fbebbaf9aafb 3,6,8-9,12-14,17-30
+content/docs/zh/learning-path-smoke.mdx
+  s_f4202e28c6b5b1::t_9cdc6eb363581b 1-113
+content/docs/zh/meta.ts
+  s_f4202e28c6b5b1::t_a00b8f46b4f477 1-3
+content/docs/zh/web/(guides)/meta.ts
+  s_f4202e28c6b5b1::t_57723c9cf8e273 1,5
+content/docs/zh/web/(guides)/web-capabilities.mdx
+  s_f4202e28c6b5b1::t_278fc4c3353166 52
+content/docs/zh/web/(operate)/meta.ts
+  s_f4202e28c6b5b1::t_b7e24ad4696efb 1,5
+content/docs/zh/web/(tutorial)/meta.ts
+  s_f4202e28c6b5b1::t_f8d6a476f2855c 1,5
+content/docs/zh/web/(tutorial)/web-endpoint-plugin.mdx
+  s_f4202e28c6b5b1::t_d8df4cad0071fb 44-47
+content/docs/zh/web/(tutorial)/web-testing.mdx
+  s_f4202e28c6b5b1::t_47ee66b12b9cdd 69
+content/docs/zh/web/(understand)/meta.ts
+  s_f4202e28c6b5b1::t_519f3e3bd629fd 1,5
+content/docs/zh/web/index.mdx
+  s_f4202e28c6b5b1::t_93269e10d1a659 35,65,72-76
+examples/engine-extension/content/intro.md
+  s_f4202e28c6b5b1::t_9fb620dc15b926 1-3
+examples/engine-extension/engine.json
+  s_f4202e28c6b5b1::t_77b5285d70af52 1-6
+examples/engine-extension/tools/summary/engine-plugin.json
+  s_f4202e28c6b5b1::t_2a3bc1675c707f 1-8
+examples/engine-extension/tools/summary/summary.mjs
+  s_f4202e28c6b5b1::t_8446a16dd758a8 1-27
+lib/framework-docs.ts
+  s_f4202e28c6b5b1::t_88f1b8fd13134e 1-47
+lib/layout.shared.tsx
+  s_f4202e28c6b5b1::t_d7ea63568724cf 1-16
+lib/legacy-marketplace-links.mjs
+  s_f4202e28c6b5b1::t_bb3f46e839b90e 1-30
+lib/linked-document-paths.ts
+  s_f4202e28c6b5b1::t_2952e2321152ba 1-11
+lib/linked-documents.ts
+  s_f4202e28c6b5b1::t_40a1148153ebdd 1-25
+lib/plugin-candidates.ts
+  s_f4202e28c6b5b1::t_21736b244be166 1-138
+lib/plugin-document-navigation.ts
+  s_f4202e28c6b5b1::t_f3685572c59b31 1-64
+lib/shared.ts
+  s_f4202e28c6b5b1::t_a7dabf3fcbbb6a 1,3-4,6-9,12,14-16
+lib/signed-plugin-directory.ts
+  s_f4202e28c6b5b1::t_0b82ce1152212f 1-167
+lib/source.ts
+  s_f4202e28c6b5b1::t_30f457c2693c19 1-26
+next.config.mjs
+  s_f4202e28c6b5b1::t_9fd002505e6725 1,3-9,12
+pnpm-lock.yaml
+  s_f4202e28c6b5b1::t_7edddb92ab9f71 11-28,30-34,36-37,39-43,45-65,71-74,78-80,90-91,98-99,101-113,115-123,190-195,202-207,214-219,226-231,238-243,250-255,262-267,274-279,286-291,298-303,310-315,322-327,334-339,346-351,358-363,370-375,382-387,394-399,406-411,418-423,430-436,442-447,454-459,466-471,478-483,490-512,514-519,521-539,541-547,549-550,730-732,739-740,742-744,746-747,749-750,752-754,765-766,768-769,774-775,780-781,787-788,794-795,801-802,808-809,814-815,934-935,938-939,942-943,946-947,950-951,954-955,958-959,975-976,978-979,1070-1071,1170-1171,1182-1183,1185-1186,1188,1190-1191,1322-1325,1327-1330,1332-1335,1337-1340,1342-1346,1348-1352,1354-1358,1360-1364,1366-1370,1372-1376,1378-1381,1383-1386,1388-1389,1401-1403,1405-1406,1408-1409,1411-1414,1416-1417,1419-1420,1422-1423,1425-1426,1428-1429,1431-1432,1434-1435,1437-1445,1447-1452,1454-1457,1459-1460,1462-1463,1465-1466,1468-1469,1471-1473,1475-1476,1478-1479,1481-1483,1485,1487,1490-1491,1493-1495,1497-1499,1501-1502,1504-1505,1507-1509,1511-1513,1515-1516,1518-1519,1521-1522,1524-1527,1529-1531,1534-1536,1538-1539,1541-1567,1569,1571,1573-1580,1582,1584-1613,1617,1619,1623-1631,1637-1649,1652-1687,1689-1691,1693-1694,1696-1697,1699-1700,1702-1703,1705-1706,1708-1709,1711-1712,1714-1715,1717-1718,1720-1721,1723-1724,1726-1727,1729-1730,1732-1733,1735-1736,1738-1739,1741-1742,1744-1745,1747-1748,1750-1752,1754-1756,1758-1759,1761-1762,1765-1769,1771-1775,1777-1781,1783-1787,1789-1793,1795-1800,1802-1807,1809-1814,1816-1821,1823-1827,1829-1833,1835-1837,1839-1840,1842-1844,1846-1849,1851-1854,1856-1857,1859-1860,1862-1864,1866-1867,1869-1870,1872-1873,1875-1876,1878-1879,1881-1882,1884-1885,1887-1888,1890-1891,1893-1894,1896-1897,1899-1900,1902-1903,1905-1906,1908-1909,1911-1912,1914-1915,1917-1918,1920-1921,1923-1924,1926-1927,1929-1930,1932-1933,1935-1936,1938-1939,1941-1942,1944-1945,1947-1948,1950-1951,1953-1954,1956-1957,1959-1960,1962-1963,1965-1966,1968-1969,1971-1972,1974-1975,1977-1978,1980-1981,1983-1984,1986-1987,1989-1990,1992-1993,1995-1996,1998-1999,2001-2002,2004-2005,2007-2008,2010-2011,2013-2014,2016-2017,2019-2020,2022-2024,2026-2027,2029-2030,2032-2033,2035-2036,2038-2040,2043-2044,2046-2049,2051-2054,2056-2060,2062-2081,2083-2085,2087-2088,2090-2091,2093-2094,2096-2097,2099-2100,2102-2103,2105-2106,2108-2110,2112-2114,2116-2118,2120-2122,2124-2125,2127-2130,2132-2136,2138-2139,2141-2146,2148-2156,2158-2166,2168-2169,2172-2174,2176-2177,2179-2182,2184-2185,2187-2188,2190-2191,2193-2194,2196-2197,2199-2200,2202-2203,2205-2206,2208-2209,2211-2212,2214-2215,2217-2218,2220-2221,2223-2224,2226-2228,2231-2232,2234-2235,2237-2239,2242-2249,2251-2253,2255-2257,2259-2260,2262-2264,2266-2268,2270-2271,2273-2274,2276-2277,2279-2280,2282-2284,2286-2293,2295-2296,2298-2300,2302-2303,2305-2307,2309-2311,2313-2315,2318-2320,2322-2323,2326-2327,2329-2330,2332-2333,2335-2338,2340-2341,2343-2345,2347-2348,2350-2351,2353-2354,2356-2357,2359-2360,2362-2363,2365-2366,2368-2369,2371-2372,2374-2382,2384-2385,2387-2392,2394-2397,2399-2400,2402-2403,2405-2406,2408-2410,2412-2449,2451-2452,2454-2455,2459-2461,2463-2467,2469-2471,2473-2474,2476,2478,2481-2484,2486-2487,2489-2490,2492-2493,2495-2496,2498-2500,2502-2503,2505-2506,2508,2510,2512,2515,2518,2520,2522-2524,2526,2528-2536,2538,2540-2547,2549,2551,2553-2555,2557,2560,2563,2566,2569,2572-2574,2576-2579,2582-2584,2587-2589,2592-2594,2597,2600,2603,2606,2609,2612,2615,2618,2621,2624,2627-2628,2630-2631,2633-2634,2636-2637,2639-2640,2642-2643,2645-2646,2648-2649,2651-2652,2654-2655,2657-2658,2660-2661,2663,2666-2667,2669-2670,2672-2673,2675,2678,2681,2684,2687,2690,2693,2696,2699,2702,2705,2708,2711,2714,2717,2720,2723,2726,2729,2732,2735-2736,2738-2739,2741-2742,2744-2745,2747-2748,2750-2751,2753,2755,2757,2759-2760,2762,2764-2766,2768,2770,2772-2803,2805,2807,2809,2811,2813-2816,2818-2821,2823,2825-2826,2828-2829,2831-2832,2834-2835,2837-2838,2840-2841,2843-2844,2846-2847,2849-2850,2852-2853,2855-2856,2858-2861,2863-2866,2868-2871,2873,2875-2876,2878-2881,2883,2885-2886,2888,2890-2891,2893-2896,2898,2900,2903,2905-2906,2908-2909,2911-2912,2914-2915,2917,2919-2920,2922,2924-2925,2927,2929,2931-2935,2937,2939-2942,2944,2946-2947,2949-2953,2955,2957,2959-2967,2969-2995,2997-3004,3006,3008-3009,3011-3012,3014-3015,3017-3018,3020,3023-3024,3026-3027,3029-3030,3032-3033,3035-3036,3038-3040,3042,3044-3046,3048,3050-3051,3053-3054,3056,3059-3060,3062-3063,3065-3066,3068-3069,3071,3074-3075,3077-3078,3080-3081,3083-3086,3088-3091,3093-3094,3096-3097,3099-3100,3102-3108,3110-3114,3116-3119,3121-3123,3125,3127-3129,3131,3133,3135-3138,3140,3142,3144,3146,3148-3152,3154-3156,3158,3160-3166,3168-3169,3171-3172,3174-3175,3177,3180-3181,3183-3184,3186-3187,3189-3190,3192-3193,3195-3196,3198-3199,3201-3202,3204-3217,3219-3225,3227-3228,3230-3231,3233-3234,3236-3237,3239-3240,3242-3243,3245-3246,3248-3249,3251,3253-3267,3269-3272,3274,3276-3282,3284,3286-3287,3289,3291,3293,3295,3297,3299,3301,3303,3305,3307,3309,3311,3313,3315,3317,3319,3321,3323,3325,3327,3329,3331-3332,3334-3335,3337-3338,3340-3341,3343-3344,3346-3347,3349-3350,3352-3353,3355-3356,3358-3359,3361-3362,3364-3365,3367-3368,3370-3371,3373-3374,3376-3377,3379-3380,3382-3383,3385-3386,3388-3389,3391,3393-3394,3396-3397,3399-3400,3402-3403,3405-3406,3408-3409,3411-3412,3414-3415,3417-3418,3420-3421,3423-3424,3426-3427,3429,3431,3433,3435,3437,3439,3441-3442,3444,3446,3448,3450-3451,3453,3455,3457,3459,3461,3463,3465,3467,3469,3471,3473,3475,3477,3479,3481,3483-3484,3486-3488,3490,3492,3494,3496,3498,3500,3502,3504,3506,3508-3510,3552-3562,3564-3591,3593,3595,3597,3599,3601-3604,3606,3608,3610-3611,3613,3615-3617,3619,3621,3623,3625-3626,3628,3630,3632,3634-3636,3638,3640-3645,3647-3648,3650,3652-3683,3685,3687-3716,3718,3720,3722,3726,3737,3741,3778,3787-3788,3790,3792-3808,3810,3812-3818,3820,3822,3824,3826-3830,3832,3834,3836,3838,3840,3842,3844-3847,3849,3851,3853,3855,3857,3859,3912,3914,3916-3918,3920,3922,3928,3930,4020,4031,4058,4073,4363,4366,4376,4378,4380,4382,4384-4388,4394,4396-4399,4401,4403-4404,4407-4410,4412-4419,4422,4425,4428,4460,4462,4468,4470,4476,4478-4479,4481,4483-4497,4499,4501-4505,4507,4509-4516,4518,4520-4524,4526,4578,4612,4624,4626-4628,4630-4631,4633,4655,4657,4659,4661,4665,4696,4698,4700-4705,4707,4737,4740,4742,4748,4750-4752,4757,4769,4805,4855,4857-4858,4860,4862,4864-4868,4870,4872,4889,4892-4893,4897-4898,4902-4903,4915,4921,4934,4949,4951-4973
+postcss.config.mjs
+  s_f4202e28c6b5b1::t_a5bb37047d4f2b 1-3,5
+public/_redirects
+  s_f4202e28c6b5b1::t_be57743267f119 1-240
+scripts/catalog-checkpoint-files.mjs
+  s_f4202e28c6b5b1::t_73b85ee487de0c 1-102
+scripts/catalog-checkpoint-files.test.mjs
+  s_f4202e28c6b5b1::t_d7b6d270f6b121 1-83
+scripts/catalog-checkpoints.mjs
+  s_f4202e28c6b5b1::t_b0246c1567a7cf 1-219
+scripts/check-d16-site-integration.mjs
+  s_f4202e28c6b5b1::t_2d04fe3fb7e177 1-234
+scripts/check-docs.mjs
+  s_f4202e28c6b5b1::t_5fda19b947f5f8 5,11-26,31-32,210-212,268-295,298-310,338-343,357,359-361,379-398,870
+scripts/check-external-links.mjs
+  s_f4202e28c6b5b1::t_7ccf8474dfaec2 1-72
+scripts/check-framework-doc-versions.mjs
+  s_f4202e28c6b5b1::t_eb82a01bed0dcd 1-63
+scripts/check-learning-paths.mjs
+  s_f4202e28c6b5b1::t_886b4ba5e59fa5 1-109
+scripts/check-linked-site-integration.mjs
+  s_f4202e28c6b5b1::t_af17800e500d5a 1-294
+scripts/check-published-output.mjs
+  s_f4202e28c6b5b1::t_dbc1e43ed31d35 1-4,6-13,16-22,24-27,30-39,43-86,89-102,104-110,112-125,127-130,132-141,145-158,160-167,170-185,187-206,208-214,216-227,231-247,249-270,275-279,284
+scripts/check-real-linked-adoption.mjs
+  s_f4202e28c6b5b1::t_673c0f040edfb4 1-190
+scripts/check-release-content-site-integration.mjs
+  s_f4202e28c6b5b1::t_2ddea9ad66d1ba 1-146
+scripts/check-search.mjs
+  s_f4202e28c6b5b1::t_02ab929dd74764 1-18
+scripts/create-release-content-fixture.mjs
+  s_f4202e28c6b5b1::t_07b33d2a506b8b 1-106
+scripts/external-link-policy.mjs
+  s_f4202e28c6b5b1::t_73406dca894a93 1-31
+scripts/external-link-policy.test.mjs
+  s_f4202e28c6b5b1::t_81b8adaffe21cc 1-35
+scripts/finalize-static-output.mjs
+  s_f4202e28c6b5b1::t_c04610d8d76628 1-17,19-21,24-28,31-36,38-39
+scripts/fixtures/d16-docs/package/configuration.md
+  s_f4202e28c6b5b1::t_9e36b1e66934c8 1-10
+scripts/fixtures/d16-docs/package/getting-started.md
+  s_f4202e28c6b5b1::t_c0d9a2ddc0f2c2 1-11
+scripts/fixtures/d16-docs/package/limitations.md
+  s_f4202e28c6b5b1::t_1f42f79b7197f7 1-10
+scripts/fixtures/d16-docs/source/configuration.md
+  s_f4202e28c6b5b1::t_ffe7e553836ee2 1-10
+scripts/fixtures/d16-docs/source/getting-started.md
+  s_f4202e28c6b5b1::t_d741e3e76dd8d9 1-12
+scripts/fixtures/d16-docs/source/limitations.md
+  s_f4202e28c6b5b1::t_7ae2fcd26b055a 1-10
+scripts/fixtures/rust-release-details.json
+  s_f4202e28c6b5b1::t_27fafe0ca79159 1-33
+scripts/ingest-linked-catalog.mjs
+  s_f4202e28c6b5b1::t_55628f3f4d58d2 1-118
+scripts/legacy-marketplace-links.test.mjs
+  s_f4202e28c6b5b1::t_96d6b9dd9142f1 1-36
+scripts/legacy-redirects.mjs
+  s_f4202e28c6b5b1::t_ce1e244c299f6c 1-32
+scripts/linked-catalog.mjs
+  s_f4202e28c6b5b1::t_6bbac219167e42 1-147
+scripts/linked-catalog.test.mjs
+  s_f4202e28c6b5b1::t_b49f1e3132df60 1-97
+scripts/linked-documents.mjs
+  s_f4202e28c6b5b1::t_217e0639fb9e1c 1-78
+scripts/linked-documents.test.mjs
+  s_f4202e28c6b5b1::t_398a8c22582548 1-85
+scripts/package-catalog.mjs
+  s_f4202e28c6b5b1::t_65783beb866982 1-164
+scripts/package-catalog.test.mjs
+  s_f4202e28c6b5b1::t_52fddb93f7f73e 1-75
+scripts/plugin-document-navigation.test.mjs
+  s_f4202e28c6b5b1::t_c876d35eaa3d08 1-69
+scripts/portable-catalog.mjs
+  s_f4202e28c6b5b1::t_b52c66db3b94c1 1-162
+scripts/portable-catalog.test.mjs
+  s_f4202e28c6b5b1::t_7885d047cb08b7 1-78
+scripts/preview.mjs
+  s_f4202e28c6b5b1::t_ef6352b041dbd8 1-56
+scripts/publish-catalog-checkpoint.mjs
+  s_f4202e28c6b5b1::t_aa06780254c567 1-12
+scripts/release-content.mjs
+  s_f4202e28c6b5b1::t_7c50ef7936a631 1-213
+scripts/release-content.test.mjs
+  s_f4202e28c6b5b1::t_0443567e5d8e28 1-207
+scripts/release-details.mjs
+  s_f4202e28c6b5b1::t_00f0474cb6e918 1-162
+scripts/release-details.test.mjs
+  s_f4202e28c6b5b1::t_460a1efd282a6c 1-158
+scripts/smoke-engine-extension.mjs
+  s_f4202e28c6b5b1::t_44f08e542d48c6 1-47
+tsconfig.json
+  s_f4202e28c6b5b1::t_f6d5ba28999f62 1-32
+wrangler.jsonc
+  s_f4202e28c6b5b1::t_a634461da338a9 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "792ab0d65ac422cf7ddf47bf1795220d2702d257",
+  "prompts": {},
+  "sessions": {
+    "s_f4202e28c6b5b1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ee9e-623b-7d12-a648-d8b462390eec",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
