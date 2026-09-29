@@ -1,6 +1,4 @@
-import { defineMeta } from "blume";
-
-export default defineMeta({
+export default {
   title: "管理一个 App",
   pages: [
     "minimal-native-backend",
@@ -10,4 +8,4 @@ export default defineMeta({
     "controlled-console",
     "external-management-agent",
   ],
-});
+};
