@@ -3,10 +3,12 @@ title: 接入 React/Vite 前端
 description: 从已签名的知识库源码模板开始，为准备好的本地 App 接入有类型的 React 调用。
 ---
 
-已签名的 [Knowledge Base Starter 0.1.0](/plugins/lenso.reference.knowledge-base-starter/0.1.0)
+已签名的 [Knowledge Base Starter 0.1.0](https://lenso.dev/plugins/lenso.reference.knowledge-base-starter/0.1.0/)
 提供可编辑的 Rust、Bun 与 React 源码。先按[签名源码内容采用流程](/docs/zh/core/adopt-signed-sources)
-预览并复制精确归档。使用已发布的 `@lenso/cli@0.17.2`（原生 CLI `0.6.3`）、
-Rust/Cargo、Bun 和可丢弃的 PostgreSQL 数据库。Provider 初始化与凭据仍需显式准备。
+预览并复制精确归档。使用 `@lenso/cli@0.17.3`，其原生 CLI `0.6.3` 从已发布的 Rust 源码
+`a1830734124c6ec7b3d87e6406341fda32d294c1` 构建；另外准备 Rust/Cargo、Bun 和可丢弃的 PostgreSQL 数据库。
+Provider 初始化与凭据仍需显式准备。旧 npm `0.17.2` 内置的二进制无法复制独立
+`content_only` 发布，仅凭原生版本号不能判断是否支持此路径。
 
 参考 App 需要构建能接入 Bun Excerpt Plugin 的 linked Web Host。
 仅支持 Process 的预编译 Host 无法运行这个 Bun Plugin。签名源码模板本身不会提供或激活 Host。
@@ -24,10 +26,10 @@ Rust/Cargo、Bun 和可丢弃的 PostgreSQL 数据库。Provider 初始化与凭
 了解 Provider 配置与独立 Fixture 验证器。
 
 公开包输入包括 [@lenso/web-client 0.1.0](https://www.npmjs.com/package/@lenso/web-client/v/0.1.0)、
-[@lenso/knowledge-excerpt 0.1.2](/plugins/lenso.reference.knowledge-excerpt/0.1.2)、
+[@lenso/knowledge-excerpt 0.1.2](https://lenso.dev/plugins/lenso.reference.knowledge-excerpt/0.1.2/)、
 [Auth API-token 0.1.2](https://crates.io/crates/lenso-auth-api-token-plugin/0.1.2)、
 [Jobs 0.1.8](https://crates.io/crates/lenso-jobs-plugin/0.1.8) 与
-[Secrets Env 0.1.7](/plugins/lenso.secrets.env/0.1.7)。采用前核对每个精确归档和签名身份；
+[Secrets Env 0.1.7](https://lenso.dev/plugins/lenso.secrets.env/0.1.7/)。采用前核对每个精确归档和签名身份；
 Registry 中存在某个包，不代表该 Provider 已有当前有效的签名目录条目。
 
 原前端锁文件 `project/frontend/bun.lock` 指向本地 `vendor/lenso-web-client.tgz`，其字节与公开 npm 归档不同。

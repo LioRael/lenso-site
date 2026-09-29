@@ -3,7 +3,11 @@ title: Adopt a signed npm or source-content release
 description: Inspect one exact Plugin version, verify local files, and keep source copying separate from runtime selection.
 ---
 
-Use the published `@lenso/cli@0.17.2` release with native CLI `0.6.3` for this workflow.
+Use `@lenso/cli@0.17.3` for standalone source-content copying. Its native CLI
+`0.6.3` is built from published Rust source `a1830734124c6ec7b3d87e6406341fda32d294c1`.
+The older npm `0.17.2` embeds a different binary with the same native version
+number and cannot copy `content_only` releases. Check the npm release and source
+provenance together.
 The Site can show signed records and verified
 Markdown, but it cannot read your App, download an archive for you, or authorize
 installation. The npm and source-content examples in Site integration tests are
