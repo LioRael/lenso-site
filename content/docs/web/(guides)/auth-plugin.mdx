@@ -27,7 +27,13 @@ Target Plugin  <- verified, audience-limited assertion
 | API-token Auth | PostgreSQL-backed opaque token/session provider; explicit setup, issue, and revoke operations | Provider owns token digest and revocation; target Plugin owns authorization |
 | Browser OIDC session | External OIDC Client + Auth Web Session Adapter + Web Ingress Cookie/CSRF policy | OIDC provider validates identity; Web Session emits responses and Cookies; Ingress selects credentials and enforces CSRF |
 | Portable `lenso.auth@1` | One `authenticate` operation over protocol-neutral evidence | No Cookie, header, OAuth, or password semantics enter the Capability |
-| Generic OAuth/password/cookie providers, Organization/RBAC policy, and Console UI | Deferred from this framework workflow | Add an explicit Provider or owning product surface; do not put it in the Kernel |
+| Other login methods and Organization/RBAC | Selected source implementations in Auth and Access Control owners; each profile needs its own consumer proof | Login authenticates; current membership and grants authorize |
+| Operators realm and human personal tokens | Candidate owner paths; ordinary source App/browser qualification is separate | App login does not grant operators access; Console holds no credential store |
+
+Read [Host qualification](/docs/core/host-support) for the selected target and
+[management vocabulary](/docs/core/management-glossary) for realm, current grants
+and credential ceilings. New source implementations are not automatically a
+published setup recipe or a qualified Workers security assembly.
 
 The browser row is a composition of the external relying-party Plugin
 (`lenso-auth-oidc-client-plugin`) and the removable HTTP Adapter

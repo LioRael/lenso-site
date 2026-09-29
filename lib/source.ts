@@ -1,21 +1,27 @@
 import { llms, loader } from 'fumadocs-core/source';
 import { metaSchema, pageSchema } from 'fumadocs-core/source/schema';
 import { defineDocs } from 'fumadocs-mdx/macro';
+import { z } from 'zod';
 import { frameworkDocIdentity } from './framework-docs';
 import { docsRoute } from './shared';
 
 const docs = defineDocs({
   dir: 'content/docs',
   docs: {
-    schema: pageSchema,
+    schema: pageSchema.extend({ draft: z.boolean().optional() }),
     postprocess: { includeProcessedMarkdown: true },
   },
   meta: { schema: metaSchema },
 });
 
+const documentation = docs.toFumadocsSource();
+
 export const source = loader({
   baseUrl: docsRoute,
-  source: docs.toFumadocsSource(),
+  source: {
+    ...documentation,
+    files: documentation.files.filter((file) => file.type !== 'page' || file.data.draft !== true),
+  },
 });
 
 export const docsLlms = llms(source, {

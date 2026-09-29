@@ -26,7 +26,12 @@ Target Plugin  <- verified, audience-limited assertion
 | API Token Auth | PostgreSQL 支持的 Opaque Token/Session Provider；显式 Setup、Issue 与 Revoke 操作 | Provider 持有 Token Digest 与撤销状态；目标 Plugin 持有授权判断 |
 | 浏览器 OIDC Session | External OIDC Client + Auth Web Session Adapter + Web Ingress Cookie/CSRF Policy | OIDC Provider 验证身份；Web Session 发送响应并签发 Cookie；Ingress 选择 Credential 并执行 CSRF |
 | Portable `lenso.auth@1` | 一个基于协议无关 Evidence 的 `authenticate` Operation | Cookie、Header、OAuth 或 Password 语义不进入该 Capability |
-| 通用 OAuth/Password/Cookie Provider、Organization/RBAC Policy 与 Console UI | 在本框架工作流中 Deferred | 应增加显式 Provider 或由所属产品持有，不要放进 Kernel |
+| 其他 Login Method 与 Organization/RBAC | Auth、Access Control Owner 的选定源码实现；各 Profile 需要独立 Consumer 证明 | Login 负责认证，当前 Membership 和 Grant 负责授权 |
+| Operators Realm 与人类个人 Token | 候选 Owner 路径；普通源码 App/浏览器验收单独记录 | App 登录不授予 operators 权限，Console 不持有 Credential Store |
+
+目标边界见 [Host 验收](/docs/zh/core/host-support)，Realm、当前 Grant 和 Credential
+Ceiling 见[管理术语](/docs/zh/core/management-glossary)。新源码实现不自动等于已发布
+Setup 步骤或已验收的 Workers 安全装配。
 
 浏览器路径由外部 Relying Party Plugin（`lenso-auth-oidc-client-plugin`）与可移除的
 HTTP Adapter（`lenso-auth-web-session-plugin`）组合而成。它不同于把 Lenso App

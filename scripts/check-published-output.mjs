@@ -230,6 +230,7 @@ for (const release of signedContentCatalog.releases.filter((item) => item.baseKi
 
 const llms = requireFile('llms.txt');
 const llmsFull = requireFile('llms-full.txt');
+const documentationSearch = requireFile('api/search');
 const documents = walkFiles(docsRoot).filter((file) => file.endsWith('.mdx'));
 for (const document of documents.filter((file) => !isDraftDocument(file))) {
   const route = routeForDocument(docsRoot, document);
@@ -247,6 +248,12 @@ for (const document of documents.filter(isDraftDocument)) {
     routeSuffix ? `llms.mdx/docs/${routeSuffix}/content.md` : 'llms.mdx/docs/content.md',
   ]) {
     if (existsSync(join(outputRoot, path))) failures.push(`out/${path}: draft document was published`);
+  }
+  for (const [path, text] of [
+    ['llms.txt', llms], ['llms-full.txt', llmsFull],
+    ['api/search', documentationSearch], ['sitemap.xml', sitemap],
+  ]) {
+    if (text.includes(route)) failures.push(`out/${path}: draft document ${route} was advertised`);
   }
 }
 if (!llmsFull.includes('# Lenso documentation (/docs)')) failures.push('out/llms-full.txt: missing English root');

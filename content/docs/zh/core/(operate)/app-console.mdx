@@ -149,6 +149,10 @@ Compiler 拒绝浏览器依赖图导入 server SDK 或 services 源码。
 领域 Plugin 保留私有状态和最终授权。访问其他 Plugin 仍需显式生成的 Capability 依赖。
 添加页面、路由或 alias 不授予业务权限，也不授予 Agent Tool 权限。
 
+较新的管理候选将 Auth、当前 Access Control、Approval、Audit 与业务 Owner 组合。
+其源码 App 验收与本开发套件的证明分开。开放 operators Surface 前，先读
+[Host 验收边界](/docs/zh/core/host-support)和[管理术语](/docs/zh/core/management-glossary)。
+
 ## 移除可选体验
 
 Scaffold 用 `plugins/lenso.console.web/default.toml` 选择 Console。

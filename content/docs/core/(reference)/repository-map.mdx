@@ -17,9 +17,14 @@ conventions. See [Engine](/docs/core/engine-dx).
 | `LioRael/lenso-examples` | executable examples and product-neutral fixtures |
 | `LioRael/lenso-marketplace` | Directory, signed catalog, release records, and artifact/document services; its older browsing UI stays until a verified Site deployment cutover |
 | `LioRael/lenso-ui` | shared UI components and design foundations; adoption by a particular product must be verified separately |
-| `LioRael/lenso-auth-plugin` | portable Auth Capability and assertion SDK |
+| `LioRael/lenso-auth-plugin` | portable Auth contracts/SDK, selected login methods, credential and session state, realm admission and personal-token lifecycle |
+| `LioRael/lenso-access-control-plugin` | current scoped RBAC decisions and membership authority |
+| `LioRael/lenso-business-approval-plugin` | immutable operation intent and human approval decisions |
+| `LioRael/lenso-audit-log-plugin` | attributed audit append/query and owner persistence |
+| `LioRael/lenso-service-account-plugin` | machine identity, scoped credential ceilings and revocation |
 | `LioRael/lenso-otel-plugin` | removable OpenTelemetry Plugin |
-| `LioRael/lenso-console` | local Console Shell, Agent identity catalog, selected-App context, same-origin integration, and the reference Console Host |
+| `LioRael/lenso-console` | Console Shell, selected-App context, management authority/adapters and the application management MCP server; business and security stores remain with their owners |
+| `LioRael/lenso-agent` | Foundation, profiles, ToolProvider and MCP client; an optional management-tool adapter consumes the same management guard |
 | `LioRael/lenso-projects-web-plugin` | Projects Web Endpoint Plugin and optional native Console Workspace contribution; the Projects Provider owns business facts and authorization |
 | `LioRael/lenso-jobs-plugin` | durable single-step Jobs Capability, queue/lease/retry evidence, and the PostgreSQL persistence Adapter |
 | `LioRael/lenso-site` | this versioned public documentation |

@@ -16,9 +16,14 @@ Tool Convention。见[Engine](/docs/zh/core/engine-dx)。
 | `LioRael/lenso-examples` | 可执行示例与产品无关 fixtures |
 | `LioRael/lenso-marketplace` | Directory、签名目录、发布记录及制品/文档服务；旧浏览 UI 保留到 Site 部署切换通过验证 |
 | `LioRael/lenso-ui` | 共享 UI 组件与设计基础；具体产品是否已经采用，需要另行验证 |
-| `LioRael/lenso-auth-plugin` | 可移植 Auth Capability 与 assertion SDK |
+| `LioRael/lenso-auth-plugin` | 可移植 Auth 契约/SDK、选定 Login Method、Credential/Session State、Realm 准入和个人 Token 生命周期 |
+| `LioRael/lenso-access-control-plugin` | 当前 Scoped RBAC Decision 与 Membership Authority |
+| `LioRael/lenso-business-approval-plugin` | 不可变操作 Intent 与人类审批 Decision |
+| `LioRael/lenso-audit-log-plugin` | 带来源的 Audit Append/Query 与 Owner 持久化 |
+| `LioRael/lenso-service-account-plugin` | 机器身份、受限 Credential Ceiling 与撤销 |
 | `LioRael/lenso-otel-plugin` | 可移除 OpenTelemetry Plugin |
-| `LioRael/lenso-console` | 本地 Console Shell、Agent Identity Catalog、Selected-App Context、同源集成与 Reference Console Host |
+| `LioRael/lenso-console` | Console Shell、Selected-App Context、Management Authority/Adapter 与应用管理 MCP Server；业务和安全 Store 仍由各 Owner 持有 |
+| `LioRael/lenso-agent` | Foundation、Profile、ToolProvider 与 MCP Client；可选 Management Tool Adapter 消费同一管理 Guard |
 | `LioRael/lenso-projects-web-plugin` | Projects Web Endpoint Plugin 与可选的 Native Console Workspace Contribution；Projects Provider 持有业务事实与授权 |
 | `LioRael/lenso-jobs-plugin` | Durable Single-step Jobs Capability、Queue/Lease/Retry Evidence 与 PostgreSQL Persistence Adapter |
 | `LioRael/lenso-site` | 当前版本化公开文档 |
