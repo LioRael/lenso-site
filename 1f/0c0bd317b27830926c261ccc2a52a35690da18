@@ -1,0 +1,55 @@
+content/docs/web/(management)/external-management-agent.mdx
+  s_f4202e28c6b5b1::t_b4c981064762db 12-55
+  s_f4202e28c6b5b1::t_48116ba3d34e2b 103-124
+content/docs/zh/web/(management)/controlled-console.mdx
+  s_f4202e28c6b5b1::t_b4c981064762db 11-47
+content/docs/core/(reference)/host-support.mdx
+  s_f4202e28c6b5b1::t_61e919460b7ac7 68
+  s_f4202e28c6b5b1::t_3ee9aeb90d6b1b 16
+  s_f4202e28c6b5b1::t_44af796b0881d2 66
+content/docs/zh/core/(reference)/host-support.mdx
+  s_f4202e28c6b5b1::t_2ef6a7ed22d5ef 57
+  s_f4202e28c6b5b1::t_60475ac7e1a004 54
+  s_f4202e28c6b5b1::t_48116ba3d34e2b 15
+content/docs/core/(reference)/management-glossary.mdx
+  s_f4202e28c6b5b1::t_3ee9aeb90d6b1b 19
+  s_f4202e28c6b5b1::t_61e919460b7ac7 21
+content/docs/web/(management)/minimal-native-backend.mdx
+  s_f4202e28c6b5b1::t_3ee9aeb90d6b1b 31-48
+content/docs/zh/core/(reference)/management-glossary.mdx
+  s_f4202e28c6b5b1::t_3ee9aeb90d6b1b 18
+  s_f4202e28c6b5b1::t_2ef6a7ed22d5ef 20
+content/docs/zh/web/(management)/operators-auth.mdx
+  s_f4202e28c6b5b1::t_b4c981064762db 11-39
+content/docs/web/(management)/operators-auth.mdx
+  s_f4202e28c6b5b1::t_b4c981064762db 13-47
+content/docs/web/(management)/business-source-on-workers.mdx
+  s_f4202e28c6b5b1::t_b10ef920b4d2d0 20,96-97,108-109
+  s_f4202e28c6b5b1::t_c8923a1e5ee722 110
+content/docs/web/(management)/controlled-console.mdx
+  s_f4202e28c6b5b1::t_b4c981064762db 13-54
+content/docs/zh/web/(management)/business-source-on-workers.mdx
+  s_f4202e28c6b5b1::t_792939f1d20d1d 98-99
+  s_f4202e28c6b5b1::t_b10ef920b4d2d0 19,88-89
+content/docs/zh/web/(management)/external-management-agent.mdx
+  s_f4202e28c6b5b1::t_b4c981064762db 11-49
+  s_f4202e28c6b5b1::t_48116ba3d34e2b 84-99
+content/docs/zh/web/(management)/minimal-native-backend.mdx
+  s_f4202e28c6b5b1::t_3ee9aeb90d6b1b 27-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1f0c0bd317b27830926c261ccc2a52a35690da18",
+  "prompts": {},
+  "sessions": {
+    "s_f4202e28c6b5b1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ee9e-623b-7d12-a648-d8b462390eec",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
