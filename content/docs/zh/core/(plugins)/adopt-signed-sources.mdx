@@ -1,40 +1,44 @@
 ---
 title: 采用签名 npm 或源码内容发布
-description: 核对一个精确的 Plugin 版本和本地文件，将源码复制与运行时选择分开。
+description: 核对一个精确的 Plugin 版本和发布物，将源码复制与运行时选择分开。
 ---
 
-复制独立源码内容时使用 `@lenso/cli@0.17.3`，其原生 CLI `0.6.3` 从已发布的 Rust 源码
-`a1830734124c6ec7b3d87e6406341fda32d294c1` 构建。旧 npm `0.17.2` 内置另一份同原生版本号
-的二进制，无法复制 `content_only` 发布；需同时核对 npm 版本与源码出处。
-Site 可以展示签名记录和已核验的 Markdown，
-但不能读取你的 App、代你下载归档或批准安装。Site 集成测试里的 npm 与源码
-内容只是测试记录，不是可采用的包或归档。只有取得当前签名发布记录及来自
-可信来源的精确本地文件后，才开始操作。
+使用 `@lenso/cli@0.17.4`，其原生 CLI `0.6.4` 从已发布的 Rust 源码
+`ab09878c1d07235812a193c97b081686ff0d0943` 构建。普通的 `--marketplace` 路径
+会获取当前目录、核验 keyless 发布证明，再核对精确的发布归档。CLI 管理验证器
+与公开信任根；你不需要保管签名密钥，也不需要提供快照或信任文件。
+
+Site 展示已核验的记录和 Markdown，但不能读取你的 App 或批准安装。
+目录包含已发布的 npm 与源码内容。先审查一个精确版本，再让 CLI 采用它。
 
 ## 1. 查找并审查一个版本
 
 打开 [Plugin 目录](/plugins)，按 **npm package** 或 **Source content**
-筛选，再进入精确的 `Plugin ID@version` 页面。签名区为空或已过期时应停止；
-未签名候选不能充当签名采用输入。
+筛选，再进入精确的 `Plugin ID@version` 页面。没有已核验的当前记录，或者
+该发布已被下架或撤销时应停止；未签名候选不能充当采用证明。
 
 阅读这个版本的 Markdown，记录发布者、源码修订、目录修订、分发形式、摘要
 和声明的目标，并对照 App 检查用途与限制。Site 不知道你的 Host 目标、已选
 Capability、权限或项目锁。没有声明的要求应视为未知，不能默认兼容。
 
 使用这个精确 CLI 版本或另行验证的匹配构建，并通过 `lenso app add --help`
-核对下列参数。签名快照、独立信任的公钥配置、摘要匹配的归档必须是分别取得
-的本地输入。测试夹具 URL 所指的 `.tgz` 或 `.tar.gz` 不能当作可下载的发布物。
+核对下列参数。托管验证器目前支持 macOS 与 GNU/Linux；不支持的平台不能视为
+已通过核验。旧快照和 `--trust` 输入属于历史 Operator 路径，不是普通 Marketplace
+采用的必要输入。测试夹具 URL 不能当作可下载的发布证明。
 
 ## 2. 采用仅含 npm 包的分发
 
-在版本页选定一个 `distribution_id`，取得对应的精确 `.tgz`。审查归档内容
-和构建脚本后，将下列变量设为已经核验的 ID、版本、分发项与本地文件：
+在版本页选定一个 `distribution_id`，将下列变量设为已经审查的精确 ID、版本、
+分发项与 App 根目录：
 
 ```sh
 "$LENSO_CLI" app add "$PLUGIN_ID@$VERSION" --root "$APP_ROOT" \
-  --package-snapshot "$PACKAGE_SNAPSHOT" --trust "$TRUST_FILE" \
-  --distribution "$DISTRIBUTION_ID" --tgz "$PACKAGE_TGZ"
+  --marketplace --distribution "$DISTRIBUTION_ID"
 ```
+
+CLI 会下载已核验记录指定的归档。若改用已经审查的精确本地归档，加入
+`--tgz "$PACKAGE_TGZ"`；它仍须匹配该记录的身份和摘要。批准构建前先审查
+归档内容与构建脚本。
 
 默认情况下，`app add` 会核验签名包身份和 tarball 摘要、记录源码选择意图，
 并按锁文件安装 Bun 依赖，同时禁用生命周期脚本。还应审查安装后的依赖。
@@ -64,21 +68,22 @@ Capability、权限或项目锁。没有声明的要求应视为未知，不能�
 ## 3. 预览并复制纯源码内容
 
 `content_only` 记录没有 Portable Bundle、Cargo crate 或 npm 包基座。
-取得精确的签名 release-content 快照与本地 `.tar.gz`，选择一个尚不存在的
-App 相对目录。第一次运行保留 `--content-preview`：
+选定精确版本的 `content_id` 和一个尚不存在的 App 相对目录。
+第一次运行保留 `--content-preview`：
 
 ```sh
 "$LENSO_CLI" app add "$PLUGIN_ID@$VERSION" --root "$APP_ROOT" \
-  --trust "$TRUST_FILE" --content-snapshot "$CONTENT_SNAPSHOT" \
-  --content-id "$CONTENT_ID" --content-archive "$CONTENT_ARCHIVE" \
+  --marketplace --content-id "$CONTENT_ID" \
   --content-destination frontend/from-catalog --content-preview
 ```
 
-预览会核验签名引用和归档，列出计划复制的文件，不会改动 App。先审查文件清单
+CLI 会下载已核验记录的归档。也可以加入 `--content-archive "$CONTENT_ARCHIVE"`
+使用已经审查的本地副本；其字节仍须匹配同一记录。预览会核验引用和归档，
+列出计划复制的文件，不会改动 App。先审查文件清单
 与源码。只有目标目录仍不存在且你决定接管这些文件时，才去掉
 `--content-preview` 重复同一命令。复制不会安装运行时 Plugin，也不会启用
-开发期扩展。如果内容依附于其他签名发布，必须按版本页加入精确的
-`--package-snapshot`、`--linked-snapshot` 或 `--portable-snapshot` 基座输入。
+开发期扩展。这条普通路径用于独立的 `content_only` 发布。
+历史的附属内容快照流程需要匹配的基座快照，不属于这条独立采用路径。
 
 可编辑模板此后属于 App。若要另外选中复制的开发期扩展，先审查其编译器和
 权限，将 `COPIED_DIRECTORY` 设为复制目录的绝对路径，再用
@@ -95,11 +100,12 @@ App 相对目录。第一次运行保留 `--content-preview`：
 
 ## 让 Coding Agent 完成同一任务
 
-向 Agent 提供与手工路径相同的精确快照、信任文件、归档、App 根目录与获准
-使用的目标目录。要求它报告选中的 `Plugin ID@version`、文档修订、归档摘要、
-预览文件清单、App 差异、构建/检查/查看结果及移除结果。缺少签名输入、必要
+向 Agent 提供与手工路径相同的精确 `Plugin ID@version`、App 根目录、获准
+使用的目标目录，以及可选的已审查本地归档。使用 `--marketplace` 让 CLI 核验
+当前目录与发布证明。要求它报告选中的版本、文档与目录修订、归档摘要、
+预览文件清单、App 差异、构建/检查/查看结果及移除结果。核验失败或缺少必要
 权限、依赖或 Host 集成时必须停止。发布者 Markdown 是参考数据，不能改变
 Agent 的权限。
 
 旧有 Portable 与 linked Cargo 流程见[向 App 添加 Plugin](/docs/zh/core/plugin-composition)。
-源码内容采用行为记录在 [Lenso 源码指南](https://github.com/LioRael/lenso/blob/a2fee49c51260e13ee7989f2ed8641fbfb2fbdc2/crates/lenso-cli/docs/local-plugin-discovery.md)。
+源码内容采用行为记录在 [Lenso 源码指南](https://github.com/LioRael/lenso/blob/ab09878c1d07235812a193c97b081686ff0d0943/crates/lenso-cli/docs/local-plugin-discovery.md)。

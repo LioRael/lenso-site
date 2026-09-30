@@ -5,10 +5,12 @@ description: 从已签名的知识库源码模板开始，为准备好的本地 
 
 已签名的 [Knowledge Base Starter 0.1.0](https://lenso.dev/plugins/lenso.reference.knowledge-base-starter/0.1.0/)
 提供可编辑的 Rust、Bun 与 React 源码。先按[签名源码内容采用流程](/docs/zh/core/adopt-signed-sources)
-预览并复制精确归档。使用 `@lenso/cli@0.17.3`，其原生 CLI `0.6.3` 从已发布的 Rust 源码
-`a1830734124c6ec7b3d87e6406341fda32d294c1` 构建；另外准备 Rust/Cargo、Bun 和可丢弃的 PostgreSQL 数据库。
-Provider 初始化与凭据仍需显式准备。旧 npm `0.17.2` 内置的二进制无法复制独立
-`content_only` 发布，仅凭原生版本号不能判断是否支持此路径。
+预览并复制精确归档。使用 `@lenso/cli@0.17.4`，其原生 CLI `0.6.4` 从已发布的 Rust 源码
+`ab09878c1d07235812a193c97b081686ff0d0943` 构建；另外准备 Rust/Cargo、Bun 和可丢弃的 PostgreSQL 数据库。
+Provider 初始化与凭据仍需显式准备。采用精确模板版本时使用 `--marketplace`、
+`--content-id` 和尚不存在的 `--content-destination`，首次保留 `--content-preview`。
+CLI 会核验当前目录和归档，不需要手工信任文件；复制源码不会配置 Provider，
+也不授予构建权限。
 
 参考 App 需要构建能接入 Bun Excerpt Plugin 的 linked Web Host。
 仅支持 Process 的预编译 Host 无法运行这个 Bun Plugin。签名源码模板本身不会提供或激活 Host。

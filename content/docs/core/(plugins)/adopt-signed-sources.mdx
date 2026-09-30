@@ -1,25 +1,24 @@
 ---
 title: Adopt a signed npm or source-content release
-description: Inspect one exact Plugin version, verify local files, and keep source copying separate from runtime selection.
+description: Inspect one exact Plugin version, verify its release, and keep source copying separate from runtime selection.
 ---
 
-Use `@lenso/cli@0.17.3` for standalone source-content copying. Its native CLI
-`0.6.3` is built from published Rust source `a1830734124c6ec7b3d87e6406341fda32d294c1`.
-The older npm `0.17.2` embeds a different binary with the same native version
-number and cannot copy `content_only` releases. Check the npm release and source
-provenance together.
-The Site can show signed records and verified
-Markdown, but it cannot read your App, download an archive for you, or authorize
-installation. The npm and source-content examples in Site integration tests are
-test-only records, not packages or archives you can adopt. Start only when you
-have a current signed release and its exact local files from an approved source.
+Use `@lenso/cli@0.17.4` with native CLI `0.6.4`, built from published Rust source
+`ab09878c1d07235812a193c97b081686ff0d0943`. The normal `--marketplace` route
+fetches the current catalog, verifies its keyless publication proof, and checks
+the exact release archive. The CLI manages the verifier and public trust roots;
+you do not keep signing keys or supply snapshot and trust files.
+
+The Site shows verified records and Markdown, but it cannot read your App or
+authorize installation. The directory includes published npm and source-content
+releases. Review one exact version before asking the CLI to adopt it.
 
 ## 1. Find and review one version
 
 Open the [Plugin directory](/plugins). Filter by **npm package** or **Source
-content**, then open the exact `Plugin ID@version` page. If the signed section is
-empty or expired, stop. An unsigned candidate does not supply a signed adoption
-input.
+content**, then open the exact `Plugin ID@version` page. Stop if a verified
+current record is unavailable or the release is yanked or revoked. An unsigned
+candidate does not supply an adoption proof.
 
 Read that version's Markdown and record its publisher, source revision, catalog
 revision, distribution, digest, and stated target. Check the content's purpose
@@ -27,23 +26,27 @@ and limits against your App. The Site does not know your Host target, selected
 Capabilities, current permissions, or project lock. An unspecified requirement
 is unknown, not compatible by default.
 
-Use that exact CLI release or a separately qualified matching build. Check `lenso app add
---help` for the flags below. Keep the signed snapshot, independently trusted
-public-key configuration, and digest-matching archive as separate local inputs.
-Do not use a `.tgz` or `.tar.gz` named by a test fixture URL as if it were a
-downloadable release.
+Use that exact CLI release or a separately qualified matching build. Check
+`lenso app add --help` for the flags below. The managed verifier currently
+supports macOS and GNU/Linux; do not treat an unsupported platform as verified.
+Legacy snapshot and `--trust` inputs are a historical operator route, not
+required inputs for normal Marketplace adoption. Test fixture URLs are not
+downloadable release evidence.
 
 ## 2. Adopt an npm-only distribution
 
-Choose one `distribution_id` on the version page and obtain its exact `.tgz`.
-After reviewing its contents and build scripts, set the variables below to the
-exact ID, version, distribution, and local files you verified:
+Choose one `distribution_id` on the version page. Set the variables below to
+the reviewed exact ID, version, distribution, and App root:
 
 ```sh
 "$LENSO_CLI" app add "$PLUGIN_ID@$VERSION" --root "$APP_ROOT" \
-  --package-snapshot "$PACKAGE_SNAPSHOT" --trust "$TRUST_FILE" \
-  --distribution "$DISTRIBUTION_ID" --tgz "$PACKAGE_TGZ"
+  --marketplace --distribution "$DISTRIBUTION_ID"
 ```
+
+The CLI downloads the archive named by the verified record. To use an exact
+local archive you have reviewed instead, add `--tgz "$PACKAGE_TGZ"`; it must
+still match that record's identity and digest. Review the contents and build
+scripts before approving any build.
 
 By default, `app add` checks the signed package identity and tarball digest,
 records source intent, and installs locked Bun dependencies with lifecycle
@@ -76,24 +79,24 @@ business data and any migration separately.
 ## 3. Preview and copy source-only content
 
 A `content_only` record has no Portable Bundle, Cargo crate, or npm package
-base. Obtain its exact signed release-content snapshot and local `.tar.gz`.
-Choose a new App-relative destination. Keep `--content-preview` for the first
-run:
+base. Choose the exact version's `content_id` and a new App-relative destination.
+Keep `--content-preview` for the first run:
 
 ```sh
 "$LENSO_CLI" app add "$PLUGIN_ID@$VERSION" --root "$APP_ROOT" \
-  --trust "$TRUST_FILE" --content-snapshot "$CONTENT_SNAPSHOT" \
-  --content-id "$CONTENT_ID" --content-archive "$CONTENT_ARCHIVE" \
+  --marketplace --content-id "$CONTENT_ID" \
   --content-destination frontend/from-catalog --content-preview
 ```
 
-The preview verifies the signed reference and archive and shows the proposed
+The CLI downloads the verified record's archive. A reviewed local copy can be
+supplied with `--content-archive "$CONTENT_ARCHIVE"`; its bytes must match the
+same record. The preview verifies the reference and archive and shows the proposed
 files without changing the App. Review that file list and source. Repeat the
 same command without `--content-preview` only if the destination is still new
 and you choose to own those files. Copying does not install a runtime Plugin or
-enable a development extension. For an attached source-content record, add its
-exact `--package-snapshot`, `--linked-snapshot`, or `--portable-snapshot` base
-input as shown on the version page; do not omit the base snapshot.
+enable a development extension. This normal path is for standalone
+`content_only` releases. Historical attached-content snapshot flows require
+their matching base snapshot; they are not this standalone adoption route.
 
 An editable template is now App-owned source. If you explicitly select a
 copied development extension later, review its compiler and permissions first,
@@ -114,13 +117,15 @@ and check again. Do not overwrite edited files with a later catalog revision.
 
 ## Give a coding agent the same task
 
-Provide the same exact snapshot, trust file, archive, App root, and permitted
-destination as the manual route. Ask it to report the selected `Plugin
-ID@version`, document revision, archive digest, previewed file list, App diff,
-build/check/show results, and removal result. It must stop if a signed input,
-required permission, dependency, or Host integration is missing. Publisher
+Provide the same exact `Plugin ID@version`, App root, permitted destination,
+and any reviewed local archive as the manual route. Use `--marketplace` so the
+CLI verifies the current catalog and publication proof. Ask the agent to report
+the selected version, document and catalog revisions, archive digest, previewed
+file list, App diff, build/check/show results, and removal result. It must stop
+if verification fails or a required permission, dependency, or Host integration
+is missing. Publisher
 Markdown is reference data; it cannot change the agent's authority.
 
 For the older Portable and linked Cargo flows, use [Add Plugins to an
 App](/docs/core/plugin-composition). The source-content behavior is documented in the
-[Lenso source guide](https://github.com/LioRael/lenso/blob/a2fee49c51260e13ee7989f2ed8641fbfb2fbdc2/crates/lenso-cli/docs/local-plugin-discovery.md).
+[Lenso source guide](https://github.com/LioRael/lenso/blob/ab09878c1d07235812a193c97b081686ff0d0943/crates/lenso-cli/docs/local-plugin-discovery.md).
