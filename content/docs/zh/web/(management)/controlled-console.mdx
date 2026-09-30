@@ -4,13 +4,14 @@ description: 保持 Console 可选，让 Auth、Access Control、Approval、Audi
 draft: true
 ---
 
-本候选教程等待普通 Management 源码 App 回执和浏览器旅程。目标是完成一次审批后的
-业务更新并保留可审计领域回执，再关闭 Console 确认业务 App 仍可运行。页面渲染或
-Owner 独立 PG 测试不能完成这条旅程。
+普通 Native Management 源码 App、MCP 写入和真实浏览器旅程已保留审批后业务更新与
+持久 Audit 回执。联合 Agent 与六个安装/移除 Profile 也有独立回执。本篇最新 SDK
+源码候选教程使用下方固定的 Examples 源码及[资格索引](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/README.md)；历史 live 回执不能证明当前
+候选已发布到 registry。
 
 ## 准备源码 App 及其回执
 
-进入选定 [Lenso Examples](https://github.com/LioRael/lenso-examples) checkout 的
+进入选定 [Lenso Examples](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference) checkout 的
 `fixtures/ops-reference`，用 `python3 prepare.py --cache candidate-tools`
 构建精确 CLI。使用 `candidate-tools/tools.json` 中的可执行文件，以及已授权、
 私有保存的测试数据库 URI 文件：
@@ -74,9 +75,10 @@ Target、Schema、参数、Scope 或 Revision 改变会使已审批 Intent 失�
 展示状态，并向同一业务 Owner 请求回执对账，不能标为失败或自动重新提交。
 持久领域回执与 Audit 来源是不同事实，页面不能伪造其中任何一种。
 
-Console Owner 有 Native PG Authority Fixture，管理 Surface 有浏览器检查；它们
-只证明各自记录的边界。精确干净源码 App 的 Setup、独立 Realm 准入、审批写入、来源、
-对账及关闭 Console 后的行为仍是本页公开门槛；Workers 管理组合仍未验收。
+普通 Native 回执证明各自记录的源码 App、独立 Realm 准入、审批写入、来源、重启与
+浏览器恢复边界。联合 Agent 及关闭 Console 的安装证据分别保留。历史 Workers D1
+管理 Profile 另有本地与远端回执；这些结果不能继承 Native 浏览器结果，也不能证明
+当前最新 SDK 源码配对通过了相同验收。
 
 保存回执后按 Owner 步骤停止 Host 并清理测试资源。关闭 Console 移除可选体验，
 不删除业务 Plugin、其状态或独立授权规则。

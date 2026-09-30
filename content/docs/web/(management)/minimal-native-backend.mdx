@@ -4,20 +4,22 @@ description: Build an ordinary source App with two named dependencies and durabl
 draft: true
 ---
 
-This candidate tutorial awaits the final Examples source commit and its
-clean-consumer receipt. It stays outside the published catalog until that pair
-is retained. The result is an HTTP update whose domain receipt survives a
+This source-candidate tutorial uses the pinned [Examples checkout](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference).
+The [qualification index](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/README.md) records retained source and consumer proofs.
+Current consumer and release gates remain separate from those historical receipts;
+this tutorial stays outside the published catalog. The result is an HTTP update whose domain receipt survives a
 Native Host restart.
 
 ## Prepare the exact source pair
 
-The published launcher is `@lenso/cli@0.17.3`; its native executable reports
-`lenso 0.6.3`. The Rust facade is `lenso = 0.5.27`. Owner facilities require
-the Core candidate. Installing the launcher alone does not select it.
+The published launcher is `@lenso/cli@0.17.4`; its native executable reports
+`lenso 0.6.4`. The published Rust facade is `lenso = 0.5.28`, and the reviewed
+35-package Rust release includes owner facilities. This recipe uses the source
+CLI `0.6.6` and its selected JavaScript runtime candidate. Installing the npm
+launcher alone does not select that pair.
 See [Host qualification](/docs/core/host-support).
 
-Use the qualified Examples commit supplied with the consumer receipt. From a
-clean clone's `fixtures/ops-reference/` directory:
+Use the pinned Examples source above. From a clean clone's `fixtures/ops-reference/` directory:
 
 ```sh
 python3 prepare.py --cache candidate-tools

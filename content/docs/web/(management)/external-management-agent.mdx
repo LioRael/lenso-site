@@ -4,14 +4,15 @@ description: Project one filtered catalog to an external client with scoped cred
 draft: true
 ---
 
-This candidate tutorial awaits an ordinary source App and real external-client
-receipt. Its result will be a scoped read, an explicitly approved write and
-denial after credential revocation, without requiring Console. MCP SDK transport
-fixtures and ToolProvider tests are component proofs, not that complete journey.
+Ordinary Native source App, real MCP client and independent Account-child Agent
+receipts are retained for their historical source profiles. This latest-SDK
+candidate tutorial uses the pinned source below and its [qualification index](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/README.md).
+MCP transport fixtures and ToolProvider tests remain component proofs; they do
+not replace the ordinary App receipts.
 
 ## Run a client before starting a model
 
-In the selected [Lenso Examples](https://github.com/LioRael/lenso-examples)
+In the selected [Lenso Examples](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference)
 checkout, enter `fixtures/ops-reference` and prepare the exact CLI with
 `python3 prepare.py --cache candidate-tools`. The default candidate profile
 exposes a read-only MCP catalog without Console:
@@ -51,7 +52,8 @@ This candidate verifier uses a real Account-issued child in a separate Agent
 process while the human Console remains live. It checks exact task binding,
 hidden/changed tool rejection, pending-status recovery and denial after parent
 logout. It selects a deterministic fixture Model; it does not run a real model.
-The joint owner receipt remains required before this tutorial is published.
+The joint owner receipt records the exact target and independent Task sources;
+the current SDK source selection is separate.
 
 ## Select the management server
 
@@ -125,7 +127,8 @@ owner's request.
 Console is optional, but a no-Console credential/bootstrap command needs its
 own owner-qualified recipe. No universal token-minting CLI is claimed here.
 The exact source App, setup, bootstrap, client connection, approval and
-revocation commands remain draft until the final consumer receipt is retained.
+revocation commands remain source candidates. The qualification index records historical
+consumer proofs separately from the current selected SDK and its release gates.
 Human D1 lifecycle and the complete Workers management graph are not inferred
 from Native or individual D1 owner tests.
 

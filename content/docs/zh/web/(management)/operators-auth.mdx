@@ -4,13 +4,13 @@ description: 校验当前人类 Account Session，不把 App 登录当作管理�
 draft: true
 ---
 
-本候选教程等待普通源码 App 的认证回执。目标是拒绝 App Assertion，同时让独立准入的
-operators Session 创建受限个人 API Token。Native Owner 的真实 PG Fixture 证明组件
-边界，不等于完成浏览器登录旅程或 Workers 管理装配。
+历史普通 Native 源码 App 与浏览器旅程已有保留的回执：拒绝 App Assertion，并让独立
+准入的 operators Session 创建受限个人 API Token。本源码候选教程使用下方固定的 Examples
+源码及[资格索引](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/README.md)，在当前消费与发布 Gate 完成前暂不进入发布目录。Native 证据不代表 Workers 支持 Human PAT。
 
 ## 执行候选 Native 旅程
 
-使用选定的 [Lenso Examples](https://github.com/LioRael/lenso-examples) checkout，
+使用选定的 [Lenso Examples](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference) checkout，
 进入 `fixtures/ops-reference`。`candidate-inputs.json` 记录精确源码组合，
 `prepare.py` 构建该 CLI，不替换全局安装：
 
@@ -77,8 +77,9 @@ Auth Owner 保留 `crates/lenso-auth-human-api-token-plugin/tests/postgres_lifec
 其真实临时 PG Fixture 覆盖精确 Caller、实时 Session 引用、Realm 隔离、当前上限、
 一次性 Secret 与撤销。已有 Store 在运行时启动前需执行 Owner 的显式 Migration。
 
-普通浏览器/源码 App 回执、Login Method 配置和 Operator Setup 命令仍需补齐，本页
-暂不进入发布目录。MFA 与 Idle Timeout 尚不支持，Assurance 字符串不能启用它们。
+Examples 验收包保留普通源码 App、真实浏览器回执、选定源码与单独的持久 Audit 证明。
+使用其提交后的源码选择和 Operator Setup；Owner 独立测试仍单独记录。MFA 与 Idle
+Timeout 尚不支持，Assurance 字符串不能启用它们。
 D1 API Token Profile 的 Human Token 生命周期返回 `UnsupportedProfile`，不回退写入。
 各 D1 Owner 的测试不证明完整 Workers 安全闭包。
 

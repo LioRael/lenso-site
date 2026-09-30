@@ -4,15 +4,16 @@ description: Keep Console optional while Auth, Access Control, Approval, Audit a
 draft: true
 ---
 
-This candidate tutorial awaits the ordinary Management source App receipt and
-browser journey. The intended result is one approved business update with an
-auditable domain receipt, followed by a working business App with Console
-disabled. A rendered page or an owner-only PostgreSQL test does not complete
-this journey.
+The ordinary Native Management source App, MCP write and real browser journey
+have retained receipts for an approved business update and persisted Audit.
+Separate receipts retain the joint Agent and six installation/removal profiles.
+This latest-SDK source candidate tutorial uses the pinned source below and its
+[qualification index](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/README.md). Historical live receipts do not establish
+the current candidate's registry availability.
 
 ## Prepare the source App and its proofs
 
-From the selected [Lenso Examples](https://github.com/LioRael/lenso-examples)
+From the selected [Lenso Examples](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference)
 checkout's `fixtures/ops-reference`, build the exact CLI with
 `python3 prepare.py --cache candidate-tools`. Use the executable recorded in
 `candidate-tools/tools.json` and authorized private test-database URI files:
@@ -49,8 +50,9 @@ python3 verify_installations.py --cli /absolute/path/from/tools.json/lenso \
 
 The installation verifier rejects a fake transport credential as Agent proof.
 It checks selected compositions and removal without changing the business
-state. These candidate commands do not claim completed qualification; retained
-source App, browser and joint Agent receipts are required for publication.
+state. These candidate commands do not inherit the historical qualification. The
+index records source App, browser and joint Agent receipts separately from the
+current source selection and its remaining release gates.
 
 ## Select the optional surface
 
@@ -91,11 +93,12 @@ receipt reconciliation from the same business owner. It must not label the
 operation failed or submit it again automatically. The durable domain receipt
 and Audit provenance are different facts; neither is fabricated by the page.
 
-The Console owner has Native PG authority fixtures and the management surface
-has browser checks. Those prove their recorded boundaries. Exact clean source
-App setup, independent realm admission, approved write, attribution,
-reconciliation and Console-disabled behavior remain the promotion gate for
-this tutorial; Workers management remains unassessed.
+The ordinary Native receipts establish their recorded source App, independent
+realm admission, approved write, attribution, restart and browser recovery
+boundaries. Joint Agent and Console-disabled installation evidence is retained
+separately. The historical Workers D1 management profile also has local and
+remote receipts; those results do not inherit the Native browser result or
+qualify the current latest-SDK source selection.
 
 Use the owner's explicit shutdown and test-resource cleanup after saving
 receipts. Disabling Console removes the optional experience, not the business

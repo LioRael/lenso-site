@@ -4,13 +4,12 @@ description: 通过受限凭证向真实外部客户端提供过滤 Catalog、�
 draft: true
 ---
 
-本候选教程等待普通源码 App 与真实外部客户端回执。目标是在不依赖 Console 的条件
-下完成受限读取、显式审批写入，并在凭证撤销后拒绝请求。MCP SDK Transport Fixture
-与 ToolProvider 测试只证明组件，不等于完整旅程。
+普通 Native 源码 App、真实 MCP Client 与独立 Account Child Agent 已保留各自
+历史源码 Profile 的回执。本篇最新 SDK 候选教程使用下方固定的 Examples 源码及[资格索引](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/README.md)。MCP Transport Fixture 与 ToolProvider 测试仍是组件证明，不能代替普通 App 回执。
 
 ## 先运行客户端，再考虑模型
 
-进入选定 [Lenso Examples](https://github.com/LioRael/lenso-examples) checkout 的
+进入选定 [Lenso Examples](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference) checkout 的
 `fixtures/ops-reference`，用 `python3 prepare.py --cache candidate-tools`
 准备精确 CLI。默认候选 Profile 不依赖 Console，提供只读 MCP Catalog：
 
@@ -45,7 +44,7 @@ python3 verify_agent.py --directory /private/path/completed-human-profile \
 候选 Verifier 在人类 Console 仍运行时，用真实 Account 签发的 Child 启动独立 Agent
 进程，检查精确 Task Binding、Hidden/Changed Tool 拒绝、Pending Status 恢复和
 父 Session Logout 后的拒绝。它选择确定性 Fixture Model，不启动真实模型。
-本页发布前仍需保留共同运行的 Owner 回执。
+联合 Owner 回执记录精确 Target 与独立 Task 源码；当前 SDK 源码配对另行记录。
 
 ## 选择管理 Server
 
@@ -99,7 +98,7 @@ Management Tool，不选择 Coding、Filesystem 或任意 Network Tool。Transpo
 
 Console 是可选的，但无 Console 的凭证/Bootstrap 命令仍需 Owner 验收步骤。本页
 不声称存在通用 Token Minting CLI。精确源码 App、Setup、Bootstrap、Client 连接、
-审批与撤销命令在最终 Consumer 回执保留前仍为草稿。Native 或各 D1 Owner 测试
+审批与撤销命令仍为源码候选；资格索引将历史消费证明与当前 SDK 选择及其发布 Gate 分开记录。Native 或各 D1 Owner 测试
 不能推出人类 D1 生命周期与完整 Workers 管理图成立。
 
 保存无 Secret 的 Invocation 与领域回执，撤销测试凭证，停止 Client/Server，

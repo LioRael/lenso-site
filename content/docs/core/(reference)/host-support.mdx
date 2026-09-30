@@ -11,15 +11,18 @@ management operation. Keep each result attached to its source and artifact.
 
 | Tool or package | Version | What the version identifies |
 | --- | --- | --- |
-| `@lenso/cli` | `0.17.3` | Published npm launcher. |
-| Native `lenso --version` | `0.6.3` | Native CLI version, independent of the npm launcher. |
-| Selected source-built CLI | `0.6.4` | Source candidate built by the owner's exact `candidate-inputs.json`; npm publication is separate. |
-| `lenso` Rust facade | `0.5.27` | Published Rust package. |
+| `@lenso/cli` | `0.17.4` | Published npm launcher. |
+| Native `lenso --version` | `0.6.4` | Native CLI version, independent of the npm launcher. |
+| Published Rust CLI | `0.6.5` | The `lenso-cli` crate in the reviewed 35-package release. |
+| Selected source-built CLI | `0.6.6` | Current source candidate built by the owner's exact `candidate-inputs.json`; its publication is separate. |
+| `lenso` Rust facade | `0.5.28` | Published Rust package. |
 | `@lenso/workers-runtime` source candidate | `0.1.6` | Candidate event-scoped facility support; registry publication is separate. |
+| Reviewed Core Rust release | 35 packages | All approved versions are published; each Primary archive was checked against Core source `b8d134d`. |
 
-The new static Workers graph, owner facilities, Host clock and request-admission
-options belong to an exact Core source candidate. Installing the published npm
-launcher does not select that candidate. The Examples owner's
+The Rust SDK release includes owner facilities, Host clock and request-admission
+APIs. These recipes still select the source CLI `0.6.6` and Workers runtime
+`0.1.6` candidates. Installing the published npm launcher does not select that
+source pair. The Examples owner's
 `fixtures/ops-reference/candidate-inputs.json` records the Core and JavaScript
 commits; its `prepare.py` builds an isolated native executable and packs the
 selected runtime. Use that source pair together and keep `tools.json` with the
@@ -31,11 +34,14 @@ consumer receipt. A developer's sibling checkout is not an installation input.
 | --- | --- | --- |
 | Ordinary Native source App, simulated state | HTTP graph, two named dependencies, configured Instances, CAS and receipts | State resets on Instance recreation. |
 | Ordinary Native source App, PostgreSQL owner | Real PG, two schemas, durable receipts and Host restart | Operator setup and DB permissions remain explicit. |
+| Ordinary Native operators Management and Console | API-token and MCP reads/writes, real Account/PAT browser journey, persisted owner Audit and restart | Recorded historical source profile; latest SDK source selection has separate checks. |
+| Independent Native management Agent | Account-issued child, deterministic Model/Loop/Session, exact task binding, original pending-status recovery and current parent revocation | Real-model interaction is `not_run` at the owner's request. |
+| Native installation and removal | Six selected compositions, optional Console/Agent and removal checks | Receipt-specific selections; no universal installation profile is inferred. |
 | Static linked Rust Workers candidate | Wasm build and actual local workerd HTTP routing | Request-only graph; Plugin memory belongs to one event. |
-| Workers candidate with owner D1 facilities | Local D1 emulation and deployed real D1 are separate receipts | Neither establishes Hyperdrive or management security qualification. |
+| Business-only Workers candidate with owner D1 facilities | Local D1 emulation and deployed real D1 are separate receipts | This business proof does not establish Hyperdrive or the Management guard. |
 | Workers with Hyperdrive/PG | `not_run`; acceptance deferred by the owner | No remote PG qualification is claimed. |
 | One Worker mixing PG and D1 | `unassessed` | Assess the actual driver, bindings and scope lifecycle together. |
-| Workers Auth, management, approvals and Agent tools (G4-W) | `unassessed` as one ordinary source App | Native component tests do not close this boundary. |
+| Ordinary Workers Auth and Management D1 source profile | Actual remote Core `119b` / Console `ed1` graph: direct and official MCP calls, approval, lost-reply status recovery, typed Audit, current revocation, read-only profile and readiness failure | Exact selected Owner and artifact receipts; redeploy observation does not prove a physical restart. Workers Agent and human Cookie/PAT journeys are separate. |
 
 The operations reference uses the normal source App path, typed Capability
 clients and Kernel routing. Source portability does not imply every execution
@@ -44,17 +50,27 @@ events, dynamic loading and restart policy rather than replacing them with
 request behavior. Bun authoring remains a separate environment.
 
 The owner keeps the executable guide, selected source inputs and receipts in
-[Lenso Examples](https://github.com/LioRael/lenso-examples). Its operations
-reference is a candidate until the exact clean-consumer receipt and source
-commit are retained. The six new task tutorials stay out of the published
-catalog while their own consumer boundary is pending.
+[Lenso Examples](https://github.com/LioRael/lenso-examples). The selected latest-SDK source remains a candidate; its archived and live
+proofs retain their own identities. The six new task tutorials stay out of the
+published catalog while current consumer and release gates are pending.
+
+The pinned [qualification index](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/README.md) links each retained receipt.
+The [current source boundary](https://github.com/LioRael/lenso-examples/blob/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/current-source.md) records the published 35-package release, later source candidates and
+actual latest-source Cloudflare qualification. Its remote Core `119b` / Console
+`ed1` graph has its own source, artifact, operation and cleanup receipts.
+The [profile inputs](https://github.com/LioRael/lenso-examples/blob/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/profile-inputs.json) preserve the historical Core `c046`, Builder `bb30` and Console `dbea`
+profile separately. Local and deployed Workers Management, business-only D1 and
+Native browser proofs remain distinct. Historical provenance is a receipt
+record, not a portable private setup or an alternative `prepare.py` recipe.
+Examples source delivery has its own CI and Main record; it does not establish
+package publication.
 
 ## Configuration and readiness
 
 Offline `app explain --json` checks persisted target, selected Instances,
 named providers and authorized facility names without constructing owner
 handles or querying a database. It does not validate credentials or establish
-live readiness. Source-candidate `--host-facilities` and
+live readiness. The `--host-facilities` and
 `--workers-facilities` are Host inputs, separate from business configuration
 and Capability selections.
 

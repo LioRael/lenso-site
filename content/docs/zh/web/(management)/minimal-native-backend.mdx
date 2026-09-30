@@ -4,14 +4,16 @@ description: 通过普通源码 App 绑定两个具名依赖，再验证真实 P
 draft: true
 ---
 
-本候选教程等待最终 Examples 源码提交与干净 Consumer 回执配对，暂不进入发布目录。
+本源码候选教程使用固定的 [Examples 源码](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference)；
+[资格索引](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/README.md)记录保留的源码和 Consumer 证明。当前消费与发布 Gate 和历史回执分别记录，本篇暂不进入发布目录。
 本篇要观察的结果是：通过 HTTP 更新业务状态，重启 Native Host 后仍能读取领域回执。
 
 ## 准备精确源码配对
 
-已发布的 launcher 是 `@lenso/cli@0.17.3`，其中 Native Binary 显示 `lenso 0.6.3`；
-Rust facade 是 `lenso = 0.5.27`。Owner Facility 属于 Core 源码候选，只安装 launcher
-不会选中这些功能。见 [Host 验收边界](/docs/zh/core/host-support)。
+已发布的 launcher 是 `@lenso/cli@0.17.4`，其中 Native Binary 显示 `lenso 0.6.4`；
+已发布的 Rust facade 是 `lenso = 0.5.28`；已审查的 35 包 Rust 发布集合包含 Owner Facility。
+本教程仍选用源码 CLI `0.6.6` 与配套的 JavaScript Runtime 候选，只安装 npm launcher
+不会选择这份源码配对。见 [Host 验收边界](/docs/zh/core/host-support)。
 
 使用 Consumer 回执指定的 Examples 提交。在干净 Clone 的
 `fixtures/ops-reference/` 运行：

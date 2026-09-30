@@ -4,9 +4,11 @@ description: 把相同 Linked Rust 源码构建为 Request Graph，并验证显�
 draft: true
 ---
 
-本候选教程等待最终 Examples 源码提交和 Consumer 回执，暂不进入发布目录。
+本源码候选教程使用固定的 [Examples 源码](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference)及
+[资格索引](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/README.md)；当前消费与发布 Gate 与历史回执分别记录，本篇暂不进入发布目录。
 本篇观察真实 Worker 通过具名依赖访问两个业务 Instance，重部署后仍能读取 D1 状态
-与回执。Hyperdrive 和完整 Workers 管理装配仍是独立、尚未验收的边界。
+与回执。Hyperdrive 仍暂缓验收。已完成的历史 Workers 管理装配另有绑定源码的回执，
+本篇业务流程不能代替那份证明。
 
 ## 构建已支持的 Profile
 
