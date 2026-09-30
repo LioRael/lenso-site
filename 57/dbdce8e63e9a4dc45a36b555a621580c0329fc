@@ -1,0 +1,27 @@
+content/docs/zh/core/(plugins)/adopt-signed-sources.mdx
+  s_7d146975368699::t_d8f21bc4010f4f 8
+  s_7d146975368699::t_61499ba87928f2 3,6-7,9-12,17-18,25-27,31-32,36,39-42,71-72,76,80-82,85-86,103-106,111
+content/docs/zh/core/(start)/react-vite-app.mdx
+  s_7d146975368699::t_61499ba87928f2 8-13
+content/docs/core/(start)/react-vite-app.mdx
+  s_7d146975368699::t_61499ba87928f2 9-10,12-15
+content/docs/core/(plugins)/adopt-signed-sources.mdx
+  s_7d146975368699::t_912dcaaae12120 124-126
+  s_7d146975368699::t_61499ba87928f2 3,6-14,19-21,29-34,38-39,43,46-50,82-83,87,91-93,97-99,120-123,131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "57dbdce8e63e9a4dc45a36b555a621580c0329fc",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
