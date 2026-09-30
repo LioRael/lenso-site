@@ -1,0 +1,32 @@
+app/plugins/[pluginId]/[version]/page.tsx
+  s_7d146975368699::t_8785fef4eec1da 12,87
+scripts/keyless-currentness.mjs
+  s_7d146975368699::t_8785fef4eec1da 3-8
+scripts/keyless-catalog.test.mjs
+  s_7d146975368699::t_8785fef4eec1da 6,98-113
+  s_f4202e28c6b5b1::t_eb95bc46fec92e 114-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1378804b19ea78013e14a4a8cc71bf13c13dbc73",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    },
+    "s_f4202e28c6b5b1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ee9e-623b-7d12-a648-d8b462390eec",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
