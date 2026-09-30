@@ -1,0 +1,42 @@
+content/docs/zh/web/(management)/external-management-agent.mdx
+  s_f4202e28c6b5b1::t_d8fda00c077e60 9
+  s_f4202e28c6b5b1::t_2e413fce6c0bf6 8,10-11,15
+content/docs/core/(reference)/host-support.mdx
+  s_f4202e28c6b5b1::t_f8ed660a0a002a 37-38,57-65
+content/docs/web/(management)/business-source-on-workers.mdx
+  s_f4202e28c6b5b1::t_21d1aab4720e5d 7-8
+content/docs/web/(management)/controlled-console.mdx
+  s_f4202e28c6b5b1::t_c2e4d9caeaf84b 11,13-16,20
+content/docs/web/(management)/external-management-agent.mdx
+  s_f4202e28c6b5b1::t_50c1ed796c87ef 9,12-15,19
+content/docs/web/(management)/minimal-native-backend.mdx
+  s_f4202e28c6b5b1::t_a7fbccf4bfbcc9 7-8
+content/docs/web/(management)/operators-auth.mdx
+  s_f4202e28c6b5b1::t_fcdc66c11d0a49 10,12-15,19
+content/docs/zh/core/(reference)/host-support.mdx
+  s_f4202e28c6b5b1::t_c973749dbaf5bd 34-35,51-57
+content/docs/zh/web/(management)/business-source-on-workers.mdx
+  s_f4202e28c6b5b1::t_464b144254ad79 7-8
+content/docs/zh/web/(management)/controlled-console.mdx
+  s_f4202e28c6b5b1::t_65b6f39d3691e3 9,11-13,17
+content/docs/zh/web/(management)/minimal-native-backend.mdx
+  s_f4202e28c6b5b1::t_5b8b20976fc4c9 7-8
+content/docs/zh/web/(management)/operators-auth.mdx
+  s_f4202e28c6b5b1::t_069f5a6aeb2992 9-12,16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c2547c30650f74e28ae84b87bd5bf8c4694ddbf5",
+  "prompts": {},
+  "sessions": {
+    "s_f4202e28c6b5b1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ee9e-623b-7d12-a648-d8b462390eec",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
