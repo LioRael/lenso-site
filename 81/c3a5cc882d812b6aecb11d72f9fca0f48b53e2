@@ -1,0 +1,38 @@
+lib/source.ts
+  s_f4202e28c6b5b1::t_17bbcb9497a03e 4,11,17-18,21-24
+content/docs/zh/core/(operate)/app-console.mdx
+  s_f4202e28c6b5b1::t_581c231a4b7238 152-155
+content/docs/core/(reference)/repository-map.mdx
+  s_f4202e28c6b5b1::t_d56f1804e54320 20-24,26-27
+content/docs/core/(operate)/app-console.mdx
+  s_f4202e28c6b5b1::t_581c231a4b7238 165-170
+scripts/check-published-output.mjs
+  s_f4202e28c6b5b1::t_17bbcb9497a03e 233,252-256
+  s_f4202e28c6b5b1::t_205f7ec33669a9 257
+content/docs/zh/core/(reference)/repository-map.mdx
+  s_f4202e28c6b5b1::t_d56f1804e54320 19-23,25-26
+content/docs/web/(guides)/auth-plugin.mdx
+  s_f4202e28c6b5b1::t_d56f1804e54320 30-36
+content/docs/zh/web/(guides)/auth-plugin.mdx
+  s_f4202e28c6b5b1::t_d56f1804e54320 29-34
+package.json
+  s_f4202e28c6b5b1::t_7cff6740b63009 40-41
+pnpm-lock.yaml
+  s_f4202e28c6b5b1::t_bdd87b5a944cba 44-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "81c3a5cc882d812b6aecb11d72f9fca0f48b53e2",
+  "prompts": {},
+  "sessions": {
+    "s_f4202e28c6b5b1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ee9e-623b-7d12-a648-d8b462390eec",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}

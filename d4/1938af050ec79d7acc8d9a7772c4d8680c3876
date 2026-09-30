@@ -1,0 +1,55 @@
+content/docs/web/(management)/operators-auth.mdx
+  s_f4202e28c6b5b1::t_6f4275c10ac166 7-11,15,98-101
+content/docs/web/(management)/external-management-agent.mdx
+  s_f4202e28c6b5b1::t_c69ab18604fa06 7-11,15,55-56,130-131
+content/docs/zh/core/(reference)/host-support.mdx
+  s_f4202e28c6b5b1::t_5b9c38940c1610 15-17,19,21-23,48-52
+  s_f4202e28c6b5b1::t_c69ab18604fa06 34-36,38,41,53-55
+  s_f4202e28c6b5b1::t_6f4275c10ac166 13-14
+  s_f4202e28c6b5b1::t_4ed1fae691464a 56-57,63
+content/docs/zh/web/(management)/controlled-console.mdx
+  s_f4202e28c6b5b1::t_8421487bc19b67 78
+  s_f4202e28c6b5b1::t_d8fda00c077e60 8-10,79-81
+  s_f4202e28c6b5b1::t_6f4275c10ac166 7
+  s_f4202e28c6b5b1::t_8598278f787b18 14
+content/docs/web/(management)/controlled-console.mdx
+  s_f4202e28c6b5b1::t_6f4275c10ac166 7-8,96-97
+  s_f4202e28c6b5b1::t_c69ab18604fa06 9-12,98-101
+  s_f4202e28c6b5b1::t_76d9007880d271 16,53-55
+content/docs/core/(reference)/host-support.mdx
+  s_f4202e28c6b5b1::t_c69ab18604fa06 37-39,41,44,61-64
+  s_f4202e28c6b5b1::t_6f4275c10ac166 14-15
+  s_f4202e28c6b5b1::t_5b9c38940c1610 16-18,20,22-25,53-60
+  s_f4202e28c6b5b1::t_8df7cf4b81c6b8 65-66,73
+content/docs/zh/web/(management)/external-management-agent.mdx
+  s_f4202e28c6b5b1::t_d8fda00c077e60 7-8,12,47
+  s_f4202e28c6b5b1::t_786a14295722a2 101
+content/docs/zh/web/(management)/business-source-on-workers.mdx
+  s_f4202e28c6b5b1::t_d8fda00c077e60 10-11
+  s_f4202e28c6b5b1::t_d3545b58672049 7-8
+content/docs/web/(management)/business-source-on-workers.mdx
+  s_f4202e28c6b5b1::t_c69ab18604fa06 9-11
+  s_f4202e28c6b5b1::t_842fd756dbd469 7-8,12
+content/docs/zh/web/(management)/operators-auth.mdx
+  s_f4202e28c6b5b1::t_6f4275c10ac166 7-9,13,80-82
+content/docs/web/(management)/minimal-native-backend.mdx
+  s_f4202e28c6b5b1::t_de16de6848c1da 7-10,15-19,22
+content/docs/zh/web/(management)/minimal-native-backend.mdx
+  s_f4202e28c6b5b1::t_cc296f3c031d2f 7-8,13-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d41938af050ec79d7acc8d9a7772c4d8680c3876",
+  "prompts": {},
+  "sessions": {
+    "s_f4202e28c6b5b1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ee9e-623b-7d12-a648-d8b462390eec",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}

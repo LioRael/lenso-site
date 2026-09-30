@@ -1,0 +1,83 @@
+content/docs/zh/core/(reference)/management-glossary.mdx
+  s_f4202e28c6b5b1::t_6b803ec8d3de65 1-38
+content/docs/zh/web/(management)/mixed-pg-d1.mdx
+  s_f4202e28c6b5b1::t_7eda480359d9e9 1-53
+content/docs/web/(management)/controlled-console.mdx
+  s_f4202e28c6b5b1::t_0274167866295c 1-60
+content/docs/zh/web/(management)/controlled-console.mdx
+  s_f4202e28c6b5b1::t_e1a54a8ca33606 1-45
+content/docs/zh/core/(contribute)/agent-skills.mdx
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 110-114
+content/docs/zh/core/(reference)/meta.ts
+  s_f4202e28c6b5b1::t_6b803ec8d3de65 4
+content/docs/web/(management)/operators-auth.mdx
+  s_f4202e28c6b5b1::t_3d10ae74eba6cd 1-73
+content/docs/web/(management)/mixed-pg-d1.mdx
+  s_f4202e28c6b5b1::t_695dac106a91f7 1-65
+content/docs/web/meta.ts
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 3
+content/docs/zh/web/(management)/business-source-on-workers.mdx
+  s_f4202e28c6b5b1::t_e7374c5881450a 1-105
+content/docs/zh/web/(management)/external-management-agent.mdx
+  s_f4202e28c6b5b1::t_e4a6733db91f00 1-51
+content/docs/core/(reference)/host-support.mdx
+  s_f4202e28c6b5b1::t_6b803ec8d3de65 1-81
+content/docs/zh/web/(management)/minimal-native-backend.mdx
+  s_f4202e28c6b5b1::t_5b1eed414ba20d 1-87
+content/docs/core/(reference)/management-glossary.mdx
+  s_f4202e28c6b5b1::t_6b803ec8d3de65 1-41
+content/docs/core/(reference)/meta.ts
+  s_f4202e28c6b5b1::t_6b803ec8d3de65 4
+content/docs/zh/web/(management)/meta.ts
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 1-13
+content/docs/web/(management)/minimal-native-backend.mdx
+  s_f4202e28c6b5b1::t_bb622af645b6c1 1-102
+content/docs/web/(management)/business-source-on-workers.mdx
+  s_f4202e28c6b5b1::t_c7df2c47a2ac2a 1-118
+content/docs/web/(management)/external-management-agent.mdx
+  s_f4202e28c6b5b1::t_a8713a30b03b88 1-67
+.github/workflows/quality.yml
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 4
+content/docs/zh/core/(reference)/host-support.mdx
+  s_f4202e28c6b5b1::t_6b803ec8d3de65 1-66
+content/docs/web/(management)/meta.ts
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 1-13
+content/docs/zh/core/(reference)/supported-workflows.mdx
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 11-15,73-76
+content/docs/zh/web/(management)/operators-auth.mdx
+  s_f4202e28c6b5b1::t_92c75ed2430be2 1-58
+content/docs/zh/web/meta.ts
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 3
+content/docs/core/(reference)/supported-workflows.mdx
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 11-16,92-96
+content/docs/core/(contribute)/agent-skills.mdx
+  s_f4202e28c6b5b1::t_ee0b64cc6e6b4d 118-124
+content/docs/agent/(extend)/mcp-servers.mdx
+  s_f4202e28c6b5b1::t_5c6aa6cd9dd240 10-16
+content/docs/core/(operate)/app-console.mdx
+  s_f4202e28c6b5b1::t_339f8d1a46c5cd 18
+content/docs/zh/agent/(extend)/mcp-servers.mdx
+  s_f4202e28c6b5b1::t_59a40bc21764c1 10-14
+content/docs/zh/core/(operate)/app-console.mdx
+  s_f4202e28c6b5b1::t_63324be76683e0 16
+pnpm-lock.yaml
+  s_f4202e28c6b5b1::t_3ce686452b55d0 73,132-133,141-142,147-148,153-154,159-160,165-166,181-183,559-564,565-570,571-575,576-580,581-585,586-591,592-597,598-603,604-609,610-615,616-621,622-627,628-633,634-640,641-647,648-654,655-661,662-668,669-675,676-682,683-689,690-693,694-698,699-704,705-710,711-716,3758,3768-3770,3946,3953,3971,3975,3981,3984,3989,3994,3999,4003,4008,4010,4012-4015,4020,4026,4031,4039,4048,4050-4053,4058,4064,4344,4347,4370-4371,4375,4578,4582,4586,4589,4591,4597,4599,4604,4607,4669-4698,4810-4811,4910,4912-4916,4921,4927,4931
+pnpm-workspace.yaml
+  s_f4202e28c6b5b1::t_54384abbee43b1 10-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1e5d77cd54a2b7b8ab848c32dd7b359cd3b7f694",
+  "prompts": {},
+  "sessions": {
+    "s_f4202e28c6b5b1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ee9e-623b-7d12-a648-d8b462390eec",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
