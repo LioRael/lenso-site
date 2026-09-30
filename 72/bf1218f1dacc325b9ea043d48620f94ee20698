@@ -1,0 +1,21 @@
+content/docs/core/(plugins)/named-dependencies.mdx
+  s_f4202e28c6b5b1::t_216063005a0137 28-33
+content/docs/zh/core/(plugins)/named-dependencies.mdx
+  s_f4202e28c6b5b1::t_216063005a0137 26-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "72bf1218f1dacc325b9ea043d48620f94ee20698",
+  "prompts": {},
+  "sessions": {
+    "s_f4202e28c6b5b1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ee9e-623b-7d12-a648-d8b462390eec",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
