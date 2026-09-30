@@ -31,8 +31,8 @@ Rust SDK 发布集合包含 owner facility、Host clock 与 request admission AP
 | --- | --- | --- |
 | 普通 Native 源码 App，模拟 state | HTTP 图、两个具名依赖、配置后的 Instance、CAS 与 receipt | Instance 重建后模拟状态重置。 |
 | 普通 Native 源码 App，PostgreSQL owner | 真实 PG、两个 schema、持久 receipt 与 Host 重启 | Operator setup 与 DB 权限仍需显式提供。 |
-| 普通 Native operators Management 与 Console | API Token/MCP 读写、真实 Account/PAT 浏览器旅程、持久 Owner Audit 与重启 | 记录的是历史源码 Profile；最新 SDK 源码配对另有检查。 |
-| 独立 Native 管理 Agent | Account 签发 child、确定性 Model/Loop/Session、精确任务绑定、原 pending 状态恢复与父凭证实时撤销 | 真实模型交互按 Owner 要求为 `not_run`。 |
+| 普通 Native operators Management 与 Console | 新 Core `119b` Human Profile：23 个向量、当前凭证状态，以及重启后原请求人的操作状态恢复；历史 API/MCP 和浏览器回执另行保留 | 只证明对应源码与产物，不代表新浏览器验收或 registry 发布。 |
+| 独立 Native 管理 Agent | Agent `bec995` 产物连接 Core `119b` App：14 个向量、受限 child、确定性 Model/Loop/Session、状态恢复和父凭证撤销；六个并发 Console Session 探针 | Agent 与目标 App 的 executable 和锁定依赖分别记录，不代表新浏览器验收；真实模型交互为 `not_run`。 |
 | Native 安装与移除 | 六个选定组合、可选 Console/Agent 与移除检查 | 只证明回执中的选择，不推导通用安装 Profile。 |
 | 静态 linked Rust Workers 候选 | Wasm 构建与真实本地 workerd HTTP 路由 | 仅支持 request 图；Plugin 内存属于单次事件。 |
 | 纯业务 Workers 候选及 owner D1 facility | 本地 D1 模拟与部署后的真实 D1 分别记录 receipt | 这份业务证明不代表 Hyperdrive 或 Management guard 已通过。 |
@@ -48,10 +48,13 @@ Owner 在 [Lenso Examples](https://github.com/LioRael/lenso-examples) 中维护�
 源码输入和 receipt。选定的最新 SDK 源码仍是候选，归档与 live
 证明保留各自的身份。六篇新任务教程在当前消费与发布 Gate 完成前不进入发布目录。
 
-固定版本的[资格索引](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/README.md)逐项链接保留的回执。
-[当前源码边界](https://github.com/LioRael/lenso-examples/blob/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/current-source.md)记录已发布的 35 包集合、后续源码候选和实际最新源码 Cloudflare 验收。
-远端 Core `119b` / Console `ed1` 图保留自己的源码、产物、操作与清理回执。
-[Profile 输入](https://github.com/LioRael/lenso-examples/blob/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/profile-inputs.json)另行保存历史 Core `c046`、Builder `bb30` 和 Console `dbea` 配对。
+固定版本的[资格索引](https://github.com/LioRael/lenso-examples/tree/97d6a26be73faaad01f448207457de46b587e209/fixtures/ops-reference/qualification/README.md)逐项链接保留的回执。
+[当前源码边界](https://github.com/LioRael/lenso-examples/blob/97d6a26be73faaad01f448207457de46b587e209/fixtures/ops-reference/qualification/current-source.md)记录已发布的 35 包集合、后续源码候选和实际最新源码 Cloudflare 验收。
+该索引还链接新 [23 向量 Native Human 证明](https://github.com/LioRael/lenso-examples/blob/97d6a26be73faaad01f448207457de46b587e209/fixtures/ops-reference/qualification/receipts/latest-119b-human-native-proof.json)与
+[14 向量独立 Agent 证明](https://github.com/LioRael/lenso-examples/blob/97d6a26be73faaad01f448207457de46b587e209/fixtures/ops-reference/qualification/receipts/latest-119b-agent-owner-proof.json)。Agent `bec995` 产物与 Core `119b` 目标 App 的锁定依赖及构建身份分别记录；
+六个并发 Console Session 探针不代表新浏览器验收。远端 Core `119b` / Console `ed1` 图
+另行保留自己的源码、产物、操作与清理回执。
+[Profile 输入](https://github.com/LioRael/lenso-examples/blob/97d6a26be73faaad01f448207457de46b587e209/fixtures/ops-reference/qualification/profile-inputs.json)另行保存历史 Core `c046`、Builder `bb30` 和 Console `dbea` 配对。
 本地与已部署的 Workers 管理、纯业务 D1、Native 浏览器证明保持独立。历史 provenance
 仅保存回执事实，不包含可移植的私有 setup，也不是另一条 `prepare.py` 配方。
 Examples 仓库源码交付另有 CI 与 Main 记录；源码落地不代表包已发布。

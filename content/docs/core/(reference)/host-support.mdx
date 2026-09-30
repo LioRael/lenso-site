@@ -34,8 +34,8 @@ consumer receipt. A developer's sibling checkout is not an installation input.
 | --- | --- | --- |
 | Ordinary Native source App, simulated state | HTTP graph, two named dependencies, configured Instances, CAS and receipts | State resets on Instance recreation. |
 | Ordinary Native source App, PostgreSQL owner | Real PG, two schemas, durable receipts and Host restart | Operator setup and DB permissions remain explicit. |
-| Ordinary Native operators Management and Console | API-token and MCP reads/writes, real Account/PAT browser journey, persisted owner Audit and restart | Recorded historical source profile; latest SDK source selection has separate checks. |
-| Independent Native management Agent | Account-issued child, deterministic Model/Loop/Session, exact task binding, original pending-status recovery and current parent revocation | Real-model interaction is `not_run` at the owner's request. |
+| Ordinary Native operators Management and Console | Fresh Core `119b` Human profile: 23 cases, current credential state and requester-bound operation recovery after restart; historical API/MCP and browser receipts remain separate | Exact source/artifact proof; this is not a new browser run or registry publication. |
+| Independent Native management Agent | Agent `bec995` executable connected to the Core `119b` App: 14 cases, scoped child, deterministic Model/Loop/Session, status recovery and parent revocation; six concurrent Console session probes | Agent and target use separately recorded executables/library cohorts. No new browser run; real-model interaction is `not_run`. |
 | Native installation and removal | Six selected compositions, optional Console/Agent and removal checks | Receipt-specific selections; no universal installation profile is inferred. |
 | Static linked Rust Workers candidate | Wasm build and actual local workerd HTTP routing | Request-only graph; Plugin memory belongs to one event. |
 | Business-only Workers candidate with owner D1 facilities | Local D1 emulation and deployed real D1 are separate receipts | This business proof does not establish Hyperdrive or the Management guard. |
@@ -54,11 +54,15 @@ The owner keeps the executable guide, selected source inputs and receipts in
 proofs retain their own identities. The six new task tutorials stay out of the
 published catalog while current consumer and release gates are pending.
 
-The pinned [qualification index](https://github.com/LioRael/lenso-examples/tree/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/README.md) links each retained receipt.
-The [current source boundary](https://github.com/LioRael/lenso-examples/blob/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/current-source.md) records the published 35-package release, later source candidates and
-actual latest-source Cloudflare qualification. Its remote Core `119b` / Console
-`ed1` graph has its own source, artifact, operation and cleanup receipts.
-The [profile inputs](https://github.com/LioRael/lenso-examples/blob/49bcd409dd9dae99d10d2b9e72837b596794af87/fixtures/ops-reference/qualification/profile-inputs.json) preserve the historical Core `c046`, Builder `bb30` and Console `dbea`
+The pinned [qualification index](https://github.com/LioRael/lenso-examples/tree/97d6a26be73faaad01f448207457de46b587e209/fixtures/ops-reference/qualification/README.md) links each retained receipt.
+The [current source boundary](https://github.com/LioRael/lenso-examples/blob/97d6a26be73faaad01f448207457de46b587e209/fixtures/ops-reference/qualification/current-source.md) records the published 35-package release, later source candidates and
+actual latest-source Cloudflare qualification. It also links the fresh
+[23-case Native Human proof](https://github.com/LioRael/lenso-examples/blob/97d6a26be73faaad01f448207457de46b587e209/fixtures/ops-reference/qualification/receipts/latest-119b-human-native-proof.json) and
+[14-case independent Agent proof](https://github.com/LioRael/lenso-examples/blob/97d6a26be73faaad01f448207457de46b587e209/fixtures/ops-reference/qualification/receipts/latest-119b-agent-owner-proof.json). The Agent `bec995` executable and Core `119b` target App retain
+separate locked library and build identities. Six concurrent Console session
+probes do not qualify a new browser run. The remote Core `119b` / Console `ed1`
+graph has its own source, artifact, operation and cleanup receipts.
+The [profile inputs](https://github.com/LioRael/lenso-examples/blob/97d6a26be73faaad01f448207457de46b587e209/fixtures/ops-reference/qualification/profile-inputs.json) preserve the historical Core `c046`, Builder `bb30` and Console `dbea`
 profile separately. Local and deployed Workers Management, business-only D1 and
 Native browser proofs remain distinct. Historical provenance is a receipt
 record, not a portable private setup or an alternative `prepare.py` recipe.
