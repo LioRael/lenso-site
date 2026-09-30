@@ -15,7 +15,9 @@ Resolved App Plan。[Plugin Root](/docs/zh/core/plugin-composition)保存可见�
 | Subject | 选定 Auth authority 建立的身份。Token 字符串不是主体。 |
 | Audience | Assertion 面向的资源或精确 Capability operation。OAuth resource audience 与 Lenso operation audience 是不同边界。 |
 | Credential ceiling | 已验证凭证可行使的部署、permission 和 resource scope 上限。当前凭证状态与当前 grant 只能进一步收窄它。 |
+| 受限任务委派 | Account Owner 签发的子凭证，绑定任务、Agent Session 和精确 Delegate Caller。它保留原 Subject、收窄权限，并跟随父 Session 当前的过期、撤销和权限上限；不能用于人类审批或个人 Token 签发。 |
 | Grant | Access Control 针对 subject、permission 和 owner scope 的授权决定。认证建立身份，grant 允许具体动作。 |
+| Host facility selection | Host 显式配置允许哪个 Plugin Instance 和 Slot 接收私有 Binding。它不会授予 Subject 操作权限，也不会改变数据库权限。 |
 | Approval | Approval owner 针对不可变 operation intent 的决定。Entry、schema、参数、目标 revision 或 scope 改变后，旧批准意图失效。 |
 | Invocation receipt | Owner 持久记录的已接受操作及其结果。`unknown` 需要核对，不能证明失败或授权重放。 |
 | Audit event | Audit 与操作 owner 持有的归因记录。真实 caller provenance 来自已接受调用，不由用户伪造。 |

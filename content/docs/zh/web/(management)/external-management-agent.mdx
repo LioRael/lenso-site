@@ -8,6 +8,45 @@ draft: true
 下完成受限读取、显式审批写入，并在凭证撤销后拒绝请求。MCP SDK Transport Fixture
 与 ToolProvider 测试只证明组件，不等于完整旅程。
 
+## 先运行客户端，再考虑模型
+
+进入选定 [Lenso Examples](https://github.com/LioRael/lenso-examples) checkout 的
+`fixtures/ops-reference`，用 `python3 prepare.py --cache candidate-tools`
+准备精确 CLI。默认候选 Profile 不依赖 Console，提供只读 MCP Catalog：
+
+```sh
+python3 verify_management.py --cli /absolute/path/from/tools.json/lenso \
+  --database-url-file /private/path/test-postgres-uri \
+  --audit-url-file /private/path/test-audit-postgres-uri \
+  --receipt management-receipt.json
+```
+
+增加 `--mcp-write` 才显式选择一个必须审批的写 Entry。真实 SDK Client 查询 Pending
+Operation，等待另一人的决定，再继续原请求一次。Fixture 的私有 Bootstrap/Enrollment
+路径提供凭证，不要求 Console，也不暴露通用 Token Mint 命令。保留不确定结果，
+先查稳定回执再采取其他行动。
+
+独立 Agent 旅程先完成[人类 Profile](/docs/zh/web/operators-auth)。Checkout
+`project/app/management/tools/Cargo.toml` 选定的精确 Agent Revision；
+`build_agent.py` 会拒绝不同版本或存在修改的源码：
+
+```sh
+python3 build_agent.py --source /absolute/path/to/selected-agent-checkout \
+  --executable /absolute/path/to/management_task \
+  --receipt /absolute/path/to/agent-build.json
+python3 verify_agent.py --directory /private/path/completed-human-profile \
+  --human-receipt human-receipt.json --cli /absolute/path/from/tools.json/lenso \
+  --executable /absolute/path/to/management_task \
+  --executable-provenance /absolute/path/to/agent-build.json \
+  --prepare-task /absolute/path/to/selected-agent-checkout/crates/lenso-agent-management-connection-plugin/examples/prepare_task.py \
+  --receipt agent-receipt.json
+```
+
+候选 Verifier 在人类 Console 仍运行时，用真实 Account 签发的 Child 启动独立 Agent
+进程，检查精确 Task Binding、Hidden/Changed Tool 拒绝、Pending Status 恢复和
+父 Session Logout 后的拒绝。它选择确定性 Fixture Model，不启动真实模型。
+本页发布前仍需保留共同运行的 Owner 回执。
+
 ## 选择管理 Server
 
 应用管理 MCP Server 与 Console、Agent Adapter 使用同一个 Management Guard
@@ -41,6 +80,22 @@ MCP 和 Agent Adapter 不把缓存 Grant 当最终权威，不绕过实时检查
 真实 SDK Client 可以在不启动模型的情况下验证管理 Transport。Agent 可以通过
 类型化 Port 消费 ToolProvider，它仍是同一 Guard 的另一投影，不是独立权限系统。
 Coding、File、Shell Tool 保留各自 Opt-in 边界，不会默认变成业务管理 Tool。
+
+独立 Agent 进程使用候选 Account 操作 `grant_scoped`，从当前已验证的父 Session
+签发短期子凭证，绑定任务、Agent Session、Delegate Caller、Deployment、Permission
+和 Resource。请求不接受 Subject 或父凭证，重放只返回 Metadata，不再次返回 Secret。
+服务端每次调用都检查父 Session 当前撤销状态与已签名 Binding。
+
+Agent 选定的 Native Connection 只从 Owner-only 凭证文件读取这份新的不透明子凭证。
+Host 固定 Origin 和精确任务 Binding。可选的 `/agent/management` 路由让同一 App
+同时提供浏览器 Cookie 入口，并显式接纳委派 Bearer。浏览器 Cookie、原 MCP Bearer
+和 Issuer Private Key 不转交 Agent，也不投射进模型参数。
+
+确定性候选通过普通 Agent Host 配置路径选择 Fixture Model、Loop、持久 Session 和
+Management Tool，不选择 Coding、Filesystem 或任意 Network Tool。Transport 回执
+证明已接受 Operation Reference 的重启恢复，以及 Unknown 写入不重放；真实 Auth
+签发和父 Session 撤销仍需独立 App 回执。真实模型交互验收由 Owner 暂缓，状态为
+`not_run`。
 
 Console 是可选的，但无 Console 的凭证/Bootstrap 命令仍需 Owner 验收步骤。本页
 不声称存在通用 Token Minting CLI。精确源码 App、Setup、Bootstrap、Client 连接、

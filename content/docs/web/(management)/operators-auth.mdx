@@ -10,6 +10,41 @@ admitted operators session can issue a scoped personal API token. Native owner
 PostgreSQL fixtures are evidence for their components, not a completed browser
 login journey or Workers management assembly.
 
+## Run the candidate Native journey
+
+Use the selected [Lenso Examples](https://github.com/LioRael/lenso-examples)
+checkout and work in `fixtures/ops-reference`. Its `candidate-inputs.json`
+records the exact source cohort; `prepare.py` builds that CLI without replacing
+your global installation:
+
+```sh
+python3 prepare.py --cache candidate-tools
+python3 verify_human.py --cli /absolute/path/from/tools.json/lenso \
+  --database-url-file /private/path/test-postgres-uri \
+  --audit-url-file /private/path/test-audit-postgres-uri \
+  --receipt human-receipt.json
+```
+
+Use authorized test databases and keep the URI files private. The helper runs
+operator migrations and enrollment through actual Password, Account and Access
+Control Plugins; it does not insert session or approval facts directly. It
+checks login, CSRF and Origin admission, current ceilings, distinct approval,
+personal-token issuance and revocation, logout and Host restart. The raw token
+appears once and is excluded from the saved receipt.
+
+For the rendered browser journey, add `--public-origin http://localhost:53231`
+and `--browser-ready-file /private/path/browser-ready.json`. Follow the selected
+fixture README to start that exact Console checkout and use separate requester
+and approver browser contexts. Mark its completion file passed only after the
+actual interactions succeed. The [Console guide](/docs/web/controlled-console)
+describes the approval and installation boundary.
+
+These are candidate verification commands. The ordinary source App and browser
+receipts remain this page's publication gate. If initial compilation fails,
+preserve the helper's owned directory; resume only before enrollment starts.
+After an uncertain enrollment or issuance, inspect the stable receipt before
+any further action. Remove only the resources created for your test.
+
 ## Choose the authority, then the session
 
 App and operators realms select trusted issuer/public key, audience and session

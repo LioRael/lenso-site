@@ -17,6 +17,7 @@ comes from `candidate-tools/tools.json`. From `fixtures/ops-reference/`:
 
 ```sh
 /absolute/path/to/lenso app build --root project --target workers \
+  --wasm-bindgen /absolute/path/to/wasm-bindgen \
   --workers-runtime /absolute/path/to/candidate-tools/workers-runtime/package \
   --workers-facilities profiles/simulated-workers.json \
   --workers-host-limits profiles/workers-host-limits.json \
@@ -92,7 +93,8 @@ This uses local D1 emulation. Deploy only to your authorized test Worker and
 databases, then verify the remote URL:
 
 ```sh
-python3 verify.py --cli /absolute/path/to/lenso --url https://your-test-worker.example \
+LENSO_REFERENCE_HTTP_TRANSPORT=node python3 verify.py \
+  --cli /absolute/path/to/lenso --url https://your-test-worker.example \
   --artifact dist-d1 --profile workers-d1 --infrastructure cloudflare \
   --receipt d1-remote-receipt.json
 ```
@@ -102,6 +104,9 @@ one committed concurrent CAS with one stale result. Restart workerd or redeploy
 the same artifact without resetting databases, then add `--after-restart`
 to read prior state and the original receipt. Retain build, local, remote and
 restart receipts separately.
+
+The remote command explicitly selects the owner's single-request Node fetch
+transport. It does not retry or switch transports after a dispatched write.
 
 ## Handle an uncertain outcome
 

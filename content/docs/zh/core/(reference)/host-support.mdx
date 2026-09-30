@@ -12,6 +12,7 @@ description: 分清已发布工具、源码候选、真实数据库证明和部�
 | --- | --- | --- |
 | `@lenso/cli` | `0.17.3` | 已发布的 npm launcher。 |
 | Native `lenso --version` | `0.6.3` | Native CLI 版本，与 npm launcher 独立。 |
+| 选定的源码 CLI | `0.6.4` | 由 Owner 精确 `candidate-inputs.json` 构建的源码候选；npm 发布另行记录。 |
 | `lenso` Rust facade | `0.5.27` | 已发布的 Rust 包。 |
 | `@lenso/workers-runtime` 源码候选 | `0.1.6` | 事件范围 facility 接入候选；registry 发布是另一件事。 |
 
@@ -50,10 +51,10 @@ Capability 选择分开处理。
 
 Owner 校验自己的 facility 配置，并在 App Ready 前准备选定后端。启动不执行 DDL 或
 迁移数据。Operator setup 必须显式进行；更换 binding 不会搬运业务状态。保存的选择
-失效时应拒绝，而不是选择新资源列表的第一项。只有 owner 接受显式 `none` grant 时，
+失效时应拒绝，而不是选择新资源列表的第一项。只有 owner 接受显式 `none` 依赖选择时，
 可选 cache 才为空；不能根据注册顺序推断。
 
-Host grant 限定可信 owner 获得哪些输入，不会沙箱化 Native 代码或替代数据库权限。
+Facility 选择限定可信 owner 获得哪些输入，不会沙箱化 Native 代码或替代数据库权限。
 Hyperdrive 提供到 PostgreSQL 的连接路径。KV 只适合 owner 允许陈旧的数据，不能替代
 权威会话撤销或原子 challenge 消费。
 

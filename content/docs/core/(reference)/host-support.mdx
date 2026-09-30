@@ -13,6 +13,7 @@ management operation. Keep each result attached to its source and artifact.
 | --- | --- | --- |
 | `@lenso/cli` | `0.17.3` | Published npm launcher. |
 | Native `lenso --version` | `0.6.3` | Native CLI version, independent of the npm launcher. |
+| Selected source-built CLI | `0.6.4` | Source candidate built by the owner's exact `candidate-inputs.json`; npm publication is separate. |
 | `lenso` Rust facade | `0.5.27` | Published Rust package. |
 | `@lenso/workers-runtime` source candidate | `0.1.6` | Candidate event-scoped facility support; registry publication is separate. |
 
@@ -62,9 +63,9 @@ backend before the App becomes Ready. Startup does not run DDL or migrate
 data. Operator setup is explicit; changing a binding does not move business
 state. A missing saved selection fails rather than selecting the first new
 resource. An optional cache is absent only when its owner accepts an explicit
-`none` grant; it is not inferred from registration order.
+`none` dependency choice; it is not inferred from registration order.
 
-Host grants select what a trusted owner receives. They do not sandbox native
+Facility selections determine what a trusted owner receives. They do not sandbox native
 code or replace database privileges. Hyperdrive supplies a connection path to
 PostgreSQL. KV can hold data whose owner permits staleness; it does not replace
 authoritative session revocation or atomic challenge consumption.

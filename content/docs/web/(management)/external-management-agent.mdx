@@ -9,6 +9,50 @@ receipt. Its result will be a scoped read, an explicitly approved write and
 denial after credential revocation, without requiring Console. MCP SDK transport
 fixtures and ToolProvider tests are component proofs, not that complete journey.
 
+## Run a client before starting a model
+
+In the selected [Lenso Examples](https://github.com/LioRael/lenso-examples)
+checkout, enter `fixtures/ops-reference` and prepare the exact CLI with
+`python3 prepare.py --cache candidate-tools`. The default candidate profile
+exposes a read-only MCP catalog without Console:
+
+```sh
+python3 verify_management.py --cli /absolute/path/from/tools.json/lenso \
+  --database-url-file /private/path/test-postgres-uri \
+  --audit-url-file /private/path/test-audit-postgres-uri \
+  --receipt management-receipt.json
+```
+
+Adding `--mcp-write` explicitly selects one approval-required write entry. Its
+real SDK client queries the pending operation, waits for a distinct human
+decision and continues the original request once. The fixture's private
+bootstrap/enrollment path supplies the credential; it does not require Console
+or expose a general token-minting command. Preserve uncertain outcomes and
+query their stable receipts before taking another action.
+
+For the independent Agent journey, first complete the
+[human profile](/docs/web/operators-auth). Check out the exact Agent revision
+selected in `project/app/management/tools/Cargo.toml`; `build_agent.py` refuses
+a different or modified source checkout:
+
+```sh
+python3 build_agent.py --source /absolute/path/to/selected-agent-checkout \
+  --executable /absolute/path/to/management_task \
+  --receipt /absolute/path/to/agent-build.json
+python3 verify_agent.py --directory /private/path/completed-human-profile \
+  --human-receipt human-receipt.json --cli /absolute/path/from/tools.json/lenso \
+  --executable /absolute/path/to/management_task \
+  --executable-provenance /absolute/path/to/agent-build.json \
+  --prepare-task /absolute/path/to/selected-agent-checkout/crates/lenso-agent-management-connection-plugin/examples/prepare_task.py \
+  --receipt agent-receipt.json
+```
+
+This candidate verifier uses a real Account-issued child in a separate Agent
+process while the human Console remains live. It checks exact task binding,
+hidden/changed tool rejection, pending-status recovery and denial after parent
+logout. It selects a deterministic fixture Model; it does not run a real model.
+The joint owner receipt remains required before this tutorial is published.
+
 ## Select the management server
 
 An application management MCP server exposes owner operations through the same
@@ -55,6 +99,28 @@ An Agent may consume the ToolProvider through a typed port; that is another
 projection of the same guard, rather than an independent permission system.
 Coding, file and shell tools retain separate opt-in boundaries and do not
 become business management tools by default.
+
+For an independent Agent process, the candidate Account operation
+`grant_scoped` issues a short-lived child credential from the currently verified
+parent session. It binds the task, Agent Session, delegate caller, deployment,
+permissions and resources. Its request accepts no subject or parent credential;
+replay returns metadata rather than the secret. The server checks current parent
+revocation and the signed binding on every call.
+
+The Agent's selected Native connection reads only that new opaque child from an
+owner-only credential file. Its Host fixes the origin and exact task binding.
+The optional `/agent/management` routes let the same App serve browser Cookie
+routes while keeping delegated Bearer admission explicit. Browser cookies,
+the original MCP bearer and issuer private keys are never forwarded to the
+Agent or projected into model arguments.
+
+The deterministic candidate selects fixture Model, Loop, durable Session and
+Management tools through the normal Agent Host configuration path. It selects
+no coding, filesystem or arbitrary network tool. Its transport receipt proves
+restart recovery of an accepted operation reference and no replay of an
+unknown write; real Auth issuance and parent revocation need the separate
+application receipt. Real-model interaction acceptance is `not_run` at the
+owner's request.
 
 Console is optional, but a no-Console credential/bootstrap command needs its
 own owner-qualified recipe. No universal token-minting CLI is claimed here.

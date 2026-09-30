@@ -8,6 +8,35 @@ draft: true
 operators Session 创建受限个人 API Token。Native Owner 的真实 PG Fixture 证明组件
 边界，不等于完成浏览器登录旅程或 Workers 管理装配。
 
+## 执行候选 Native 旅程
+
+使用选定的 [Lenso Examples](https://github.com/LioRael/lenso-examples) checkout，
+进入 `fixtures/ops-reference`。`candidate-inputs.json` 记录精确源码组合，
+`prepare.py` 构建该 CLI，不替换全局安装：
+
+```sh
+python3 prepare.py --cache candidate-tools
+python3 verify_human.py --cli /absolute/path/from/tools.json/lenso \
+  --database-url-file /private/path/test-postgres-uri \
+  --audit-url-file /private/path/test-audit-postgres-uri \
+  --receipt human-receipt.json
+```
+
+使用已授权的测试数据库，URI 文件保持私有。Helper 通过真实 Password、Account 和
+Access Control Plugin 执行 Operator Migration 与 Enrollment，不直接写入 Session
+或审批事实。它检查登录、CSRF/Origin 准入、当前权限上限、不同人审批、个人 Token
+签发与撤销、Logout 及 Host 重启。原始 Token 只出现一次，不进入保存的回执。
+
+浏览器旅程增加 `--public-origin http://localhost:53231` 与
+`--browser-ready-file /private/path/browser-ready.json`。按选定 Fixture README
+启动精确 Console checkout，请求人和审批人使用不同浏览器 Context。实际交互通过后
+才将 Completion File 标为 passed。[Console 指南](/docs/zh/web/controlled-console)
+说明审批与安装边界。
+
+这些是候选验证命令；普通源码 App 和浏览器回执仍是本页发布门槛。首次编译失败时
+保留 Helper 的自有目录，仅在 Enrollment 尚未开始时恢复构建。Enrollment 或签发
+结果不确定时先检查稳定回执，再采取下一步。只清理由本次测试创建的资源。
+
 ## 先选择 Authority，再选择 Session
 
 App 与 operators Realm 分别选择可信 Issuer/Public Key、Audience 和 Session 策略。

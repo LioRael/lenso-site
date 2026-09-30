@@ -16,7 +16,9 @@ Those concepts apply to a business App and to an optional management surface.
 | Subject | The identity established by the selected Auth authority. A token string is not a subject. |
 | Audience | The intended resource or exact Capability operation of an assertion. An OAuth resource audience is separate from a Lenso operation audience. |
 | Credential ceiling | The maximum deployment, permissions and resource scopes that a verified credential may exercise. Current credential state and current grants can narrow it. |
+| Scoped task delegation | An Account-owned child credential bound to a task, Agent Session and exact delegate caller. It preserves the original subject, narrows authority and follows the current parent session's expiry, revocation and ceiling. It cannot authorize a human approval or personal-token issuance. |
 | Grant | An Access Control decision for a subject, permission and owner-defined scope. Authentication establishes identity; a grant permits a particular action. |
+| Host facility selection | An explicit Host configuration admitting one private binding to a Plugin Instance and slot. It neither grants a subject permission nor changes the database's privileges. |
 | Approval | A decision owned by Approval for immutable operation intent. An entry, schema, parameters, target revision or scope change invalidates the approved intent. |
 | Invocation receipt | An owner's durable account of an accepted operation and its result. `unknown` requires reconciliation; it does not prove failure or authorize replay. |
 | Audit event | An attributed record owned by Audit and the operation owner. Its caller provenance comes from the accepted invocation, not user-supplied attribution. |

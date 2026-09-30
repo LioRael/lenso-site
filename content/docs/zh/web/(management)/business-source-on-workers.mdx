@@ -16,6 +16,7 @@ draft: true
 
 ```sh
 /absolute/path/to/lenso app build --root project --target workers \
+  --wasm-bindgen /absolute/path/to/wasm-bindgen \
   --workers-runtime /absolute/path/to/candidate-tools/workers-runtime/package \
   --workers-facilities profiles/simulated-workers.json \
   --workers-host-limits profiles/workers-host-limits.json \
@@ -84,7 +85,8 @@ python3 verify.py --cli /absolute/path/to/lenso --url http://127.0.0.1:8787 \
 这使用本地 D1 模拟。只部署到获授权的测试 Worker 和数据库，再验证远端 URL：
 
 ```sh
-python3 verify.py --cli /absolute/path/to/lenso --url https://your-test-worker.example \
+LENSO_REFERENCE_HTTP_TRANSPORT=node python3 verify.py \
+  --cli /absolute/path/to/lenso --url https://your-test-worker.example \
   --artifact dist-d1 --profile workers-d1 --infrastructure cloudflare \
   --receipt d1-remote-receipt.json
 ```
@@ -92,6 +94,8 @@ python3 verify.py --cli /absolute/path/to/lenso --url https://your-test-worker.e
 预期配置隔离、同 Key 重放、不同 Intent 冲突、并发 CAS 一个提交一个过时。
 不重置数据库，重启 Workerd 或重部署同一 Artifact，再加 `--after-restart` 读取原状态
 与回执。构建、本地、远端和重启回执分别保存。
+
+远端命令显式选择 Owner 的单次 Node Fetch 传输；派发写入后不自动重试或切换传输。
 
 ## 处理不确定结果
 

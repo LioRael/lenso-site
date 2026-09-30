@@ -24,6 +24,22 @@ python3 prepare.py --cache candidate-tools
 与 JavaScript；`candidate-tools/tools.json` 记录 CLI 路径与摘要。下文使用其中的
 绝对 `cli` 路径。脚本不会改变全局 CLI，也不要求相邻仓库 Checkout。
 
+## 生成第一个 Web Plugin
+
+使用准备好的可执行文件创建独立 Starter：
+
+```sh
+/absolute/path/to/lenso app create starter --web --no-install
+/absolute/path/to/lenso app build --root starter --out starter-dist
+/absolute/path/to/lenso app check --root starter-dist
+/absolute/path/to/lenso app start --from starter-dist
+```
+
+在打印的 HTTP 地址访问 `/`，确认生成的 HTML 能正常返回。Starter 拥有
+`app/local.starter/`；CLI 生成 Plugin Root 和 Host，它没有待配置的 Owner Facility。
+停止该 Host，再使用下文 Reference 的 `project`，为 HTTP Endpoint 加入类型化业务
+依赖。Reference 包含源码、精确选择和 Backend Setup，用于验证本篇的持久业务更新。
+
 ## 构建并读取两个 Instance
 
 ```sh

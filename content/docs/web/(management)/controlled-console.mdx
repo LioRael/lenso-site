@@ -10,6 +10,48 @@ auditable domain receipt, followed by a working business App with Console
 disabled. A rendered page or an owner-only PostgreSQL test does not complete
 this journey.
 
+## Prepare the source App and its proofs
+
+From the selected [Lenso Examples](https://github.com/LioRael/lenso-examples)
+checkout's `fixtures/ops-reference`, build the exact CLI with
+`python3 prepare.py --cache candidate-tools`. Use the executable recorded in
+`candidate-tools/tools.json` and authorized private test-database URI files:
+
+```sh
+python3 verify_management.py --cli /absolute/path/from/tools.json/lenso \
+  --database-url-file /private/path/test-postgres-uri \
+  --audit-url-file /private/path/test-audit-postgres-uri \
+  --receipt management-receipt.json
+```
+
+This candidate assembly uses ordinary CLI discovery and saved named dependency
+choices. Bootstrap is removed before the final build. Its verifier deletes the
+source before startup, then checks admission, approval, business receipts,
+audit attribution and restart. It preserves the owned directory for inspection;
+do not repeat bootstrap after an uncertain response.
+
+Run the [operators authentication journey](/docs/web/operators-auth) with its
+browser-ready options to obtain a real human Console receipt. Use distinct
+browser contexts to request and approve the same immutable intent, then inspect
+the committed result. PAT secrets must disappear after hide or unmount and
+must not enter persistent browser storage.
+
+Installation removal uses the same completed API, human and real delegated
+Agent receipts:
+
+```sh
+python3 verify_installations.py --cli /absolute/path/from/tools.json/lenso \
+  --api-root /private/path/completed-api-profile \
+  --human-root /private/path/completed-human-profile \
+  --api-receipt management-receipt.json --human-receipt human-receipt.json \
+  --agent-receipt agent-receipt.json --receipt installations-receipt.json
+```
+
+The installation verifier rejects a fake transport credential as Agent proof.
+It checks selected compositions and removal without changing the business
+state. These candidate commands do not claim completed qualification; retained
+source App, browser and joint Agent receipts are required for publication.
+
 ## Select the optional surface
 
 The existing [App Console](/docs/core/app-console) guide describes the separately

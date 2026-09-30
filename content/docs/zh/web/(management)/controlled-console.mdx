@@ -8,6 +8,43 @@ draft: true
 业务更新并保留可审计领域回执，再关闭 Console 确认业务 App 仍可运行。页面渲染或
 Owner 独立 PG 测试不能完成这条旅程。
 
+## 准备源码 App 及其回执
+
+进入选定 [Lenso Examples](https://github.com/LioRael/lenso-examples) checkout 的
+`fixtures/ops-reference`，用 `python3 prepare.py --cache candidate-tools`
+构建精确 CLI。使用 `candidate-tools/tools.json` 中的可执行文件，以及已授权、
+私有保存的测试数据库 URI 文件：
+
+```sh
+python3 verify_management.py --cli /absolute/path/from/tools.json/lenso \
+  --database-url-file /private/path/test-postgres-uri \
+  --audit-url-file /private/path/test-audit-postgres-uri \
+  --receipt management-receipt.json
+```
+
+候选装配使用普通 CLI Discovery 和保存的具名依赖选择；最终构建前移除 Bootstrap。
+Verifier 启动前删除源码，再检查准入、审批、领域回执、Audit 来源和重启。它保留
+自有目录供检查；响应不确定时不要重复 Bootstrap。
+
+按 [operators 认证旅程](/docs/zh/web/operators-auth) 增加 Browser-ready 选项，
+取得真实人类 Console 回执。用不同浏览器 Context 请求、审批同一不可变 Intent，
+然后查看提交结果。PAT Secret 在 Hide 或 Unmount 后必须消失，不能进入浏览器
+持久存储。
+
+安装与移除验证复用已完成的 API、人类和真实委派 Agent 回执：
+
+```sh
+python3 verify_installations.py --cli /absolute/path/from/tools.json/lenso \
+  --api-root /private/path/completed-api-profile \
+  --human-root /private/path/completed-human-profile \
+  --api-receipt management-receipt.json --human-receipt human-receipt.json \
+  --agent-receipt agent-receipt.json --receipt installations-receipt.json
+```
+
+Installation Verifier 不接受假传输凭证作为 Agent 证明。它检查选定组合与移除，
+并确认业务状态未改变。这些候选命令不代表资格已完成；发布前必须保留普通源码 App、
+浏览器和共同运行 Agent 的回执。
+
 ## 选择可选 Surface
 
 现有 [App Console](/docs/zh/core/app-console)描述单独验收的开发套件与 Contribution
