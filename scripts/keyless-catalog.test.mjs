@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { admitCatalog, normalizeCatalog, validateCurrent, fetchBounded } from './keyless-catalog.mjs';
 import { digest } from './keyless-publisher/verify.mjs';
-import { matchesVerifiedHead, confirmVerifiedHead, marketplaceCommand } from './keyless-currentness.mjs';
+import { matchesVerifiedHead, confirmVerifiedHead, marketplaceCommand, supportsLinkedAdoption } from './keyless-currentness.mjs';
 import { validatePublishedCatalogProof } from './published-catalog-proof.mjs';
 
 // Public attested migration input. The descriptor below is a fixture, not a live currentness receipt.
@@ -93,6 +93,24 @@ test('normal four-channel commands retain quoted distribution and content choice
   ]) assert.equal(marketplaceCommand(command), command);
   const quoted = "lenso app add lenso.example@1.0.0 --marketplace --distribution 'publisher'\\''s package'";
   assert.equal(marketplaceCommand(quoted), quoted);
+});
+
+test('linked adoption accepts exact official crate URL, preserving Host-only and legacy boundaries', () => {
+  const linked = normalizeCatalog(first.catalog, head).linked.releases;
+  const secrets = linked.find(release => release.pluginId === 'lenso.secrets.env');
+  assert.equal(secrets.registryUrl, 'https://crates.io/crates/lenso-secrets-env-plugin/0.1.7');
+  assert.equal(supportsLinkedAdoption(secrets), true);
+  assert.equal(supportsLinkedAdoption({ ...secrets, registryUrl: 'https://crates.io' }), true);
+  assert.equal(supportsLinkedAdoption(linked.find(release => release.pluginId === 'lenso.web-ingress')), false);
+  assert.equal(supportsLinkedAdoption({ ...secrets, integration: 'host_provided' }), false);
+  for (const registryUrl of [
+    'https://crates.io.evil/crates/lenso-secrets-env-plugin/0.1.7',
+    'https://crates.io/crates/other/0.1.7',
+    'https://crates.io/crates/lenso-secrets-env-plugin/0.1.6',
+    'https://crates.io/crates/lenso-secrets-env-plugin/0.1.7?redirect=elsewhere',
+    'https://crates.io/crates/lenso-secrets-env-plugin/0.1.7/',
+    'http://crates.io/crates/lenso-secrets-env-plugin/0.1.7',
+  ]) assert.equal(supportsLinkedAdoption({ ...secrets, registryUrl }), false);
 });
 
 test('published directory requires exact keyless proof and generated metadata, preserving legacy mode', () => {

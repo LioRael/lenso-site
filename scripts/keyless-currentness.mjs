@@ -1,5 +1,11 @@
 export const canonicalCurrentUrl = 'https://marketplace.lenso.dev/api/marketplace/v3/current';
 
+export function supportsLinkedAdoption(release) {
+  return release.integration === 'linked_plugin'
+    && (release.registryUrl === 'https://crates.io'
+      || release.registryUrl === `https://crates.io/crates/${release.package}/${release.version}`);
+}
+
 export function matchesVerifiedHead(head, provenance) {
   return head?.schema === 'lenso.marketplace.keyless-current.v1'
     && head.catalog_id === 'lenso-official-v2' && head.catalog_id === provenance.catalogId

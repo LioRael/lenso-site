@@ -9,6 +9,7 @@ import { PluginDocumentTools } from '@/components/plugin-document-tools';
 import { SiteHeader } from '@/components/site-header';
 import { candidateRelease, signedLinkedCatalog, signedPortableCatalog, signedPackageCatalog, signedReleaseContent, type SignedLinkedRelease, type SignedPortableRelease, type SignedPackageRelease, type SignedReleaseContent } from '@/lib/plugin-candidates';
 import { linkedDocumentPath, linkedReleasePath } from '@/lib/linked-document-paths';
+import { supportsLinkedAdoption } from '@/scripts/keyless-currentness.mjs';
 
 type Params = Promise<{ pluginId: string; version: string }>;
 
@@ -83,7 +84,7 @@ function SignedReleasePage({ release, portable, packageRelease }: {
   release: SignedLinkedRelease; portable?: SignedPortableRelease; packageRelease?: SignedPackageRelease;
 }) {
   const otherVersions = signedLinkedCatalog.releases.filter((item) => item.pluginId === release.pluginId && item.version !== release.version);
-  const genericAdoption = release.integration === 'linked_plugin' && release.registryUrl === 'https://crates.io';
+  const genericAdoption = supportsLinkedAdoption(release);
   const adoptCommand = signedLinkedCatalog.provenance
     ? `lenso app add ${release.pluginId}@${release.version} --marketplace`
     : `lenso app add ${release.pluginId}@${release.version} --linked-snapshot ./linked-cargo-snapshot.json --trust ./catalog-trust.json --crate ./${release.package}-${release.version}.crate`;
