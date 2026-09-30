@@ -84,7 +84,9 @@ function SignedReleasePage({ release, portable, packageRelease }: {
 }) {
   const otherVersions = signedLinkedCatalog.releases.filter((item) => item.pluginId === release.pluginId && item.version !== release.version);
   const genericAdoption = release.integration === 'linked_plugin' && release.registryUrl === 'https://crates.io';
-  const adoptCommand = `lenso app add ${release.pluginId}@${release.version} --linked-snapshot ./linked-cargo-snapshot.json --trust ./catalog-trust.json --crate ./${release.package}-${release.version}.crate`;
+  const adoptCommand = signedLinkedCatalog.provenance
+    ? `lenso app add ${release.pluginId}@${release.version} --marketplace`
+    : `lenso app add ${release.pluginId}@${release.version} --linked-snapshot ./linked-cargo-snapshot.json --trust ./catalog-trust.json --crate ./${release.package}-${release.version}.crate`;
   return <div className="linked-release-shell">
     <SiteHeader active="plugins" />
     <main className="linked-doc-main">
@@ -120,7 +122,7 @@ function SignedReleasePage({ release, portable, packageRelease }: {
       <section className="linked-release-section" aria-labelledby="adoption-heading">
         <h2 id="adoption-heading">{portable ? 'Adopt the linked Cargo distribution' : 'Adopt this exact version'}</h2>
         {genericAdoption ? <>
-          {signedLinkedCatalog.provenance ? <p>Use the official Marketplace command in your own project. The CLI verifies provenance, current status, Host target and the exact archive before changing your App.</p> : <p>Download the signed snapshot, its independently trusted public-key configuration and the exact registry <code>.crate</code> to your own project. The CLI checks the signature, validity window, Host target, archive digest and package identity before changing your App.</p>}
+          {signedLinkedCatalog.provenance ? <p>Use the official Marketplace command in your own project. The CLI fetches the exact registry archive and verifies provenance, current status, Host target, archive digest and package identity before changing your App. Review source and build scripts before authorizing a local build.</p> : <p>Download the signed snapshot, its independently trusted public-key configuration and the exact registry <code>.crate</code> to your own project. The CLI checks the signature, validity window, Host target, archive digest and package identity before changing your App.</p>}
           <AdoptionCommandPanel status={release.status} command={adoptCommand} expirations={[signedLinkedCatalog.expiresAt]} />
           <p>This is a local Host build input, not a portable runtime bundle. Inspect the resolved App and build/check it before use. The Site cannot grant local filesystem access.</p>
         </> : <p>This release requires a product Host-specific integration or a registry unsupported by generic <code>lenso app add</code>. Do not use the generic adoption command.</p>}
@@ -209,7 +211,7 @@ function SignedContentOnlyPage({ pluginId, version }: { pluginId: string; versio
       <PluginDocumentTools pluginId={pluginId} version={version} />
       <aside className="linked-doc-provenance">
         <strong>Signed content reference, not an installation</strong>
-        <p>The content snapshot was verified when Site was built. Its self-bound identity covers this exact Plugin ID, version, publisher metadata, versioned documentation, and ordered archive references. Reverify the signature and archive bytes locally before copying any files.</p>
+        {signedReleaseContent.provenance ? <p>The publishing workflow attests this exact Plugin ID, version, publisher metadata, documentation and archive references. The CLI fetches and verifies the current catalog and exact archive before copying any files.</p> : <p>The content snapshot was verified when Site was built. Its self-bound identity covers this exact Plugin ID, version, publisher metadata, versioned documentation, and ordered archive references. Reverify the signature and archive bytes locally before copying any files.</p>}
         <ProvenanceFacts items={[
           ['Plugin ID', <code key="id">{pluginId}</code>],
           ['Version', version],
@@ -234,13 +236,15 @@ function SignedContentOnlyPage({ pluginId, version }: { pluginId: string; versio
 }
 
 function PortableAdoption({ release, alongsideLinked = false }: { release: SignedPortableRelease; alongsideLinked?: boolean }) {
-  const adoptCommand = `lenso app add ${release.pluginId}@${release.version} --portable-snapshot ./portable-snapshot.json --trust ./catalog-trust.json --archive ./exact-release.lenso-plugin`;
+  const adoptCommand = signedPortableCatalog.provenance
+    ? `lenso app add ${release.pluginId}@${release.version} --marketplace`
+    : `lenso app add ${release.pluginId}@${release.version} --portable-snapshot ./portable-snapshot.json --trust ./catalog-trust.json --archive ./exact-release.lenso-plugin`;
   return <section className="linked-release-section" aria-labelledby="portable-adoption-heading">
     <h2 id="portable-adoption-heading">{alongsideLinked ? 'Adopt the Portable distribution' : 'Adopt this exact Portable version'}</h2>
-    {signedPortableCatalog.provenance ? <p>Use a CLI release supporting official Marketplace adoption. It verifies provenance, current release status and the exact Portable archive. Review the target, runtime and permissions; a native Process Bundle runs trusted code without a sandbox.</p> : <p>Use the published <code>@lenso/cli@0.17.2</code> release with native CLI <code>0.6.3</code> to adopt an independently trusted signed Portable snapshot and the exact <code>.lenso-plugin</code> archive into a source App. Review the declared target, runtime and permissions before adoption. A native Process Bundle runs trusted code without a sandbox; the local Host still checks target and permission compatibility.</p>}
-    {alongsideLinked && <p>The linked Cargo snapshot and <code>.crate</code> above do not verify this Portable Bundle. Use the Portable snapshot and archive named below.</p>}
+    {signedPortableCatalog.provenance ? <p>Use a CLI release supporting official Marketplace adoption. It fetches the exact Portable archive and verifies provenance, current release status, identity, digest and manifest. Review the target, runtime and permissions; a native Process Bundle runs trusted code without a sandbox.</p> : <p>Use the published <code>@lenso/cli@0.17.2</code> release with native CLI <code>0.6.3</code> to adopt an independently trusted signed Portable snapshot and the exact <code>.lenso-plugin</code> archive into a source App. Review the declared target, runtime and permissions before adoption. A native Process Bundle runs trusted code without a sandbox; the local Host still checks target and permission compatibility.</p>}
+    {alongsideLinked && !signedPortableCatalog.provenance && <p>The linked Cargo snapshot and <code>.crate</code> above do not verify this Portable Bundle. Use the Portable snapshot and archive named below.</p>}
     <AdoptionCommandPanel status={release.status} command={adoptCommand} expirations={[signedPortableCatalog.expiresAt]} />
-    <p><code>app add</code> checks the signature, freshness, exact identity, archive digest, and manifest before recording local source intent. Then build the App and use <code>app check</code>/<code>app show</code> on the new distribution, followed by a real Plugin call. The App owner can edit local sources; a later build checks archive drift against its local lock, not a new independent signature authority. This page records the signed release; local adoption and execution require your own review.</p>
+    <p><code>app add</code> verifies the release and archive before recording local source intent. Then build the App and use <code>app check</code>/<code>app show</code> on the new distribution, followed by a real Plugin call. The App owner can edit local sources; a later build checks archive drift against its local lock, not a new independent signature authority. This page records the signed release; local adoption and execution require your own review.</p>
   </section>;
 }
 
@@ -290,9 +294,12 @@ function PackageProvenance({ release }: { release: SignedPackageRelease }) {
 function PackageAdoption({ release }: { release: SignedPackageRelease }) {
   return <section className="linked-release-section" aria-labelledby="package-adoption-heading">
     <h2 id="package-adoption-heading">Adopt an exact npm distribution</h2>
-    <p>Choose one signed distribution, obtain its exact <code>.tgz</code> from the named registry, and verify it locally. The CLI records source intent; it does not run npm lifecycle scripts or install dependencies as part of this step. Build and check the App separately.</p>
+    {signedPackageCatalog.provenance ? <p>Choose one verified distribution. The CLI fetches its exact registry <code>.tgz</code> and checks publication proof, current status, package identity and digest. A reviewed local archive can be supplied with <code>--tgz</code>; it must match the same record.</p> : <p>Choose one signed distribution, obtain its exact <code>.tgz</code> from the named registry, and verify it locally.</p>}
+    <p>The CLI records source intent and, by default, installs locked Bun dependencies with lifecycle scripts disabled. Use <code>--no-install</code> to defer that installation. Review installed dependencies and separately authorize the exact unsandboxed build with <code>--trust-adopted-build</code>, then build and check the App.</p>
     {release.distributions.map((distribution) => {
-      const command = `lenso app add ${release.pluginId}@${release.version} --package-snapshot ./package-snapshot.json --trust ./catalog-trust.json --distribution ${shellArg(distribution.id)} --tgz ./exact-package.tgz`;
+      const command = signedPackageCatalog.provenance
+        ? `lenso app add ${release.pluginId}@${release.version} --marketplace --distribution ${shellArg(distribution.id)}`
+        : `lenso app add ${release.pluginId}@${release.version} --package-snapshot ./package-snapshot.json --trust ./catalog-trust.json --distribution ${shellArg(distribution.id)} --tgz ./exact-package.tgz`;
       return <div key={distribution.id} className="linked-release-section release-content-entry">
         <h3><code>{distribution.package}@{distribution.version}</code></h3>
         <ProvenanceFacts items={[
@@ -337,11 +344,15 @@ function ReleaseContentFor({ pluginId, version, baseKind }: {
   return <section className="linked-release-section" aria-labelledby={`release-content-${release.baseKind}`}>
     <h2 id={`release-content-${release.baseKind}`}>{release.baseKind === 'content_only' ? 'Editable source content' : 'Optional source content'}</h2>
     <CatalogCurrentness status={release.status} expirations={expirations} />
-    <p>These archive references come from a signed content snapshot for this exact {baseName} release. Site does not download or inspect the archives. Download the exact archive, review its source, and use the CLI to verify it locally. A listing does not activate an extension or install a runtime Plugin.</p>
+    {signedReleaseContent.provenance ? <p>These verified archive references belong to this exact {baseName} release. For standalone source content, the CLI fetches the exact archive and verifies its identity, digest and size before copying. Review the preview and source first. Site does not inspect archive contents. A listing does not activate an extension or install a runtime Plugin.</p> : <p>These archive references come from a signed content snapshot for this exact {baseName} release. Site does not download or inspect the archives. Download the exact archive, review its source, and use the CLI to verify it locally. A listing does not activate an extension or install a runtime Plugin.</p>}
     {signedReleaseContent.provenance ? <p>Catalog revision {signedReleaseContent.revision}. The CLI verifies provenance and current release status before copying editable source.</p> : <p>Content snapshot revision {signedReleaseContent.revision}; expires {signedReleaseContent.expiresAt ? new Date(signedReleaseContent.expiresAt * 1000).toISOString() : 'at an unknown time'}. Reverify {release.baseKind === 'content_only' ? 'the content snapshot' : 'both snapshots'} when copying content.</p>}
     {release.content.map((item) => {
       const destination = item.kind === 'editable_template' ? `examples/${item.id}` : `extensions/${item.id}`;
-      const command = `lenso app add ${release.pluginId}@${release.version}${baseFlag} --trust ./catalog-trust.json --content-snapshot ./release-content-snapshot.json --content-id ${item.id} --content-archive ./${item.id}.tar.gz --content-destination ${destination}`;
+      const command = signedReleaseContent.provenance
+        ? release.baseKind === 'content_only'
+          ? `lenso app add ${release.pluginId}@${release.version} --marketplace --content-id ${shellArg(item.id)} --content-destination ${shellArg(destination)}`
+          : null
+        : `lenso app add ${release.pluginId}@${release.version}${baseFlag} --trust ./catalog-trust.json --content-snapshot ./release-content-snapshot.json --content-id ${item.id} --content-archive ./${item.id}.tar.gz --content-destination ${destination}`;
       return <div key={item.id} className="linked-release-section release-content-entry">
         <h3>{item.kind === 'editable_template' ? 'Editable template' : 'Development extension'}: <code>{item.id}</code></h3>
         <p>{item.kind === 'editable_template'
@@ -352,10 +363,10 @@ function ReleaseContentFor({ pluginId, version, baseKind }: {
           ['Archive SHA-256', <code key="digest">{item.digest}</code>],
           ['Archive size', `${item.size} bytes`],
         ]} />
-        <AdoptionCommandGroup status={release.status} commands={[
+        {command ? <AdoptionCommandGroup status={release.status} commands={[
           { command: `${command} --content-preview`, label: 'CLI preview command' },
           { command, label: 'CLI copy command' },
-        ]} expirations={expirations} />
+        ]} expirations={expirations} /> : <p>Normal Marketplace copying supports standalone <code>content_only</code> releases, not content attached to a runtime distribution. No copy command is available for this attached content.</p>}
       </div>;
     })}
   </section>;

@@ -82,3 +82,14 @@ test('adoption commands require no user keys and retain explicit source-copy cho
   assert.equal(marketplaceCommand('lenso app add lenso.template@1.0.0 --trust ./y --content-id start --content-destination examples/start --content-preview'),
     'lenso app add lenso.template@1.0.0 --marketplace --content-id start --content-destination examples/start --content-preview');
 });
+
+test('normal four-channel commands retain quoted distribution and content choices', () => {
+  for (const command of [
+    'lenso app add lenso.secrets.env@0.1.7 --marketplace',
+    'lenso app add lenso.marketplace.echo@0.1.3 --marketplace',
+    "lenso app add lenso.reference.knowledge-excerpt@0.1.2 --marketplace --distribution 'npm'",
+    "lenso app add lenso.reference.knowledge-base-starter@0.1.0 --marketplace --content-id 'starter' --content-destination 'examples/starter' --content-preview",
+  ]) assert.equal(marketplaceCommand(command), command);
+  const quoted = "lenso app add lenso.example@1.0.0 --marketplace --distribution 'publisher'\\''s package'";
+  assert.equal(marketplaceCommand(quoted), quoted);
+});

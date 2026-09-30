@@ -40,6 +40,6 @@ export async function confirmVerifiedHead(provenance, fetcher = fetch) {
 export function marketplaceCommand(command) {
   const source = /^lenso app add ([a-z0-9.-]+@[0-9A-Za-z.+-]+)/u.exec(command);
   if (!source) throw new Error('Unsupported marketplace command');
-  const flags = command.match(/ --(?:distribution|content-id|content-destination) [a-z0-9./_-]+| --content-preview/gu) ?? [];
+  const flags = command.match(/ --(?:distribution|content-id|content-destination) (?:'(?:[^'\r\n]|'\\'')*'|[a-z0-9./_-]+)| --content-preview/gu) ?? [];
   return `lenso app add ${source[1]} --marketplace${flags.join('')}`;
 }
