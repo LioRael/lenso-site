@@ -1,0 +1,32 @@
+scripts/check-published-output.mjs
+  s_7d146975368699::t_d6e96d1382c0b9 5,96-102
+scripts/published-catalog-proof.mjs
+  s_7d146975368699::t_d6e96d1382c0b9 1-61
+scripts/keyless-catalog.test.mjs
+  s_7d146975368699::t_d6e96d1382c0b9 7,97-134
+  s_f4202e28c6b5b1::t_21016aaa53e73c 135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f3f193baca91339ff90db249e834e2cdcc0f2508",
+  "prompts": {},
+  "sessions": {
+    "s_7d146975368699": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c54a-381f-7362-9b4d-95aea89e2437",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    },
+    "s_f4202e28c6b5b1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ee9e-623b-7d12-a648-d8b462390eec",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
