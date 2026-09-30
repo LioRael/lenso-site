@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { admitCatalog, normalizeCatalog, validateCurrent, fetchBounded } from './keyless-catalog.mjs';
 import { digest } from './keyless-publisher/verify.mjs';
 import { matchesVerifiedHead, confirmVerifiedHead, marketplaceCommand } from './keyless-currentness.mjs';
+import { validatePublishedCatalogProof } from './published-catalog-proof.mjs';
 
 // Public attested migration input. The descriptor below is a fixture, not a live currentness receipt.
 const bytes = await readFile(new URL('./fixtures/keyless-catalog.json', import.meta.url));
@@ -92,4 +93,43 @@ test('normal four-channel commands retain quoted distribution and content choice
   ]) assert.equal(marketplaceCommand(command), command);
   const quoted = "lenso app add lenso.example@1.0.0 --marketplace --distribution 'publisher'\\''s package'";
   assert.equal(marketplaceCommand(quoted), quoted);
+});
+
+test('published directory requires exact keyless proof and generated metadata, preserving legacy mode', () => {
+  const output = normalizeCatalog(first.catalog, head);
+  const sources = [output.linked, output.portable, output.package, output.content];
+  const metadata = source => ({ catalogId: source.catalogId, revision: source.revision, expiresAt: source.expiresAt });
+  const entry = (kind, source) => ({ kind, ...metadata(source), catalogRevision: source.revision,
+    provenance: source.provenance, ...(kind === 'portable_bundle'
+      ? { detailsRevision: source.detailsRevision, detailsExpiresAt: source.detailsExpiresAt } : {}) });
+  const directory = { schema: 'lenso.site.signed-plugin-directory.v1',
+    verification: 'publisher-provenance-verified-at-build', provenance: output.linked.provenance,
+    catalogs: { linkedCargo: metadata(output.linked),
+      portable: { ...metadata(output.portable), detailsRevision: null, detailsExpiresAt: null },
+      package: metadata(output.package), optionalSourceContent: metadata(output.content) },
+    releases: [{ distributions: [entry('linked_cargo', output.linked), entry('portable_bundle', output.portable),
+      entry('npm_package', output.package)], optionalSourceContent: [entry('content_only', output.content)] }] };
+  validatePublishedCatalogProof(directory, sources);
+  for (const mutate of [
+    value => { value.verification = 'signature-verified-at-build'; },
+    value => { value.provenance.sourceSha = '0'.repeat(40); },
+    value => { value.catalogs.package.revision += 1; },
+    value => { value.releases[0].distributions[0].provenance.bundleDigest = '0'.repeat(64); },
+    value => { value.releases[0].optionalSourceContent[0].catalogRevision += 1; },
+  ]) {
+    const changed = structuredClone(directory); mutate(changed);
+    assert.throws(() => validatePublishedCatalogProof(changed, sources));
+  }
+  const mixed = structuredClone(sources); delete mixed[2].provenance;
+  assert.throws(() => validatePublishedCatalogProof(directory, mixed));
+  const malformed = structuredClone(sources); malformed[0].provenance.catalogSize = 0;
+  assert.throws(() => validatePublishedCatalogProof(directory, malformed));
+  const legacy = structuredClone(directory);
+  const legacySources = structuredClone(sources);
+  legacy.verification = 'signature-verified-at-build'; delete legacy.provenance;
+  for (const source of legacySources) delete source.provenance;
+  for (const item of [...legacy.releases[0].distributions, ...legacy.releases[0].optionalSourceContent]) delete item.provenance;
+  validatePublishedCatalogProof(legacy, legacySources);
+  legacy.verification = 'publisher-provenance-verified-at-build';
+  assert.throws(() => validatePublishedCatalogProof(legacy, legacySources));
 });

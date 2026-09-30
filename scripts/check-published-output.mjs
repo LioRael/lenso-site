@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDraftDocument, routeForDocument, walkFiles } from './docs-files.mjs';
+import { validatePublishedCatalogProof } from './published-catalog-proof.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outputRoot = process.env.NEXT_OUTPUT_ROOT ? resolve(root, process.env.NEXT_OUTPUT_ROOT) : join(root, 'out');
@@ -92,14 +93,13 @@ const pluginDirectory = JSON.parse(requireFile('api/plugins/catalog.json'));
 const signedIdentities = new Set([...signedCatalog.releases, ...signedPortableCatalog.releases,
   ...signedPackageCatalog.releases, ...signedContentCatalog.releases.filter((release) => release.baseKind === 'content_only')]
   .map((release) => `${release.pluginId}\0${release.version}`));
-if (pluginDirectory.schema !== 'lenso.site.signed-plugin-directory.v1'
-  || pluginDirectory.verification !== 'signature-verified-at-build'
-  || pluginDirectory.releases.length !== signedIdentities.size
-  || pluginDirectory.catalogs.linkedCargo.expiresAt !== signedCatalog.expiresAt
-  || pluginDirectory.catalogs.portable.expiresAt !== signedPortableCatalog.expiresAt
-  || pluginDirectory.catalogs.package.expiresAt !== signedPackageCatalog.expiresAt
-  || pluginDirectory.catalogs.optionalSourceContent.expiresAt !== signedContentCatalog.expiresAt) {
-  failures.push('out/api/plugins/catalog.json: signed source or expiry mismatch');
+try {
+  validatePublishedCatalogProof(pluginDirectory, [signedCatalog, signedPortableCatalog, signedPackageCatalog, signedContentCatalog]);
+} catch (error) {
+  failures.push(`out/api/plugins/catalog.json: verification source or provenance mismatch: ${error.message}`);
+}
+if (pluginDirectory.releases.length !== signedIdentities.size) {
+  failures.push('out/api/plugins/catalog.json: signed release count mismatch');
 }
 for (const release of pluginDirectory.releases) {
   const identity = `${release.pluginId}\0${release.version}`;
