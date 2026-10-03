@@ -3,7 +3,9 @@ title: 快速开始
 description: 创建、运行、打包并校验一个强类型 Lenso Plugin。
 ---
 
-要直接从源码创建完整 App，请使用[本地 App 开发与 Engine](/docs/zh/core/engine-dx)。该路径需要配套本地构建，下面保留已发布 CLI 的独立 Plugin 入门。
+本页创建一个独立 Plugin。要直接从源码创建完整 App，请从
+[创建本地 Web App](/docs/zh/core/app-quickstart)开始。该教程从匹配源码构建 CLI，
+全程使用它的绝对路径 `LENSO_CLI`。请将该二进制与下面从 npm 安装的 CLI 区分开。
 
 在这个自包含 Quickstart 中，你会创建一个普通 Plugin，通过真实 Execution Adapter
 调用它，并生成一个通过校验的 `.lenso-plugin` Bundle。完成这条路径不需要产品 Host，
@@ -20,9 +22,19 @@ Lowering。
 从 npm 安装 CLI：
 
 ```sh
-npm install -g @lenso/cli
+npm install -g @lenso/cli@0.17.4
 lenso --version
 ```
+
+npm 包与原生二进制使用不同的版本号：在已验证的 Linux x86_64 环境中，
+`@lenso/cli@0.17.4` 安装的是 `lenso 0.6.4`。安装及 `--help` 检查成功，
+不代表生成 Plugin 的依赖已能解析或构建已通过。Rust 路径还需要访问 Cargo
+Registry，以获取生成清单指定的精确版本。
+
+本独立 Plugin 教程不要将上述预装二进制换成源码 CLI `0.7.1`：后者的默认
+Agent Tool 脚手架要求 `lenso-agent-tool-sdk` `^0.4.0`，该版本在已检查的公开
+Registry 中不可获取，SDK 发布是另一项前提。Linked Web App 教程选择不同的
+脚手架，并单独记录其构建证据。
 
 ## 创建并运行 Plugin
 

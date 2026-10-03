@@ -13,7 +13,8 @@ description: 创建包含强类型 JSON Route 的 Linked Rust Plugin，并在打
 
 ## 1. 生成 Plugin
 
-从 CLI 的 Web Authoring Path 开始：
+先按 [Plugin 快速开始](/docs/zh/core/quickstart)安装 CLI，再进入 Web 编写路径。
+下面的目录由 npm `@lenso/cli@0.17.4` 对应的原生 CLI `0.6.4` 生成：
 
 ```sh
 lenso plugin new company.greetings-http --web
@@ -25,9 +26,13 @@ cd company.greetings-http
 ```text
 company.greetings-http/
 ├── Cargo.toml
+├── build.rs
 ├── README.md
 └── src/
-    └── lib.rs
+    ├── lib.rs
+    └── routes/
+        ├── create.rs
+        └── search.rs
 ```
 
 Manifest 已经声明 Web Root Slot，并固定相互兼容的 Framework Revision：
@@ -48,94 +53,34 @@ Lockfile 会在构建的 Cargo Metadata 锁定检查中失败。
 
 ## 2. 实现 Route
 
-创建 Endpoint Provider：
+保留生成的 `src/lib.rs`、`build.rs` 与 `src/routes/create.rs`。
+Create 的 `#[post("greetings.create", "/greetings")]` Attribute 保持不变。
+`src/lib.rs` 持有共享请求/响应类型与 `GreetingsHttp` 状态；`src/routes/`
+中的每个文件包含一个 Handler。Build Script 将它们合并为 `#[endpoint]`
+实现，再由 `src/lib.rs` 引入。不要另外添加内联实现，也不要删除生成的 include。
 
-```rust title="src/lib.rs"
-use std::{cell::{Cell, RefCell}, collections::BTreeMap, rc::Rc};
+脚手架最初对两条路由都使用 **POST**。本教程有意将搜索改为 **QUERY**。
+在 `src/routes/search.rs` 中只修改第一个 Attribute，保留 Handler 及其他 Attribute：
 
-use lenso_capability_http_endpoint::{
-    prelude::*,
-    response::{Problem, StatusCode},
-};
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-struct CreateGreeting {
-    name: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct SearchGreetings {
-    term: String,
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-struct Greeting {
-    id: String,
-    message: String,
-}
-
-#[lenso::plugin]
-#[derive(Clone, Debug, Default)]
-pub struct GreetingsHttp {
-    next_id: Rc<Cell<u64>>,
-    greetings: Rc<RefCell<BTreeMap<String, Greeting>>>,
-}
-
-#[endpoint]
-impl GreetingsHttp {
-    #[post("greetings.create", "/greetings")]
-    async fn create(
-        &self,
-        Json(input): Json<CreateGreeting>,
-    ) -> Result<(StatusCode, Json<Greeting>), Problem> {
-        // 真实 Plugin 在这里调用并等待业务 Capability。
-        std::future::ready(()).await;
-        let name = input.name.trim();
-        if name.is_empty() {
-            return Err(Problem::new(
-                StatusCode::BAD_REQUEST,
-                "invalid_name",
-                "name must not be empty",
-            ));
-        }
-
-        let sequence = self.next_id.get() + 1;
-        self.next_id.set(sequence);
-        let greeting = Greeting {
-            id: format!("greeting-{sequence}"),
-            message: format!("Hello, {name}!"),
-        };
-        self.greetings
-            .borrow_mut()
-            .insert(greeting.id.clone(), greeting.clone());
-        Ok((StatusCode::CREATED, Json(greeting)))
-    }
-
-    #[query("greetings.search", "/greetings/search")]
-    async fn search(
-        &self,
-        Json(input): Json<SearchGreetings>,
-    ) -> Result<Json<Vec<Greeting>>, Problem> {
-        std::future::ready(()).await;
-        let greetings = self.greetings
-            .borrow()
-            .values()
-            .filter(|greeting| greeting.message.contains(&input.term))
-            .cloned()
-            .collect();
-        Ok(Json(greetings))
-    }
-}
+```diff title="src/routes/search.rs"
+-#[post("greetings.search", "/greetings/search")]
++#[query("greetings.search", "/greetings/search")]
 ```
+
+生成的 Create Handler 保存问候并返回 `201`；Search Handler 返回匹配的问候。
+两者都用 `400` Problem 拒绝空输入。现有测试按 Operation ID 调用，因此搜索方法
+改变后仍然适用。重新构建后，再执行[证明 HTTP 后端](/docs/zh/web/web-testing)
+中的 QUERY 请求。
 
 `#[lenso::plugin]` 声明产品行为边界；`#[endpoint]` 从同一组声明生成 Route
 Description、Dispatch Path、`lenso.http.endpoint@1` Capability 与 Linked Plugin
 Factory。业务作者不需要实现 `NativePluginFactory`，更不应再编写
 `NativeModuleFactory`。Handler 直接返回面向业务的值：`Json<T>` 表示 `200`
 JSON Response，`(StatusCode, T)` 覆盖状态码，`Problem` 表示有意返回给 Client
-的失败；Macro 会把它们降为 Portable Capability Contract。
+的失败；Macro 会把它们降为 Portable Capability Contract。Handler 返回类型应写成
+`Result<Json<T>, Problem>`，列表操作也一样。无响应 Body 的删除操作使用
+`Result<HandleResponse, Problem>`，返回
+`Ok(lenso_capability_http_endpoint::response::empty(StatusCode::NO_CONTENT))`。
 
 `Json<T>` 也会在 Handler 运行前拒绝无效 JSON 与不支持的 Content Type，
 `Path<T>` 解码命名 Path Parameter，`QueryParams<T>` 解码 URL Query String。
@@ -148,34 +93,35 @@ HTTP QUERY Method 使用 `#[query("route.id", "/path")]`：它适合安全、幂
 
 ## 3. 直接证明 Provider
 
-在同一个 Crate 中使用无 Socket Test Harness：
+脚手架的 `src/lib.rs` 已有无 Socket 的 `tests` 模块。把下面的函数加入该模块，
+保留已有 Import 和生成的失败路径测试：
 
-```rust title="src/lib.rs"
-#[cfg(test)]
-mod tests {
-    use futures::executor::block_on;
-    use lenso_capability_http_endpoint::testing::EndpointTest;
-
-    use super::*;
-
-    #[test]
-    fn creates_and_queries_a_greeting() {
-        block_on(async {
-            let endpoint = EndpointTest::new(GreetingsHttp::default());
-            let created = endpoint
-                .request("greetings.create")
-                .json(&CreateGreeting { name: "Lenso".to_owned() })
-                .unwrap()
-                .send().await.unwrap();
-            assert_eq!(created.status(), StatusCode::CREATED);
-            let found = endpoint
-                .request("greetings.search")
-                .json(&SearchGreetings { term: "Lenso".to_owned() })
-                .unwrap()
-                .send().await.unwrap();
-            assert_eq!(found.json::<Vec<Greeting>>().unwrap().len(), 1);
-        });
-    }
+```rust title="src/lib.rs — inside mod tests"
+#[test]
+fn finds_the_created_greeting() {
+    block_on(async {
+        let endpoint = EndpointTest::new(GreetingsHttp::default());
+        let created = endpoint
+            .request("greetings.create")
+            .json(&CreateGreeting {
+                name: "Lenso".to_owned(),
+            })
+            .unwrap()
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(created.status(), StatusCode::CREATED);
+        let found = endpoint
+            .request("greetings.search")
+            .json(&SearchGreetings {
+                term: "Lenso".to_owned(),
+            })
+            .unwrap()
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(found.json::<Vec<Greeting>>().unwrap().len(), 1);
+    });
 }
 ```
 
@@ -194,13 +140,14 @@ Request Builder 还支持 `.query()`、`.path_parameter()` 与 `.header()`。
 运行 Crate 检查：
 
 ```sh
+cargo fmt --all
 cargo fmt --all -- --check
 cargo test --locked
 cargo clippy --locked --all-targets -- -D warnings
 ```
 
-Owner Repository 在 `examples/greetings-http-plugin` 提供了完整、可复制的
-Scaffold，同时维护了 Extractor 与 Response 示例：
+Owner Repository 的 `examples/greetings-http-plugin` 是完整的内联 Endpoint
+示例，其布局与上面的路由文件脚手架不同。仓库也维护了 Extractor 与 Response 示例：
 
 ```sh
 cargo test --locked -p lenso-capability-http-endpoint \

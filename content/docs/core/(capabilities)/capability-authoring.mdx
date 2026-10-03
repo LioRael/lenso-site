@@ -40,10 +40,12 @@ exceptions:
 ```json title="contract/greeting/schemas/greet-error.schema.json"
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "string",
-  "enum": ["empty_name"]
+  "oneOf": [{ "const": "empty_name" }]
 }
 ```
+
+Domain Error schemas use a non-empty `oneOf` union; a string `enum` alone is
+not accepted by the generator.
 
 Install the generator and write the projection owned by this package. For a
 native Rust Capability package:

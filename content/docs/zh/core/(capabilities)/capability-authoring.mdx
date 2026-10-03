@@ -38,10 +38,11 @@ Error Schema，不要把运行时异常字符串当作业务结果：
 ```json title="contract/greeting/schemas/greet-error.schema.json"
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "string",
-  "enum": ["empty_name"]
+  "oneOf": [{ "const": "empty_name" }]
 }
 ```
+
+Domain Error Schema 使用非空 `oneOf` 联合；生成器不接受仅有字符串 `enum` 的写法。
 
 安装生成器，并只生成当前 Package 负责的投影。原生 Rust Capability Package：
 

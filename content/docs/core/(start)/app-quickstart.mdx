@@ -33,16 +33,22 @@ Cargo installed:
 ```sh
 cargo build --locked -p lenso-cli --bin lenso
 LENSO_CLI="$(pwd)/target/debug/lenso"
+"$LENSO_CLI" --version
 "$LENSO_CLI" app create --help
 ```
 
 Confirm that `app create --help` succeeds. The installed `lenso` on your
 `PATH` may be an older public release; use the absolute `LENSO_CLI` path for
 every step here.
+The npm wrapper and native CLI use separate version numbers. Installing
+`@lenso/cli@0.17.4` and observing `lenso 0.6.4` proves that public binary is
+available; it does not identify the source revision used by this tutorial.
+Record the checkout revision with `git rev-parse HEAD` before leaving it.
 The starter runs a Cargo check during creation. Cargo obtains the generated
 App's pinned packages from crates.io. For offline work, supply a reviewed
 mirror with those same versions; do not replace them with local path or Git
-overrides.
+overrides. If Cargo reports a DNS, proxy, or connection failure, resolve that
+registry access problem before deciding whether an exact package is unavailable.
 
 ## 2. Create and run the same App
 
@@ -162,6 +168,26 @@ For the standalone Plugin workflow, keep using the existing
 discovery and packaging work, continue with [Local App development](/docs/core/engine-dx).
 To connect an ordinary React page to a typed public API, continue with the
 [React/Vite candidate path](/docs/core/react-vite-app).
+
+## Source-checkout candidate examples
+
+The source example candidate adds three small examples under the following
+paths in its `LioRael/lenso` checkout. Read each directory's `README.md` for
+its prerequisites, build, and smoke commands. These are local source candidates;
+their checks do not establish a published template or a public-registry
+end-to-end pass. They become public links only after the corresponding
+source revision is published.
+
+| Example path | Observable behavior |
+| --- | --- |
+| `examples/onboarding/todo-http` | Create, list, read, update, and delete todos through real HTTP. |
+| `examples/onboarding/background-jobs` | Submit a local job, poll its result, and check failed work. |
+| `examples/onboarding/metadata-pipeline` | Send JSON file metadata through a typed normalization Capability and read the structured result. |
+
+For existing public mixed Rust/Bun App sources, see the
+[local App fixture](https://github.com/LioRael/lenso-examples/tree/c99e9da84702900fa9f94d5551b9527ec8372db3/fixtures/vnext-local-app)
+and [typed local App fixture](https://github.com/LioRael/lenso-examples/tree/c99e9da84702900fa9f94d5551b9527ec8372db3/fixtures/vnext-typed-local-app).
+Each fixture states its own source-built CLI prerequisite.
 
 Return to the [Build an App path](/docs/build-apps) for configuration,
 inspection, and versioned Plugin documentation.

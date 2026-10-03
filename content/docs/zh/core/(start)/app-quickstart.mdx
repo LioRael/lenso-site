@@ -27,13 +27,18 @@ Coding Agent 使用同一组命令和完成检查。
 ```sh
 cargo build --locked -p lenso-cli --bin lenso
 LENSO_CLI="$(pwd)/target/debug/lenso"
+"$LENSO_CLI" --version
 "$LENSO_CLI" app create --help
 ```
 
 确认 `app create --help` 能正常执行。`PATH` 中安装的 `lenso` 可能是旧公开版本；
-本页后续命令均使用绝对路径 `LENSO_CLI`。创建时脚手架会运行 Cargo check。
+本页后续命令均使用绝对路径 `LENSO_CLI`。npm 包装器与原生 CLI 使用不同版本号；
+安装 `@lenso/cli@0.17.4` 并看到 `lenso 0.6.4`，只证明该公开二进制可获取，
+不能识别本教程使用的源码修订。离开 Checkout 前，用 `git rev-parse HEAD` 记录修订。
+创建时脚手架会运行 Cargo check。
 Cargo 从 crates.io 获取生成 App 锁定的包；离线开发可使用经审查且包含相同版本的
-镜像，不要改用本地 path 或 Git 覆盖。
+镜像，不要改用本地 path 或 Git 覆盖。若 Cargo 报告 DNS、代理或连接失败，
+应先解决 Registry 访问问题，再判断某个精确版本是否不可用。
 
 ## 2. 创建并运行同一个 App
 
@@ -138,5 +143,23 @@ Agent 可以编辑 `app/local.starter/` 和 `app/example.second-http/` 中的普
 本地 App 的发现与打包原理见[本地 App 开发](/docs/zh/core/engine-dx)。
 要让普通 React 页面调用有类型的公开 API，可继续阅读
 [React/Vite 候选路径](/docs/zh/core/react-vite-app)。
+
+## 源码 Checkout 中的候选示例
+
+源码示例候选在其 `LioRael/lenso` Checkout 的以下路径提供三个小示例。
+前提、构建与 Smoke 命令见各目录的 `README.md`。它们属于本地源码候选，
+本地检查不代表模板已公开发布，也不代表公开 Registry 端到端流程已通过。
+相应源码修订发布后，才能提供公开直达链接。
+
+| 示例路径 | 可观察行为 |
+| --- | --- |
+| `examples/onboarding/todo-http` | 通过真实 HTTP 创建、列举、读取、更新和删除 Todo。 |
+| `examples/onboarding/background-jobs` | 提交本地任务，轮询结果，并检查失败任务。 |
+| `examples/onboarding/metadata-pipeline` | 将 JSON 文件元信息送入强类型规范化 Capability，并读取结构化结果。 |
+
+已有公开的 Rust/Bun 混合 App 源码可见
+[本地 App Fixture](https://github.com/LioRael/lenso-examples/tree/c99e9da84702900fa9f94d5551b9527ec8372db3/fixtures/vnext-local-app)
+与[强类型本地 App Fixture](https://github.com/LioRael/lenso-examples/tree/c99e9da84702900fa9f94d5551b9527ec8372db3/fixtures/vnext-typed-local-app)。
+各 Fixture 都注明了匹配源码 CLI 的前提。
 
 返回[构建 App 路径](/docs/zh/build-apps)，查找配置、检查与版本化 Plugin 文档。

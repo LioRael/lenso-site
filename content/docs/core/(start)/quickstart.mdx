@@ -3,7 +3,10 @@ title: Quickstart
 description: Create, exercise, package, and verify one typed Lenso Plugin.
 ---
 
-To create a complete App from local sources, use [Local App development and Engine](/docs/core/engine-dx). That path requires the matching local build; the standalone Plugin quickstart below retains its published-CLI prerequisites.
+This page creates one standalone Plugin. To create a complete App from local
+sources, start with [Create a local Web App](/docs/core/app-quickstart). That
+tutorial builds a matching CLI from source and uses its absolute `LENSO_CLI`
+path throughout. Keep that binary separate from the npm-installed CLI below.
 
 In this self-contained quickstart, you will create one ordinary Plugin, invoke
 it through a real Execution Adapter, and produce a verified `.lenso-plugin`
@@ -20,9 +23,21 @@ the generated `@lenso/bun` runtime lowering.
 Install the CLI from npm:
 
 ```sh
-npm install -g @lenso/cli
+npm install -g @lenso/cli@0.17.4
 lenso --version
 ```
+
+The npm package and native binary have separate version numbers:
+`@lenso/cli@0.17.4` installs `lenso 0.6.4` in the verified Linux x86_64
+environment. A successful installation and `--help` check do not prove that
+the generated Plugin's dependencies can resolve or that its build succeeds.
+The Rust path also needs Cargo registry access for the generated exact pins.
+
+Do not substitute source CLI `0.7.1` for that installed binary in this
+standalone Plugin tutorial: its default Agent Tool scaffold requires
+`lenso-agent-tool-sdk` `^0.4.0`, which was unavailable in the checked public
+registry. SDK publication is a separate prerequisite. The linked Web App
+tutorial selects a different scaffold and records its own build evidence.
 
 ## Create and exercise a Plugin
 

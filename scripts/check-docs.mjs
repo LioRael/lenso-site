@@ -358,7 +358,9 @@ for (const file of currentFiles) {
   // Keep rejecting retired terminology in prose while allowing runnable source references.
   const terminologyText = text
     .replaceAll("vnext-plugin-authoring-v2", "plugin-authoring-fixture")
-    .replaceAll("fixtures/vnext-knowledge-base-app", "fixtures/knowledge-base-app");
+    .replaceAll("fixtures/vnext-knowledge-base-app", "fixtures/knowledge-base-app")
+    .replaceAll("fixtures/vnext-local-app", "fixtures/local-app")
+    .replaceAll("fixtures/vnext-typed-local-app", "fixtures/typed-local-app");
   if (retiredGenerationName.test(terminologyText)) {
     failures.push(`${relative(root, file)}: retired generation terminology`);
   }
