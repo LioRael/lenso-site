@@ -1,59 +1,168 @@
 ---
-title: 管理操作与当前限制
-description: 使用已经交付的管理入口，复用授权后的 Notes/Tasks 服务，并区分静态声明与运行时状态。
+title: 管理操作
+description: 选择现有实例绑定操作，通过可信调用上下文及显式 agent 或 oRPC 入口执行有限调用。
 ---
 
-**当前基线没有独立 Manage SDK 或 CLI。** TypeScript 源码预览 [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f) 没有公开 `@lenso/manage` 包、`manage` CLI 命令、通用管理服务或 Console 集成契约。不能把讨论中的 Manage API 当作已发布接口使用。
+`@lenso/manage@0.2.0` 是选择和调用现有 Engine Operations 的可选包。它把一组明确选择的操作绑定到精确 plugin 实例，提供运行中 app adapter、独立于 SDK 的 agent tools 和需要显式挂载的 oRPC router。Core 插件无需 Manage 声明或 Web 仍可使用。
 
-## 按问题选择已支持的入口
+本页核对已发布 `0.2.0` 包与源码 [`549b987`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/manage/README.md)。对应 Core/Engine/Auth 为 `0.2.0`，可选 oRPC server peer 精确为 `2.0.0-beta.42`。混合版本前阅读[安装与兼容性](/docs/zh/installation)。
 
-“管理”可以对应不同的应用职责。目前交付的是具体入口：
+## 选择声明，不增加 handler
 
-| 问题 | 现有入口 | 边界 |
-| --- | --- | --- |
-| 声明了哪些实例和操作？ | `lenso inspect --json` | 静态声明，不反射运行时方法或检查健康。 |
-| 当前应用启动还是停止？ | 其拥有进程中的 `RunningApp.status()` | 生命周期状态，不是连通性或跨进程控制台。 |
-| 自己的持久报表任务是什么状态？ | 现有 Tasks `query` 操作 | 仍执行共享 Auth 和持久所有权检查。 |
-| 能否取消或重试任务？ | Tasks `cancel` / `retry` 操作 | 取决于实际状态，不回滚，也不授予通用管理员权限。 |
-| 执行为何失败？ | 结构化 CLI 诊断与配置后的日志/遥测 | 没有内置 Observe 查询命令或 collector。 |
-| Agent 能否调用业务操作？ | 显式 CLI 声明加可选 MCP 白名单 | 暴露与启动身份不提供提权。 |
+Engine Operation 已描述服务自身 method、共享 Standard Schema input 与语义 metadata。`defineManage({ plugin, operations, views?, extensions? })` 将这些精确声明的一个子集组合起来。服务可以是原插件，也可以是声明明确 `requires` 的普通 sidecar；descriptor 不携带业务 handler。
 
-`Contribution` 或生成的 manifest 只描述声明，不证明实时健康，也不会授予路由、权限或远程管理能力。
+现有 Notes companion factory 返回 `{ plugin, operations, manage }`，Manage 选择 `list`、`read`、`remove`；`create`、`update` 仍是普通 CLI 声明。本地 Files 有独立的 `metadata`/`delete` selection。Tasks factory 选择 `submit`、`query`、`cancel`、`retry`；`report` 只在 CLI 暴露。
 
-## 检查真实 Tasks 契约
+在应用装配内使用现有 Notes 工厂结果：
 
-现有 [Tasks 配置](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/lenso.config.ts) 显式暴露 `submit`、`query`、`cancel`、`retry`、`report`。选择动作前先检查声明：
+```ts
+import { describeManage, selectManageOperations } from "@lenso/manage";
 
-```sh
-bun run cli inspect tasks query --root examples/tasks --json
-bun run cli inspect tasks cancel --root examples/tasks --json
+// entry 来自现有 createNotesOperations(...) 工厂。
+const cliRead = selectManageOperations(entry.manage, ["list", "read"]);
+const agentRead = selectManageOperations(entry.manage, ["read"]);
+const descriptor = describeManage(entry.manage);
+// descriptor.schemaVersion === 1；不执行 setup 或运行时健康检查。
 ```
 
-这些命令从已准备好的预览 checkout 运行。完成示例数据库/迁移、真实 Auth source 和 session 配置后，用安全的业务输入查询自己拥有的 job：
+Selection 返回原始 Operation 对象。重复选择、未声明 method、来自另一个 plugin 对象的操作均失败。重新创建同 ID 对象不能满足实例绑定。`describeManage` 返回冻结、脱敏的 plain JSON metadata 快照，不解析配置、获取资源或验证身份。
 
-```sh
-printf '%s\n' '{"jobId":"<returned-job-id>"}' |
-  bun run cli call tasks query --root examples/tasks --stdin --json
+各入口独立选择暴露范围：
+
+| 入口 | 显式选择 |
+| --- | --- |
+| CLI | Config 的 named `operations` export；上下文调用使用 `operationBinding` |
+| 本地 MCP | Named `mcpOperations`，另加宿主 `allow` 与启动 `binding` |
+| 运行中 agent adapter | 自己选择的 operations 与调用者策略 |
+| oRPC | 自己选择的 operations、当前请求 evidence 与调用者策略 |
+
+缺少 `mcpOperations` 时，MCP 保留 `operations` fallback；显式空数组禁用 MCP 声明。Manage metadata 本身不开放路由、tool 或 worker，也没有额外 `lenso manage` 子命令。
+
+## 绑定真实 Notes 应用
+
+下列有限入口放在审查后 checkout 的 `examples/notes/src/manage-read.ts`。先准备现有 Notes 数据库/迁移、登录配置和真实 `NOTES_SESSION`。入口导入真实 app 声明，只选读取，借用精确运行实例：
+
+```ts
+import { startApp } from "@lenso/core";
+import { createManageAdapter, selectManageOperations } from "@lenso/manage";
+import application, { definition, manage } from "../lenso.config";
+import { notesAudiences } from "./notes";
+
+const selected = selectManageOperations(manage[0]!, ["list", "read"]);
+const credential = process.env.NOTES_SESSION ?? null; // 可信有限入口的 evidence
+const running = await startApp(application);
+try {
+  const authentication = running.get(definition.authentication);
+  const adapter = createManageAdapter({
+    running,
+    plugins: application.plugins,
+    operations: selected,
+    binding: () => ({ context: { evidence: credential } }),
+    async canList(operation) {
+      if (operation.method !== "list" && operation.method !== "read") return false;
+      const scope = authentication.for(notesAudiences[operation.method]);
+      const actor = await scope.required(credential);
+      return actor.kind === "user";
+    },
+  });
+  const [listEntry] = await adapter.catalog();
+  if (listEntry) {
+    const result = await adapter.invokeEntry(listEntry.key, {});
+    // 向已授权调用者展示 result；不把私有 Notes 写入遥测。
+  }
+} finally {
+  await running.stop(); // app 归入口所有，adapter 不会 stop
+}
 ```
 
-把占位符替换为一次已授权提交返回的 job ID。知道 ID 不代表有权限。共享授权服务解析持久的 report/job 所有权，在访问队列之前拒绝其他所有者。旧记录缺少所有权时拒绝访问，setup 不会把它们归给第一个调用者。
+在 `examples/notes` 使用 `bun src/manage-read.ts` 运行准备好的入口。它不 provision store、签发凭据或启动 HTTP listener。无效/撤销 evidence 由 Auth 拒绝；这里的读取权限允许真实用户 list/read 自己的 Notes，服务仍检查对应 audience 和实际 owner。
 
-`query` 返回安全的状态、尝试预算和取消请求字段，或在清理后返回 `null`，不输出 payload、provider 原始错误或凭据。`report` 读取另一个归业务所有的表；队列成功与报表记录存在是不同观察。
+`createManageAdapter` 不会 start/stop app，构造时确认每个选中 plugin 都是 `running.get` 可访问的精确实例。宿主负责 admission、并发、drain 和 shutdown。所有调用结束前保持资源存活，不借用已停止 app。
 
-## 按真实语义进行恢复
+## Context 与业务输入分开
 
-示例 `cancel` 可返回 `cancelled`、`requested`、`terminal`、`missing`。运行中返回 `requested` 表示已记录取消请求，不表示 handler 已停止。协作式检查能阻止尚未发生的写入，但不会撤销已提交写入或外部效果。
+Notes operation 声明 `context: true`，真实第二参数是 `{ evidence, signal? }` 的 `NotesOperationContext`。示例 config 创建服务时不提供启动凭据 fallback。上下文操作缺少可信 context 会在运行方法前得到 `missing-context-binding`；传入 context 但 evidence 缺失/撤销时，则由 Auth 拒绝。
 
-`retry` 只接受最终失败，保留 job ID、payload 和尝试次数，再增加一次机会。不满足条件时返回 false。Retry 可能重复外部效果；写入或确认结果不确定时，应先检查授权的业务状态再重放。
+每次接纳调用后，raw Standard Schema input 只验证一次，随后运行 `binding(operation, validatedInput)`。它提供 context 和可选 `confirm`/`approve` callback，不替换 handler。Context 类型由真实 method 第二参数推导；`bindManageOperation(operation, { context })` 为异构操作的单独 binding 保留检查。
 
-示例用 `reportId` 作为业务结果 upsert 的键，另用 queue deduplication key 去重入队。二者作用不同，不提供跨数据库的原子事务。详见 [Tasks 所有权与恢复](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/README.md#authentication-and-durable-ownership)。
+业务 JSON 不接受 actor、credential 或 approval；Notes/Tasks strict schema 拒绝这些额外字段。可信入口使用验证过的 evidence 或当前 Auth 产生的 actor，服务继续重新验证。并发请求不能共用可变“当前 actor”。单输入 method 仍支持；当前 Tasks 使用可信启动身份，不是逐请求 context method。
 
-## 身份留在可信入口
+`canList(operation)` 必须提供，既过滤 catalog，也在 invocation 时复查，包括早先创建的 tool。只有当前入口身份确实可用此操作时才返回精确 `true`；false 隐藏条目，并在调用时产生 `forbidden-operation`。抛出的 Auth/策略错误使请求失败。目录权限不授权具体 note、file 或 job，owner/tenant/realm/audience 规则仍在普通服务内。
 
-Notes 与 Tasks 暴露应用自有的薄操作，复用普通业务服务。凭据来自验证过的入口配置，不来自业务 JSON。Audience、subject、object、tenant 检查应保留在共享服务策略中，让 CLI、Web 和 agent 遵循同一规则。
+## oRPC 使用当前请求身份
 
-可选 `@lenso/mcp` 的 `serveStdio` 是独立本机 Bun 进程，固定可信应用根目录，再对白名单中的已声明操作开放工具。它一次只接纳一个 call，所有调用使用启动身份，不对每个远程请求认证不同用户。取消 MCP 请求不会调用 `tasks.cancel`、向服务传递 abort 或撤销效果。
+长期 Notes 宿主使用上面的 `running`、`application`、`definition` 与只读 `selected`，在持有 app 的入口创建 router：
 
-未来管理 UI 或远程入口需要已记录的公开契约，以及经过验证的认证、授权、生命周期边界。当前操作路径是现有授权操作、CLI 诊断和配置后的遥测后端。原始数据库访问、任意 shell 和凭据签发不属于已经暴露的业务管理操作。
+```ts
+import { bearerEvidence } from "@lenso/auth/fetch";
+import { createManageRouter } from "@lenso/manage/orpc";
+import { RPCHandler } from "@orpc/server/fetch";
 
-继续阅读 [CLI 声明与失败处理](/docs/zh/cli)、[MCP 契约](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/mcp/README.md)、[Task 授权实现](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/authorized-service.ts) 与[公开包目录](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f/packages)。
+const authentication = running.get(definition.authentication);
+const router = createManageRouter({
+  running,
+  plugins: application.plugins,
+  operations: selected,
+  evidence: bearerEvidence,
+  binding: (_operation, _input, evidence) => ({
+    context: { evidence: evidence.evidence, signal: evidence.signal },
+  }),
+  async canList(operation, evidence) {
+    if (operation.method !== "list" && operation.method !== "read") return false;
+    const scope = authentication.for(notesAudiences[operation.method]);
+    const actor = await scope.required(evidence.evidence, { signal: evidence.signal });
+    return actor.kind === "user";
+  },
+});
+const handler = new RPCHandler(router);
+
+// 在宿主已有 Fetch handler 内：
+const { matched, response } = await handler.handle(request, {
+  prefix: "/manage",
+  context: { request },
+});
+return matched ? response : new Response("Not found", { status: 404 });
+```
+
+每次 `catalog`/`invoke` 从自身请求提取 evidence，并创建借用同一运行 app 的 adapter。宿主显式挂载 `/manage`，负责 ingress/TLS/CORS。这是 oRPC v2，不是自动 REST 路由。Signal 只启用 Auth/service/provider 实际实现的协作行为，不取消已提交写入。
+
+使用 catalog 返回的 key 调用 `invoke({ key, input })`。另一形式 `{ pluginId, method, input }` 供知道原始 identifier 的可信调用者使用。两种 envelope 都不允许额外 actor/approval 字段。身份或操作失败返回 `MANAGE_FAILED` 和安全版本化 diagnostic，非法 envelope 由正常 oRPC input validation 拒绝。
+
+## Agent tools 复用同一业务路径
+
+`createAgentTools(adapter)` 可从 root 或 `@lenso/manage/agent` 导入，为过滤后的 catalog 返回独立于 SDK 的 `{ name, description, inputSchema, invoke }`。Runtime agent/SDK 自己接入；它不启动 MCP 或提供身份 provider。
+
+Agent input 要求可转换的**对象 JSON Schema**。只有 runtime validation 仍可用于普通 invocation，但无法描述安全 tool；scalar 或不可用 schema 产生 `unsupported-input-schema`。调用再次检查 `canList`、输入与服务授权。`outputDescription` 不会推导成 output schema。
+
+Catalog entry 包含 `schemaVersion: 1` 与 adapter 范围内 opaque `key`，当前格式为 `operation_<index>`。Display ID 可能脱敏，`invokeEntry` 通过原始声明 dispatch。Key 不是跨部署持久 operation ID、job ID 或 receipt；选择变更后重新发现。
+
+## Confirmation 与 approval 是独立门槛
+
+Operation 可以声明 `confirmation: "required"`、`approval: "required"` 或两者。可信 `confirm()`/`approve()` 必须通过真实用户确认流程和配置的 approval owner 验证这次调用。缺失/false 时拒绝；未经验证便返回 true 是应用缺陷。JSON `confirmed`/`approved` 或 `destructive` metadata 不能满足要求。
+
+选择、操作权限、confirmation、approval 与对象授权分别决定。当前 Notes/Tasks 声明不会因删除/取消便自动要求这些门槛；产品需要时显式声明并接入真实可信流程。
+
+## 输出、呈现与平台限制
+
+共用 Engine invocation 保留服务 `this`、遥测与未知错误的安全遮蔽。Result 必须为 finite plain JSON；stream 与 plain AsyncIterable 也被拒绝。成功输出和 catalog 默认预算 **1 MiB**，可通过 `maxOutputBytes` 调整；oRPC diagnostic 独立预算 **4 KiB** 并有安全 fallback。预算不是服务 CPU/内存 quota，输出失败也可能发生在效果已提交后。
+
+View hints 只包括 `key`、title/group/order、columns 和已声明 detail/action 引用。Key 唯一，引用 method 必须包含在选择内；namespaced `extensions` 是 plain JSON。两者不携带 React component、module URL 或 handler，也不改变 dispatch/Auth。该包不交付 Console frontend/runtime。Redaction 去掉 schema defaults/examples 与常见敏感数据，任意 key secret/自由文本仍由应用负责。
+
+当前 Manage 集成测试运行于 Bun。oRPC adapter 基于 Fetch，但没有 Manage-on-workerd 示例/测试建立 Workers 部署契约。迁移装配前审查真实 package graph 与宿主能力；Fetch 签名不能证明 Bun/Node import、binding 或平台 shutdown 已验证，也不意味着浏览器直接访问服务/secret。
+
+Manage 执行有限 query/command，不提供 scheduling、自动 retry、rollback、durable receipt/journal 恢复、持久 audit、配置 read-all/write-all、hot update 或 restart。Tasks submit 返回授权 job ID，[持久取消/重试](/docs/zh/tasks)仍是独立授权业务操作。
+
+## 定位真正失败的边界
+
+| Diagnostic 或症状 | 下一步 |
+| --- | --- |
+| `invalid-manage` | 精确运行 plugin、所选声明、必要 callback 与输出预算 |
+| `unknown-operation` / `duplicate-operation` | Selection 与 method 重复，不从 service 自动推断 |
+| `missing-context-binding` | `context: true` 所需可信 binding |
+| `forbidden-operation` | 当前 `canList`，包括发现 tool 后权限变化 |
+| `UNAUTHORIZED` / `FORBIDDEN` | 真实 evidence、正确 audience、实际 owner/tenant |
+| `confirmation-required` / `approval-required` | 真实入口流程/owner callback，不是 input flag |
+| `unsupported-input-schema` | Agent tool 要求对象 schema converter |
+| `output-too-large` / `serialization-failed` | Result/catalog 形状与字节预算，重放前检查业务状态 |
+
+[Manage 测试](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/manage/test/manage.test.ts)覆盖精确引用、一次验证、gates、脱敏 key dispatch、有界输出、并发 evidence、撤销与显式 v2 Fetch 挂载。[Notes 测试](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/test/manage.test.ts)验证真实共享服务；[Tasks 测试](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/tasks/src/manage.test.ts)验证独立选择与资源 setup 前拒绝非法输入。各入口操作与生命周期见 [CLI](/docs/zh/cli)、[Auth](/docs/zh/auth)、[Agents](/docs/zh/agents)与[测试](/docs/zh/testing)。

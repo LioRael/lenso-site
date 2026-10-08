@@ -1,59 +1,168 @@
 ---
-title: Management operations and current limits
-description: Discover the delivered management surfaces, reuse authorized Notes and Tasks services, and distinguish declarations from runtime status.
+title: Management operations
+description: Select existing instance-bound operations, bind trusted invocation context, and expose finite calls through explicit agent or oRPC entries.
 ---
 
-**No independent Manage SDK or CLI is delivered in this baseline.** At TypeScript source preview [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f), there is no public `@lenso/manage` package, `manage` CLI command, general management server or Console integration contract. Do not build against a proposed Manage API as if it were released.
+`@lenso/manage@0.2.0` is an optional package for selecting and invoking existing Engine Operations. It binds a chosen operation set to one exact plugin instance, then offers adapters for a running app, SDK-independent agent tools and an explicitly mounted oRPC router. Core plugins remain usable without a Manage declaration or Web.
 
-## Use the supported surface for the question
+This guide was checked against the published `0.2.0` package and source [`549b987`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/manage/README.md). Its Core/Engine/Auth peers use `0.2.0`; the optional oRPC server peer is exactly `2.0.0-beta.42`. See [installation and compatibility](/docs/installation) before mixing versions.
 
-“Management” can mean different application responsibilities. The delivered interfaces are specific:
+## Select declarations without adding handlers
 
-| Question | Existing surface | Limit |
-| --- | --- | --- |
-| What instances and operations are declared? | `lenso inspect --json` | Static declarations; no runtime health or service reflection. |
-| Has this app started or stopped? | `RunningApp.status()` in its owning process | Lifecycle state only; not connectivity or a cross-process dashboard. |
-| What is the status of an owned durable report job? | Existing Tasks `query` operation | Shared Auth and durable ownership checks still apply. |
-| Can a job be cancelled or retried? | Tasks `cancel` / `retry` operations | State-dependent behavior; no rollback or unrestricted administration. |
-| Why did execution fail? | Structured CLI diagnostics, configured logs/telemetry | No built-in Observe query command or collector. |
-| Can an agent call a business operation? | Explicit CLI declaration plus optional MCP allowlist | Exposure and launch identity do not grant elevated authority. |
+An Engine Operation already names an own service method, its shared Standard Schema input and semantic metadata. `defineManage({ plugin, operations, views?, extensions? })` groups a deliberate subset of those exact declarations. The service can be the original plugin or an ordinary sidecar with explicit `requires`; descriptors carry no business handlers.
 
-A `Contribution` or generated manifest describes declarations. Neither proves live health nor grants a route, permission or remote management capability.
+The existing Notes companion factory returns `{ plugin, operations, manage }`. Its Manage selection is `list`, `read`, `remove`; `create` and `update` remain ordinary CLI declarations. Local Files has a separate `metadata`/`delete` selection. The Tasks factory selects `submit`, `query`, `cancel`, `retry`; `report` remains CLI-only.
 
-## Inspect the real Tasks contract
+Using the existing Notes factory result in an application assembly:
 
-The existing [Tasks config](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/lenso.config.ts) explicitly exposes `submit`, `query`, `cancel`, `retry` and `report`. Inspect the existing declaration before selecting an action:
+```ts
+import { describeManage, selectManageOperations } from "@lenso/manage";
 
-```sh
-bun run cli inspect tasks query --root examples/tasks --json
-bun run cli inspect tasks cancel --root examples/tasks --json
+// entry is the result of the existing createNotesOperations(...) factory.
+const cliRead = selectManageOperations(entry.manage, ["list", "read"]);
+const agentRead = selectManageOperations(entry.manage, ["read"]);
+const descriptor = describeManage(entry.manage);
+// descriptor.schemaVersion === 1; no setup or runtime health check occurs.
 ```
 
-Run these in a prepared preview checkout. Once the example's database/migrations, real Auth source and session are configured, query an owned job using safe business input:
+Selections return the original Operation objects. Duplicate selections, undeclared methods, or operations from another plugin object fail. Creating a new object with the same plugin ID does not satisfy the instance binding. `describeManage` returns a frozen plain-JSON metadata snapshot with redaction; it does not resolve configuration, acquire resources or authenticate anyone.
 
-```sh
-printf '%s\n' '{"jobId":"<returned-job-id>"}' |
-  bun run cli call tasks query --root examples/tasks --stdin --json
+Entries choose exposure independently:
+
+| Entry | Explicit choice |
+| --- | --- |
+| CLI | Config's named `operations` export; contextual calls use `operationBinding` |
+| Local MCP | Named `mcpOperations`, plus the host's separate `allow` list and launch `binding` |
+| Running agent adapter | Its own selected operations and caller policy |
+| oRPC | Its own selected operations, current request evidence and caller policy |
+
+When `mcpOperations` is absent, MCP retains the `operations` fallback. An explicit empty list disables MCP declarations. Manage metadata alone opens no route/tool/worker. There is no additional `lenso manage` subcommand.
+
+## Bind a real Notes app
+
+The following finite entry belongs at `examples/notes/src/manage-read.ts` in the reviewed checkout. Prepare the existing Notes database/migrations, login configuration and a verified `NOTES_SESSION` first. It imports the real app declaration, selects only reads, and borrows its exact running instances:
+
+```ts
+import { startApp } from "@lenso/core";
+import { createManageAdapter, selectManageOperations } from "@lenso/manage";
+import application, { definition, manage } from "../lenso.config";
+import { notesAudiences } from "./notes";
+
+const selected = selectManageOperations(manage[0]!, ["list", "read"]);
+const credential = process.env.NOTES_SESSION ?? null; // trusted finite-entry evidence
+const running = await startApp(application);
+try {
+  const authentication = running.get(definition.authentication);
+  const adapter = createManageAdapter({
+    running,
+    plugins: application.plugins,
+    operations: selected,
+    binding: () => ({ context: { evidence: credential } }),
+    async canList(operation) {
+      if (operation.method !== "list" && operation.method !== "read") return false;
+      const scope = authentication.for(notesAudiences[operation.method]);
+      const actor = await scope.required(credential);
+      return actor.kind === "user";
+    },
+  });
+  const [listEntry] = await adapter.catalog();
+  if (listEntry) {
+    const result = await adapter.invokeEntry(listEntry.key, {});
+    // Present result to this authorized caller; do not send private notes to telemetry.
+  }
+} finally {
+  await running.stop(); // entry owns the app; the adapter does not stop it
+}
 ```
 
-Replace the placeholder with a job ID returned by an authorized submission. A job ID alone is not permission. The shared authorized service resolves durable report/job ownership and denies another owner before queue access. Missing legacy ownership records deny access; setup does not assign them to the first caller.
+Run this prepared entry with `bun src/manage-read.ts` from `examples/notes`. It does not provision a store, issue credentials or start an HTTP listener. Invalid/revoked evidence is rejected by Auth. Read permission here means a verified user may list/read their own Notes; the shared service still checks the selected audience and actual owner before returning a record.
 
-`query` returns safe state, attempt budget and cancellation-request fields, or `null` after pruning. It does not dump payloads, provider error text or credentials. `report` reads the separately owned business table; queue success and a report record are different observations.
+`createManageAdapter` never starts/stops the app. It checks that each selected plugin is the exact instance accessible through `running.get`. The host owns admission, concurrent calls, drain and shutdown. Keep selected resources alive until all calls finish; do not borrow a stopped app.
 
-## Recover with the operation's actual semantics
+## Context is separate from business input
 
-The example's `cancel` can return `cancelled`, `requested`, `terminal` or `missing`. For running work, `requested` records a cancellation request; it does not mean the handler has stopped. Cooperative handler checks can prevent a future write, but already committed writes and external effects are not undone.
+Notes' existing operations declare `context: true`; their real second argument is `NotesOperationContext` with `{ evidence, signal? }`. The example config constructs the service without a launch-credential fallback. A contextual invocation without trusted context fails with `missing-context-binding` before the method runs. A context object with missing/revoked evidence instead reaches Auth and is rejected there.
 
-`retry` accepts a final failure, preserves job ID/payload and attempt count, and adds one attempt. It returns false when the job is ineligible. Retry can repeat an external effect. After an uncertain write or acknowledgement failure, inspect authorized business state before replaying.
+`binding(operation, validatedInput)` runs anew on each admitted call, after raw Standard Schema input validates once. It supplies context and optional `confirm`/`approve` callbacks, never a replacement handler. Context types derive from the method's actual second parameter; `bindManageOperation(operation, { context })` preserves that check for individual heterogeneous bindings.
 
-The example uses `reportId` for an upserted business result and separately uses queue deduplication keys. The two mechanisms have different purposes and do not provide a cross-database atomic transaction. See [Tasks ownership and recovery](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/README.md#authentication-and-durable-ownership).
+Never accept an actor, credential or approval from business JSON. The strict Notes/Tasks schemas reject those extra fields. Use verified evidence or a current Auth-produced actor at the trusted entry, and revalidate through the service policy. Do not use one shared mutable “current actor” across concurrent requests. Single-input methods remain supported; the current Tasks example uses its trusted launch identity rather than a per-request contextual method.
 
-## Keep identity at the trusted entry
+`canList(operation)` is required. It filters catalog and is rechecked on invocation, including tools created earlier. Return exactly `true` only when the current entry identity may use that operation; false hides it and produces `forbidden-operation` on invocation. A thrown Auth/policy error fails the request. Catalog permission does not authorize a particular note, file or job: owner/tenant/realm/audience rules remain in the ordinary service.
 
-Notes and Tasks expose thin application-owned operations over their ordinary services. Credentials come from verified entry configuration, not business JSON. Keep audience, subject, object and tenant checks in shared service policy so CLI, Web and an agent follow the same rules.
+## Expose current request evidence with oRPC
 
-The optional `@lenso/mcp` `serveStdio` adapter is a dedicated local Bun process with a fixed trusted root and a separate allowlist of already declared operations. It admits one call at a time. All calls use launch identity; the adapter does not authenticate a different remote user per request. Cancelling an MCP request does not call `tasks.cancel`, propagate abort into the service or undo effects.
+For a long-running Notes host using the same `running`, `application`, `definition` and read-only `selected` above, create the router in the owning entry:
 
-A future management UI or remote entry needs a documented public contract and verified authentication, authorization and lifecycle boundaries. The current operational path is to use the existing authorized operations, CLI diagnostics and configured telemetry backend. Raw database access, arbitrary shell execution and credential issuance are not exposed business management operations.
+```ts
+import { bearerEvidence } from "@lenso/auth/fetch";
+import { createManageRouter } from "@lenso/manage/orpc";
+import { RPCHandler } from "@orpc/server/fetch";
 
-See [CLI declarations and failure handling](/docs/cli), [MCP contract](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/mcp/README.md), [Task authorization](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/authorized-service.ts) and [public package map](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f/packages).
+const authentication = running.get(definition.authentication);
+const router = createManageRouter({
+  running,
+  plugins: application.plugins,
+  operations: selected,
+  evidence: bearerEvidence,
+  binding: (_operation, _input, evidence) => ({
+    context: { evidence: evidence.evidence, signal: evidence.signal },
+  }),
+  async canList(operation, evidence) {
+    if (operation.method !== "list" && operation.method !== "read") return false;
+    const scope = authentication.for(notesAudiences[operation.method]);
+    const actor = await scope.required(evidence.evidence, { signal: evidence.signal });
+    return actor.kind === "user";
+  },
+});
+const handler = new RPCHandler(router);
+
+// Inside the host's existing Fetch handler:
+const { matched, response } = await handler.handle(request, {
+  prefix: "/manage",
+  context: { request },
+});
+return matched ? response : new Response("Not found", { status: 404 });
+```
+
+Each `catalog` or `invoke` request extracts its own evidence and creates an adapter borrowing the same running app. The host explicitly mounts `/manage` and supplies ingress/TLS/CORS policy. This is oRPC v2, not automatically created REST routes. Supplying a signal only enables the cooperation actually implemented by Auth/service/provider; it does not cancel committed writes.
+
+Use the catalog's returned key in `invoke({ key, input })`. The alternate `{ pluginId, method, input }` form is for trusted callers that know original identifiers. Neither envelope allows extra actor/approval fields. Authentication/operation failures become `MANAGE_FAILED` with safe versioned diagnostic data; invalid envelopes fail normal oRPC input validation.
+
+## Use agent tools without a new business path
+
+`createAgentTools(adapter)` is available from root or `@lenso/manage/agent`. It returns SDK-independent `{ name, description, inputSchema, invoke }` entries for the filtered catalog. Your runtime agent/SDK owns integration; this does not start MCP or supply an identity provider.
+
+Agent input requires a convertible **object** JSON Schema. Runtime-only validation can still serve ordinary invocation but cannot describe a safe tool; scalar or unavailable schemas fail with `unsupported-input-schema`. Invocation rechecks `canList`, input and service authorization. Output schema is not inferred from `outputDescription`.
+
+Catalog entries include `schemaVersion: 1` and an adapter-scoped opaque `key`, currently `operation_<index>`. Display IDs may be redacted; `invokeEntry` dispatches through the original declaration. Keys are not durable operation IDs, job IDs or receipts across deployments. Rediscover them when the selection changes.
+
+## Confirmation and approval are separate gates
+
+An Operation may declare `confirmation: "required"`, `approval: "required"`, or both. Trusted `confirm()` and `approve()` callbacks must verify the specific invocation through a real user-confirmation flow and the configured approval owner. Missing/false callbacks fail closed. A callback returning true without verification is an application bug; JSON `confirmed`/`approved` flags and `destructive` metadata cannot satisfy a gate.
+
+Selection, operation permission, confirmation, approval and object authorization are separate decisions. The current Notes/Tasks declarations do not automatically require these gates just because an operation deletes/cancels. Add a deliberate declaration and trusted flow when the product needs one.
+
+## Output, presentation and platform limits
+
+Common Engine invocation preserves the service's `this`, telemetry and opaque unknown errors. Results must be finite plain JSON; streams and plain AsyncIterables are rejected. Default successful output and catalog budgets are **1 MiB**, configurable with `maxOutputBytes`. oRPC diagnostics have a separate **4 KiB** budget and safe fallback. A budget does not impose service memory/CPU quotas, and an output failure can follow a committed effect.
+
+View hints contain only `key`, title/group/order, columns and declared detail/action references. Keys must be unique; references must name included methods. Namespaced `extensions` are plain JSON. Neither field can carry React components, module URLs or handlers, or affect dispatch/Auth. No Console frontend/runtime is delivered by this package. Redaction omits schema defaults/examples and common sensitive data, but arbitrary-key secrets/free text remain application responsibility.
+
+Current Manage integration tests run on Bun. The oRPC adapter is Fetch-based, but no Manage-on-workerd example/test establishes a Workers deployment contract. Audit the actual package graph and host capabilities before transferring the assembly; a Fetch signature alone does not validate Bun/Node imports, bindings or platform shutdown. No browser-side direct service/secret access is implied.
+
+Manage is finite query/command invocation. It provides no scheduling, automatic retry, rollback, durable receipt/journal recovery, persistent audit, configuration read-all/write-all, hot update or restart. Tasks submission returns an owned job ID; [durable cancellation/retry](/docs/tasks) remains a separately authorized business operation.
+
+## Diagnose the actual boundary
+
+| Diagnostic or symptom | Next check |
+| --- | --- |
+| `invalid-manage` | Exact running plugin object, selected declarations, required callbacks and output budget |
+| `unknown-operation` / `duplicate-operation` | Selection membership and duplicate methods; do not infer service methods |
+| `missing-context-binding` | Trusted binding for a `context: true` declaration |
+| `forbidden-operation` | Current operation-level `canList`, including permission changes after tool discovery |
+| `UNAUTHORIZED` / `FORBIDDEN` | Real evidence, correct audience and actual resource owner/tenant |
+| `confirmation-required` / `approval-required` | Real entry flow/owner callback, not input flags |
+| `unsupported-input-schema` | Object schema converter required by agent tools |
+| `output-too-large` / `serialization-failed` | Result/catalog shape and byte budget; inspect business state before replay |
+
+[Manage tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/manage/test/manage.test.ts) cover exact references, single validation, gates, redacted-key dispatch, bounded output, concurrent evidence, revocation and explicit v2 Fetch mounting. [Notes tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/test/manage.test.ts) verify the actual shared service; [Tasks tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/tasks/src/manage.test.ts) verify independent selections and rejection before resource setup. See [CLI](/docs/cli), [Auth](/docs/auth), [agents](/docs/agents) and [testing](/docs/testing) for entry-specific operation and lifecycle contracts.

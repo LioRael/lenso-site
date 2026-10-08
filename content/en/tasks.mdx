@@ -5,11 +5,11 @@ description: Run ordinary async handlers through the PostgreSQL queue with expli
 
 `@lenso/tasks` is an optional durable queue for Bun and PostgreSQL. Producers enqueue work; separately started workers call ordinary async services. The delivered provider is PostgreSQL, using pg-boss `12.37.0`. There is no D1, Cloudflare Queues, cron, workflow/DAG engine or default HTTP administration API.
 
-This guide follows the [Tasks implementation at `6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/tasks/README.md). Verify actual installed exports before adoption; matching `0.1.0` strings are not proof of matching artifacts.
+This guide covers published `@lenso/tasks@0.2.0` with Core `0.2.0`, audited against the [Tasks implementation at `549b987`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/tasks/README.md) and actual tarball. See [installation](/docs/installation) for the matching CLI, Manage and dependency versions.
 
 ## Follow the existing report example
 
-[`examples/tasks`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/README.md) contains producer, worker, migration and authorized CLI/MCP entries. Its business result is in `task_example_reports`; a stable `reportId` drives a primary-key upsert. Queue results are safe summaries, not the authoritative business table.
+[`examples/tasks`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/tasks/README.md) contains producer, worker, migration and authorized CLI/MCP entries. Its business result is in `task_example_reports`; a stable `reportId` drives a primary-key upsert. Queue results are safe summaries, not the authoritative business table.
 
 The example task wraps that service directly:
 
@@ -63,6 +63,22 @@ printf '%s\n' '{"jobId":"<returned-job-id>"}' |
 
 The query returns `state`, `attempt`, `maxAttempts` and `cancelRequested`, or `null`. It does not report worker health. Consult the existing worker/supervisor's safe logs for that evidence.
 
+## Keep management and transport selections independent
+
+The existing `createTasksOperations` factory returns `{ plugin, operations, manage }`. Manage selects `submit/query/cancel/retry`; CLI selects those plus `report`. Named `mcpOperations` and the actual stdio host allowlist select only the four management operations, so `report` is not exposed through the default MCP entry.
+
+```ts
+import { selectManageOperations } from "@lenso/manage";
+import { taskOperations } from "./src/plugin";
+
+const queryOnly = selectManageOperations(taskOperations.manage, ["query"]);
+// queryOnly[0] is the same declaration used by the application's CLI.
+```
+
+An explicit [Manage adapter](/docs/manage) selects these declarations, borrows the already-running exact Tasks plugin, binds entry policy and implements caller-specific `canList`. This does not start a worker or give administrative queue access. The present Tasks methods are single-input and authenticate from the configured launch source/evidence; adding an adapter does not turn them into per-request identities. A remote multi-user entry needs an explicitly designed contextual service boundary, not a mutable shared session or an actor in JSON.
+
+Manage remains finite invocation: submit returns an owned job ID, query checks durable ownership, and cancel/retry preserve their existing queue semantics. A tool request cancellation does not call `tasks.cancel`. Confirmation/approval metadata, if deliberately added, requires trusted entry callbacks and never substitutes for owner checks.
+
 ## Separate queue and resource ownership
 
 Use `createTaskQueue({ provider, tasks })` for a standalone entry, or `createTaskPlugin({ id, tasks, connect, worker? })` for Lenso lifecycle integration. Omitting `worker` creates a producer-only plugin. Different `queueName` values separate durable queues; plugin IDs separate in-process instances. Workers sharing a queue compete for jobs and must register the full task set. `concurrency` is local to each worker.
@@ -106,4 +122,4 @@ After pruning, `get` is null, cancellation is `missing`, and retry is false. Ded
 
 Before recovery, inspect the authorized query, durable owner, attempt budget, business result and safe worker evidence. Retry only an eligible failure after checking idempotency. On ambiguous acknowledgement, query state before replaying. Missing schema is a provisioning error, not permission to run a migration automatically.
 
-See [real PostgreSQL tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/tasks/test/postgres.test.ts), [authorized service tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/authorized-service.test.ts), and [testing](/docs/testing). Skipped database checks do not establish durability.
+See [real PostgreSQL tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/tasks/test/postgres.test.ts), [authorized service tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/tasks/src/authorized-service.test.ts), and [testing](/docs/testing). Skipped database checks do not establish durability.

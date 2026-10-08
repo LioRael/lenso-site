@@ -3,7 +3,7 @@ title: Dependency lifecycle and resource ownership
 description: Understand serial startup, configuration preflight, rollback, early release, and complete LIFO cleanup.
 ---
 
-This page documents the TypeScript source preview at [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f). Verify installed declarations, especially the async disposer returned by `onCleanup`; a registry package with the same version number can contain older behavior.
+This page documents published `@lenso/core@0.2.0`, audited against source [`549b987`](https://github.com/LioRael/lenso/tree/549b9870acb6af239faf79245179a4f1f7e60cdb). Its `onCleanup` returns an async disposer sharing completion with automatic cleanup; verify this contract when upgrading an older installation.
 
 ## Startup has one resource boundary
 
@@ -19,13 +19,13 @@ if (!options.client) context.onCleanup(() => client.close());
 return drizzle({ client, schema: options.schema });
 ```
 
-This excerpt comes from [the real adapter](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/src/bun-sqlite.ts). A client created by the plugin is closed by it; a supplied client remains owned by its caller. The distinction also matters for borrowed pools, storage clients and Workers platform bindings.
+This excerpt comes from [the real adapter](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/db/src/bun-sqlite.ts). A client created by the plugin is closed by it; a supplied client remains owned by its caller. The distinction also matters for borrowed pools, storage clients and Workers platform bindings.
 
 ## Shutdown unwinds registrations
 
 `context.onCleanup(callback)` registers a callback during setup and returns an async disposer. Automatic shutdown uses a single global stack in last-in-first-out order and awaits callbacks sequentially. Dependencies start first, so consumers normally release their resources before their dependencies.
 
-Within one setup, register lower-level resources before higher-level services. [Tasks](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/plugin.ts) registers the owned Auth connection, then database/queue resources, then its authorized service. Shutdown closes the service before those underlying resources.
+Within one setup, register lower-level resources before higher-level services. [Tasks](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/tasks/src/plugin.ts) registers the owned Auth connection, then database/queue resources, then its authorized service. Shutdown closes the service before those underlying resources.
 
 A dependency edge does not create a child scope: the database owns its resources; Notes owns its own resources. Do not close a dependency from a consumer merely because the consumer is stopping.
 
@@ -55,7 +55,7 @@ try {
 }
 ```
 
-This small lifecycle example runs against the verified preview build. Early release and automatic shutdown share one completion. Shutdown waits for an early release still in progress, and an early failure remains visible during shutdown. Registration is setup-only: saving the context and registering new finalizers from later service calls fails.
+This small lifecycle example runs against the published `0.2.0` package. Early release and automatic shutdown share one completion. Shutdown waits for an early release still in progress, and an early failure remains visible during shutdown. Registration is setup-only: saving the context and registering new finalizers from later service calls fails.
 
 A finalizer must not await its own disposer or its application's `stop()` Promise. Both await that finalizer, creating a deadlock. Core does not impose a cleanup timeout; the host must choose its own shutdown policy.
 
@@ -75,4 +75,4 @@ A finite CLI call starts and stops one complete app. A Bun HTTP host normally ke
 
 For a leak or stuck shutdown, identify the acquiring owner, check when cleanup was registered, and check for self-awaiting finalizers or unbounded drain. For failures after a business write, query authorized durable state before replaying: resource cleanup does not roll back committed external effects.
 
-See [the lifecycle implementation](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/lifecycle.ts) and [CLI failure phases](/docs/cli).
+See [the lifecycle implementation](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/lifecycle.ts) and [CLI failure phases](/docs/cli).

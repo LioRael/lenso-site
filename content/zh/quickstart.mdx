@@ -3,7 +3,7 @@ title: 第一个应用
 description: 安装已发布 Core 包，用精确实例依赖运行普通异步服务。
 ---
 
-本页使用 **Bun 1.4.2** 与已发布 **`@lenso/core@0.1.0`**，无需 Engine 或 Web。示例已用实际 npm 包运行验证。
+本页使用 **Bun 1.4.2** 与已发布 **`@lenso/core@0.2.0`**，无需 Engine 或 Web。示例已用实际 npm 包运行验证。
 
 ## 创建目录
 
@@ -13,7 +13,7 @@ description: 安装已发布 Core 包，用精确实例依赖运行普通异步�
 mkdir lenso-first-app
 cd lenso-first-app
 bun init -y
-bun add --exact @lenso/core@0.1.0
+bun add --exact @lenso/core@0.2.0
 ```
 
 保留生成的 `bun.lock`。这些命令不表示存在应用脚手架。`create-lenso-docs@0.1.0` 创建文档站，不创建运行时应用。
@@ -94,4 +94,4 @@ const ticker = definePlugin({
 | 依赖访问失败 | requires 声明确切对象；重新创建相同 ID 不够。 |
 | 进程不退出 | 检查拥有的计时器/流/listener 和 stop 是否完成。 |
 
-接下来读[组合](/docs/zh/composition)和[生命周期](/docs/zh/lifecycle)。使用实例配置或新版 Web API 前，先按[安装](/docs/zh/installation)选择已核对的源码预览路径。
+接下来读[组合](/docs/zh/composition)和[生命周期](/docs/zh/lifecycle)。添加实例配置或 Web 前，先按[安装](/docs/zh/installation)选择匹配的发布包版本组合。

@@ -5,7 +5,7 @@ description: Verify trusted evidence, derive audience-bound actors, enforce curr
 
 `@lenso/auth` separates verified identity from permission to act on a resource. Your application owns accounts, organizations, membership and business objects. Auth refers to a stable string `subjectId` inside a configured realm; it does not require a User table, role schema, Better Auth dependency or Web server.
 
-This is the implemented **source-preview contract at `6e239c71a38279885facce133ceb847bbfe12f2f`**. Its optional oRPC adapter uses **`2.0.0-beta.42`**. Published Web `0.1.0` still uses oRPC `1.15.5`; match verified artifacts and peer requirements before combining Auth, Web and clients. See [installation](/docs/installation).
+This page describes published **`@lenso/auth@0.2.0`**, audited against **`549b9870acb6af239faf79245179a4f1f7e60cdb`**, with its optional oRPC adapter pinned to **`2.0.0-beta.42`**. Use matching Core/Web/Manage `0.2.0` and CLI `0.19.0` when selecting those entries. Older Web `0.1.0` used oRPC `1.15.5` and cannot share the current wire contract. See [installation](/docs/installation).
 
 ## Choose the public entry for the responsibility
 
@@ -109,8 +109,25 @@ Review and apply the selected baseline SQL explicitly: `@lenso/auth/migrations/p
 
 Register `sessions.close()` immediately after acquisition. `createAuthPlugin` registers the returned Auth service's `close()` after setup, so shutdown closes Auth before the underlying sessions. Owned database clients close later through their own dependency lifetime; borrowed clients and D1 bindings stay with their owner. Callbacks must settle after cancellation and must not await their own owner's close promise. Cleanup does not reverse a committed write.
 
+## Trusted operation context and Manage
+
+The [Notes operation companion](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/operations.ts) now declares `context: true`; its real second parameter is `NotesOperationContext`:
+
+```ts
+export interface NotesOperationContext {
+  evidence: string | null;
+  signal?: AbortSignal;
+}
+```
+
+The wrapper derives an audience-specific actor from `context.evidence`, passing `context.signal` to Auth, then calls the same owner-enforcing Notes service. The first argument remains shared-schema business input; the second is supplied by a trusted entry, never deserialized from it. Context's type or presence is not identity verification, and there is no global mutable current actor.
+
+CLI uses its named `operationBinding`; MCP uses only the explicit stdio launch `binding`, with Notes reading `NOTES_MCP_SESSION` independently of CLI's `NOTES_SESSION`. A Manage adapter's binding runs anew after validated input for each call. For `/orpc`, `evidence(context)` reads the current request through a selected Fetch extractor, then `binding` constructs the service's exact context. `canList` must check the current caller's operation-level permission; filtering a catalog does not replace realm/audience, tenant or object-owner policy in the service.
+
+Operations may separately require `confirmation: "required"` or `approval: "required"`. Only trusted `confirm`/`approve` callbacks can satisfy them; missing/false results fail closed. A consent flag in input, descriptive destructive metadata or a callback returning true without verification is not authorization or an approval implementation. No durable approval receipt, transaction or rollback is added. See [Manage](/docs/manage), [CLI](/docs/cli) and [MCP](/docs/agents) for the respective entry/lifetime contracts.
+
 ## HTTP and verification boundaries
 
 `bearerEvidence` accepts only Bearer Authorization and rejects malformed values without cookie fallback. `headersEvidence` copies headers for a session source. `requireSameOrigin(request, allowedOrigin)` is an explicit cookie-write gate; it rejects `GET`/`HEAD`/`OPTIONS`, missing/mismatched Origin and cross-site cookie writes. Auth mounts no routes, CORS policy, secure cookies or listener. Preserve provider response headers/Set-Cookie in application login/renew handlers and protect the selected routes yourself.
 
-The [Auth contracts](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/README.md), [Notes Auth owner](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/auth.ts) and [shared policy](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/notes.ts) define this behavior. Verify forged/copied actors, wrong instance/audience, another owner's object, revoked sessions and provider failure. Real local workerd/D1 and PostgreSQL race checks exist; production replication and untested drivers are not proven by them. No password system, login UI, automatic account linking, cookie issuance, JWT/OIDC implementation or old Rust session migration is provided by this preview.
+The [Auth contracts](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/auth/README.md), [Notes Auth owner](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/auth.ts) and [shared policy](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/notes.ts) define this behavior. Verify forged/copied actors, wrong instance/audience, another owner's object, revoked sessions and provider failure. Real local workerd/D1 and PostgreSQL race checks exist; production replication and untested drivers are not proven by them. No password system, login UI, automatic account linking, cookie issuance, JWT/OIDC implementation or old Rust session migration is provided by this release.

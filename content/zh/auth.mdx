@@ -5,7 +5,7 @@ description: 验证可信凭证、生成绑定 audience 的 actor、执行当前
 
 `@lenso/auth` 区分已验证身份与操作资源的权限。应用拥有账号、组织、成员关系和业务对象；Auth 只在配置的 realm 中引用稳定字符串 `subjectId`，不要求 User 表、角色 schema、Better Auth 或 Web 服务。
 
-本文描述 **`6e239c71a38279885facce133ceb847bbfe12f2f` 源码预览中已实现的契约**，可选 oRPC 适配使用 **`2.0.0-beta.42`**。已发布 Web `0.1.0` 仍使用 oRPC `1.15.5`；组合 Auth、Web 与 client 前应核对构建产物及 peer 要求。见[安装与兼容性](/docs/zh/installation)。
+本文对应已发布 **`@lenso/auth@0.2.0`**，按 **`549b9870acb6af239faf79245179a4f1f7e60cdb`** 核对，可选 oRPC 适配精确使用 **`2.0.0-beta.42`**。选择相应入口时使用匹配的 Core/Web/Manage `0.2.0` 与 CLI `0.19.0`。旧 Web `0.1.0` 使用 oRPC `1.15.5`，不能共用当前协议。见[安装与兼容性](/docs/zh/installation)。
 
 ## 按职责选择公开入口
 
@@ -109,8 +109,25 @@ Idle/absolute 不超过记录中存储的上限，轮换不能更频繁。当前
 
 获取 sessions 后立即登记 `sessions.close()`。`createAuthPlugin` 在 setup 完成后登记返回 Auth 服务的 `close()`，所以反序清理先关闭 Auth，再关闭其 sessions。拥有的数据库 client 随依赖生命周期稍后关闭；借用 client 与 D1 绑定仍由原所有者负责。回调必须在取消后结束，不能等待自身所有者的 close Promise。清理不能逆转已提交写入。
 
+## 可信操作 context 与 Manage
+
+[Notes operation companion](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/operations.ts) 现在声明 `context: true`，真实第二参数为 `NotesOperationContext`：
+
+```ts
+export interface NotesOperationContext {
+  evidence: string | null;
+  signal?: AbortSignal;
+}
+```
+
+Wrapper 根据 `context.evidence` 获取对应 audience 的 actor，将 `context.signal` 传给 Auth，再调用相同的 owner-enforcing Notes 服务。第一参数仍是共享 schema 的业务输入；第二参数由可信入口提供，不能从业务 JSON 反序列化。Context 类型或存在本身不是身份验证，不使用全局可变 current actor。
+
+CLI 使用 named `operationBinding`；MCP 只使用显式 stdio 启动 `binding`，Notes 的 `NOTES_MCP_SESSION` 独立于 CLI `NOTES_SESSION`。Manage adapter 在每次输入验证后重新调用 binding。`/orpc` 的 `evidence(context)` 从当前请求使用所选 Fetch extractor 提取凭证，再由 binding 构造服务的精确 context。`canList` 必须检查当前身份的操作级许可；目录过滤不替代服务内 realm/audience、tenant 和对象 owner 策略。
+
+Operation 可以额外要求 `confirmation: "required"` 或 `approval: "required"`，只能由可信 `confirm`/`approve` 回调满足，缺失或 false 则拒绝。输入 consent flag、destructive 描述或未做真实验证便返回 true 的回调，都不是授权或审批实现。不附带持久 approval receipt、事务或回滚。各入口/生命周期参见[Manage](/docs/zh/manage)、[CLI](/docs/zh/cli)和[MCP](/docs/zh/agents)。
+
 ## HTTP 与验证边界
 
 `bearerEvidence` 只接受 Bearer Authorization，格式错误不回退 cookie；`headersEvidence` 为 session source 复制 headers。`requireSameOrigin(request, allowedOrigin)` 是显式 cookie 写入门禁，拒绝 `GET`/`HEAD`/`OPTIONS`、缺失/不匹配 Origin 和跨站写入。Auth 不挂载路由、CORS、安全 cookie 或监听器。登录/续期 handler 需保留提供方 response headers/Set-Cookie，并自己保护对应入口。
 
-[Auth 契约](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/README.md)、[Notes 会话所有者](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/auth.ts)和[共享策略](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/notes.ts)定义此行为。验证伪造/复制 actor、错误实例/audience、他人对象、撤销会话和提供方失败。已有真实本地 workerd/D1 与 PostgreSQL 竞态检查，但不证明生产复制或未经验证驱动行为。此预览不提供密码系统、登录 UI、自动账号关联、cookie 签发、JWT/OIDC 实现或旧 Rust 会话迁移。
+[Auth 契约](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/auth/README.md)、[Notes 会话所有者](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/auth.ts)和[共享策略](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/notes.ts)定义此行为。验证伪造/复制 actor、错误实例/audience、他人对象、撤销会话和提供方失败。已有真实本地 workerd/D1 与 PostgreSQL 竞态检查，但不证明生产复制或未经验证驱动行为。此版本不提供密码系统、登录 UI、自动账号关联、cookie 签发、JWT/OIDC 实现或旧 Rust 会话迁移。

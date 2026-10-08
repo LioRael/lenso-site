@@ -5,7 +5,7 @@ description: 在现有 React 应用中使用 Lenso 类型化客户端，隔离�
 
 Lenso 当前的 React 集成是 `@lenso/web/client` 提供的浏览器安全类型化传输，可接入现有前端架构。此源码版本没有 React hooks 包、Provider、查询缓存、Suspense 适配、SSR hydration 层或浏览器 `startApp` 生命周期。
 
-本文对应 **`6e239c71a38279885facce133ceb847bbfe12f2f` 源码预览**与 **oRPC `2.0.0-beta.42`**。已发布 `@lenso/web@0.1.0` 使用 oRPC `1.15.5`，客户端构建来源和协议必须与服务端匹配。使用[安装与兼容性](/docs/zh/installation)中的已核实预览产物，不要把 npm v1 客户端与 v2 服务端混用。
+本文对应已发布 **`@lenso/web@0.2.0`**，按 **`549b9870acb6af239faf79245179a4f1f7e60cdb`** 核对，精确使用 **oRPC `2.0.0-beta.42`**。使用[安装与兼容性](/docs/zh/installation)中的完整版本组合。旧 Web `0.1.0` 使用 oRPC `1.15.5`，不要把该 v1 client 与 v2 server 混用。
 
 ## 隔离浏览器与服务端依赖图
 
@@ -94,6 +94,12 @@ export function NotesList({ credential }: { credential: string }) {
 
 生成 client 是小型类型化传输包装，不是 React SDK，也不会扫描任意服务生成接口。调整路由约定后运行应用现有 generate 命令。修改源码后重新生成，不手改 `.lenso`。参见[Engine](/docs/zh/engine)。
 
+## 可选 Manage view 不提供 React 运行时
+
+`@lenso/manage@0.2.0` 为所选现有 operation 增加纯 JSON view hint：稳定展示 key、title/group/order、columns 和 detail/action 引用，不提供 React component 函数、module URL、Devframe runtime 或自动挂载 Console。应用选择此集成时自行按 view key 注册前端组件，仍可使用上面的普通类型化 Notes client。
+
+显式挂载的 `createManageRouter` 可通过同一类型化 Web client 消费，对其真实 router 使用 `import type`。前端读取当前 caller-filtered catalog，以当前 adapter 范围内 key 和原始业务 input 调用；不能提交可信 actor、evidence context 或 approval envelope，也不能将目录索引跨发布持久化为 ID。服务端当前请求 evidence、`canList`、每次 binding 和对象 policy 才是权威。Manage 只支持有限 JSON，不支持二进制文件流。服务端组合见[Manage](/docs/zh/manage)，安全边界见[Auth](/docs/zh/auth)。
+
 ## 定位浏览器错误
 
 | 现象 | 检查 |
@@ -105,4 +111,4 @@ export function NotesList({ credential }: { credential: string }) {
 | 前端 bundle 出现 Bun/DB 模块 | 检查值导入；router 和业务类型只用 `import type`。 |
 | 响应无法正常解码 | 对齐客户端/服务端构建与精确 oRPC v2 协议版本。 |
 
-[客户端实现](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/client.ts)、[浏览器导出](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/browser.ts)与[生成约定](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-defaults.ts)定义当前支持范围。
+[客户端实现](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/web/src/client.ts)、[浏览器导出](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/browser.ts)与[生成约定](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/engine/src/engine-defaults.ts)定义当前支持范围。

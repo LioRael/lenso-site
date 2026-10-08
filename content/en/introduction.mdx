@@ -16,6 +16,7 @@ Lenso is a Bun-first TypeScript application framework. A plugin declares how a s
 | Inspect or invoke declared operations | [CLI](/docs/cli) |
 | Add a browser/API entry | [Web](/docs/web), [native Fetch](/docs/fetch), [React](/docs/react) |
 | Protect business objects | [Auth](/docs/auth) |
+| Expose selected management operations | [Manage](/docs/manage) |
 | Persist Notes or produce reports | [Existing examples](/docs/examples) |
 | Select a host | [Deployment](/docs/deployment) |
 
@@ -25,16 +26,16 @@ Lenso is a Bun-first TypeScript application framework. A plugin declares how a s
 
 **Build-time Engine.** Engine discovers trusted application declarations and extends generation, build and supervised development. Its conventions are replaceable through public extension interfaces. It has a separate lifetime from application setup.
 
-**Adapters.** Web, Auth, DB, Storage, Tasks, MCP, logging and telemetry are optional. Installing one does not make every service remotely callable. Operations and identity remain explicit. Applications may use the underlying Fetch, Drizzle, Pino or OpenTelemetry APIs directly.
+**Adapters.** Web, Auth, DB, Storage, Tasks, Manage, MCP, logging and telemetry are optional. Installing one does not make every service remotely callable. Operations and identity remain explicit. Applications may use the underlying Fetch, Drizzle, Pino or OpenTelemetry APIs directly.
 
 ## Know the documentation baseline
 
-Most pages describe [TypeScript source `6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f). Quickstart is separately verified against published `@lenso/core@0.1.0`. New configuration, Bun listener and observability APIs are not all published, even when source and registry use the same version string.
+These guides use verified npm artifacts, audited against [TypeScript source `549b987`](https://github.com/LioRael/lenso/tree/549b9870acb6af239faf79245179a4f1f7e60cdb). Core, Engine and the principal adapters are `0.2.0`; CLI is `0.19.0`; DB and Storage are `0.1.1`. Quickstart has been run with the actual `@lenso/core@0.2.0` artifact. Configuration, Bun listener, Manage and Log/OTel entries are now published in this matrix.
 
-[Installation](/docs/installation) records these differences. Source oRPC v2 uses prerelease `2.0.0-beta.42`; client and server must match. This site is a source preview, not a published snapshot of every framework package.
+[Installation](/docs/installation) records exact versions and host boundaries. oRPC v2 still uses prerelease `2.0.0-beta.42`; client and server must match. A source commit and an npm release are separate facts: both were checked for this baseline.
 
 ## What the application owns
 
-The application chooses its listener, deployment, secret authority, schemas, migrations, authentication provider and object/tenant policy. Cleanup releases resources; it does not reverse a committed write. An operation's effect metadata does not authorize execution. This revision has no independent general Manage SDK, configuration center or built-in Observe query service.
+The application chooses its listener, deployment, secret authority, schemas, migrations, authentication provider and object/tenant policy. Cleanup releases resources; it does not reverse a committed write. An operation's effect metadata does not authorize execution. Optional Manage now selects existing instance-bound operations for explicit CLI, agent or oRPC entries. It borrows an existing running graph and requires trusted per-call binding and service authorization. A configuration center and built-in Observe query service are not provided.
 
 The previous Rust/Host/Capability generation is [archived](/docs/upgrade). Its commands and contracts are not TypeScript APIs. Console and Relay are separate products.

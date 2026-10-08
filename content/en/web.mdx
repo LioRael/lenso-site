@@ -7,9 +7,9 @@ description: Expose shared async services through Fetch and typed oRPC procedure
 
 ## Version boundary
 
-This page describes the **source preview at `6e239c71a38279885facce133ceb847bbfe12f2f`**, using **oRPC `2.0.0-beta.42`**. This is a prerelease transport contract. The published `@lenso/web@0.1.0` artifact uses oRPC `1.15.5` and does not export `/bun`; the same package version string does not identify the same implementation. These examples require a verified build of the pinned source and matching packages, as described in [installation](/docs/installation). Installing the older npm artifact will not reproduce them.
+This page describes published **`@lenso/web@0.2.0`**, audited against source **`549b9870acb6af239faf79245179a4f1f7e60cdb`**, using exact **oRPC `2.0.0-beta.42`**. oRPC remains a prerelease transport contract. Use matching Core/Auth/client packages from [installation](/docs/installation). As an upgrade comparison, older `@lenso/web@0.1.0` used oRPC `1.15.5` and had no `/bun` export; it cannot run the current listener/v2 examples.
 
-Upgrade client and server together. There is no v1 wire compatibility path in this source revision. Check the installed `exports` and dependency versions before applying a source-preview tutorial.
+Upgrade client and server together. There is no v1 wire compatibility path in this release. Check installed `exports` and dependency versions before applying a tutorial.
 
 ## Keep the service as the shared boundary
 
@@ -55,7 +55,7 @@ procedure
   .handler(({ input, context }) => service.read(context.actor, input.id));
 ```
 
-Here `procedure`, `authentication`, `notesAudiences`, `noteLookupInput` and `service` come from the [existing router](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/router.ts). `requiredAuth` verifies evidence and replaces the reserved `actor` context key. The shared service revalidates the actor and checks the loaded note's owner. An authenticated request is not permission to read any note.
+Here `procedure`, `authentication`, `notesAudiences`, `noteLookupInput` and `service` come from the [existing router](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/router.ts). `requiredAuth` verifies evidence and replaces the reserved `actor` context key. The shared service revalidates the actor and checks the loaded note's owner. An authenticated request is not permission to read any note.
 
 **oRPC v2 does not deduplicate middleware** applied at router and procedure levels. Apply authentication once, or implement an explicit request-context guard if your application deliberately repeats it. Lenso adds no implicit authentication cache. See [Auth](/docs/auth).
 
@@ -81,6 +81,14 @@ Relative URLs resolve against the browser location; server callers must supply a
 
 `errorStatusMap` extends oRPC's common mapping with application codes. For example, `{ RATE_LIMITED: 429 }` changes HTTP policy; it does not add a `status` property to an oRPC error. Inspect its `code` and typed data. Map expected domain failures at the procedure boundary and keep unknown provider error text, credentials and private object details out of public messages.
 
+## Mount optional Manage procedures explicitly
+
+`createManageRouter` from `@lenso/manage/orpc` supplies finite `catalog` and `invoke` procedures for selected existing Operations. It does not mount a route automatically. Supply an **already running** application, its exact plugin/operation selection, `evidence(context)`, per-call `binding(operation, validatedInput, evidence)` and current-identity `canList(operation, evidence)`. Do not read an app variable during setup if it is assigned only after that same `startApp` returns. The host owns this bootstrap and the borrowed app lifetime.
+
+Use current request evidence, such as `bearerEvidence`, rather than a global mutable actor. The binding can pass `{ evidence: evidence.evidence, signal: evidence.signal }` as the real Notes operation's trusted context; the wrapper then authenticates for its operation audience, and the Notes service enforces object ownership. `canList` filters catalog and gates invocation but does not replace service authorization.
+
+The invoke envelope accepts `{ key, input }` or `{ pluginId, method, input }`; actor or approval fields are not accepted. Dispatch uses the selected declaration and adapter-scoped key, not a redacted display identifier. Failures become `ORPCError("MANAGE_FAILED")` with bounded safe diagnostic data. Confirmation/approval requirements still need trusted callbacks. This is an optional entry alongside the existing Notes CRUD router; see [Manage](/docs/manage) for complete assembly and [Auth](/docs/auth) for the identity boundary.
+
 ## Own the request until it settles
 
 Returning a `Response` only makes headers available. `WebContext` supplies `request`, `signal`, `onCleanup(callback)` and `waitUntil(promise)`. Pass `signal` to providers, register cleanup immediately after acquiring a request resource, and register independently running producer work with `waitUntil`. The app waits for actual request finalization before releasing dependent services.
@@ -99,10 +107,10 @@ For telemetry, choose one propagation owner. oRPC instrumentation defaults to pr
 
 | Symptom | First check |
 | --- | --- |
-| `/bun` cannot be imported | Inspect installed package exports; the npm `0.1.0` artifact is older than this preview. |
+| `/bun` cannot be imported | Inspect installed exports and use the matching `0.2.0` release; older Web `0.1.0` had no listener entry. |
 | RPC route returns `404` | Match client endpoint, Web prefix and `POST` method. |
 | Authentication provider runs twice | Check repeated router/procedure middleware under oRPC v2. |
 | Input validation fails | Use the actual Notes schema and v2 client, rather than an old transport payload. |
 | Shutdown does not finish | Drain/cancel the body and identify registered work or a provider ignoring cancellation. |
 
-The [Web package source](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/index.ts), [client](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/client.ts) and [HTTP contract tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/test/http.test.ts) define this preview's behavior.
+The [Web package source](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/web/src/index.ts), [client](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/web/src/client.ts), [Manage router](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/manage/src/orpc.ts) and [HTTP contract tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/web/test/http.test.ts) define this behavior.

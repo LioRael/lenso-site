@@ -5,7 +5,7 @@ import { createSearchAPI } from "fumadocs-core/search/server";
 import { structure } from "fumadocs-core/mdx-plugins/remark-structure";
 import { createChineseTokenizer } from "./components/chinese-tokenizer.mjs";
 
-export const frameworkRef = "6e239c71a38279885facce133ceb847bbfe12f2f";
+export const frameworkRef = "549b9870acb6af239faf79245179a4f1f7e60cdb";
 export const legacyRef = "bce1f2c08d238cec9e57a4c7a0218c8413b804c5";
 export const groups = [
   ["Start here", "从这里开始", ["introduction", "quickstart", "installation", "examples"]],
@@ -72,7 +72,7 @@ export async function loadSource({ root }) {
           ...frontmatter(markdown, `${locale}/${slug}`), markdown,
           translationKey: slug,
           navigation: { group: group[locale === "zh" ? 1 : 0], order: groupIndex * 100 + order },
-          metadata: { frameworkRef, edition: slug === "quickstart" ? "published-core-0.1.0" : "typescript-source-preview" },
+          metadata: { frameworkRef, edition: slug === "quickstart" ? "published-core-0.2.0" : "typescript-release-0.2.0" },
         });
       }
     }

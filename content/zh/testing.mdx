@@ -5,7 +5,7 @@ description: 验证真正变化的边界，理解安全 diagnostic，并区分�
 
 从失败入口、精确 app root、实际包产物及宿主开始，记录可复现命令和期望行为。只检查必要环境 key 是否存在，不为定位缺少设置而输出完整配置或 secret。
 
-本页流程对应 TypeScript 源码 [`6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md)。源码 checkout 命令和未发布 API 必须与外部应用的真实 exports、scripts 匹配。
+本页流程对应审计基线 TypeScript 源码 [`549b987`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/docs/CLI.md)。源码 checkout 命令必须与外部应用实际安装的 exports、scripts 匹配。
 
 ## 保持反馈路径短
 
@@ -54,7 +54,7 @@ test("failing setup releases its acquired resource", async () => {
 });
 ```
 
-[生命周期测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/test/lifecycle.test.ts)还覆盖全局 LIFO、disposer 共享、重复 stop 与聚合失败。真实资源应验证自有 client 已关闭、借用 client 仍存活；流式入口要测 body 完成/取消，不能仅测 response 已创建。
+[生命周期测试](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/test/lifecycle.test.ts)还覆盖全局 LIFO、disposer 共享、重复 stop 与聚合失败。真实资源应验证自有 client 已关闭、借用 client 仍存活；流式入口要测 body 完成/取消，不能仅测 response 已创建。
 
 ## 按证据选择集成测试
 
@@ -63,6 +63,7 @@ test("failing setup releases its acquired resource", async () => {
 | `bun test packages/db/test/resources.test.ts` | 真实 Bun SQLite 归属/隔离，不自动迁移 |
 | `bun test examples/notes/test/notes.test.ts examples/notes/test/operations.test.ts` | 隔离本地资源上的共享 Notes/CLI 验证与 owner 边界 |
 | `bun test packages/mcp/test/stdio.test.ts` | 真子进程与官方 SDK stdio |
+| `bun test packages/manage/test/manage.test.ts examples/notes/test/manage.test.ts` | 受控/本地 fixture 中的有限输出、确切实例选择、可信 context、权限/确认/审批与服务归属 |
 | `bun test packages/storage/test/files.test.ts` | 受控 provider 的状态/补偿竞争，不代表真实云行为 |
 | `bun test packages/tasks/test/worker.test.ts` | 受控 worker drain/取消/slot 语义，不证明持久性 |
 | `bun test packages/otel/test/cli.test.ts` | 测试 receiver/exporter 上的有限 CLI export |
@@ -93,7 +94,7 @@ printf '%s\n' '{"title":" "}' |
   bun run cli call notes-operations create --root examples/notes --stdin --json
 ```
 
-预期证据是 `code: "invalid-input"`、`phase: "input"`、exit 2，以及安全的 `title` field path；拒绝该输入无需 DB 或 session。[Operation 测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/test/operations.test.ts)验证 input validation 先于 setup。
+预期证据是 `code: "invalid-input"`、`phase: "input"`、exit 2，以及安全的 `title` field path；拒绝该输入无需 DB 或 session。[Operation 测试](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/test/operations.test.ts)验证 input validation 先于 setup。
 
 | 证据 | 边界与下一步 |
 | --- | --- |
@@ -102,6 +103,8 @@ printf '%s\n' '{"title":" "}' |
 | `config-invalid`，phase `config` | 全实例 preflight：安全 nested code、field path 与 source ID |
 | `UNAUTHORIZED` / `FORBIDDEN` | 真实 evidence、realm/audience、实际 owner；不向 JSON 注入 actor |
 | `invocation-failed` | 未知业务错误：查询授权安全日志，客户端故意不展示任意异常文本 |
+| `missing-context-binding`、`confirmation-required`、`approval-required` | 可信入口 binding/gate；不要向业务 JSON 添加 actor、confirm 或 approve flags |
+| `output-too-large`，phase `output` | 有限操作 JSON budget（默认 1 MiB）；副作用可能已提交 |
 | `invocation-and-cleanup-failed` | 调用与 cleanup 都失败，保留两个有序 causes |
 | `serialization-failed` | 包括 undefined 在内的非 plain finite JSON；业务可能已提交 |
 | MCP `adapter-busy` | 已有调用持有 admission，不排队，也不意味着可以重复业务 |
@@ -116,4 +119,4 @@ Generated output 错误回到 source/owner 边界检查。`.lenso` 与 `dist` �
 
 ## 给出可用的结果报告
 
-报告宿主/包基线、复现命令、diagnostic code/phase/source、重点修改和真正执行的检查。区分 fixture、真实 DB/workerd 和 skips。不确定副作用后的状态需要明确；缺少授权 status/log 入口阻止诊断时，说明这个接口缺口。现有 stderr/backend 证据见[可观测性](/docs/zh/observability)；该基线没有通用 Manage 或 Observe 查询命令。
+报告宿主/包基线、复现命令、diagnostic code/phase/source、重点修改和真正执行的检查。区分 fixture、真实 DB/workerd 和 skips。不确定副作用后的状态需要明确；缺少授权 status/log 入口阻止诊断时，说明这个接口缺口。现有 stderr/backend 证据见[可观测性](/docs/zh/observability)，显式选择的授权操作见 [Manage](/docs/zh/manage)。目前没有通用 Observe 查询命令或自动远程控制服务。

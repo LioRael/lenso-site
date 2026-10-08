@@ -1,66 +1,85 @@
 ---
 title: 安装与兼容性
-description: 选择已核对发布包或精确源码预览，保持运行时、协议与宿主版本一致。
+description: 安装一致的发布包组合，按需选择适配器，并匹配运行时与传输协议要求。
 ---
 
-站点渲染器使用 **`@lenso/docs@0.1.0`**，初始化器使用 **`create-lenso-docs@0.1.0`**；npm 已确认两个精确版本存在。它们是独立文档包，不决定 Lenso 运行时发布版本。
+本站渲染器是 **`@lenso/docs@0.1.0`**，初始化器是 **`create-lenso-docs@0.1.0`**。两个精确版本均存在于正规 npm。它们是独立文档包，不选择 Lenso 运行时版本。
 
-## 已发布 Core
+## 从已发布 Core 开始
 
-[快速开始](/docs/zh/quickstart) 使用 `bun add --exact @lenso/core@0.1.0`，已在 Bun `1.4.2` 验证。该包导出 Core、`/plugin`、`/browser`，没有较新的配置 API。browser 提供声明/辅助能力，不是浏览器应用运行时。
-
-## 源码预览
-
-高级页面描述[源码 `6e239c71a38279885facce133ceb847bbfe12f2f`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f)。运行示例时使用独立、审阅过的新 checkout：
+[快速开始](/docs/zh/quickstart)使用 Bun **`1.4.2`** 与真实发布产物：
 
 ```sh
-git clone https://github.com/LioRael/lenso.git lenso-preview
-cd lenso-preview
-git checkout 6e239c71a38279885facce133ceb847bbfe12f2f
+bun add --exact @lenso/core@0.2.0
+```
+
+保留一个 bun.lock。Core 本身即可启动普通服务，无需 Engine 或 Web。browser 入口提供安全声明/辅助能力，不包含 startApp 或浏览器服务运行时。此版本已导出配置、logger 契约和应用 instanceId。
+
+只添加实际需要的入口。CLI 工具使用：
+
+```sh
+bun add --dev --exact @lenso/cli@0.19.0
+bunx --no-install lenso help --json
+```
+
+Web 包与两端协议 peer 必须匹配：
+
+```sh
+bun add --exact @lenso/web@0.2.0 @orpc/client@2.0.0-beta.42 @orpc/server@2.0.0-beta.42
+```
+
+安装 Web 不选择 ingress、认证或对象策略。[Web](/docs/zh/web)、[Auth](/docs/zh/auth)、[数据库](/docs/zh/database)与 [Manage](/docs/zh/manage)说明各自可选适配器与 peer 要求。
+
+## 已核实的包版本组合
+
+**2026-10-08** 已检查正规 npm metadata、精确 tarball、integrity、公开 exports 与源码声明，源码审计基线为 **`549b9870acb6af239faf79245179a4f1f7e60cdb`**。这些是实际发布产物，不是根据源码合并推断的发布承诺：
+
+| 包 | 精确版本 | 主要边界 |
+| --- | --- | --- |
+| @lenso/core、@lenso/engine | 0.2.0 | 运行时与构建期有独立生命周期 |
+| @lenso/cli | 0.19.0 | 独立版本；可信应用模块与显式操作 |
+| @lenso/web、@lenso/auth、@lenso/workers | 0.2.0 | 平台专用公开入口与显式 evidence |
+| @lenso/db、@lenso/storage | 0.1.1 | 消费 Core ^0.2.0；原生资源与迁移归应用所有 |
+| @lenso/tasks、@lenso/manage、@lenso/mcp | 0.2.0 | 持久任务、有限操作、stdio 暴露是不同契约 |
+| @lenso/log、@lenso/otel | 0.2.0 | 可选宿主日志/遥测；不提供 collector 或查询服务 |
+
+[API 索引](/docs/zh/api)与[产物清单](/api-inventory.json)列出实际 exports、peer 与 integrity。oRPC 仍固定预发行 **`2.0.0-beta.42`**。当前 Drizzle 示例使用 ORM **`0.45.3`**、Kit **`0.31.11`**。遵守所选适配器声明的 peer；optional peer 表示消费对应入口时安装，不表示缺少 peer 仍可用。
+
+旧 Core 0.1.0 没有 config 子路径；旧 Web 0.1.0 使用 oRPC 1.15.5，且没有 /bun。不要将这些旧产物混入本组合或与 v2 client 混用。CLI 没有 0.1.0 发布版。[升级](/docs/zh/upgrade)提供迁移检查。
+
+## 运行维护中的真实示例
+
+完整 Notes/Tasks 应用位于审阅过的源码 checkout，其 workspace 脚本需要已构建框架包。通过 npm 消费的独立应用无需这个 checkout。
+
+```sh
+git clone https://github.com/LioRael/lenso.git lenso-examples
+cd lenso-examples
+git checkout 549b9870acb6af239faf79245179a4f1f7e60cdb
 bun install --frozen-lockfile
 bun run build
 bun dev
 ```
 
-使用 checkout 声明的 Bun `1.4.2`。bun dev 在 loopback 启动 greeting，打印实际 URL。不要在无关既有项目运行这些命令，也不要假设 listener 已存在。
+使用 checkout 声明的 Bun 1.4.2。bun dev 在 loopback 启动 greeting 并输出真实 URL。Notes、Tasks 和 Workers 各有显式数据库、迁移、身份或 binding 前置条件；见[示例](/docs/zh/examples)。不要假设启动 greeting 会配置这些应用。
 
-另一个终端从 checkout 根目录执行：
+第二终端在同一 checkout 根目录运行：
 
 ```sh
 bun run cli inspect greeting greet --root examples/greeting --json
 bun run cli call greeting greet '{"name":"Ada"}' --root examples/greeting --json
 ```
 
-inspect 导入可信配置但不执行应用 setup；call 校验输入、启动整个应用、调用一个操作并停止。[CLI](/docs/zh/cli)说明副作用、输出与失败语义。
+Inspect 导入可信配置但不执行应用 setup。Call 校验输入、启动整个应用、提供可信 operation binding 后停止。副作用与失败说明见 [CLI](/docs/zh/cli)。
 
-## Registry 与源码是不同证据
+## 平台兼容与底层手动使用
 
-实际 registry 包已于 2026-10-08 核对：
-
-| 包 | 发布版本 | 预览差异 |
+| 宿主 | 适合的入口 | 边界 |
 | --- | --- | --- |
-| `@lenso/core` | `0.1.0` | 增加 config 入口、logger/遥测集成 |
-| `@lenso/web` | `0.1.0`，oRPC `1.15.5` | 使用 `2.0.0-beta.42`，增加 `/bun` |
-| `@lenso/engine` | `0.1.0` | 较新的配置检查与 dev 行为 |
-| `@lenso/cli` | `0.18.0` | 独立版本化，没有 `0.1.0` 发布 |
-| Auth、DB、Workers、Storage、Tasks、MCP | 各有 `0.1.0` | 包存在不证明与预览 API 等价 |
-| `@lenso/log`、`@lenso/otel` | 此次核对尚未发布 | 仅源码/打包预览 |
+| Bun | Core、Engine/CLI、Bun DB/storage/listener、PostgreSQL task worker | 已用 Bun 1.4.2 验证；宿主拥有进程监管 |
+| Workers | Core、Workers、D1、R2、Fetch | 每请求图；不运行 Bun 文件系统/socket 或 Engine dev |
+| Browser/React | type-only 契约、browser 声明、Web client | 不将 DB provider、服务端 secret 或 startApp 打包到客户端 |
+| 文档站 | Node 26.10+、生成的 Next 应用 | 静态 out，独立于应用运行时 |
 
-[API 索引](/docs/zh/api)区分公开入口与宿主限制。不要混用源码 v2 服务端与 npm v1 客户端；预览全部 oRPC 入口固定预发行 `2.0.0-beta.42`。预览 Drizzle 示例使用 ORM `0.45.3` 与 Kit `0.31.11`。
+公开 exports 是 import 边界。Auth 导出迁移资产子路径。Storage、Tasks SQL 资产随包发货，但没有 migration export 子路径；Tasks 通过 /postgres 公开 migratePostgresTaskQueue。不要猜测深路径。迁移归属见 [Files](/docs/zh/files)与 [Tasks](/docs/zh/tasks)。
 
-## 独立应用消费预览
-
-维护中的 [templates](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/templates/README.md) 是 CLI、Bun Web 和 Workers 目录内容，不是应用创建命令。只将选中模板复制到新应用。构建同一固定框架，用 `bun pm pack --filename <绝对归档路径>` 打包所需包，将真实归档放入 vendor。
-
-模板的 `file:./vendor/*.tgz` 与 overrides 保持间接 Core/Engine 解析在同一组产物。用 Bun 安装并保留单一 bun.lock。不要改为 latest、框架源码深层导入或手抄框架。[Engine](/docs/zh/engine)解释生成目录，[部署](/docs/zh/deployment)说明目标选择。
-
-## 宿主兼容性
-
-| 宿主 | 入口 | 边界 |
-| --- | --- | --- |
-| Bun | Core、Engine/CLI、Bun DB/storage/listener、任务 worker | 源码声明 Bun 1.4.2 |
-| Workers | Core、Workers、D1、R2、Fetch | 每请求应用图；无 Bun 文件系统/socket 或 Engine dev |
-| 浏览器/React | 仅类型契约、browser声明、Web client | 客户端包不包含 DB provider、secret 或 startApp |
-| 文档站 | Node 26.10+，生成的 Next 应用 | 静态 out 目录，与业务运行时独立 |
-
-公开 exports 是导入边界。Auth 导出迁移子路径；Storage/Tasks SQL 资产有打包缺口，不要猜深层包路径。Tasks 有公开 PostgreSQL migrator。源码合并、本地构建、npm 发布与生产部署分别是不同事实；本站只声明列明的源码基线与产物核对。
+应用可以直接使用原生 Fetch、Drizzle、storage client 或 OpenTelemetry。Engine 约定与配置 source 可替换，无需强制 Web。维护中的[模板](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/templates/README.md)目前使用 vendor 包归档；在新目录遵循其显式 packing 指引，不要假设存在应用创建命令。归档、override 与间接 Core/Engine 依赖保持一致，不替换 latest，不深引框架源码，不手抄框架实现。

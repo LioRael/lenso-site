@@ -5,7 +5,7 @@ description: 保留原生 Drizzle 类型，绑定精确数据库实例，并通�
 
 `@lenso/db` 将原生 Drizzle 数据库绑定为插件资源。它不会替代 Drizzle、选择全局默认数据库或在启动时迁移。应用负责选择适合宿主的驱动、定义 schema 和业务查询。
 
-本页依据 TypeScript 源码预览 [`6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/DATABASE.md)。使用前核对已安装包的 exports 与构建来源；同为 `0.1.0` 不代表发布产物包含这份源码的全部接口。
+本页对应已发布 `@lenso/db@0.1.1` 与 `@lenso/core@0.2.0`，按源码 [`549b987`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/docs/DATABASE.md)审计。真实 tarball 保留下列 provider exports；安装产物和 lockfile 应与[支持版本](/docs/zh/installation)匹配。
 
 ## 选择 provider
 
@@ -58,7 +58,7 @@ try {
 
 现有 Notes 已示范跨 dialect 的合理范围：
 
-1. [`schema-pg.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/schema-pg.ts) 使用 UUID 与带时区时间戳；[`schema-sqlite.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/schema-sqlite.ts) 使用文本 ID 与毫秒时间戳。
+1. [`schema-pg.ts`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/schema-pg.ts) 使用 UUID 与带时区时间戳；[`schema-sqlite.ts`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/schema-sqlite.ts) 使用文本 ID 与毫秒时间戳。
 2. 不同 dialect 的查询工厂保留原生 Drizzle 类型，共享 `NotesQueries` 只包含 Notes 真正需要的业务操作。
 3. `createNotesPlugin({ id, database, authentication, queries })` 绑定精确资源，同一普通 async 服务供 CLI、Fetch 与 oRPC 使用。
 
@@ -83,13 +83,19 @@ bun run migrate:sqlite
 
 D1 的 Worker 配置把 `migrations_dir` 指向审查后的 SQLite 迁移目录，由所有者显式运行 `wrangler d1 migrations apply <database-name> --local`。Wrangler 使用 `d1_migrations`，Bun SQLite 使用 Drizzle journal；同一 store 只使用一种迁移 runner。
 
-Notes 的 `0001_owner` 在既有应用迁移历史内包含 Auth session 基线。不要再对同一数据库执行独立 Auth migrator。Auth 拥有 session schema，Notes 快照只跟踪 Notes。旧记录使用保留的 `__legacy_unowned__` owner，该 owner 不能登录；迁移不会把私有旧数据分配给第一个配置用户。详见[迁移归属记录](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/migrations/OWNERSHIP.md)。
+Notes 的 `0001_owner` 在既有应用迁移历史内包含 Auth session 基线。不要再对同一数据库执行独立 Auth migrator。Auth 拥有 session schema，Notes 快照只跟踪 Notes。旧记录使用保留的 `__legacy_unowned__` owner，该 owner 不能登录；迁移不会把私有旧数据分配给第一个配置用户。详见[迁移归属记录](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/migrations/OWNERSHIP.md)。
 
 ## 在服务边界保护数据
 
 数据库连接是基础设施权限，不是用户授权。Notes 验证特定 audience 的 actor、重新验证 session、检查实际 owner，并在 update/delete SQL 条件内包含 owner。列表只查询当前 owner 的记录。业务 JSON 不能指定 actor、owner 或创建时间。
 
 不要通过 Web、CLI 或 MCP 暴露原始 DB client。连接 secret 来自宿主的 secret 管理渠道，不进入源码、argv 或日志。Files 与 Tasks 需要各自的持久关联及策略；共用一个数据库不会授予访问权限。
+
+## 暴露业务操作，不暴露数据库
+
+当前 [Notes operation 工厂](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/operations.ts)返回精确 sidecar plugin、共享 operations 与可选 Manage selection。Notes `list/read/remove` 复用同一 owner-enforcing 服务，各声明 `context: true`，入口在业务 JSON 之外绑定真实 evidence。CLI 使用 named `operationBinding`，MCP 使用自身启动 binding 和独立选择。
+
+[Manage adapter](/docs/zh/manage)借用运行中的 app，先过滤操作权限，服务再验证 audience 和记录 owner。它不增加任意 SQL、数据库浏览器、schema 迁移、连接 secret 读取或管理员角色。数据库生命周期仍归资源所有者，静态 descriptor/catalog 不是数据库健康检查。
 
 ## 定位资源问题
 
@@ -101,4 +107,4 @@ Notes 的 `0001_owner` 在既有应用迁移历史内包含 Auth session 基线�
 | D1 构建包含 Bun 导入 | 沿 import 找到 `/bun-sql`、`/bun-sqlite` 或文件模块，改选 `/d1` |
 | 泄漏其他用户记录 | 验证共享服务的 audience/owner 策略与 SQL 条件，不能只测 HTTP middleware |
 
-[`packages/db/test/resources.test.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/test/resources.test.ts) 验证实例隔离、不自动迁移、自有资源关闭与借用 client 存活。真实 Notes PostgreSQL 和本地 workerd/D1 的验证入口见[测试与排错](/docs/zh/testing)。
+[`packages/db/test/resources.test.ts`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/db/test/resources.test.ts) 验证实例隔离、不自动迁移、自有资源关闭与借用 client 存活。真实 Notes PostgreSQL 和本地 workerd/D1 的验证入口见[测试与排错](/docs/zh/testing)。

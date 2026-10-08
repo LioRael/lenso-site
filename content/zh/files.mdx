@@ -5,7 +5,7 @@ description: 通过显式 provider 流式处理私有对象，并在产品需要
 
 对象存储用于受信任的内部操作。用户需要稳定文件 ID、metadata、owner/tenant 策略和上传删除状态时，再加入 Files。storage ID、object key 或 file ID 都不授予调用方权限。
 
-本页契约依据 [Storage 源码 `6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/README.md)。使用前核对安装产物的 exports；源码预览与已发布的 `0.1.0` 可能不同。
+本页对应已发布 `@lenso/storage@0.1.1` 与 Core `0.2.0`，已核对 [Storage 源码 `549b987`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/storage/README.md)及真实 package exports。依赖保持[支持版本](/docs/zh/installation)一致。
 
 ## 按宿主选择入口
 
@@ -23,7 +23,7 @@ description: 通过显式 provider 流式处理私有对象，并在产品需要
 
 ## 从现有 Notes Files 开始
 
-[`examples/notes/src/files.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/files.ts) 复用 Notes 数据库与 Auth，组合两个 local storage 实例。它将 `fileSchema` 加入数据库 schema，提供 `createSqliteFileQueries`。`createNotesFiles` 按 action 选择 audience，并验证真实用户、实际 owner 和固定 `local-notes` tenant。
+[`examples/notes/src/files.ts`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/files.ts) 复用 Notes 数据库与 Auth，组合两个 local storage 实例。它将 `fileSchema` 加入数据库 schema，提供 `createSqliteFileQueries`。`createNotesFiles` 按 action 选择 audience，并验证真实用户、实际 owner 和固定 `local-notes` tenant。
 
 在该例子已启动、已验证登录的上下文内，上传保持流式处理：
 
@@ -65,6 +65,14 @@ return new Response(download.body, {
 
 `publicAssets` 之类的名字只是选择实例，不会开启 public ACL。内部对象 `put/get/head/list/delete` 不执行用户策略。上传只创建新 key，覆盖已有对象会得到 `conflict`；key 应生成，不应把原始文件名当路径。
 
+## 选择有限管理操作
+
+本地 Notes config 使用 `createNotesFileOperations` 声明 `notes-file-operations.metadata` 与 `.delete`，输入为 strict `{ fileId }`，均声明 `context: true`。Manage 选择原始两项 operation，不会将上传/下载 stream 暴露为 JSON。Sidecar 依赖精确 Files/Auth 实例，从入口可信 `{ evidence, signal? }` context 获得对应 action 的 actor。
+
+CLI 通过 `operations` 选择两项，并由 `operationBinding` 提供 `NOTES_SESSION`。默认 Notes MCP 只选择 note `list/read/remove`，不会自动增加 file tools。显式 [Manage 入口](/docs/zh/manage)必须选择 file 声明、绑定当前身份并实现 `canList`；具体文件仍由既有 owner/tenant 策略授权。Catalog key 或 delete hint 不授予删除权限，也不能满足必要 confirmation/approval。
+
+文件删除仍遵循真实状态/link 过期规则并保留补偿错误。Manage 不增加后台 reconciliation、强制取消上传或跨 DB/storage 事务。二进制仍通过应用授权的 raw Fetch 生命周期传输。
+
 ## 检查 provider 能力
 
 选择签名、range、条件读取、上传大小及取消方式前先检查 `storage.capabilities`。不支持的操作抛出 `StorageError`，`code: "unsupported"`。
@@ -95,4 +103,4 @@ S3 compatible adapter 要求条件创建；multipart 还要求条件完成支持
 
 `/fetch` 的 `createFileUploadHandler`、`createFileDownloadHandler` 保持字节流式处理，认证与路由由应用提供。CLI/MCP 适合 metadata 或业务命令，不承载二进制。Local root 必须是应用专用且可控的目录；路径和 symlink 检查不构成对恶意本地进程的 sandbox。
 
-该基线不提供病毒扫描、图像处理、CDN provisioning 或可恢复的客户端 multipart session。[Files 测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/test/files.test.ts) 验证状态竞争及故障处理，[Notes Files 测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/test/files.test.ts) 验证应用 owner/tenant 策略。继续阅读[测试](/docs/zh/testing)或独立拥有后台工作的 [Tasks](/docs/zh/tasks)。
+该基线不提供病毒扫描、图像处理、CDN provisioning 或可恢复的客户端 multipart session。[Files 测试](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/storage/test/files.test.ts) 验证状态竞争及故障处理，[Notes Files 测试](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/test/files.test.ts) 验证应用 owner/tenant 策略。继续阅读[测试](/docs/zh/testing)或独立拥有后台工作的 [Tasks](/docs/zh/tasks)。

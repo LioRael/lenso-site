@@ -3,7 +3,7 @@ title: Inspect、call、dev 与 build
 description: 显式声明可调用操作，理解命令效果，并用结构化 CLI 诊断定位失败。
 ---
 
-本页以 TypeScript 源码预览 [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f) 为基线，源码中的 CLI 包为 `@lenso/cli@0.18.0`。不能从 registry 版本号推断所有命令或最新配置行为，应先查看实际安装入口的 `lenso help --json`。
+本页描述已发布的 `@lenso/cli@0.19.0` 与 Core/Engine `0.2.0`，源码审计基线固定为 [`549b987`](https://github.com/LioRael/lenso/tree/549b9870acb6af239faf79245179a4f1f7e60cdb)。排查不同版本时，应先查看实际安装入口的 `lenso help --json`。
 
 ## 按命令实际执行内容选择
 
@@ -21,15 +21,16 @@ description: 显式声明可调用操作，理解命令效果，并用结构化 
 
 ## 在应用旁显式声明操作
 
-`lenso.config.ts` 默认导出 `defineApp({ plugins })`，独立的具名 `operations` 导出是调用白名单。不要把 operations 塞进 `defineApp`，也不要假设返回服务中的所有方法都会自动暴露。
+`lenso.config.ts` 默认导出 `defineApp({ plugins })`，独立的具名 `operations` 导出是 CLI 调用白名单。具名 `mcpOperations` 独立选择 MCP 操作；省略时 MCP 回退到 `operations`，显式空列表则关闭这个回退。具名 `operationBinding` 属于 CLI 入口。这些导出都不能放在默认 `defineApp` 声明中，返回服务的方法也不会自动暴露。
 
-[Notes](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/operations.ts) 使用返回 `{ plugin, operations }` 的 companion factory，其中的真实声明为：
+[Notes](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/operations.ts) 使用返回 `{ plugin, operations, manage }` 的 companion factory，其中的真实声明为：
 
 ```ts
 const operations = [
   defineOperation({
     plugin,
     method: "list",
+    context: true,
     input: notesListInput,
     effect: "read",
     destructive: false,
@@ -42,15 +43,38 @@ const operations = [
 ];
 ```
 
-真实文件从 `@lenso/cli` 导入 `defineOperation`，只创建一次 plugin，并使用共享契约。[应用配置](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/lenso.config.ts) 安装 `notesOperations.plugin` 并导出 `notesOperations.operations`。每个声明必须引用同一个已安装对象。
+真实文件从 `@lenso/engine/operations` 导入 `defineOperation`，`@lenso/cli` 也重新导出它。工厂只创建一次 plugin，并使用共享契约。[应用配置](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/lenso.config.ts) 安装 `notesOperations.plugin`，再从声明中选择 CLI/MCP 子集。`selectManageOperations` 返回原 Operation，[Manage](/docs/zh/manage) 不增加另一套 handler，也不授予权限。每个声明必须引用同一个已安装对象。
 
-`defineOperation` 按 Standard Schema v1 输出检查服务方法输入类型。运行时要求返回服务上存在 own callable method，并以原服务为 `this` 调用。多参数或接受 actor 的服务，需要应用自有的单输入薄方法：从可信入口取得身份，再委托共享业务服务。
+`defineOperation` 按 Standard Schema v1 输出检查服务方法输入类型。运行时要求返回服务上存在 own callable method，并以原服务为 `this` 调用。单输入方法继续受支持。需要请求证据或 Auth 产生的 actor 时，方法可以声明 `context: true`，context 类型从真实方法的第二参数推导。可信入口把该参数与业务 JSON 分开提供。
 
-Notes 从可信环境读取凭据，通过 Auth 验证身份，并在 Notes 服务中保留 owner 检查。业务 JSON 中的 `actor`、`subjectId` 或权限标记都不是证据。操作声明负责暴露，权限由服务规则决定。
+Notes 通过 `NotesOperationContext` 传入可信入口的证据，每次调用都经 Auth 验证，并在 Notes 服务中保留 owner 检查。业务 JSON 中的 `actor`、`subjectId` 或权限标记都不是证据。操作声明负责暴露，权限由服务规则决定。
+
+## 启动后绑定可信上下文
+
+在现有 Notes 配置中，选定的 `operations` 旁加入有类型的具名 binding：
+
+```ts
+import type { OperationBinding } from "@lenso/cli";
+
+export const operationBinding: OperationBinding<typeof operations[number]> =
+  () => ({ context: { evidence: process.env.NOTES_SESSION ?? null } });
+```
+
+`OperationBinding<O>` 接收 `(operation, validatedInput, running)`。CLI 先验证一次原始业务输入（包括 schema transform），再启动完整应用，最后等待 binding。`OperationContext<O>` 取得真实方法的 context 类型，`OperationBoundOptions<O>` 要求 `context: true` 声明提供 context。类型和 context 的存在不证明身份：Notes 通过 `authentication.for(...).required(...)` 验证证据，再执行共享服务策略。
+
+`OperationInvocationOptions` 包含 `context`、`maxOutputBytes`、`confirm`、`approve`，没有顶层 signal 选项。Notes 的真实 context 可携带 `signal`，方法明确把它传给 Auth；binding 和 cancellation 元数据都不会自动取消所有业务效果。
+
+`inspect` 描述 `contextRequired`、`confirmation`、`approval`，不调用 binding，也不推断 context schema。MCP 只使用可信启动选项 `StdioOptions.binding`，不继承 CLI 的 `operationBinding`。Manage 适配器使用自己的逐次 binding，并借用已启动应用。
+
+## 分别执行确认和审批要求
+
+Operation 可以声明 `confirmation: "required"`、`approval: "required"`，或同时声明。共享调用路径在 context binding 后、服务调用前，要求对应的可信 `confirm`/`approve` callback 返回精确的 `true`。入口必须实现真实流程，验证这次调用的用户确认或配置的审批所有者；常量 callback 或业务 JSON 标记不能建立证据。
+
+缺少 context 返回 `missing-context-binding`，缺少或未通过的 gate 返回 `confirmation-required` / `approval-required`。这些检查可能在完整应用 setup 后失败，所以 CLI 仍会等待资源清理。白名单、Auth 权限、确认、审批是独立要求；`destructive: true` 本身不会触发这些 gate。
 
 ## 先 inspect，再选择一种输入来源调用
 
-在准备好的框架预览 checkout 中，可以检查真实 Notes 操作，而不连接其数据库或 Auth：
+在版本匹配、准备好的框架 checkout 中，可以检查真实 Notes 操作，而不连接其数据库或 Auth：
 
 ```sh
 bun run cli inspect notes-operations list --root examples/notes --json
@@ -73,7 +97,7 @@ printf '%s\n' '{}' |
 
 `effect` 为 `read`、`write` 或 `unknown`。`destructive`、`retry`、`cancellation` 为用户和适配器描述语义，不会授权、实现幂等、自动重试、传递 AbortSignal 或回滚效果。省略的 retry/cancellation 为 `unknown`，省略的 destructive/output 元数据为 `null`。
 
-`outputDescription` 是说明文本，不是输出验证器。返回有限、无环的普通 JSON，使用明确的 `null` 或结果对象，避免 `undefined`。Date、函数等不受支持的值会在 JSON 输出边界产生 `serialization-failed`。
+`outputDescription` 是说明文本，不是输出验证器。返回有限、无环的普通 JSON，使用明确的 `null` 或结果对象，避免 `undefined`。Date、函数、stream、带 symbol 键的对象等不受支持值会产生 `serialization-failed`。共享调用路径先检查原结果，再脱敏并检查安全 JSON。默认输出预算为 1 MiB，可信 binding 可设置 `maxOutputBytes`，MCP 使用自身配置的宿主限制。超限在 CLI 停止应用前产生 `output-too-large`，不会撤销业务效果。
 
 输入 inspect 在可用时使用验证器的 Standard JSON Schema converter，否则报告 `schemaAvailability: "runtime-validation-only"` 与 `inputSchema: null`，运行时验证仍然生效。Defaults/examples 被省略，但字段名与约束仍可被发现，所以 schema 和元数据不得嵌入 secret。
 
@@ -88,7 +112,7 @@ printf '%s\n' '{}' |
 | `3` | 发现/装配 | 配置 import、精确实例、操作声明。 |
 | `1` | 运行时/构建/输出 | 配置预检、setup、invoke、cleanup、打包或 JSON 序列化。 |
 
-可信配置 import 失败与运行时配置预检不同。预览配置失败使用 phase `config` 和顶层 `config-invalid`，有序的安全 cause 给出实例、字段路径与来源。Setup/invoke/cleanup 可能分别失败；遇到 `invocation-and-cleanup-failed` 应保留两组 cause。
+可信配置 import 失败与运行时配置预检不同。配置预检失败使用 phase `config` 和顶层 `config-invalid`，有序的安全 cause 给出实例、字段路径与来源。Setup/invoke/cleanup 可能分别失败；遇到 `invocation-and-cleanup-failed` 应保留两组 cause。
 
 未知应用错误文本、原始输入和 stack 会被省略，避免泄露 secret。Console 方法被转到 stderr 并进行脱敏，但直接写 stdout 或藏在普通字段名下的 secret 无法可靠隔离。Stdout 应只保留协议，应用也应主动避免记录敏感值。
 
@@ -98,4 +122,4 @@ printf '%s\n' '{}' |
 
 使用 `lenso dev --root .`，或通过 `--entry` 选择现有入口。失败的启动继续监听改动。`build` 写 bundle，不会发布 npm、配置数据库或部署 Workers。自定义生成/target 与文件归属见 [Engine](/docs/zh/engine)。
 
-程序化 API `inspect(root, pluginId?, method?)`、`call(root, pluginId, method, input)`、`invoke(appDefinition, pluginId, method, input)` 从 `@lenso/cli` 导出；构建阶段使用 Engine。完整行为见 [CLI 契约](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md) 与[参数解析实现](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/src/bin.ts)。
+程序化 API `inspect(root, pluginId?, method?)`、`call(root, pluginId, method, input)`、`invoke(appDefinition, pluginId, method, input, binding?)` 从 `@lenso/cli` 导出。程序化 `invoke` 默认使用 `appDefinition.operationBinding`，第五参数可以选择 binding；`call` 从 canonical 配置加载具名 binding，不接收 binding 参数。构建阶段使用 Engine。完整行为见 [CLI 契约](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/docs/CLI.md) 与[参数解析实现](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/cli/src/bin.ts)。

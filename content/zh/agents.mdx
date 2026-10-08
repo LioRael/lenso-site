@@ -5,13 +5,13 @@ description: 为本地运行时 Agent 暴露审查过的现有操作，并为开
 
 开发 Agent 编辑源码、使用开发工具；运行时 Agent 调用显式暴露的业务操作。加载开发 skill 不会授予身份或业务权限，也不会启动 MCP server。
 
-本页依据 `6e239c7` 的 [MCP 源码](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/mcp/README.md)与 [CLI 开发指南](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md)。Registry 存在 `@lenso/mcp@0.1.0`；使用较新的源码示例前核对安装声明及依赖。同一版本字符串不证明产物一致。
+本页对应已发布的 `@lenso/mcp`、`@lenso/core`、`@lenso/manage` **`0.2.0`** 与 CLI **`0.19.0`**，按 `549b987` 的 [MCP 实现](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/mcp/src/index.ts)和 [CLI 开发指南](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/docs/CLI.md)核对。使用[安装与兼容性](/docs/zh/installation)中的完整固定版本组合，不沿用旧安装声明或浮动 tag。
 
 ## 用本地 stdio 暴露已有操作
 
 `@lenso/mcp` 导出 `serveStdio`，使用官方 MCP SDK `1.32.1` 并委托 CLI operation 边界。它不会自动暴露运行时方法、实现另一份业务 handler、加载 Engine config 或开启远程 listener。
 
-现有 Tasks 入口固定 root 和五个授权操作。只需要 query/report 的宿主可在 `examples/tasks/src/mcp-read.ts` 建立更窄的受信任入口：
+现有 Tasks MCP 入口固定 root 和四个授权操作：`submit`、`query`、`cancel`、`retry`。`report` 仍是 CLI 声明，不在其 MCP 选择内。只需要 query 的宿主可在 `examples/tasks/src/mcp-read.ts` 建立更窄的受信任入口：
 
 ```ts
 import { serveStdio } from "@lenso/mcp";
@@ -21,7 +21,6 @@ const adapter = await serveStdio({
   root: fileURLToPath(new URL("../", import.meta.url)),
   allow: [
     { pluginId: "tasks", method: "query" },
-    { pluginId: "tasks", method: "report" },
   ],
 });
 // 宿主有显式 shutdown 路径时，await adapter.close()。
@@ -33,7 +32,7 @@ Root 和 allowlist 是可信启动决策，tool 参数不能选择模块、应�
 
 ## 声明与 schema 必须可表示
 
-可信 `lenso.config.ts` 的 named `operations` export 必须已声明各操作，绑定精确安装的 plugin 对象与共享 input schema。启动时静态检查声明，不运行 app setup，但可信导入与 schema converter 仍会执行；inspect 不是 sandbox。
+可信 `lenso.config.ts` 声明 CLI `operations`，并可单独声明 named `mcpOperations`，绑定精确安装的 plugin 对象与共享 input schema。MCP 选择 `mcpOperations ?? operations ?? []`，然后应用可信启动 `allow` 清单。显式 `mcpOperations = []` 禁用 fallback；只给 CLI 选择的操作不能通过 tool 参数扩展到 MCP。启动时以 `readApplication` 加载规范应用并描述所选操作，不运行 app setup；可信导入和 schema converter 仍会执行，发现不是 sandbox。
 
 重复或缺失 binding 会拒绝启动。输入必须转换为 SDK 可表示的**对象 JSON Schema**。`runtime-validation-only`、scalar 输入或缺少 converter 都不能用猜测的空 schema 替代。描述和语义 metadata 来自规范 operation 声明。
 
@@ -47,10 +46,54 @@ Tool 名按 allowlist 顺序为 `operation_0`、`operation_1` 等。使用 `tool
 
 现有 Notes 与 Tasks 展示共享边界：
 
-- [Notes operations](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/operations.ts) 从可信 session evidence 获得对应 audience actor，调用同一 owner-enforcing 服务。
-- [Tasks 授权服务](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/authorized-service.ts) 在私有 query/cancel/retry/report 前检查持久 owner。Job ID 不是权限。
+- [Notes operations](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/operations.ts) 从可信 session evidence 获得对应 audience actor，调用同一 owner-enforcing 服务。
+- [Tasks 授权服务](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/tasks/src/authorized-service.ts) 在私有 query/cancel/retry/report 前检查持久 owner。Job ID 不是权限。
 
-Notes 默认 MCP 入口仅暴露五个 Notes 操作，不暴露 session 签发或二进制 Files。服务存在某个 method 并不意味着应扩大 allowlist。
+Notes 默认 MCP 入口仅选择 `notes-operations` 的 `list`、`read`、`remove`，不包含 create/update、session 签发或二进制 Files。可信启动 binding 读取 `NOTES_MCP_SESSION`，独立于 CLI 的 `NOTES_SESSION`。服务存在某个 method 并不意味着应扩大 allowlist。
+
+## 在入口绑定可信 context
+
+声明 `context: true` 的 Operation，以真实服务方法第二参数接收可信 context；业务 JSON 仍是经过 schema 验证的第一参数。MCP 可选 `serveStdio({ binding })` 在**输入验证和完整 app setup 后**，每次接纳调用时接收 `(operation, validatedInput, running)`，可返回 `context` 和可信 `confirm`/`approve` 回调。公开字段名就是 `binding`，没有 `invocationContext` 选项。
+
+真实 Notes 入口使用：
+
+```ts
+import { serveStdio } from "@lenso/mcp";
+import { fileURLToPath } from "node:url";
+
+await serveStdio({
+  root: fileURLToPath(new URL("../", import.meta.url)),
+  allow: [
+    { pluginId: "notes-operations", method: "list" },
+    { pluginId: "notes-operations", method: "read" },
+    { pluginId: "notes-operations", method: "remove" },
+  ],
+  binding: () => ({
+    context: { evidence: process.env.NOTES_MCP_SESSION ?? null },
+  }),
+});
+```
+
+按[真实 Notes MCP 源码](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/mcp.ts)将入口放在 `examples/notes/src`。Notes operation wrapper 根据此 evidence 获取对应 audience 的 actor，共享服务继续重新验证 session 与 owner。Context 对象的存在或 TypeScript 形状本身不证明身份。
+
+MCP 明确清空 config 的 CLI `operationBinding`，自身未提供 binding 时也不借用它。缺少必要 context 返回 `missing-context-binding`；声明要求 confirmation/approval 时，缺失或返回 false 的可信回调返回 `confirmation-required`/`approval-required`。业务输入 flag、伪造 actor 和 destructive/retry metadata 不能满足这些门禁。现有 Tasks 一类普通单输入操作仍无需 context binding。参见[CLI](/docs/zh/cli)和[Auth](/docs/zh/auth)。
+
+## 为已经运行的应用提供工具
+
+`@lenso/manage/agent` 为显式配置的 `ManageAdapter` 提供不依赖特定 SDK 的工具：
+
+```ts
+import { createAgentTools } from "@lenso/manage/agent";
+import type { ManageAdapter } from "@lenso/manage";
+
+export async function toolsFor(adapter: ManageAdapter) {
+  return createAgentTools(adapter);
+}
+```
+
+Adapter 借用现有 `RunningApp`，不启动或停止它。必填 `canList` 过滤当前调用身份的目录，每次调用的 `binding` 提供可信 context。工具含 `name`、`description`、对象 `inputSchema` 和 `invoke(input)`，调用时重新检查准入。缺少 converter 或非对象 JSON Schema 会拒绝创建工具。Adapter 范围内的目录 key 不是持久 receipt。
+
+此 helper 不注册 agent SDK、不启动 MCP server。通过自己的 agent host 连接描述与调用函数，保留身份隔离、confirmation/approval 和共享服务授权。[Manage](/docs/zh/manage)说明精确实例选择、adapter 和 HTTP 挂载。
 
 ## 正确理解输出与 hints
 
@@ -62,7 +105,7 @@ MCP hints 默认保守。`effect`、`destructive`、`retry` 与 cancellation met
 
 ## 取消与关闭
 
-同一时间只接纳一个业务调用。并发请求得到 `adapter-busy`，不进入队列。Adapter 在等待 CLI call 前后检查 SDK cancellation。CLI 服务调用没有 signal，所以取消请求可以丢弃 response，而业务工作继续。
+同一时间只接纳一个业务调用。并发请求得到 `adapter-busy`，不进入队列。Adapter 在等待共享 invocation 前后检查 SDK cancellation，不自动把 SDK signal 传给 operation 或 binding。应用 context 可有自己的 signal，但这不把 MCP cancellation 变成自动业务 abort、持久任务取消或回滚。请求取消后 response 可以被丢弃，已接纳工作和 cleanup 仍继续。
 
 `close()`、stdin EOF、SIGINT、SIGTERM 停止接纳新请求，等待已接纳调用和 cleanup，再关闭 transport。没有强制终止 handler 或 cleanup deadline。Detached work 仍需应用明确持有。
 
@@ -75,12 +118,12 @@ SDK frame 是预期 stdout 内容；启动、调用、drain 时普通 console �
 提供应用指令、manifest/lockfile 与匹配源码的公开参考。开发路径为：
 
 1. 确认宿主与实际 installed exports，找到要改的精确 assembly/plugin/schema。
-2. 根据 [CLI operation 契约](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md) inspect 已有声明，再修改共享 schema/service。
+2. 根据 [CLI operation 契约](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/docs/CLI.md) inspect 已有声明，再修改共享 schema/service。
 3. 保留精确实例依赖、资源归属与真实服务授权，业务实现保持普通 async。
 4. 运行应用自己的重点 typecheck/test，在授权范围内调用已有入口。源码包变更后先构建 `dist`，避免内部 source import。
 
-本次核查时项目本地 `lenso-develop`、`lenso-diagnose` skill 文件夹仍为未提交工作，不在固定 revision 或当前 npm 文件清单内；本站不提供公开 skill 下载或安装契约。不要假设安装包会安装这些 skills。对单独提供的 skill 做审查，并使其参考与应用产物保持一致。
+此源码 revision 已提交项目本地 [lenso-develop](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/.agents/skills/lenso-develop/SKILL.md) 和 [lenso-diagnose](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/.agents/skills/lenso-diagnose/SKILL.md)，覆盖消费者开发与聚焦诊断，包括当前 Manage/MCP 边界。它们是已提交仓库参考；package 文件列表不证明 npm 自动安装 skill。审阅单独提供的 skill，并将其参考与实际安装产物对齐，因为仓库 `main` 会继续变化。
 
-开发指令不会增加通用 Manage SDK、Observe query CLI、身份 provider 或发布权限。支持的诊断循环见[测试与排错](/docs/zh/testing)。
+开发指令不授予身份、业务权限或发布权。可选 Manage 工具仍需要明确 caller policy 和 binding；没有 Observe query CLI 或通用管理命令。支持的诊断循环见[测试与排错](/docs/zh/testing)。
 
-`adapter-busy` 应等待已有 call drain；发现失败应检查 binding/converter；授权失败应修复真实 evidence 或策略。[真实 stdio 测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/mcp/test/stdio.test.ts) 覆盖官方 SDK 发现、生命周期、脱敏、限制、取消和并发。该基线未声明 resources、prompts、tasks、elicitation 或较新 SDK v2 专有协议能力。
+`adapter-busy` 应等待已有 call drain；发现失败应检查 binding/converter；授权失败应修复真实 evidence 或策略。[真实 stdio 测试](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/mcp/test/stdio.test.ts) 覆盖官方 SDK 发现、生命周期、脱敏、限制、取消和并发。该基线未声明 resources、prompts、tasks、elicitation 或较新 SDK v2 专有协议能力。

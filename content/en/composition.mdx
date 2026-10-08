@@ -3,7 +3,7 @@ title: Applications and plugin composition
 description: Bind exact plugin instances, keep business services ordinary, and assemble only the capabilities your application needs.
 ---
 
-This page follows the TypeScript source preview at [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f). Check installed exports before adopting preview APIs; matching `0.1.0` version strings do not prove that the registry artifact contains this revision.
+This page documents published `@lenso/core@0.2.0`, audited against source [`549b987`](https://github.com/LioRael/lenso/tree/549b9870acb6af239faf79245179a4f1f7e60cdb). Use the installed package exports and matching lockfile when composing applications.
 
 ## An application is a graph of instances
 
@@ -23,7 +23,7 @@ Creating another plugin with the same ID or service type does not satisfy an edg
 
 The existing Notes application accepts a structural database plugin, an adapter for its session store, and the queries its service needs. PostgreSQL, Bun SQLite and Workers D1 retain their native database types. The business layer depends on `NotesQueries`.
 
-The following is the actual plugin factory in [Notes](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/notes.ts). Its imports, service and types are defined in that same file:
+The following is the actual plugin factory in [Notes](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/notes.ts). Its imports, service and types are defined in that same file:
 
 ```ts
 export function createNotesPlugin<TDatabase>(options: {
@@ -45,7 +45,7 @@ export function createNotesPlugin<TDatabase>(options: {
 }
 ```
 
-[The application factory](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/application.ts) creates authentication once, passes the same object into the Notes factory, and returns `plugins: [database, authentication, notes]`. Each host installs that returned set. This keeps CLI and Web attached to the same service rules without forcing Web into the database or business plugin.
+[The application factory](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/application.ts) creates authentication once, passes the same object into the Notes factory, and returns `plugins: [database, authentication, notes]`. Each host installs that returned set. This keeps CLI and Web attached to the same service rules without forcing Web into the database or business plugin.
 
 When you add a second database, create it once, give it a distinct ID, pass its reference to the intended consumer, and install both providers. Lenso does not choose a provider by type, name convention, creation order or “primary” status.
 
@@ -59,7 +59,7 @@ Notes also exposes `createNotesService(queries, authentication)` independently o
 
 ## Metadata does not execute behavior
 
-`contributions` is declared metadata. `app.contributions(kind?)` collects it; core does not turn it into routes, commands or permissions. CLI operations have their own [explicit declarations](/docs/cli). A `source: { file, export?, line?, column? }` can identify a declaration in diagnostics. Keep that metadata free of secrets.
+`contributions` is declared metadata. `app.contributions(kind?)` collects it; core does not turn it into routes, commands or permissions. CLI operations have their own [explicit declarations](/docs/cli). Optional [Manage](/docs/manage) binds a selected subset of those same operations to the exact instance; declaring a capability alone opens no CLI, MCP or HTTP entry. A `source: { file, export?, line?, column? }` can identify a declaration in diagnostics. Keep that metadata free of secrets.
 
 `app.status()` reports installed instances as `ready` or `stopped`. It describes this app's lifecycle, not database reachability, authentication status or durable worker health.
 
@@ -74,6 +74,6 @@ Notes also exposes `createNotesService(queries, authentication)` independently o
 | `cyclic-dependency` | Does a consumer depend back on itself through another plugin? Move shared behavior into a lower-level service. |
 | `invalid-id` / `invalid-source` | Is the ID nonempty and the explicit source metadata well formed? |
 
-In the verified Notes preview checkout, `lenso inspect --root examples/notes --json` shows the declared graph without running setup. It still imports trusted config code. See [lifecycle ownership](/docs/lifecycle) before acquiring resources and [configuration](/docs/configuration) before adding source readers.
+In the version-matched Notes checkout, `lenso inspect --root examples/notes --json` shows the declared graph without running setup. It still imports trusted config code. See [lifecycle ownership](/docs/lifecycle) before acquiring resources and [configuration](/docs/configuration) before adding source readers.
 
-The authoritative contracts are [Plugin](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/plugin.ts) and [graph validation](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/diagnostics.ts).
+The authoritative contracts are [Plugin](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/plugin.ts) and [graph validation](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/diagnostics.ts).

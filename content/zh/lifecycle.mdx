@@ -3,7 +3,7 @@ title: 依赖生命周期与资源归属
 description: 理解串行启动、配置预检、启动回滚、提前释放，以及完整的 LIFO 清理。
 ---
 
-本页描述 TypeScript 源码预览 [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f)。应核对实际安装声明，尤其是 `onCleanup` 返回的异步 disposer；版本号相同的 registry 包可能仍是较旧行为。
+本页描述已发布的 `@lenso/core@0.2.0`，源码审计基线固定为 [`549b987`](https://github.com/LioRael/lenso/tree/549b9870acb6af239faf79245179a4f1f7e60cdb)。`onCleanup` 返回与自动清理共享完成结果的异步 disposer，升级旧安装时应核对这个契约。
 
 ## 启动有明确的资源边界
 
@@ -19,13 +19,13 @@ if (!options.client) context.onCleanup(() => client.close());
 return drizzle({ client, schema: options.schema });
 ```
 
-该片段来自[真实适配器](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/src/bun-sqlite.ts)。插件创建的客户端由插件关闭；调用者传入的客户端仍归调用者。借用连接池、storage client 和 Workers 平台绑定时也需明确区分。
+该片段来自[真实适配器](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/db/src/bun-sqlite.ts)。插件创建的客户端由插件关闭；调用者传入的客户端仍归调用者。借用连接池、storage client 和 Workers 平台绑定时也需明确区分。
 
 ## 关闭按注册顺序反向展开
 
 `context.onCleanup(callback)` 在 setup 中注册回调，并返回异步 disposer。自动关闭使用全局的后进先出栈，串行等待每个回调。依赖先启动，因此消费者通常先释放自己的资源，再释放依赖资源。
 
-在同一个 setup 中，应先注册底层资源，再注册上层服务。[Tasks](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/plugin.ts) 先注册归本实例所有的 Auth 连接，再注册数据库/队列资源，最后注册授权服务。关闭时先结束服务，再释放底层资源。
+在同一个 setup 中，应先注册底层资源，再注册上层服务。[Tasks](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/tasks/src/plugin.ts) 先注册归本实例所有的 Auth 连接，再注册数据库/队列资源，最后注册授权服务。关闭时先结束服务，再释放底层资源。
 
 依赖边不是子作用域：数据库拥有自己的资源，Notes 拥有自己的资源。不要因为消费者停止，就由消费者关闭借用的依赖。
 
@@ -55,7 +55,7 @@ try {
 }
 ```
 
-这个小型生命周期示例使用核实过的源码预览构建。提前释放和自动关闭共享一次完成结果。关闭会等待仍在运行的提前释放；提前释放失败也仍会在关闭时可见。注册只允许发生在 setup 中：保存 context 后在后续服务调用中新增 finalizer 会失败。
+这个小型生命周期示例使用已发布的 `0.2.0` 包。提前释放和自动关闭共享一次完成结果。关闭会等待仍在运行的提前释放；提前释放失败也仍会在关闭时可见。注册只允许发生在 setup 中：保存 context 后在后续服务调用中新增 finalizer 会失败。
 
 Finalizer 不得等待自己的 disposer 或其应用的 `stop()` Promise，因为它们也在等待该 finalizer，形成死锁。Core 不设置清理超时，宿主需选择自己的关闭策略。
 
@@ -75,4 +75,4 @@ Stop 开始后，`app.get` 与 `context.get` 拒绝访问。但应用已保留�
 
 资源泄漏或关闭卡住时，先找获取资源的所有者，再检查清理注册时机、finalizer 是否等待自身、drain 是否无界。业务写入后发生错误时，先查询授权的持久状态再重放：资源清理不会回滚已经提交的外部效果。
 
-实现见[生命周期源码](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/lifecycle.ts)，诊断入口见 [CLI 失败阶段](/docs/zh/cli)。
+实现见[生命周期源码](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/lifecycle.ts)，诊断入口见 [CLI 失败阶段](/docs/zh/cli)。

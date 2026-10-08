@@ -3,7 +3,7 @@ title: Engine conventions and extensions
 description: Use the default Bun workflow, replace conventions explicitly, and extend discovery, generation, targets and development through public APIs.
 ---
 
-This page targets the TypeScript source preview at [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f). Verify your installed Engine exports and build provenance before using these authoring APIs.
+This page documents published `@lenso/engine@0.2.0`, audited against source [`549b987`](https://github.com/LioRael/lenso/tree/549b9870acb6af239faf79245179a4f1f7e60cdb). Import its public authoring and programmatic entries when extending the build workflow.
 
 ## Engine processes an application
 
@@ -23,7 +23,7 @@ A generated server entry re-exports the application declaration. It does not inv
 
 ## Extend through lenso.engine.ts
 
-Use `@lenso/engine/authoring` from a build config or build plugin. The following complete config adds an index of the existing Notes service source; run it only in a verified Notes preview checkout where `src/notes.ts` exists:
+Use `@lenso/engine/authoring` from a build config or build plugin. The following complete config adds an index of the existing Notes service source; run it only in a version-matched Notes checkout where `src/notes.ts` exists:
 
 ```ts
 import { defineEngineConfig, defineEnginePlugin } from "@lenso/engine/authoring";
@@ -47,7 +47,7 @@ export default defineEngineConfig({ plugins: [notesIndex] });
 
 `discover` adds validated existing source paths inside the application root. `generate` returns files with paths relative to `.lenso`; it does not directly write to arbitrary project locations. `watch` registers reads not expressed through static imports, including directories when newly added files matter.
 
-This is an application extension, not a requirement to copy Engine internals. The [standalone content plugin](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/examples/content-plugin/index.ts) shows discovery plus real file reads. The [module target plugin](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/examples/module-target-plugin/index.ts) reuses `build.bundle` for browser/Workers output. It does not deploy that output.
+This is an application extension, not a requirement to copy Engine internals. The [standalone content plugin](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/cli/examples/content-plugin/index.ts) shows discovery plus real file reads. The [module target plugin](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/cli/examples/module-target-plugin/index.ts) reuses `build.bundle` for browser/Workers output. It does not deploy that output.
 
 ## Replacement names the current owner
 
@@ -62,7 +62,7 @@ context.convention(
 );
 ```
 
-Both referenced files must exist. Retain canonical `lenso.config.ts`, for example by re-exporting the declaration and operations from `app.ts`: `inspect` and `call` always read that canonical config and never load Engine config. Changing the build convention does not change the CLI invocation boundary.
+Both referenced files must exist. Retain canonical `lenso.config.ts`, for example by re-exporting the declaration and the selected named `operations`, `mcpOperations` and `operationBinding` from `app.ts`: `inspect` and `call` always read that canonical config and never load Engine config. Changing the build convention does not change the CLI invocation boundary. These lists and bindings are entry exports, not properties of `defineApp` or Engine authoring config; the application loader validates their declarations without invoking the binding.
 
 Register `context.target("name", run)` and select it with `defineEngineConfig({ target: "name", plugins })`. A target receives `entry` and the shared `bundle({ entry, platform?, packages?, directory? })`. Output stays inside `dist`; supported bundler platforms are `bun`, `browser` and `node`. Compatibility still depends on the imports in your entry.
 
@@ -104,4 +104,4 @@ Dev entry is `--entry` or `src/server.ts`; the convention's build entry does not
 
 `EngineError.diagnostic` identifies code, phase, owner/source and safe causes. Check `engine-capability-conflict` for missing explicit replacement, `invalid-engine-watch` for absent/unsafe paths, `generated-file-modified` for edited output, and `unknown-engine-target` for selection or revoked targets. Engine config/plugins are trusted code; output path checks do not sandbox their arbitrary filesystem or process access.
 
-See [authoring contracts](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-authoring.ts), [default implementation](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-defaults.ts) and [CLI workflow](/docs/cli).
+See [authoring contracts](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/engine/src/engine-authoring.ts), [default implementation](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/engine/src/engine-defaults.ts) and [CLI workflow](/docs/cli).

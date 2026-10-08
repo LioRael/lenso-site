@@ -16,6 +16,7 @@ Lenso 是 Bun 优先的 TypeScript 应用框架。插件声明服务如何启动
 | 检查或调用显式操作 | [CLI](/docs/zh/cli) |
 | 增加浏览器/API 入口 | [Web](/docs/zh/web)、[原生 Fetch](/docs/zh/fetch)、[React](/docs/zh/react) |
 | 保护业务对象 | [Auth](/docs/zh/auth) |
+| 暴露所选管理操作 | [Manage](/docs/zh/manage) |
 | 持久化 Notes 或生成报告 | [现有示例](/docs/zh/examples) |
 | 选择宿主 | [部署](/docs/zh/deployment) |
 
@@ -25,16 +26,16 @@ Lenso 是 Bun 优先的 TypeScript 应用框架。插件声明服务如何启动
 
 **构建期 Engine。** Engine 发现可信应用声明，扩展生成、构建和受监督开发。约定可通过公开扩展接口替换，它与应用 setup 有独立生命周期。
 
-**适配器。** Web、Auth、DB、Storage、Tasks、MCP、日志与遥测均可选。安装它们不会让每个服务自动可被远程调用；操作与身份仍需明确声明。应用也可直接使用底层 Fetch、Drizzle、Pino 或 OpenTelemetry API。
+**适配器。** Web、Auth、DB、Storage、Tasks、Manage、MCP、日志与遥测均可选。安装它们不会让每个服务自动可被远程调用；操作与身份仍需明确声明。应用也可直接使用底层 Fetch、Drizzle、Pino 或 OpenTelemetry API。
 
 ## 了解文档基线
 
-大部分页面描述 [TypeScript 源码 `6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f)。快速开始单独用已发布 `@lenso/core@0.1.0` 验证。新配置、Bun listener 与可观测性 API 尚未全部发布，即使源码和 registry 使用相同版本号。
+本指南使用已核实的 npm 产物，并以 [TypeScript 源码 `549b987`](https://github.com/LioRael/lenso/tree/549b9870acb6af239faf79245179a4f1f7e60cdb) 审计接口。Core、Engine 与主要适配器为 0.2.0；CLI 为 0.19.0；DB、Storage 为 0.1.1。快速开始已用实际 @lenso/core@0.2.0 运行。此版本组合已发布配置、Bun listener、Manage 与 Log/OTel 入口。
 
-[安装](/docs/zh/installation)记录这些差异。源码 oRPC v2 使用预发行 `2.0.0-beta.42`，客户端与服务端必须匹配。本站是源码预览，不是每个框架包的发布快照。
+[安装](/docs/zh/installation)记录精确版本与平台边界。oRPC v2 仍使用预发行 2.0.0-beta.42，客户端与服务端必须匹配。源码提交与 npm 发布是独立事实，此基线已分别核查。
 
 ## 应用拥有的部分
 
-应用选择 listener、部署、secret 来源、schema、迁移、身份提供者和对象/租户策略。cleanup 释放资源，不会撤销已提交写入。操作的 effect 元数据不授予执行权限。此 revision 没有独立通用 Manage SDK、配置中心或内建 Observe 查询服务。
+应用选择 listener、部署、secret 来源、schema、迁移、身份提供者和对象/租户策略。cleanup 释放资源，不会撤销已提交写入。操作的 effect 元数据不授予执行权限。当前可选 Manage 已能选择绑定到确切实例的现有操作，供显式 CLI、agent 或 oRPC 入口使用；它借用已启动的应用图，要求可信的每次调用 binding 与服务授权。配置中心和内建 Observe 查询服务尚未提供。
 
 旧 Rust/Host/Capability 一代已[归档](/docs/zh/upgrade)，其命令和契约不是 TypeScript API。Console 与 Relay 是独立产品。

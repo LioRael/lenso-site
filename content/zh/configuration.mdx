@@ -3,7 +3,7 @@ title: 验证后的实例配置
 description: 按需采用类型化配置、显式 values/env/file 来源、安全诊断与启动预检，无需强制依赖 Web。
 ---
 
-**源码预览，已核实的 registry 包尚未发布此能力。** API 已在 [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f) 实现，但 registry `@lenso/core@0.1.0` 没有导出 `@lenso/core/config`、`/config/env` 或 `/config/file`。下列示例需要该提交的经过核实的构建，不能安装 registry `0.1.0` 后直接假设这些 import 可用。
+**已在 `@lenso/core@0.2.0` 发布。** API 的源码审计基线固定为 [`549b987`](https://github.com/LioRael/lenso/tree/549b9870acb6af239faf79245179a4f1f7e60cdb)。下列示例使用公开的 `@lenso/core/config`、`/config/env`、`/config/file` 入口。旧 registry `0.1.0` 缺少这些导出，采用此 API 前应升级 Core 包。
 
 ## 按插件需要选择边界
 
@@ -15,7 +15,7 @@ Schema 输入与输出可以因默认值、transform、异步验证而不同。�
 
 ## 绑定 Notes 监听器风格的契约
 
-[Notes](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/server.ts) 把端口契约与 Web 监听器分开定义。下面这个可独立使用的预览示例保留同一契约和显式环境读取器，不要求 Web：
+[Notes](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/server.ts) 把端口契约与 Web 监听器分开定义。下面这个可独立使用的示例保留同一契约和显式环境读取器，不要求 Web：
 
 ```ts
 import { startApp } from "@lenso/core";
@@ -94,7 +94,7 @@ const projectFile = jsonFileSource({
 
 ## 可以手动解析，也可以替换适配器
 
-`resolveConfig(instanceId, { contract, sources }, { signal? })` 不启动应用，直接验证并返回 `{ value, provenance, revisions }`。[Tasks](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/config.ts) 在 worker 和显式迁移入口使用这个底层 API；插件通过 `bindConfig` 使用同一契约。
+`resolveConfig(instanceId, { contract, sources }, { signal? })` 不启动应用，直接验证并返回 `{ value, provenance, revisions }`。[Tasks](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/tasks/src/config.ts) 在 worker 和显式迁移入口使用这个底层 API；插件通过 `bindConfig` 使用同一契约。
 
 自定义 `ConfigSource` 需要 `descriptor: { id, kind, location?, fields? }` 和返回 `{ values, revision? }` 的 `async read({ signal })`。通过来源自己的工厂授予所需能力。临时 I/O 资源应在 `finally` 中释放，预检不会创建订阅生命周期。
 
@@ -110,4 +110,4 @@ Secret 契约字段或 env binding 应标记 `sensitive: true`，仅靠字段名
 
 静态 `inspect` 描述契约和来源声明，不调用 `source.read`。配置 JSON Schema 需要显式 `jsonSchema: () => ...` converter，验证能力本身不保证转换能力。敏感 schema 子树会隐藏，defaults/examples 会省略，元数据本身也必须安全。可信配置的顶层代码与 converter 仍会执行。
 
-当前提交只交付启动配置。配置中心 SDK、订阅、远程写入和热重载尚未交付。应用可以手动使用底层 API，或替换来源适配器，无需引入 Web。实现见[配置解析](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config.ts)、[环境适配器](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config-env.ts)、[文件适配器](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config-file.ts)。
+当前提交只交付启动配置。配置中心 SDK、订阅、远程写入和热重载尚未交付。应用可以手动使用底层 API，或替换来源适配器，无需引入 Web。实现见[配置解析](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/config.ts)、[环境适配器](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/config-env.ts)、[文件适配器](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/config-file.ts)。

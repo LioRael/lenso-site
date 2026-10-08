@@ -1,20 +1,21 @@
 ---
 title: Upgrade and archived documentation
-description: Move deliberately between published packages, the TypeScript preview and the retired Rust generation.
+description: Upgrade the published TypeScript package matrix and migrate deliberately from the retired Rust generation.
 ---
 
-This is the TypeScript source-preview documentation at `6e239c71a38279885facce133ceb847bbfe12f2f`. It is not a compatible update to the old Rust Host/Capability runtime and is not a release announcement. [Installation](/docs/installation) records published package differences.
+These guides describe verified published TypeScript packages, audited against `549b9870acb6af239faf79245179a4f1f7e60cdb`. This is not a compatible update to the old Rust Host/Capability runtime. [Installation](/docs/installation) records the exact release matrix and protocol peers.
 
-## From published TypeScript 0.1.0 to the preview
+## From TypeScript 0.1.0 to the current matrix
 
 1. Record the application's lockfile, exact installed exports and runtime host. Source version strings alone are insufficient.
-2. Select a coherent, reviewed build of the pinned source. Keep all packed Core/Engine and transport dependencies from that build; do not replace only one transitive dependency with latest.
+2. Select the verified published matrix: Core/Engine and principal adapters `0.2.0`, CLI `0.19.0`, DB/Storage `0.1.1`. Retain exact versions and the lockfile; do not replace only one transitive dependency with latest. If using source-built vendor archives, build all of them from the same pinned revision.
 3. Review configuration preflight and new resource lifetime behavior. Source `bindConfig` reads sources before business setup; inspection still executes trusted module top-level code.
 4. Upgrade oRPC client and server to `2.0.0-beta.42` together. The source has no v1 wire compatibility path. Review middleware repetition and client fetch behavior.
 5. For Bun HTTP, review the public `/bun` listener and explicit ingress policy. Listener availability does not make its loopback example a production ingress policy.
-6. Run focused service/entry tests and regenerate owned outputs. Review migration histories separately; package upgrade does not apply database migrations.
+6. Existing one-input operations remain supported. For contextual operations, declare `context: true` and supply trusted per-call binding. Review optional [Manage](/docs/manage), confirmation/approval gates and independent CLI/MCP selections; descriptor metadata never grants service authorization.
+7. Run focused service/entry tests and regenerate owned outputs. Review migration histories separately; package upgrade does not apply database migrations.
 
-See [configuration](/docs/configuration), [Web](/docs/web), [Auth](/docs/auth) and [testing](/docs/testing). New logging/telemetry entries are source-only at this check; there is no npm Log/OTel release to install. Manage remains an explicit-operation design boundary.
+See [configuration](/docs/configuration), [Web](/docs/web), [Auth](/docs/auth) and [testing](/docs/testing). Check actual registry artifacts before selecting the new source package versions; a source release commit alone does not establish npm availability. Manage is implemented as an optional finite-operation adapter, not a persistent control plane or automatic Console integration.
 
 ## From the Rust generation
 

@@ -5,7 +5,7 @@ description: Collect safe structured logs, bootstrap a host-owned OpenTelemetry 
 
 Logging and telemetry are independent optional integrations. `@lenso/log` emits structured Pino logs; `@lenso/otel` exposes the official OpenTelemetry API. Core, Engine and Tasks can record API spans without initializing an SDK. Without host bootstrap, those API calls are no-ops.
 
-This page documents [Log](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/log/README.md) and [OTel](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/README.md) at source revision `6e239c7`. **Neither `@lenso/log` nor `@lenso/otel` is currently available in the regular npm registry**; both package lookups returned 404 during this site's version audit. The examples require reviewed source-built artifacts, not an npm install promise. There is no built-in Observe query CLI, telemetry store or collector in this baseline.
+This page documents the verified published **`@lenso/log@0.2.0`** and **`@lenso/otel@0.2.0`**, audited against [Log](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/log/README.md) and [OTel](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/otel/README.md) at `549b987`. Install the exact package and optional protocol peers needed by the chosen entry. There is no built-in Observe query CLI, telemetry store or collector in this baseline.
 
 ## Collect stderr logs once
 
@@ -90,7 +90,7 @@ Official oRPC exception instrumentation can capture business exception messages.
 
 ## Workers uses platform tracing
 
-The browser-safe `@lenso/otel/workers` entry requires the optional `@orpc/cloudflare@2.0.0-beta.42` peer and enabled Wrangler traces. The existing [Worker entry](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/src/index.ts) calls `bootstrapWorkerTracing()` once; its [configuration](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/wrangler.jsonc) enables `observability.traces.enabled`.
+The browser-safe `@lenso/otel/workers` entry requires the optional `@orpc/cloudflare@2.0.0-beta.42` peer and enabled Wrangler traces. The existing [Worker entry](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/src/index.ts) calls `bootstrapWorkerTracing()` once; its [configuration](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/wrangler.jsonc) enables `observability.traces.enabled`.
 
 | Bun SDK route | Native Workers route |
 | --- | --- |
@@ -118,4 +118,4 @@ Default Log redaction covers common structured secrets, body/payload keys and Er
 | No trace IDs in Workers logs | Native route does not bridge OTel API context; use platform correlation |
 | Old events cannot be queried | Find the configured storage/query backend; an OTLP endpoint alone is not a query service |
 
-Use retained stderr or the authorized backend when available. Missing collection means missing historical evidence, not an invitation to guess an Observe command. [Bootstrap/ownership tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/test/ownership.test.ts), [CLI export tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/test/cli.test.ts), and [Web lifetime tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/test/telemetry.test.ts) establish the respective boundaries.
+Use retained stderr or the authorized backend when available. Missing collection means missing historical evidence, not an invitation to guess an Observe command. [Bootstrap/ownership tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/otel/test/ownership.test.ts), [CLI export tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/otel/test/cli.test.ts), and [Web lifetime tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/web/test/telemetry.test.ts) establish the respective boundaries.

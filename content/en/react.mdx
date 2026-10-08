@@ -5,7 +5,7 @@ description: Use Lenso's typed Web client in an existing React application witho
 
 Lenso's current React integration is the browser-safe typed transport from `@lenso/web/client`. It works in your existing frontend architecture. This source revision supplies no React hooks package, provider, query cache, Suspense adapter, SSR hydration layer or browser `startApp` lifecycle.
 
-This page targets **source preview `6e239c71a38279885facce133ceb847bbfe12f2f`** and **oRPC `2.0.0-beta.42`**. Published `@lenso/web@0.1.0` uses oRPC `1.15.5`, so build provenance and transport version must match the server. Use verified preview artifacts from [installation](/docs/installation); do not combine the npm v1 client with a v2 server.
+This page targets published **`@lenso/web@0.2.0`**, audited at **`549b9870acb6af239faf79245179a4f1f7e60cdb`**, and exact **oRPC `2.0.0-beta.42`**. Use the coherent versions in [installation](/docs/installation). Older Web `0.1.0` used oRPC `1.15.5`; do not combine that v1 client with a v2 server.
 
 ## Separate the browser and server graphs
 
@@ -94,6 +94,12 @@ The default Engine checks for `src/router.ts` and generates `.lenso/client.ts` u
 
 The generated client is a small typed transport wrapper, not a React SDK or an API scan of arbitrary services. Run the application's existing generate command after changing the router convention. Edit source and regenerate; do not edit `.lenso` output. See [Engine](/docs/engine).
 
+## Optional Manage views do not supply a React runtime
+
+`@lenso/manage@0.2.0` adds plain JSON view hints for selected existing operations: stable presentation keys, titles/groups/order, columns and detail/action references. It supplies no React component functions, module URLs, Devframe runtime or automatically mounted Console. Register your own frontend components for view keys if your application chooses this integration; keep the ordinary typed Notes client path above available.
+
+An explicitly mounted `createManageRouter` can be consumed through the same typed Web client by importing its actual router type with `import type`. The frontend obtains its caller-filtered catalog and invokes the current adapter-scoped key with raw business input. It cannot submit a trusted actor, evidence context or approval envelope, and must not persist catalog indices as durable IDs across releases. Server request evidence, `canList`, per-call binding and service object policy remain authoritative. Manage supports finite JSON results, not binary file streams. See [Manage](/docs/manage) for the server assembly and [Auth](/docs/auth) for its security boundary.
+
 ## Browser failures to localize
 
 | Symptom | Check |
@@ -105,4 +111,4 @@ The generated client is a small typed transport wrapper, not a React SDK or an A
 | Bun/DB modules appear in the frontend bundle | Inspect value imports; keep the router and business types behind `import type`. |
 | Unexpected response decoding | Match client/server build and exact oRPC v2 transport version. |
 
-The [client implementation](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/client.ts), [browser exports](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/browser.ts) and [generation convention](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-defaults.ts) define the supported scope.
+The [client implementation](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/web/src/client.ts), [browser exports](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/browser.ts) and [generation convention](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/engine/src/engine-defaults.ts) define the supported scope.

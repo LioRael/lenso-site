@@ -5,7 +5,7 @@ description: 收集安全结构化日志，由宿主持有 OpenTelemetry SDK，�
 
 日志和遥测是独立的可选集成。`@lenso/log` 输出 Pino 结构化日志，`@lenso/otel` 根入口提供官方 OpenTelemetry API。Core、Engine、Tasks 能记录 API span，但不会初始化 SDK；没有宿主 bootstrap 时，API 调用是 no-op。
 
-本页依据源码 `6e239c7` 的 [Log](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/log/README.md) 与 [OTel](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/README.md)。**正规 npm registry 目前没有 `@lenso/log` 或 `@lenso/otel`**，本站版本核查时两包查询均为 404；示例需要经审查的源码构建产物，不代表现在可以从 npm 安装。该基线没有内置 Observe query CLI、遥测存储或 collector。
+本页使用已核实发布包 **`@lenso/log@0.2.0`** 与 **`@lenso/otel@0.2.0`**，并依据 `549b987` 的 [Log](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/log/README.md) 与 [OTel](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/otel/README.md) 审计接口。按所选入口安装精确包与可选协议 peer。该基线没有内置 Observe query CLI、遥测存储或 collector。
 
 ## stderr 日志只收集一次
 
@@ -90,7 +90,7 @@ CLI 在 `finally` 结束 span 并等待有界 flush/shutdown。Export 失败输�
 
 ## Workers 使用平台 tracing
 
-浏览器安全的 `@lenso/otel/workers` 需要可选 peer `@orpc/cloudflare@2.0.0-beta.42` 和启用的 Wrangler traces。现有 [Worker entry](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/src/index.ts) 只调用一次 `bootstrapWorkerTracing()`，[配置](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/wrangler.jsonc) 启用 `observability.traces.enabled`。
+浏览器安全的 `@lenso/otel/workers` 需要可选 peer `@orpc/cloudflare@2.0.0-beta.42` 和启用的 Wrangler traces。现有 [Worker entry](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/src/index.ts) 只调用一次 `bootstrapWorkerTracing()`，[配置](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/wrangler.jsonc) 启用 `observability.traces.enabled`。
 
 | Bun SDK 路径 | 原生 Workers 路径 |
 | --- | --- |
@@ -118,4 +118,4 @@ CLI 在 `finally` 结束 span 并等待有界 flush/shutdown。Export 失败输�
 | Worker 日志没 trace ID | 原生路径不桥接 OTel context，使用平台关联 |
 | 查询不到历史事件 | 查实际配置的存储/query backend；OTLP endpoint 本身不等于查询服务 |
 
-已有保留 stderr 或授权 backend 时使用它们；未配置收集意味着历史证据缺失，不能猜测 Observe 命令。[归属测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/test/ownership.test.ts)、[CLI export 测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/test/cli.test.ts)与 [Web lifetime 测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/test/telemetry.test.ts)验证各自边界。
+已有保留 stderr 或授权 backend 时使用它们；未配置收集意味着历史证据缺失，不能猜测 Observe 命令。[归属测试](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/otel/test/ownership.test.ts)、[CLI export 测试](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/otel/test/cli.test.ts)与 [Web lifetime 测试](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/web/test/telemetry.test.ts)验证各自边界。

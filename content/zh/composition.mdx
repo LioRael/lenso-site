@@ -3,7 +3,7 @@ title: 应用与插件组合
 description: 用精确的插件实例绑定依赖，保持普通业务服务，并按应用需要组合能力。
 ---
 
-本页以 TypeScript 源码预览 [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f) 为基线。采用预览 API 前应核对实际安装包的 exports；同为 `0.1.0` 并不能证明 registry 包包含这一提交。
+本页描述已发布的 `@lenso/core@0.2.0`，源码审计基线固定为 [`549b987`](https://github.com/LioRael/lenso/tree/549b9870acb6af239faf79245179a4f1f7e60cdb)。组合应用时应使用实际安装包的 exports 与匹配的 lockfile。
 
 ## 应用是一张实例依赖图
 
@@ -23,7 +23,7 @@ description: 用精确的插件实例绑定依赖，保持普通业务服务，�
 
 现有 Notes 应用接受结构类型的数据库插件、对应的 session store 适配函数，以及业务所需的查询。PostgreSQL、Bun SQLite、Workers D1 保留各自的原生数据库类型；业务层依赖小接口 `NotesQueries`。
 
-下面是 [Notes](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/notes.ts) 中的真实插件工厂。相关 import、服务函数和类型都在同一源码文件中：
+下面是 [Notes](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/notes.ts) 中的真实插件工厂。相关 import、服务函数和类型都在同一源码文件中：
 
 ```ts
 export function createNotesPlugin<TDatabase>(options: {
@@ -45,7 +45,7 @@ export function createNotesPlugin<TDatabase>(options: {
 }
 ```
 
-[应用工厂](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/application.ts) 只创建一次 authentication，把同一个对象传给 Notes，并返回 `plugins: [database, authentication, notes]`。宿主安装这组实例。CLI 与 Web 因而复用同一业务规则，数据库和业务插件无需强制依赖 Web。
+[应用工厂](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/application.ts) 只创建一次 authentication，把同一个对象传给 Notes，并返回 `plugins: [database, authentication, notes]`。宿主安装这组实例。CLI 与 Web 因而复用同一业务规则，数据库和业务插件无需强制依赖 Web。
 
 增加第二个数据库时，先创建一次、分配不同 ID，把引用传给目标消费者，再把两个提供者都安装到应用中。Lenso 不按类型、命名惯例、创建顺序或“主数据库”标记自动选择提供者。
 
@@ -59,7 +59,7 @@ Notes 也独立提供 `createNotesService(queries, authentication)`。插件组�
 
 ## 元数据本身不会执行行为
 
-`contributions` 是声明式元数据，`app.contributions(kind?)` 负责收集。Core 不把它自动变成路由、命令或权限。CLI 操作需要[独立显式声明](/docs/zh/cli)。可选 `source: { file, export?, line?, column? }` 为诊断提供声明位置；这些元数据不得包含 secret。
+`contributions` 是声明式元数据，`app.contributions(kind?)` 负责收集。Core 不把它自动变成路由、命令或权限。CLI 操作需要[独立显式声明](/docs/zh/cli)。可选 [Manage](/docs/zh/manage) 把同一批操作的所选子集绑定到精确实例；声明能力本身不开放 CLI、MCP 或 HTTP 入口。可选 `source: { file, export?, line?, column? }` 为诊断提供声明位置；这些元数据不得包含 secret。
 
 `app.status()` 返回安装实例的 `ready` 或 `stopped`。它表示这个应用的生命周期状态，不表示数据库可达、认证成功或持久 worker 健康。
 
@@ -74,6 +74,6 @@ Notes 也独立提供 `createNotesService(queries, authentication)`。插件组�
 | `cyclic-dependency` | 是否经过另一插件依赖回自身？可把共同能力移到更底层服务。 |
 | `invalid-id` / `invalid-source` | ID 是否非空，显式源码位置是否符合类型要求？ |
 
-在已准备好的 Notes 源码预览 checkout 中，`lenso inspect --root examples/notes --json` 可以查看声明图而不执行 setup，但仍会导入可信配置代码。获取资源前读[生命周期与归属](/docs/zh/lifecycle)，增加来源读取器前读[配置](/docs/zh/configuration)。
+在版本匹配、已准备好的 Notes checkout 中，`lenso inspect --root examples/notes --json` 可以查看声明图而不执行 setup，但仍会导入可信配置代码。获取资源前读[生命周期与归属](/docs/zh/lifecycle)，增加来源读取器前读[配置](/docs/zh/configuration)。
 
-完整契约见 [Plugin](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/plugin.ts) 与[依赖图验证](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/diagnostics.ts)。
+完整契约见 [Plugin](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/plugin.ts) 与[依赖图验证](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/diagnostics.ts)。

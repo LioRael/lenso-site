@@ -1,66 +1,85 @@
 ---
 title: Installation and compatibility
-description: Choose a verified published artifact or an exact source preview, and keep runtime, transport and host versions coherent.
+description: Install a coherent published package set, choose optional adapters, and match runtime and transport requirements.
 ---
 
 The site renderer is **`@lenso/docs@0.1.0`**; its initializer is **`create-lenso-docs@0.1.0`**. Both exact versions exist in npm. They are independent documentation packages and do not select a Lenso runtime release.
 
-## Published Core
+## Start with published Core
 
-[Quickstart](/docs/quickstart) uses `bun add --exact @lenso/core@0.1.0`, verified with Bun `1.4.2`. That artifact exports Core, `/plugin` and `/browser`; it does not export the newer configuration API. The browser entry supplies declarations/helpers, not a browser application runtime.
-
-## Source preview
-
-Advanced pages describe [source `6e239c71a38279885facce133ceb847bbfe12f2f`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f). Use a new reviewed checkout to run its examples:
+[Quickstart](/docs/quickstart) uses Bun **`1.4.2`** and an actual published artifact:
 
 ```sh
-git clone https://github.com/LioRael/lenso.git lenso-preview
-cd lenso-preview
-git checkout 6e239c71a38279885facce133ceb847bbfe12f2f
+bun add --exact @lenso/core@0.2.0
+```
+
+Retain one `bun.lock`. Core alone starts ordinary services; it requires neither Engine nor Web. Its browser entry provides safe declarations/helpers, not `startApp` or a browser service runtime. Configuration, logger contracts and application `instanceId` are exported by this release.
+
+Add only the entry you need. For CLI tooling:
+
+```sh
+bun add --dev --exact @lenso/cli@0.19.0
+bunx --no-install lenso help --json
+```
+
+For a Web transport, the package and both protocol peers must match:
+
+```sh
+bun add --exact @lenso/web@0.2.0 @orpc/client@2.0.0-beta.42 @orpc/server@2.0.0-beta.42
+```
+
+Installing Web does not select ingress, authentication or object policy. [Web](/docs/web), [Auth](/docs/auth), [database](/docs/database) and [Manage](/docs/manage) explain their optional adapters and peer requirements.
+
+## Verified package matrix
+
+The regular npm registry metadata, exact tarballs, integrity, public exports and source declarations were checked on **2026-10-08**, against source **`549b9870acb6af239faf79245179a4f1f7e60cdb`**. These are published artifacts, rather than a promise inferred from a source merge:
+
+| Packages | Exact version | Main boundary |
+| --- | --- | --- |
+| `@lenso/core`, `@lenso/engine` | `0.2.0` | Runtime and build-time lifetimes are separate |
+| `@lenso/cli` | `0.19.0` | Independently versioned; trusted app modules and explicit operations |
+| `@lenso/web`, `@lenso/auth`, `@lenso/workers` | `0.2.0` | Host-specific public entries and explicit evidence |
+| `@lenso/db`, `@lenso/storage` | `0.1.1` | Consume Core `^0.2.0`; native resources and migrations stay application-owned |
+| `@lenso/tasks`, `@lenso/manage`, `@lenso/mcp` | `0.2.0` | Durable jobs, finite operations and stdio exposure are different contracts |
+| `@lenso/log`, `@lenso/otel` | `0.2.0` | Optional host logging/telemetry; no collector or query service |
+
+The [API index](/docs/api) and [artifact inventory](/api-inventory.json) list actual exports, peers and integrity. oRPC remains exact prerelease **`2.0.0-beta.42`**. Current Drizzle examples use ORM **`0.45.3`** and Kit **`0.31.11`**. Respect each adapter's declared peers; an optional peer means install it when importing that adapter, not that its functionality works without the peer.
+
+Older Core `0.1.0` lacked config subpaths; Web `0.1.0` used oRPC `1.15.5` and lacked `/bun`. Do not mix those artifacts with this matrix or a v2 client. CLI has no `0.1.0` release. [Upgrade](/docs/upgrade) gives migration checks.
+
+## Run the maintained examples
+
+The complete Notes/Tasks applications live in the reviewed source checkout. Their workspace scripts require built framework packages; an independent app consuming npm packages does not require this checkout.
+
+```sh
+git clone https://github.com/LioRael/lenso.git lenso-examples
+cd lenso-examples
+git checkout 549b9870acb6af239faf79245179a4f1f7e60cdb
 bun install --frozen-lockfile
 bun run build
 bun dev
 ```
 
-Use the checkout's declared Bun `1.4.2`. `bun dev` starts greeting on loopback and prints its actual URL. Do not run these commands inside an unrelated existing project or assume a listener already exists.
+Use the checkout's declared Bun `1.4.2`. `bun dev` starts greeting on loopback and prints its actual URL. Notes, Tasks and Workers require their own explicit database, migration, identity or binding setup. See [examples](/docs/examples); do not assume greeting startup configures them.
 
-From a second terminal at the checkout root:
+From a second terminal at that checkout root:
 
 ```sh
 bun run cli inspect greeting greet --root examples/greeting --json
 bun run cli call greeting greet '{"name":"Ada"}' --root examples/greeting --json
 ```
 
-Inspect imports trusted configuration without application setup. Call validates input, starts the entire application, invokes one operation and stops it. See [CLI](/docs/cli) for effects, output and failure semantics.
+Inspect imports trusted configuration without application setup. Call validates input, starts the entire application, supplies the trusted operation binding and stops it. See [CLI](/docs/cli) for effects and failures.
 
-## Registry and source are different receipts
+## Host compatibility and manual use
 
-Actual registry artifacts were checked on 2026-10-08:
-
-| Package | Published version | Preview difference |
+| Host | Suitable entries | Boundary |
 | --- | --- | --- |
-| `@lenso/core` | `0.1.0` | Adds config entries and logger/telemetry integration |
-| `@lenso/web` | `0.1.0`, oRPC `1.15.5` | Uses `2.0.0-beta.42`, adds `/bun` |
-| `@lenso/engine` | `0.1.0` | Newer configuration inspection and dev behavior |
-| `@lenso/cli` | `0.18.0` | Independently versioned; no `0.1.0` release |
-| Auth, DB, Workers, Storage, Tasks, MCP | Each has `0.1.0` | Existence does not establish preview API equivalence |
-| `@lenso/log`, `@lenso/otel` | Not published at this check | Source/packed preview only |
-
-[API index](/docs/api) separates public entries from host constraints. Do not mix the source v2 server with the npm v1 client. All preview oRPC entries use exact prerelease `2.0.0-beta.42`. Preview Drizzle examples use ORM `0.45.3` and Kit `0.31.11`.
-
-## Independent preview consumers
-
-Maintained [templates](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/templates/README.md) are directory contents for CLI, Bun Web and Workers, not an application-create command. Copy only a selected template into a new app. Build the same pinned framework, pack needed packages with `bun pm pack --filename <absolute archive path>`, and put the real archives in its `vendor/`.
-
-The template's `file:./vendor/*.tgz` dependencies and overrides keep indirect Core/Engine resolution on those same artifacts. Install with Bun and retain one `bun.lock`. Do not substitute latest, framework source deep imports or handwritten framework code. [Engine](/docs/engine) explains generated directories; [deployment](/docs/deployment) covers targets.
-
-## Host compatibility
-
-| Host | Entries | Boundary |
-| --- | --- | --- |
-| Bun | Core, Engine/CLI, Bun DB/storage/listener, task worker | Source declares Bun 1.4.2 |
+| Bun | Core, Engine/CLI, Bun DB/storage/listener, PostgreSQL task worker | Verified with Bun `1.4.2`; host owns process supervision |
 | Workers | Core, Workers, D1, R2, Fetch | Per-request graph; no Bun filesystem/sockets or Engine dev |
-| Browser/React | Type-only contracts, browser declarations, Web client | No DB providers, secrets or startApp in client bundles |
-| Documentation site | Node 26.10+, generated Next application | Static out directory, independent from app runtime |
+| Browser/React | Type-only contracts, browser declarations, Web client | No DB providers, server secrets or `startApp` in client bundles |
+| Documentation site | Node `26.10+`, generated Next application | Static `out/`, independent from application runtime |
 
-Public exports are the import boundary. Auth exports migration subpaths. Storage/Tasks SQL assets have a packaging gap; do not guess deep package paths. Tasks has a public PostgreSQL migrator. A source merge, local build, npm release and production deployment are separate facts; this site claims only its stated source baseline and artifact checks.
+Public exports are the import boundary. Auth exports migration asset subpaths. Storage and Tasks SQL assets ship, but do not have migration export subpaths; Tasks exposes `migratePostgresTaskQueue` through `/postgres`. Do not invent deep imports. Review [Files](/docs/files) and [Tasks](/docs/tasks) for migration ownership.
+
+Applications may use native Fetch, Drizzle, storage clients or OpenTelemetry directly. Engine conventions and config sources can be replaced without forcing Web. The maintained [templates](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/templates/README.md) currently use `vendor/` package archives; follow their explicit packing instructions in a new directory rather than expecting an application-create command. Keep archives, overrides and indirect Core/Engine dependencies coherent. Never substitute latest, framework deep imports or handwritten framework code.

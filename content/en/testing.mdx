@@ -5,7 +5,7 @@ description: Test the boundary you changed, interpret safe diagnostics, and sepa
 
 Start with the failing entry, exact app root, installed package artifacts and runtime. Record the reproducible command and expected behavior. Inspect only necessary environment-key presence; do not dump configuration or secrets to diagnose a missing setting.
 
-These workflows refer to the TypeScript source at [`6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md). Source checkout commands and unpublished APIs must be matched to an external app's real package exports and scripts.
+These workflows refer to the audited TypeScript source at [`549b987`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/docs/CLI.md). Source checkout commands must be matched to an external app's real installed package exports and scripts.
 
 ## Keep the feedback loop narrow
 
@@ -54,7 +54,7 @@ test("failing setup releases its acquired resource", async () => {
 });
 ```
 
-The [lifecycle tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/test/lifecycle.test.ts) additionally cover global LIFO, disposer sharing, repeated stop and aggregated failures. For a real resource, verify that owned clients close and borrowed clients survive. Streaming entries must test body completion/cancellation, not just response creation.
+The [lifecycle tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/test/lifecycle.test.ts) additionally cover global LIFO, disposer sharing, repeated stop and aggregated failures. For a real resource, verify that owned clients close and borrowed clients survive. Streaming entries must test body completion/cancellation, not just response creation.
 
 ## Use real integration evidence where it matters
 
@@ -63,6 +63,7 @@ The [lifecycle tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885fac
 | `bun test packages/db/test/resources.test.ts` | Real Bun SQLite ownership/isolation, no implicit migration |
 | `bun test examples/notes/test/notes.test.ts examples/notes/test/operations.test.ts` | Shared Notes/CLI validation and owner boundaries with isolated local resources |
 | `bun test packages/mcp/test/stdio.test.ts` | Real subprocess and official SDK stdio behavior |
+| `bun test packages/manage/test/manage.test.ts examples/notes/test/manage.test.ts` | Finite output, exact instance selection, trusted context, permission/confirmation/approval and service ownership with controlled/local fixtures |
 | `bun test packages/storage/test/files.test.ts` | File-state/compensation races using controlled providers; not live cloud behavior |
 | `bun test packages/tasks/test/worker.test.ts` | Controlled worker drain/cancellation/slot semantics; not persistence |
 | `bun test packages/otel/test/cli.test.ts` | Finite CLI export behavior with test receivers/exporters |
@@ -93,7 +94,7 @@ printf '%s\n' '{"title":" "}' |
   bun run cli call notes-operations create --root examples/notes --stdin --json
 ```
 
-Expected evidence is `code: "invalid-input"`, `phase: "input"`, exit 2 and a safe field path for `title`; no DB or session should be needed to reject it. The existing [operation tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/test/operations.test.ts) verify that validation happens before setup.
+Expected evidence is `code: "invalid-input"`, `phase: "input"`, exit 2 and a safe field path for `title`; no DB or session should be needed to reject it. The existing [operation tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/test/operations.test.ts) verify that validation happens before setup.
 
 | Evidence | Likely boundary and next check |
 | --- | --- |
@@ -102,6 +103,8 @@ Expected evidence is `code: "invalid-input"`, `phase: "input"`, exit 2 and a saf
 | `config-invalid`, phase `config` | All-instance preflight: safe nested cause code, field path and source ID |
 | `UNAUTHORIZED` / `FORBIDDEN` | Trusted evidence, realm/audience and actual object owner; never inject an actor into JSON |
 | `invocation-failed` | Unknown business failure: consult authorized safe logs; client exception text is intentionally opaque |
+| `missing-context-binding`, `confirmation-required`, `approval-required` | Trusted entry binding/gate: do not add actor, confirm or approve flags to business JSON |
+| `output-too-large`, phase `output` | Finite-operation JSON budget (default 1 MiB); effects may already have committed |
 | `invocation-and-cleanup-failed` | Both invocation and cleanup failed: preserve both ordered causes |
 | `serialization-failed` | Output is not plain finite JSON, including undefined; business work may already have committed |
 | MCP `adapter-busy` | Existing call still owns admission; it is not queued or safe to duplicate |
@@ -116,4 +119,4 @@ Check generated-output failures at the source/owner boundary. `.lenso` and `dist
 
 ## Finish with a useful report
 
-Report the runtime/package baseline, reproduced command, diagnostic code/phase/source, focused changes and checks actually run. Separate local fixtures, real DB/workerd evidence and skips. Mention unresolved state after uncertain side effects and name a missing authorized status/log interface when it prevents diagnosis. Use [observability](/docs/observability) for the existing stderr/backend evidence; no generic Manage or Observe command is supplied by this baseline.
+Report the runtime/package baseline, reproduced command, diagnostic code/phase/source, focused changes and checks actually run. Separate local fixtures, real DB/workerd evidence and skips. Mention unresolved state after uncertain side effects and name a missing authorized status/log interface when it prevents diagnosis. Use [observability](/docs/observability) for existing stderr/backend evidence and [Manage](/docs/manage) for explicitly selected authorized operations. There is no generic Observe query command or automatic remote control service.

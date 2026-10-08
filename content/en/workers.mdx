@@ -5,7 +5,7 @@ description: Assemble an app per Fetch request, inject platform bindings, reuse 
 
 `@lenso/workers` turns a public Lenso service graph into a module Worker Fetch entrypoint. Assembly happens **inside each request**, with that request's bindings. It imports no Bun listener and does not call a remote Bun backend.
 
-This guide describes source preview **`6e239c71a38279885facce133ceb847bbfe12f2f`**. Its Web examples use oRPC **`2.0.0-beta.42`**; published `@lenso/web@0.1.0` uses `1.15.5`. Use verified packages built from the same baseline, not an unverified mixture. [Installation](/docs/installation) explains artifact availability.
+This guide describes published Workers/Core/Web/Auth **`0.2.0`**, audited at **`549b9870acb6af239faf79245179a4f1f7e60cdb`**, with DB **`0.1.1`** and exact oRPC **`2.0.0-beta.42`**. Use the matching package set from [installation](/docs/installation). Older Web `0.1.0` used oRPC `1.15.5` and is not the current transport baseline.
 
 ## Public assembly contract
 
@@ -93,9 +93,11 @@ Workers has no process shutdown hook. Isolate termination can interrupt finalize
 
 D1 and R2 bindings are borrowed platform resources. Plugin setup neither migrates D1 nor closes these bindings. Keep Bun SQL/SQLite adapters, filesystem configuration readers, `@lenso/web/bun`, CLI and Engine imports out of the Worker runtime graph. Environment source adapters can read the actual `env` binding object without `process.env`.
 
-The optional [Workers storage example](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/src/storage.ts) shows two exact R2 instances. It does not provision buckets, grant public access or mount private download routes. Binding uploads need known byte length and do not support presigned URLs. See [files and storage](/docs/files).
+The optional [Workers storage example](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/src/storage.ts) shows two exact R2 instances. It does not provision buckets, grant public access or mount private download routes. Binding uploads need known byte length and do not support presigned URLs. See [files and storage](/docs/files).
 
 This adapter implements ordinary HTTP Fetch bodies. It does not implement WebSocket upgrades, Durable Object lifecycle, scheduled events, queues or a deployment API. The PostgreSQL durable Tasks worker is a separate runtime contract, not a Workers queue adapter.
+
+The framework now supplies optional Manage operations, but this Workers Notes entry still exposes its existing private CRUD/session routes and does not mount a management endpoint. The Manage package builds for Bun and its current integration tests do not establish a workerd management route. If your application adds one, verify the installed import graph, compatibility flags, binding policy and borrowed app lifetime in workerd rather than assuming platform support from an oRPC route alone. Local MCP stdio remains a Bun entry. See [Manage](/docs/manage) for its implemented entry contracts.
 
 ## Run the existing local example
 
@@ -117,4 +119,4 @@ The greeting example optionally calls `bootstrapWorkerTracing()` from `@lenso/ot
 
 The existing `bun run test:notes` drives actual local Miniflare/workerd with D1 and checks private REST/RPC CRUD, owner/realm rejection, revoked credentials and renewal/revocation races. It does not prove production region, replication or lifetime behavior. When a local Worker fails, inspect generated `Env`, binding names, reviewed migrations, secret-key presence and the Worker import graph before changing the shared service.
 
-Sources: [Workers adapter](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/workers/src/index.ts), [Notes entry](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/src/notes.ts) and [local example guide](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/README.md).
+Sources: [Workers adapter](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/workers/src/index.ts), [Notes entry](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/src/notes.ts) and [local example guide](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/README.md).

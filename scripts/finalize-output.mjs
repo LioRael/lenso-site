@@ -10,9 +10,9 @@ const pages = source.pages.map((page) => ({
   edition: page.metadata.edition,
 }));
 const revision = createHash("sha256").update(JSON.stringify(pages)).digest("hex");
-const inventory = { schemaVersion: 1, edition: "typescript-source-preview", frameworkRef, docsFramework: "@lenso/docs@0.1.0", revision, pages };
+const inventory = { schemaVersion: 1, edition: "typescript-release-0.2.0", frameworkRef, docsFramework: "@lenso/docs@0.1.0", revision, pages };
 await writeFile("out/docs-inventory.json", JSON.stringify(inventory, null, 2) + "\n");
-const index = ["# Lenso", "", "Bun-first TypeScript application framework. Source preview: " + frameworkRef + ".", "Published Core quickstart is verified separately; see installation for artifact differences.", "", ...pages.map((page) => `- [${page.title} (${page.locale})](https://lenso.dev${page.markdown}): ${page.description}`)].join("\n") + "\n";
+const index = ["# Lenso", "", "Bun-first TypeScript application framework. Published package matrix, audited source: " + frameworkRef + ".", "See installation for exact runtime, CLI and adapter versions; docs uses @lenso/docs@0.1.0 independently.", "", ...pages.map((page) => `- [${page.title} (${page.locale})](https://lenso.dev${page.markdown}): ${page.description}`)].join("\n") + "\n";
 await writeFile("out/llms.txt", index);
 await writeFile("out/llms-full.txt", index + "\n" + source.pages.map((page) => `\n# ${page.title} (${page.locale})\nSource: https://lenso.dev${page.url}/\n\n${page.markdown}`).join("\n"));
 // The docs framework writes byte-exact per-page Markdown; verify instead of recompiling it.

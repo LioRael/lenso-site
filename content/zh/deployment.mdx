@@ -5,7 +5,7 @@ description: 准备真实 Bun 或 Worker 产物、显式迁移和宿主入口，
 
 Lenso 提供运行时与构建契约；宿主负责进程监管、入口、secret、平台绑定和发布流程。明确选择 Bun 进程或 module Worker。本地 build、Notes 请求成功或 Wrangler dry run，只证明该本地产物的部分行为，不代表完成生产部署。
 
-本文固定在 **`6e239c71a38279885facce133ceb847bbfe12f2f` 源码预览**，源码工作区使用 Bun **`1.4.2`** 与 Web/oRPC **`2.0.0-beta.42`**。已发布 `@lenso/web@0.1.0` 使用 oRPC `1.15.5`，没有 `/bun`。使用预览监听器或 v2 client 前，先确认匹配产物；见[安装与兼容性](/docs/zh/installation)。
+本文使用已核实发布包组合，以 **`549b9870acb6af239faf79245179a4f1f7e60cdb`** 审计源码接口；使用 Bun **`1.4.2`**、**`@lenso/web@0.2.0`** 与精确 oRPC **`2.0.0-beta.42`**。当前 Web 发布包已有 /bun；旧 Web 0.1.0 使用 v1，且没有该入口。打包前确认实际安装产物一致，见[安装与兼容性](/docs/zh/installation)。
 
 ## 选择运行时服务图
 
@@ -39,7 +39,7 @@ bun run build
 
 ## 监听器与入口策略
 
-预览的 `createBunListenerPlugin` 依赖精确 Web 实例，拥有 `Bun.serve`，获取后立即登记清理，应用关闭等待 `server.stop(true)`。必填 `ingress(request, actualListenerUrl)` 决定处理或放行；实际监听器 URL 与 request 的 Host 派生 URL 不同。
+已发布的 `createBunListenerPlugin` 依赖精确 Web 实例，拥有 `Bun.serve`，获取后立即登记清理，应用关闭等待 `server.stop(true)`。必填 `ingress(request, actualListenerUrl)` 决定处理或放行；实际监听器 URL 与 request 的 Host 派生 URL 不同。
 
 Notes 绑定 `127.0.0.1`，拒绝非 loopback Host，并拒绝与监听器 origin 不同的已提交 Origin。这是开发策略。生产反向代理、外部 origin 或 TLS terminator 需要明确允许的 host/origin 与 forwarding-header 策略，以及请求/body 限制和所选身份流程。不能直接复制示例后假定任意外部入口都能工作。
 
@@ -80,4 +80,4 @@ Bun 宿主处理终止信号、停止 app，等待监听器、响应体、登记
 
 Workers 的本地 workerd/D1 测试证明本地运行时行为，不证明生产复制/地域行为；Bun loopback 测试不证明 TLS/proxy 策略。报告产物 revision、协议版本、命令和实际环境，以及剩余平台不确定性。[测试与排错](/docs/zh/testing)提供聚焦检查与失败边界。
 
-源码依据：[Bun 模板](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/templates/bun-web/package.json)、[Notes 构建与迁移脚本](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/package.json)、[监听器所有权](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/bun.ts)与[Worker 脚本](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/package.json)。
+源码依据：[Bun 模板](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/templates/bun-web/package.json)、[Notes 构建与迁移脚本](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/package.json)、[监听器所有权](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/web/src/bun.ts)与[Worker 脚本](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/package.json)。

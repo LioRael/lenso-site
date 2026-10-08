@@ -1,20 +1,21 @@
 ---
 title: 升级与旧文档归档
-description: 明确区分发布包、TypeScript 预览和退役 Rust 一代，按应用边界迁移。
+description: 升级已发布的 TypeScript 包组合，并按应用边界从退役 Rust 一代迁移。
 ---
 
-本站描述 TypeScript 源码预览 `6e239c71a38279885facce133ceb847bbfe12f2f`，不是旧 Rust Host/Capability 运行时的兼容更新，也不是发布公告。[安装](/docs/zh/installation)记录发布包差异。
+本站描述经过核实的 TypeScript 发布包，以 `549b9870acb6af239faf79245179a4f1f7e60cdb` 审计源码接口。它不是旧 Rust Host/Capability 运行时的兼容更新。[安装](/docs/zh/installation)记录精确发布组合与协议 peer。
 
-## 从发布 TypeScript 0.1.0 到预览
+## 从 TypeScript 0.1.0 到当前组合
 
 1. 记录应用 lockfile、实际安装 exports 与运行宿主。源码版本字符串本身不足以确定接口。
-2. 选择一致、审阅过的固定源码构建。Core/Engine 与协议间接依赖均来自同一构建，不要只把一个包换成 latest。
+2. 选择已核实发布组合：Core/Engine 与主要适配器 0.2.0，CLI 0.19.0，DB/Storage 0.1.1。保留精确版本与 lockfile，不要只把一个间接依赖换成 latest。使用源码 vendor 归档时，全部从同一固定 revision 构建。
 3. 检查配置 preflight 与资源生命周期变化。源码 bindConfig 在业务 setup 前读取来源；inspect 仍执行可信模块顶层代码。
 4. 将 oRPC 客户端与服务端一起升级至 2.0.0-beta.42。源码无 v1 协议兼容路径，需要检查重复 middleware 与客户端 fetch。
 5. Bun HTTP 检查公开 /bun listener 与显式 ingress 策略。listener 可用不表示 loopback 示例可直接用作生产入口策略。
-6. 运行聚焦服务/入口测试并重新生成拥有的产物。独立检查迁移历史；升级包不应用数据库迁移。
+6. 普通单输入操作仍受支持。上下文操作声明 context: true，并通过可信每次调用 binding 提供上下文。检查可选 [Manage](/docs/zh/manage)、确认/审批 gate 和独立 CLI/MCP 选择；描述元数据不授予服务授权。
+7. 运行聚焦服务/入口测试并重新生成拥有的产物。独立检查迁移历史；升级包不应用数据库迁移。
 
-参考[配置](/docs/zh/configuration)、[Web](/docs/zh/web)、[Auth](/docs/zh/auth)与[测试](/docs/zh/testing)。日志/遥测入口目前仅源码有实现，尚无 npm Log/OTel 包可安装。Manage 仍通过显式应用操作表达边界。
+参考[配置](/docs/zh/configuration)、[Web](/docs/zh/web)、[Auth](/docs/zh/auth)与[测试](/docs/zh/testing)。选择新版源码包前核查实际 registry 产物；源码 release 提交本身不能证明 npm 可用。Manage 已实现为可选有限操作适配器，不是持久控制平台或自动 Console 集成。
 
 ## 从 Rust 一代迁移
 

@@ -5,7 +5,7 @@ description: Prepare real Bun or Worker artifacts, explicit migrations and host-
 
 Lenso supplies runtime and build contracts; your host owns process supervision, ingress, secrets, platform bindings and release rollout. Choose a Bun process or a module Worker deliberately. A local build, successful Notes request or Wrangler dry run is evidence about that local artifact, not a production deployment.
 
-This page is pinned to **source preview `6e239c71a38279885facce133ceb847bbfe12f2f`**, with Bun **`1.4.2`** and Web/oRPC **`2.0.0-beta.42`** in the source workspace. Published `@lenso/web@0.1.0` instead uses oRPC `1.15.5` and has no `/bun` entry. Verify matching artifacts before using the preview listener or v2 clients; see [installation](/docs/installation).
+This page uses the verified published package matrix, audited against **`549b9870acb6af239faf79245179a4f1f7e60cdb`**, with Bun **`1.4.2`**, **`@lenso/web@0.2.0`** and exact oRPC **`2.0.0-beta.42`**. The current Web release includes `/bun`; old Web `0.1.0` used v1 and lacked that entry. Verify matching installed artifacts before bundling; see [installation](/docs/installation).
 
 ## Choose a runtime graph
 
@@ -39,7 +39,7 @@ Do not use `lenso dev` as a production supervisor. Its restart/readiness worker 
 
 ## Listener and ingress policy
 
-The source-preview `createBunListenerPlugin` declares the exact Web instance, owns `Bun.serve`, registers cleanup immediately and waits for `server.stop(true)` when the app stops. Its required `ingress(request, actualListenerUrl)` decides whether to handle or pass through a request. The actual listener URL is separate from the request's Host-derived URL.
+The published `createBunListenerPlugin` declares the exact Web instance, owns `Bun.serve`, registers cleanup immediately and waits for `server.stop(true)` when the app stops. Its required `ingress(request, actualListenerUrl)` decides whether to handle or pass through a request. The actual listener URL is separate from the request's Host-derived URL.
 
 The Notes example binds `127.0.0.1`, rejects non-loopback Host values and rejects a present Origin that differs from its listener origin. This is a development policy. A production reverse proxy, external origin or TLS terminator needs a deliberate allowed-host/origin and forwarding-header policy, along with request/body limits and the chosen authentication flow. Do not copy the example policy and assume arbitrary external ingress will work.
 
@@ -80,4 +80,4 @@ Use the application's existing checks once against the actual packaged artifact.
 
 For Workers, local workerd/D1 tests establish local runtime behavior; they do not establish production replication or regional behavior. For Bun, a loopback listener test does not establish TLS/proxy policy. Report the artifact revision, transport versions, commands and actual environment with any remaining platform-specific uncertainty. [Testing](/docs/testing) gives the focused checks and error boundaries.
 
-Source evidence: [Bun template](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/templates/bun-web/package.json), [Notes build and migration scripts](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/package.json), [listener ownership](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/bun.ts) and [Worker scripts](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/package.json).
+Source evidence: [Bun template](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/templates/bun-web/package.json), [Notes build and migration scripts](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/package.json), [listener ownership](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/web/src/bun.ts) and [Worker scripts](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/package.json).

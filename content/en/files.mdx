@@ -5,7 +5,7 @@ description: Stream private objects through explicit providers and add authorize
 
 Use object storage for trusted internal object operations. Add Files when users need stable file IDs, metadata, owner/tenant policies and upload/deletion states. A storage ID, object key or file ID grants no caller permission.
 
-Contracts below follow the [Storage source at `6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/README.md). Check the installed package's exports; the source preview and a published `0.1.0` artifact can differ.
+Contracts below cover published `@lenso/storage@0.1.1` with Core `0.2.0`, checked against the [Storage source at `549b987`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/storage/README.md) and actual package exports. Keep the [supported dependency versions](/docs/installation) aligned.
 
 ## Select the runtime entry
 
@@ -23,7 +23,7 @@ Contracts below follow the [Storage source at `6e239c7`](https://github.com/LioR
 
 ## Start with the Notes Files integration
 
-[`examples/notes/src/files.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/files.ts) reuses the Notes database and Auth instance, with two local storage instances. It includes `fileSchema` in that database's schema and supplies `createSqliteFileQueries`. Its `createNotesFiles` factory registers an action-specific audience policy requiring a real user, the actual owner and the fixed `local-notes` tenant.
+[`examples/notes/src/files.ts`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/files.ts) reuses the Notes database and Auth instance, with two local storage instances. It includes `fileSchema` in that database's schema and supplies `createSqliteFileQueries`. Its `createNotesFiles` factory registers an action-specific audience policy requiring a real user, the actual owner and the fixed `local-notes` tenant.
 
 Inside that existing example, after startup and verified login, the upload is streamed:
 
@@ -65,6 +65,14 @@ Authenticate at the trusted entry and revalidate through the shared application 
 
 Names such as `publicAssets` select instances; they do not enable public ACLs. Internal object `put/get/head/list/delete` methods do not enforce a user policy. Uploads create new keys and reject replacement with `conflict`. Use generated keys, not original filenames as paths.
 
+## Select finite management operations
+
+The local Notes config uses `createNotesFileOperations` to declare `notes-file-operations.metadata` and `.delete`, both with strict `{ fileId }` input and `context: true`. Its Manage declaration selects these same original operations; it never exposes an upload/download stream as JSON. The sidecar depends on the exact Files and Auth instances and derives the action-specific actor from the entry's trusted `{ evidence, signal? }` context.
+
+CLI selects both through `operations` and supplies `NOTES_SESSION` through `operationBinding`. The default Notes MCP selection includes only note `list/read/remove`, so file operations are not automatically tools. An explicit [Manage entry](/docs/manage) must select the file declaration, bind the current identity, and implement `canList`; the existing Files owner/tenant policy still decides access to the particular file. A catalog key or delete hint does not authorize deletion or satisfy a required confirmation/approval gate.
+
+File deletion retains its real state/link-expiry rules and compensation errors. Manage adds no background reconciler, forced upload cancellation or transaction across DB and storage. Binary bytes continue through the application's authorized raw Fetch lifecycle.
+
 ## Inspect provider capabilities
 
 Read `storage.capabilities` before choosing signing, range reads, conditional reads, upload size or cancellation behavior. Unsupported operations throw `StorageError` with `code: "unsupported"`.
@@ -95,4 +103,4 @@ File records track `pending`, `uploading`, `ready`, `failed`, `deleting` and `de
 
 `createFileUploadHandler` and `createFileDownloadHandler` in `/fetch` keep bytes as streams and require application authentication/routing. CLI/MCP expose metadata or business commands, not binary data. Local roots must be dedicated app-controlled directories; traversal/symlink checks are not a sandbox against a hostile local process.
 
-Virus scanning, transformations, CDN provisioning and resumable client multipart sessions are outside this baseline. The [Files tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/test/files.test.ts) cover state races and failure handling; [Notes Files tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/test/files.test.ts) cover the application's owner/tenant policy. Continue with [testing](/docs/testing) or [Tasks](/docs/tasks) for separately owned background work.
+Virus scanning, transformations, CDN provisioning and resumable client multipart sessions are outside this baseline. The [Files tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/storage/test/files.test.ts) cover state races and failure handling; [Notes Files tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/test/files.test.ts) cover the application's owner/tenant policy. Continue with [testing](/docs/testing) or [Tasks](/docs/tasks) for separately owned background work.

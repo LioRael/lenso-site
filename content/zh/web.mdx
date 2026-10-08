@@ -7,9 +7,9 @@ description: 通过 Fetch 和类型化 oRPC 过程暴露共享异步服务，明
 
 ## 版本边界
 
-本文对应 **`6e239c71a38279885facce133ceb847bbfe12f2f` 源码预览**，使用 **oRPC `2.0.0-beta.42`**，传输协议仍是预发布版本。已发布的 `@lenso/web@0.1.0` 使用 oRPC `1.15.5`，且没有 `/bun` 导出；相同包版本号不代表相同实现。示例需要固定源码的已核实构建及配套包，获取方式见[安装与兼容性](/docs/zh/installation)。仅安装 npm 旧包无法复现本文。
+本文对应已发布 **`@lenso/web@0.2.0`**，按源码 **`549b9870acb6af239faf79245179a4f1f7e60cdb`** 核对，使用精确 **oRPC `2.0.0-beta.42`**；oRPC 传输仍是预发布契约。使用[安装与兼容性](/docs/zh/installation)中匹配的 Core/Auth/client。作为升级对比，旧 `@lenso/web@0.1.0` 使用 oRPC `1.15.5`，没有 `/bun`，不能运行当前监听器/v2 示例。
 
-客户端与服务端必须一起升级。此源码版本没有 v1 协议兼容路径。应用源码预览教程前，先检查实际安装包的 `exports` 和依赖版本。
+客户端与服务端必须一起升级。此发布版本没有 v1 协议兼容路径。应用教程前，先检查实际安装包的 `exports` 和依赖版本。
 
 ## 以共享服务为边界
 
@@ -55,7 +55,7 @@ procedure
   .handler(({ input, context }) => service.read(context.actor, input.id));
 ```
 
-这里的 `procedure`、`authentication`、`notesAudiences`、`noteLookupInput` 和 `service` 来自[真实路由](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/router.ts)。`requiredAuth` 验证凭证并替换保留的 `actor` 上下文键。共享服务再次验证 actor，并检查从数据库加载的笔记所有者。登录成功不代表可以读取任意笔记。
+这里的 `procedure`、`authentication`、`notesAudiences`、`noteLookupInput` 和 `service` 来自[真实路由](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/router.ts)。`requiredAuth` 验证凭证并替换保留的 `actor` 上下文键。共享服务再次验证 actor，并检查从数据库加载的笔记所有者。登录成功不代表可以读取任意笔记。
 
 **oRPC v2 不会自动去重中间件**：同时在路由和过程层挂载身份认证，会重复执行。只应用一次；若应用有意重复挂载，应自行使用明确的请求上下文标记保护。Lenso 不提供隐式身份缓存。详见[Auth](/docs/zh/auth)。
 
@@ -81,6 +81,14 @@ export function notesClient(credential: string) {
 
 `errorStatusMap` 扩展 oRPC 的通用 HTTP 映射。例如 `{ RATE_LIMITED: 429 }` 调整传输策略，不会给 oRPC 错误增加 `status` 属性。根据 `code` 和类型化 data 处理错误；在过程边界映射预期业务错误，避免公开未知提供方错误文本、凭证或私有对象细节。
 
+## 显式挂载可选 Manage 过程
+
+`@lenso/manage/orpc` 的 `createManageRouter` 为所选现有 Operation 提供有限 `catalog` 与 `invoke` 过程，不自动挂载路由。提供**已经运行**的 app、精确 plugin/operation 选择、`evidence(context)`、每次调用的 `binding(operation, validatedInput, evidence)` 与当前身份 `canList(operation, evidence)`。不要在 setup 中读取只能等同一个 `startApp` 返回后才赋值的 app 变量；宿主负责这段 bootstrap 与借用 app 的生命周期。
+
+使用当前请求的 `bearerEvidence` 一类凭证提取器，不使用全局可变 actor。Binding 可把 `{ evidence: evidence.evidence, signal: evidence.signal }` 作为真实 Notes operation 的可信 context；wrapper 根据操作 audience 认证，Notes 服务继续检查对象 owner。`canList` 过滤目录并控制调用准入，不替代服务授权。
+
+Invoke envelope 只接受 `{ key, input }` 或 `{ pluginId, method, input }`，不接受 actor/approval 字段。根据所选声明和 adapter 范围的 key 分派，不使用脱敏 display identifier。失败转为 `ORPCError("MANAGE_FAILED")`，附带有限安全 diagnostic。Confirmation/approval 要求仍需可信回调。这是现有 Notes CRUD 路由旁的可选入口；完整组合见[Manage](/docs/zh/manage)，身份边界见[Auth](/docs/zh/auth)。
+
 ## 请求真正结束后再释放资源
 
 返回 `Response` 只表示响应头已就绪。`WebContext` 提供 `request`、`signal`、`onCleanup(callback)` 和 `waitUntil(promise)`。把 `signal` 传给提供方；获得请求资源后立即登记清理；对可独立运行的 producer，立即用 `waitUntil` 登记实际完成 Promise。应用会等请求真正完成清理后再释放依赖服务。
@@ -99,10 +107,10 @@ export function notesClient(credential: string) {
 
 | 现象 | 首先检查 |
 | --- | --- |
-| 无法导入 `/bun` | 检查实际包导出；npm `0.1.0` 早于此源码预览。 |
+| 无法导入 `/bun` | 检查实际导出并使用匹配的 `0.2.0`；旧 Web `0.1.0` 没有监听器入口。 |
 | RPC 返回 `404` | 对照客户端 endpoint、Web 前缀和 `POST` 方法。 |
 | 身份提供方执行两次 | 检查 oRPC v2 的路由/过程重复中间件。 |
 | 输入校验失败 | 使用实际 Notes schema 和 v2 客户端，不沿用旧传输 payload。 |
 | 关闭一直未完成 | 读完/取消响应体，定位已登记工作或忽略取消的提供方。 |
 
-[Web 源码](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/index.ts)、[客户端](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/client.ts)和[HTTP 契约测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/test/http.test.ts)定义本文对应行为。
+[Web 源码](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/web/src/index.ts)、[客户端](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/web/src/client.ts)、[Manage router](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/manage/src/orpc.ts)和[HTTP 契约测试](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/web/test/http.test.ts)定义本文对应行为。

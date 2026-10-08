@@ -3,7 +3,7 @@ title: Inspect, call, dev and build
 description: Declare callable operations, understand command effects, and locate failures with structured CLI diagnostics.
 ---
 
-This page targets the TypeScript source preview at [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f). The source CLI package is `@lenso/cli@0.18.0`; do not infer these commands or recent configuration behavior from a registry version string. Check the installed launcher's `lenso help --json`.
+This page documents published `@lenso/cli@0.19.0` with Core/Engine `0.2.0`, audited against source [`549b987`](https://github.com/LioRael/lenso/tree/549b9870acb6af239faf79245179a4f1f7e60cdb). Check the installed launcher’s `lenso help --json` when diagnosing a different version.
 
 ## Choose a command by what it runs
 
@@ -21,15 +21,16 @@ All commands accept `--root directory`. `--entry` is available only for build/de
 
 ## Declare operations alongside the application
 
-`lenso.config.ts` default-exports `defineApp({ plugins })`. Its separate named `operations` export is the invocation allowlist. Do not place `operations` inside `defineApp` or expect all returned service methods to be exposed automatically.
+`lenso.config.ts` default-exports `defineApp({ plugins })`. Its separate named `operations` export is the CLI invocation allowlist. Named `mcpOperations` independently selects MCP operations; if omitted, MCP falls back to `operations`, while an explicit empty list disables that fallback. Named `operationBinding` belongs to the CLI entry. These exports must not be properties of the default `defineApp` declaration. No returned service method is exposed automatically.
 
-[Notes](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/operations.ts) uses a companion factory returning `{ plugin, operations }`. A declaration inside that factory is:
+[Notes](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/operations.ts) uses a companion factory returning `{ plugin, operations, manage }`. A declaration inside that factory is:
 
 ```ts
 const operations = [
   defineOperation({
     plugin,
     method: "list",
+    context: true,
     input: notesListInput,
     effect: "read",
     destructive: false,
@@ -42,15 +43,38 @@ const operations = [
 ];
 ```
 
-The actual file imports `defineOperation` from `@lenso/cli`, creates `plugin` once and uses its shared contracts. [The config](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/lenso.config.ts) installs `notesOperations.plugin` and exports `notesOperations.operations`. That exact installed object must appear in every declaration.
+The actual file imports `defineOperation` from `@lenso/engine/operations`; `@lenso/cli` also re-exports it. The factory creates `plugin` once and uses its shared contracts. [The config](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/lenso.config.ts) installs `notesOperations.plugin` and selects CLI/MCP subsets from its declarations. `selectManageOperations` returns the original Operations; [Manage](/docs/manage) does not add another handler or grant permission. That exact installed object must appear in every declaration.
 
-`defineOperation` checks the service method's input type against the Standard Schema v1 output. Invocation requires an own callable method on the returned service and calls it with the service as `this`. Multi-argument or actor-aware services need a thin application-owned single-input method that obtains identity from its trusted entry and delegates to the shared service.
+`defineOperation` checks the service method's input type against the Standard Schema v1 output. Invocation requires an own callable method on the returned service and calls it with the service as `this`. Single-input methods remain supported. Methods that need request evidence or an Auth-produced actor can declare `context: true`; the context type is inferred from the real method’s second parameter. The trusted entry supplies that argument separately from business JSON.
 
-Notes takes its credential from the trusted environment, verifies it with Auth and keeps owner checks in the Notes service. `actor`, `subjectId` or a permission flag in business JSON is not evidence. A declared operation grants exposure; it does not grant permission.
+Notes passes trusted entry evidence through `NotesOperationContext`, verifies it with Auth on each call and keeps owner checks in the Notes service. `actor`, `subjectId` or a permission flag in business JSON is not evidence. A declared operation grants exposure; it does not grant permission.
+
+## Bind trusted context after startup
+
+Add a typed named binding beside the selected `operations` in the existing Notes config:
+
+```ts
+import type { OperationBinding } from "@lenso/cli";
+
+export const operationBinding: OperationBinding<typeof operations[number]> =
+  () => ({ context: { evidence: process.env.NOTES_SESSION ?? null } });
+```
+
+`OperationBinding<O>` receives `(operation, validatedInput, running)`. CLI validates the raw business input once, including schema transforms, then starts the full app, then awaits the binding. `OperationContext<O>` recovers the method's context type, and `OperationBoundOptions<O>` requires context for a `context: true` declaration. Types and context presence do not authenticate anyone: Notes verifies the supplied evidence through `authentication.for(...).required(...)` before service policy checks.
+
+`OperationInvocationOptions` contains `context`, `maxOutputBytes`, `confirm` and `approve`. It has no top-level signal option. Notes' real context optionally carries `signal`, which its method explicitly passes to Auth; neither a binding nor cancellation metadata automatically cancels every business effect.
+
+`inspect` reports `contextRequired`, `confirmation` and `approval` but never invokes the binding or infers a context schema. MCP uses only its explicit trusted launch `StdioOptions.binding`, never the CLI `operationBinding`. Manage adapters supply their own per-call binding and borrow a running app.
+
+## Enforce confirmation and approval separately
+
+An Operation may declare `confirmation: "required"` and/or `approval: "required"`. After context binding and before the service call, the shared invocation path requires the corresponding trusted `confirm`/`approve` callback to resolve to exactly `true`. The entry must implement a real flow that verifies this invocation's user confirmation or configured approval owner. A constant callback or a flag from business JSON does not establish that evidence.
+
+Missing context yields `missing-context-binding`; missing or unsuccessful gates yield `confirmation-required` / `approval-required`. These checks can fail after full app setup, so the CLI still awaits resource cleanup. Allowlisting, Auth permission, confirmation and approval are independent requirements. `destructive: true` alone triggers none of them.
 
 ## Inspect first, call with one input source
 
-From a prepared framework preview checkout, the real Notes operation can be inspected without opening its database or Auth connection:
+From a prepared, version-matched framework checkout, the real Notes operation can be inspected without opening its database or Auth connection:
 
 ```sh
 bun run cli inspect notes-operations list --root examples/notes --json
@@ -73,7 +97,7 @@ Each call owns a fresh app. In-memory state is not shared with an already runnin
 
 `effect` is `read`, `write` or `unknown`. `destructive`, `retry` and `cancellation` describe operation semantics for users and adapters. They do not authorize a call, make it idempotent, retry it, pass an AbortSignal or roll back an effect. Omitted retry/cancellation are `unknown`; omitted destructive/output metadata are `null`.
 
-`outputDescription` is prose, not an output validator. Return finite, acyclic plain JSON, with explicit `null` or a result object instead of `undefined`. Dates, functions and other unsupported values cause `serialization-failed` at the JSON output boundary.
+`outputDescription` is prose, not an output validator. Return finite, acyclic plain JSON, with explicit `null` or a result object instead of `undefined`. Dates, functions, streams, symbol-keyed objects and other unsupported values cause `serialization-failed`. The shared invocation path checks the original result before redaction, then checks the safe JSON again. Its default output budget is 1 MiB; trusted bindings can set `maxOutputBytes`, while MCP applies its configured host limit. Oversized output fails with `output-too-large` before the CLI stops the app; it does not undo the business effect.
 
 Input inspection uses the validator's Standard JSON Schema converter when available. Otherwise it reports `schemaAvailability: "runtime-validation-only"` and `inputSchema: null`; runtime validation still applies. Defaults/examples are omitted. Field names and constraints remain discoverable, so never embed secrets in schemas or metadata.
 
@@ -88,7 +112,7 @@ Finite commands with `--json` emit one envelope on stdout: `{ schemaVersion: 1, 
 | `3` | Discovery/assembly | Config import, exact instances, operation declarations. |
 | `1` | Runtime/build/output | Config preflight, setup, invoke, cleanup, bundling or JSON serialization. |
 
-A trusted config import failure differs from runtime configuration preflight. Preview configuration failures use phase `config` and top-level `config-invalid`, with ordered safe causes naming instance, field path and source. Setup/invoke/cleanup can each fail independently; preserve `invocation-and-cleanup-failed` causes instead of choosing one.
+A trusted config import failure differs from runtime configuration preflight. Configuration preflight failures use phase `config` and top-level `config-invalid`, with ordered safe causes naming instance, field path and source. Setup/invoke/cleanup can each fail independently; preserve `invocation-and-cleanup-failed` causes instead of choosing one.
 
 Unknown application error text, raw input and stacks are omitted because they can contain secrets. Console methods are routed to stderr with redaction, but arbitrary direct stdout writes and secrets under innocuous names are not reliably isolated. Keep stdout protocol-only and avoid logging sensitive values.
 
@@ -98,4 +122,4 @@ In an existing server entry, call `reportDevReady({ urls: [actualUrl], capabilit
 
 Run `lenso dev --root .` or choose an existing entry with `--entry`. Failed starts keep watching. `build` writes bundles; it does not publish npm packages, provision a database or deploy Workers. Custom generation/targets and file ownership are documented in [Engine](/docs/engine).
 
-For programmatic use, `inspect(root, pluginId?, method?)`, `call(root, pluginId, method, input)` and `invoke(appDefinition, pluginId, method, input)` are public `@lenso/cli` exports. Use Engine for programmatic build stages. See [CLI contract](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md) and [parser implementation](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/src/bin.ts).
+For programmatic use, `inspect(root, pluginId?, method?)`, `call(root, pluginId, method, input)` and `invoke(appDefinition, pluginId, method, input, binding?)` are public `@lenso/cli` exports. Programmatic `invoke` defaults to `appDefinition.operationBinding`; an explicit fifth argument selects its binding. `call` loads the named binding from canonical config and has no binding argument. Use Engine for programmatic build stages. See [CLI contract](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/docs/CLI.md) and [parser implementation](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/cli/src/bin.ts).

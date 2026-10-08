@@ -5,13 +5,13 @@ description: Expose a reviewed set of existing operations to a local runtime age
 
 A coding agent edits source and uses development tools. A runtime agent invokes explicitly exposed business operations. Loading a development skill gives neither identity nor business permission, and does not start an MCP server.
 
-This page follows the [MCP source](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/mcp/README.md) and [CLI development guide](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md) at `6e239c7`. `@lenso/mcp@0.1.0` exists in the registry; match its actual installed declarations and transitive packages before using the newer source examples. A matching version string does not establish artifact equivalence.
+This page follows the published `@lenso/mcp`, `@lenso/core` and `@lenso/manage` **`0.2.0`** with CLI **`0.19.0`**, audited against the [MCP implementation](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/mcp/src/index.ts) and [CLI development guide](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/docs/CLI.md) at `549b987`. Use the coherent pinned versions in [installation](/docs/installation), rather than older installed declarations or floating tags.
 
 ## Expose existing operations through local stdio
 
 `@lenso/mcp` exports `serveStdio`. It uses the official MCP SDK `1.32.1` and delegates to the CLI operation boundary. It does not expose runtime methods automatically, implement business handlers, load Engine config, or open a remote listener.
 
-The existing Tasks entry fixes its root and five authorized operations. A host wanting only query/report access can create this narrower trusted entry at `examples/tasks/src/mcp-read.ts`:
+The existing Tasks MCP entry fixes its root and four authorized operations: `submit`, `query`, `cancel` and `retry`. `report` remains a CLI declaration and is not in its MCP selection. A host wanting only query access can create this narrower trusted entry at `examples/tasks/src/mcp-read.ts`:
 
 ```ts
 import { serveStdio } from "@lenso/mcp";
@@ -21,7 +21,6 @@ const adapter = await serveStdio({
   root: fileURLToPath(new URL("../", import.meta.url)),
   allow: [
     { pluginId: "tasks", method: "query" },
-    { pluginId: "tasks", method: "report" },
   ],
 });
 // For an explicit host shutdown path, await adapter.close().
@@ -33,7 +32,7 @@ The root and allowlist are trusted launch decisions. Tool arguments cannot selec
 
 ## Require declarations and representable schemas
 
-The app's trusted `lenso.config.ts` must already declare each operation in its named `operations` export, bound to the exact installed plugin object and shared input schema. Startup statically inspects this declaration without app setup. Trusted imports and schema converters still execute; inspection is not a sandbox.
+The app's trusted `lenso.config.ts` declares CLI `operations` and, optionally, a separate named `mcpOperations` export, bound to exact installed plugin objects and shared input schemas. MCP selects `mcpOperations ?? operations ?? []`, then applies the trusted launch `allow` list. An explicit `mcpOperations = []` disables fallback; an operation selected only for CLI cannot be added through tool arguments. Startup loads the canonical application with `readApplication` and describes selected operations without app setup. Trusted imports and schema converters still execute; discovery is not a sandbox.
 
 Duplicate or absent bindings reject startup. Input must have a converted **object JSON Schema** representable by the SDK. `runtime-validation-only`, scalar input or a missing converter cannot be replaced with a guessed empty schema. The method description and semantic metadata come from the canonical operation.
 
@@ -47,10 +46,54 @@ All requests in one stdio process use the trusted launch identity. There is no r
 
 Notes and Tasks demonstrate the shared boundary:
 
-- [Notes operations](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/operations.ts) obtain audience-specific actors from trusted session evidence and call the same owner-enforcing Notes service.
-- [Tasks authorized service](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/authorized-service.ts) checks durable ownership before private query/cancel/retry/report access. A job ID is not authority.
+- [Notes operations](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/operations.ts) obtain audience-specific actors from trusted session evidence and call the same owner-enforcing Notes service.
+- [Tasks authorized service](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/tasks/src/authorized-service.ts) checks durable ownership before private query/cancel/retry/report access. A job ID is not authority.
 
-The Notes default MCP entry exposes its five note operations, not session issuance or binary Files. Do not broaden an allowlist merely because a service method exists.
+The Notes default MCP entry selects only `list`, `read` and `remove` on `notes-operations`, not create/update, session issuance or binary Files. Its trusted launch binding reads `NOTES_MCP_SESSION`, independently of CLI's `NOTES_SESSION`. Do not broaden an allowlist merely because a service method exists.
+
+## Bind trusted context at the entry
+
+An operation declaring `context: true` takes trusted context as its real service method's second parameter. Business JSON remains the first, schema-validated argument. MCP's optional `serveStdio({ binding })` receives `(operation, validatedInput, running)` **after input validation and full app setup**, once per admitted call. It may return `context` and trusted `confirm`/`approve` callbacks. This is the public field name; there is no `invocationContext` option.
+
+The real Notes entry uses:
+
+```ts
+import { serveStdio } from "@lenso/mcp";
+import { fileURLToPath } from "node:url";
+
+await serveStdio({
+  root: fileURLToPath(new URL("../", import.meta.url)),
+  allow: [
+    { pluginId: "notes-operations", method: "list" },
+    { pluginId: "notes-operations", method: "read" },
+    { pluginId: "notes-operations", method: "remove" },
+  ],
+  binding: () => ({
+    context: { evidence: process.env.NOTES_MCP_SESSION ?? null },
+  }),
+});
+```
+
+Place this entry in `examples/notes/src`, as in the [existing Notes MCP source](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/mcp.ts). The Notes operation wrapper obtains its audience-specific actor from this evidence and the shared service still revalidates the session and owner. A context object or its TypeScript shape does not itself prove identity.
+
+MCP deliberately clears the config's CLI `operationBinding`; it never borrows that binding when its own is absent. Missing required context fails with `missing-context-binding`. For declarations requiring confirmation or approval, missing/false trusted callbacks fail with `confirmation-required` or `approval-required`. Input flags, a fabricated actor and destructive/retry metadata cannot satisfy these gates. Ordinary single-input operations, such as the existing Tasks service, remain supported without a context binding. See [CLI](/docs/cli) and [Auth](/docs/auth).
+
+## Tools for an already running application
+
+`@lenso/manage/agent` provides SDK-independent tools for an explicitly configured `ManageAdapter`:
+
+```ts
+import { createAgentTools } from "@lenso/manage/agent";
+import type { ManageAdapter } from "@lenso/manage";
+
+export async function toolsFor(adapter: ManageAdapter) {
+  return createAgentTools(adapter);
+}
+```
+
+The adapter borrows an existing `RunningApp`; it does not start or stop it. Its mandatory `canList` filters the current caller's catalog, and its per-call `binding` supplies trusted context. Tools contain `name`, `description`, object `inputSchema` and `invoke(input)`; invocation rechecks admission. Missing/non-object JSON Schema converters reject tool creation. Their adapter-scoped catalog keys are not durable receipts.
+
+This helper neither registers an agent SDK nor opens an MCP server. Connect the descriptions/invocation functions through your own agent host, preserving identity isolation, confirmation/approval and shared service authorization. [Manage](/docs/manage) covers exact instance selection, adapters and HTTP mounting.
 
 ## Treat output and hints as contracts
 
@@ -62,7 +105,7 @@ Default limits are a 1 MiB SDK incoming read buffer, 256 KiB serialized business
 
 ## Cancellation and shutdown
 
-Only one business call is admitted at a time. Another call gets `adapter-busy`; there is no request queue. The adapter checks SDK cancellation before and after the awaited CLI call. The CLI service call has no signal, so request cancellation can discard a response while business work continues.
+Only one business call is admitted at a time. Another call gets `adapter-busy`; there is no request queue. The adapter checks SDK cancellation before and after the awaited shared invocation. It does not automatically pass the SDK signal to the operation or binding. An application's context may contain its own signal, but that does not turn MCP request cancellation into automatic business abort, durable-job cancellation or rollback. A cancelled request can discard its response while admitted work and cleanup continue.
 
 `close()`, stdin EOF, SIGINT and SIGTERM stop admission, then drain the admitted call and cleanup before closing transport. There is no forced handler termination or cleanup deadline. Detached work still needs explicit application ownership.
 
@@ -75,12 +118,12 @@ SDK protocol frames are the intended stdout output; ordinary console methods are
 Give the coding agent the application's instructions, manifest/lockfile and the source-matched public references. Its development path is:
 
 1. Identify the host and actual installed exports; find the exact assembly/plugin/schema being changed.
-2. Use the [CLI operation contract](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md) to inspect existing declarations before editing shared schemas/services.
+2. Use the [CLI operation contract](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/docs/CLI.md) to inspect existing declarations before editing shared schemas/services.
 3. Preserve exact instance dependencies, resource ownership and verified service authorization. Keep business implementations ordinary async.
 4. Run the application's focused typecheck/tests and, when authorized, the existing call entry. Rebuild changed source packages before consuming `dist`; avoid internal source imports.
 
-Project-local `lenso-develop` and `lenso-diagnose` skill folders were present as uncommitted work during this audit. They are not available at the pinned revision or through the current npm package file lists, so this preview supplies no public skill-download or install contract. Do not assume a published package installs them. Review any separately provided skills and keep their references aligned with the app's artifacts.
+The source revision now includes project-local [lenso-develop](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/.agents/skills/lenso-develop/SKILL.md) and [lenso-diagnose](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/.agents/skills/lenso-diagnose/SKILL.md). They cover consumer development and focused diagnosis, including current Manage/MCP boundaries. They are committed repository references; package file lists do not establish automatic npm skill installation. Review separately supplied skills and match their references to installed artifacts, since repository `main` can advance.
 
-Development instructions do not add a general Manage SDK, Observe query CLI, identity provider or release authority. See [testing and troubleshooting](/docs/testing) for the supported diagnostic loop.
+Development instructions grant no identity, business permission or release authority. Optional Manage tools require their explicit caller policy and binding; no Observe query CLI or generic management command is supplied. See [testing and troubleshooting](/docs/testing) for the supported diagnostic loop.
 
-For `adapter-busy`, wait for the existing call to drain. For discovery failure, inspect the binding/converter rather than bypassing checks. For authorization denial, fix verified evidence or policy. The [real stdio tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/mcp/test/stdio.test.ts) cover official SDK discovery, lifecycle, redaction, bounds, cancellation and concurrency. The baseline does not advertise resources, prompts, tasks, elicitation or newer SDK-v2-only protocol features.
+For `adapter-busy`, wait for the existing call to drain. For discovery failure, inspect the binding/converter rather than bypassing checks. For authorization denial, fix verified evidence or policy. The [real stdio tests](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/mcp/test/stdio.test.ts) cover official SDK discovery, lifecycle, redaction, bounds, cancellation and concurrency. The baseline does not advertise resources, prompts, tasks, elicitation or newer SDK-v2-only protocol features.

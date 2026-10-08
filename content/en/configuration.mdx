@@ -3,7 +3,7 @@ title: Validated instance configuration
 description: Opt into typed configuration, explicit values/env/file sources, safe diagnostics, and startup preflight without forcing Web.
 ---
 
-**Source preview, currently unpublished in the verified registry artifact.** This API is implemented at [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f), but registry `@lenso/core@0.1.0` does not export `@lenso/core/config`, `/config/env` or `/config/file`. The examples below require a verified build of that source revision. Do not install registry `0.1.0` and assume these imports exist.
+**Published in `@lenso/core@0.2.0`.** This API is audited against source [`549b987`](https://github.com/LioRael/lenso/tree/549b9870acb6af239faf79245179a4f1f7e60cdb). The examples use its public `@lenso/core/config`, `/config/env` and `/config/file` exports. Earlier registry `0.1.0` lacks those entries; upgrade the core package before adopting this API.
 
 ## Use the boundary that fits the plugin
 
@@ -15,7 +15,7 @@ Schema input and output can differ through defaults, transforms and async valida
 
 ## Bind a Notes listener-style contract
 
-[Notes](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/server.ts) defines a port contract separately from its Web listener. This standalone preview example demonstrates the same contract and explicit environment reader without requiring Web:
+[Notes](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/server.ts) defines a port contract separately from its Web listener. This standalone example demonstrates the same contract and explicit environment reader without requiring Web:
 
 ```ts
 import { startApp } from "@lenso/core";
@@ -94,7 +94,7 @@ Install `projectFile` in a binding's source array at the intended precedence. `r
 
 ## Resolve directly or replace the adapter
 
-`resolveConfig(instanceId, { contract, sources }, { signal? })` validates without starting an app and returns `{ value, provenance, revisions }`. [Tasks](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/config.ts) uses this lower-level API for its worker and explicit migration entry; the plugin uses `bindConfig` for the same contract.
+`resolveConfig(instanceId, { contract, sources }, { signal? })` validates without starting an app and returns `{ value, provenance, revisions }`. [Tasks](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/tasks/src/config.ts) uses this lower-level API for its worker and explicit migration entry; the plugin uses `bindConfig` for the same contract.
 
 A custom `ConfigSource` needs `descriptor: { id, kind, location?, fields? }` and `async read({ signal })` returning `{ values, revision? }`. Give it the capabilities it needs through its own factory. Release temporary I/O resources in `finally`; preflight creates no subscription lifetime.
 
@@ -110,4 +110,4 @@ Mark secret contract fields or env bindings with `sensitive: true`; a field name
 
 Static `inspect` describes contracts and source declarations without calling `source.read`. Config JSON Schema needs an explicit `jsonSchema: () => ...` converter; validation alone does not promise conversion. Sensitive schema subtrees are hidden, defaults/examples are omitted, and metadata must itself be safe. Trusted config top-level code and converters still execute.
 
-This revision includes startup configuration only. Configuration-center SDKs, subscriptions, remote writes and hot reload are not delivered. An application can use lower-level APIs manually or replace its source adapters without adding Web. See [source implementation](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config.ts), [env adapter](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config-env.ts) and [file adapter](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config-file.ts).
+This revision includes startup configuration only. Configuration-center SDKs, subscriptions, remote writes and hot reload are not delivered. An application can use lower-level APIs manually or replace its source adapters without adding Web. See [source implementation](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/config.ts), [env adapter](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/config-env.ts) and [file adapter](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/lenso/src/config-file.ts).

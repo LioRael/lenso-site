@@ -3,7 +3,7 @@ title: Engine 约定与扩展
 description: 使用默认 Bun 工作流，显式替换约定，并通过公开 API 扩展发现、生成、构建目标与开发周期。
 ---
 
-本页以 TypeScript 源码预览 [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f) 为基线。使用 authoring API 前，应核对实际安装 Engine 的 exports 与构建来源。
+本页描述已发布的 `@lenso/engine@0.2.0`，源码审计基线固定为 [`549b987`](https://github.com/LioRael/lenso/tree/549b9870acb6af239faf79245179a4f1f7e60cdb)。扩展构建流程时使用其公开 authoring 与程序化入口。
 
 ## Engine 处理应用
 
@@ -23,7 +23,7 @@ Engine 是由 Bun 托管的构建与开发层。Core 负责运行时插件实例
 
 ## 从 lenso.engine.ts 扩展
 
-在构建配置或构建插件中导入 `@lenso/engine/authoring`。下面的完整配置为现有 Notes 服务源码生成索引；只在已经核实、存在 `src/notes.ts` 的 Notes 预览 checkout 中运行：
+在构建配置或构建插件中导入 `@lenso/engine/authoring`。下面的完整配置为现有 Notes 服务源码生成索引；只在已经核实、存在 `src/notes.ts` 的 版本匹配的 Notes checkout 中运行：
 
 ```ts
 import { defineEngineConfig, defineEnginePlugin } from "@lenso/engine/authoring";
@@ -47,7 +47,7 @@ export default defineEngineConfig({ plugins: [notesIndex] });
 
 `discover` 增加经过验证、位于应用根目录内的现有源码路径。`generate` 返回相对于 `.lenso` 的文件，不直接写入任意项目位置。`watch` 注册静态 import 没有表达的读取；新增文件会影响结果时，应注册目录。
 
-这是应用扩展，无需复制 Engine 内部实现。[独立 content 插件](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/examples/content-plugin/index.ts) 展示发现与真实文件读取；[module target 插件](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/examples/module-target-plugin/index.ts) 复用 `build.bundle` 生成浏览器/Workers 模块，但不会部署输出。
+这是应用扩展，无需复制 Engine 内部实现。[独立 content 插件](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/cli/examples/content-plugin/index.ts) 展示发现与真实文件读取；[module target 插件](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/cli/examples/module-target-plugin/index.ts) 复用 `build.bundle` 生成浏览器/Workers 模块，但不会部署输出。
 
 ## 替换时指定当前所有者
 
@@ -62,7 +62,7 @@ context.convention(
 );
 ```
 
-两个引用文件都必须存在。保留 canonical `lenso.config.ts`，例如从 `app.ts` 重新导出应用声明与 operations。`inspect` 与 `call` 始终读取 canonical 配置，不加载 Engine 配置；更改构建约定不会改变 CLI 调用边界。
+两个引用文件都必须存在。保留 canonical `lenso.config.ts`，例如从 `app.ts` 重新导出应用声明，以及实际选择的具名 `operations`、`mcpOperations`、`operationBinding`。`inspect` 与 `call` 始终读取 canonical 配置，不加载 Engine 配置；更改构建约定不会改变 CLI 调用边界。这些列表和 binding 属于入口具名导出，不应放进 `defineApp` 或 Engine authoring 配置；应用 loader 验证声明但不调用 binding。
 
 通过 `context.target("name", run)` 注册目标，再用 `defineEngineConfig({ target: "name", plugins })` 选择。Target 接收 `entry` 与共享 `bundle({ entry, platform?, packages?, directory? })`。输出位于 `dist` 内；bundler 支持 `bun`、`browser`、`node`，平台兼容性仍取决于入口导入的模块。
 
@@ -104,4 +104,4 @@ Dev 入口为 `--entry` 或 `src/server.ts`，构建 convention 的 entry 不会
 
 `EngineError.diagnostic` 提供 code、phase、所有者/source 和安全 cause。`engine-capability-conflict` 应检查显式 replacement，`invalid-engine-watch` 应检查路径存在与安全性，`generated-file-modified` 应检查手改输出，`unknown-engine-target` 应检查目标选择与撤销。Engine 配置/插件是可信代码；输出路径检查并不限制它们任意访问文件系统或进程的能力。
 
-完整契约见 [authoring 类型](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-authoring.ts)、[默认实现](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-defaults.ts) 与 [CLI 工作流](/docs/zh/cli)。
+完整契约见 [authoring 类型](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/engine/src/engine-authoring.ts)、[默认实现](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/engine/src/engine-defaults.ts) 与 [CLI 工作流](/docs/zh/cli)。

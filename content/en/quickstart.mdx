@@ -3,7 +3,7 @@ title: Your first application
 description: Install the published Core package and run ordinary async services with exact instance dependencies.
 ---
 
-This path uses **Bun 1.4.2** and published **`@lenso/core@0.1.0`**. It needs neither Engine nor Web. The example has been run against that actual npm artifact.
+This path uses **Bun 1.4.2** and published **`@lenso/core@0.2.0`**. It needs neither Engine nor Web. The example has been run against that actual npm artifact.
 
 ## Create a directory
 
@@ -13,7 +13,7 @@ Use a new directory:
 mkdir lenso-first-app
 cd lenso-first-app
 bun init -y
-bun add --exact @lenso/core@0.1.0
+bun add --exact @lenso/core@0.2.0
 ```
 
 Keep the generated `bun.lock`. These commands do not imply an application scaffolder. `create-lenso-docs@0.1.0` creates documentation sites, not runtime applications.
@@ -94,4 +94,4 @@ Add ticker to the assembly before accessing it. Keep `stop()` in finally so a fa
 | Dependency access fails | Declare the exact object in requires; recreating its ID is insufficient. |
 | Process stays alive | Check owned timers/streams/listeners and whether stop settles. |
 
-Continue with [composition](/docs/composition) and [lifecycle](/docs/lifecycle). Before using configured instances or newer Web APIs, choose the verified preview workflow in [installation](/docs/installation).
+Continue with [composition](/docs/composition) and [lifecycle](/docs/lifecycle). Before adding configured instances or Web, choose the matching published package matrix in [installation](/docs/installation).

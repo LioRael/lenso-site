@@ -5,7 +5,7 @@ description: Keep native Drizzle types, bind exact database instances, and migra
 
 `@lenso/db` makes a native Drizzle database a plugin resource. It does not replace Drizzle, choose a global database, or migrate on startup. Choose the driver for the host and keep the schema and queries in the application.
 
-This page describes the TypeScript source preview at [`6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/DATABASE.md). Verify installed exports and build provenance before using it; a package version of `0.1.0` alone does not establish equivalence to this source.
+This page covers published `@lenso/db@0.1.1` with `@lenso/core@0.2.0`, audited against source [`549b987`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/docs/DATABASE.md). The actual tarball retains the provider exports below. Match your installed artifacts and lockfile to the [supported versions](/docs/installation).
 
 ## Choose a provider
 
@@ -58,7 +58,7 @@ A new plugin object with the same ID does not satisfy an existing dependency. Fo
 
 The existing Notes application supplies a useful boundary:
 
-1. [`schema-pg.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/schema-pg.ts) uses UUIDs and timestamps with time zones. [`schema-sqlite.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/schema-sqlite.ts) uses text IDs and millisecond timestamps.
+1. [`schema-pg.ts`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/schema-pg.ts) uses UUIDs and timestamps with time zones. [`schema-sqlite.ts`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/schema-sqlite.ts) uses text IDs and millisecond timestamps.
 2. Dialect-specific query factories accept native Drizzle types. The shared `NotesQueries` interface contains only the business operations Notes needs.
 3. `createNotesPlugin({ id, database, authentication, queries })` binds those exact resources. The same ordinary async service serves CLI, Fetch and oRPC.
 
@@ -83,13 +83,19 @@ Generation is for a schema change; do not regenerate committed migrations merely
 
 For D1, the Worker configuration points `migrations_dir` at the reviewed SQLite migration directory and the owner invokes `wrangler d1 migrations apply <database-name> --local`. Wrangler records D1 history in `d1_migrations`; Bun SQLite uses Drizzle's journal. Use one runner for each store.
 
-Notes' `0001_owner` migration includes the Auth session baseline in its existing application history. Do not additionally run a separate Auth migrator on that database. Auth owns the session schema; Notes snapshots track Notes. Older rows receive the reserved `__legacy_unowned__` owner, which cannot log in. Migration does not assign old private records to the first configured user. See the [migration ownership record](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/migrations/OWNERSHIP.md).
+Notes' `0001_owner` migration includes the Auth session baseline in its existing application history. Do not additionally run a separate Auth migrator on that database. Auth owns the session schema; Notes snapshots track Notes. Older rows receive the reserved `__legacy_unowned__` owner, which cannot log in. Migration does not assign old private records to the first configured user. See the [migration ownership record](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/migrations/OWNERSHIP.md).
 
 ## Protect data at the service boundary
 
 A connection is privileged infrastructure access, not user authorization. Notes authenticates an audience-specific actor, revalidates its session, and checks the actual record owner. It also includes owner identity in update/delete SQL conditions. Lists select only that owner's rows. Owner, creation time and actor are not assignable through business JSON.
 
 Do not expose a raw DB client through Web, CLI or MCP. Obtain connection secrets through the host's secret authority and keep them out of source, argv and logs. Files and Tasks require their own durable associations and policies; sharing a database does not confer permission.
+
+## Expose business operations without exposing the DB
+
+The current [Notes operation factory](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/operations.ts) returns the exact sidecar plugin, shared operations and an optional Manage selection. Notes `list/read/remove` reuse the same owner-enforcing service. Each declares `context: true`; the entry binds verified evidence separately from business JSON. CLI uses named `operationBinding`; MCP uses its own launch binding and independent selection.
+
+A [Manage adapter](/docs/manage) borrows the running app and filters operation permission, then the service revalidates audience and record ownership. It adds no arbitrary SQL operation, database browser, schema migration, connection-secret read or administrator role. Database lifecycle remains with the resource owner. Static descriptors/catalog are not database health checks.
 
 ## Diagnose the resource boundary
 
@@ -101,4 +107,4 @@ Do not expose a raw DB client through Web, CLI or MCP. Obtain connection secrets
 | D1 build includes Bun imports | Trace imports to `/bun-sql`, `/bun-sqlite`, or filesystem code; select `/d1` |
 | Another user's row is visible | Test the shared service's audience/owner policy and query predicate, not only the HTTP middleware |
 
-[`packages/db/test/resources.test.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/test/resources.test.ts) verifies exact-instance isolation, no implicit migration, owned shutdown and borrowed-client survival. Real Notes PostgreSQL and local workerd/D1 checks are described in [testing and troubleshooting](/docs/testing).
+[`packages/db/test/resources.test.ts`](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/db/test/resources.test.ts) verifies exact-instance isolation, no implicit migration, owned shutdown and borrowed-client survival. Real Notes PostgreSQL and local workerd/D1 checks are described in [testing and troubleshooting](/docs/testing).

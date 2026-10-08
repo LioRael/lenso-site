@@ -3,11 +3,11 @@ title: 通过 Notes 与 Tasks 学习
 description: 用维护中的真实示例理解共享业务服务、持久归属与多种入口如何协作。
 ---
 
-源码预览已有完整 Notes 与 Tasks 应用。将审阅过的文件作为连续示例阅读，不要拼接不同版本的孤立片段。先按[安装](/docs/zh/installation)获取并构建精确源码 revision。
+审计基线的源码 checkout 包含当前包组合的完整 Notes 与 Tasks 应用。将审阅过的文件作为连续示例阅读，不要拼接不同版本的孤立片段。[安装](/docs/zh/installation)说明发布包消费路径与精确示例 checkout 的准备方式。
 
 ## Notes：一个服务，多种入口
 
-从 [Notes 组装](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/application.ts)开始：它接收所选数据库实例、session store、方言查询与 principals，再创建确切 Auth、Notes 实例。共享服务执行对象归属策略；CLI、原生 Fetch 和 oRPC 适配同一业务操作。
+从 [Notes 组装](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/src/application.ts)开始：它接收所选数据库实例、session store、方言查询与 principals，再创建确切 Auth、Notes 实例。共享服务执行对象归属策略；CLI、原生 Fetch 和 oRPC 适配同一业务操作。
 
 按此顺序读文件：
 
@@ -19,19 +19,23 @@ description: 用维护中的真实示例理解共享业务服务、持久归属�
 
 [数据库](/docs/zh/database)说明迁移归属，包括 Auth session 与旧未归属行；[Auth](/docs/zh/auth)解释登录证据与服务重新验证。不要从请求 JSON 分配 owner，也不要把 CLI 当作绕过授权的入口。
 
-本地 SQLite 路径使用应用[配置指南](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/CONFIGURATION.md)的键名与脚本。只检查必需键名，通过私有本地环境或 secret 机制提供凭据。本文档不含个人路径或有效凭据。
+当前 Notes [管理声明](/docs/zh/manage)选择已有 sidecar 服务。CLI 导出 operations 与可信 operationBinding；MCP 独立选择 mcpOperations（list、read、remove），通过 NOTES_MCP_SESSION 提供自己的启动身份。选择列表不继承另一入口的 binding，也不会仅凭对象 ID 授权；共享服务仍重新验证当前 session 证据和 owner 策略。
+
+本地 SQLite 路径使用应用[配置指南](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/notes/CONFIGURATION.md)的键名与脚本。只检查必需键名，通过私有本地环境或 secret 机制提供凭据。本文档不含个人路径或有效凭据。
 
 ## Tasks：生产者与 worker 共享契约
 
-[Tasks 示例](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/README.md)使用真实 PostgreSQL 队列。生产者接收已认证报告请求，持久归属将任务关联到 principal；worker 消费共享校验契约，通过审阅过的报告服务写入。
+[Tasks 示例](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/tasks/README.md)使用真实 PostgreSQL 队列。生产者接收已认证报告请求，持久归属将任务关联到 principal；worker 消费共享校验契约，通过审阅过的报告服务写入。
 
 调用生产者或恢复操作前先读 contracts.ts、task.ts、ownership.ts、authorized-service.ts，再读 resources.ts、producer.ts、worker.ts、mcp.ts。PostgreSQL 预置与迁移是显式步骤。worker 不会把任意任务 JSON 变成经过授权的操作。
 
 [Tasks](/docs/zh/tasks)覆盖 lease、重试、协作取消、保留与故障恢复；[MCP 与 agent](/docs/zh/agents)解释独立操作 allowlist。重试可能重复副作用，结果不确定时先查询持久状态再重放。
 
+当前 Tasks 配置为 CLI 选择管理操作，并单独选择 MCP 子集 submit、query、cancel、retry，排除 report。Binding 独立于已校验业务输入读取可信入口身份，不需要全局 current actor 或调用者提交的身份 envelope。
+
 ## Workers：D1 与 R2 上的 Notes
 
-[Workers Notes 示例](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/README.md)使用平台 binding 与请求拥有的应用图，不在 Worker 中运行 Bun CLI Engine 或 PostgreSQL task worker。greeting 计数器属于每请求内存，不是持久存储。
+[Workers Notes 示例](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/README.md)使用平台 binding 与请求拥有的应用图，不在 Worker 中运行 Bun CLI Engine 或 PostgreSQL task worker。greeting 计数器属于每请求内存，不是持久存储。
 
 按 [Workers](/docs/zh/workers)、[Files](/docs/zh/files)和[部署](/docs/zh/deployment)选择 D1/R2 入口与本地 Wrangler 检查。dry-run bundle 成功不表示云资源已预置或生产可用。
 

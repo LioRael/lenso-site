@@ -5,7 +5,7 @@ description: 在每个 Fetch 请求内组合应用、注入平台绑定、复用
 
 `@lenso/workers` 把公开 Lenso 服务图转换为 module Worker 的 Fetch 入口。组合在**每个请求内**执行，读取该请求的实际绑定。它不导入 Bun 监听器，也不调用远程 Bun 后端。
 
-本文对应 **`6e239c71a38279885facce133ceb847bbfe12f2f` 源码预览**。Web 示例使用 oRPC **`2.0.0-beta.42`**，已发布 `@lenso/web@0.1.0` 则使用 `1.15.5`。选择同一基线的已验证包，不混用未核实产物；见[安装与兼容性](/docs/zh/installation)。
+本文对应已发布 Workers/Core/Web/Auth **`0.2.0`**、DB **`0.1.1`** 与精确 oRPC **`2.0.0-beta.42`**，按 **`549b9870acb6af239faf79245179a4f1f7e60cdb`** 核对。选择[安装与兼容性](/docs/zh/installation)中的配套版本。旧 Web `0.1.0` 使用 oRPC `1.15.5`，不是当前协议基线。
 
 ## 公开组合契约
 
@@ -93,9 +93,11 @@ Workers 没有进程 shutdown hook；isolate 终止会打断 finalizer。不可�
 
 D1/R2 是借用的平台资源。Setup 不迁移 D1，也不关闭绑定。Bun SQL/SQLite、文件系统配置 reader、`@lenso/web/bun`、CLI 和 Engine 不应进入 Worker 运行时图。环境 source 可读取实际 `env` 对象，不需要 `process.env`。
 
-可选[Workers storage 示例](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/src/storage.ts)展示两个精确 R2 实例，不创建 bucket、不授权公共访问，也不挂载私有下载路由。绑定上传需要已知字节长度，不支持 presigned URL。见[Files 与存储](/docs/zh/files)。
+可选[Workers storage 示例](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/src/storage.ts)展示两个精确 R2 实例，不创建 bucket、不授权公共访问，也不挂载私有下载路由。绑定上传需要已知字节长度，不支持 presigned URL。见[Files 与存储](/docs/zh/files)。
 
 此适配器只处理普通 HTTP Fetch body，不实现 WebSocket upgrade、Durable Object 生命周期、scheduled event、queue 或部署 API。PostgreSQL 持久 Tasks worker 是另一套运行时契约，不是 Workers queue 适配器。
+
+框架已提供可选 Manage operation，但此 Workers Notes 入口仍只暴露现有私有 CRUD/session 路由，没有挂载管理端点。Manage 包按 Bun 构建，现有集成测试没有证明 workerd 管理路由。应用自行增加时，应在 workerd 验证实际安装导入图、compatibility flag、binding 策略和借用 app 生命周期，不能仅凭 oRPC 路由便假定平台支持。本地 MCP stdio 仍是 Bun 入口。已实现入口契约见[Manage](/docs/zh/manage)。
 
 ## 运行现有本地示例
 
@@ -117,4 +119,4 @@ Greeting 示例可在 Worker 入口调用一次 `@lenso/otel/workers` 的 `boots
 
 现有 `bun run test:notes` 通过真实本地 Miniflare/workerd 和 D1 验证私有 REST/RPC CRUD、owner/realm 拒绝、撤销会话及续期/撤销竞态，不证明生产地域、复制或生命周期行为。本地失败时先查生成的 `Env`、绑定名、已审阅迁移、secret key 是否存在和 Worker 导入图，再决定是否修改共享服务。
 
-来源：[Workers 适配器](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/workers/src/index.ts)、[Notes 入口](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/src/notes.ts)和[本地示例说明](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/README.md)。
+来源：[Workers 适配器](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/packages/workers/src/index.ts)、[Notes 入口](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/src/notes.ts)和[本地示例说明](https://github.com/LioRael/lenso/blob/549b9870acb6af239faf79245179a4f1f7e60cdb/examples/workers/README.md)。
