@@ -32,3 +32,6 @@ yarn-error.log*
 .vercel
 next-env.d.ts
 .blume-verify/
+
+/.lenso/
+/.lenso-search/

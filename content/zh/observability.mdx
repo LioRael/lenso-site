@@ -1,0 +1,121 @@
+---
+title: 日志与遥测
+description: 收集安全结构化日志，由宿主持有 OpenTelemetry SDK，并选择独立的 Workers tracing 入口。
+---
+
+日志和遥测是独立的可选集成。`@lenso/log` 输出 Pino 结构化日志，`@lenso/otel` 根入口提供官方 OpenTelemetry API。Core、Engine、Tasks 能记录 API span，但不会初始化 SDK；没有宿主 bootstrap 时，API 调用是 no-op。
+
+本页依据源码 `6e239c7` 的 [Log](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/log/README.md) 与 [OTel](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/README.md)。**正规 npm registry 目前没有 `@lenso/log` 或 `@lenso/otel`**，本站版本核查时两包查询均为 404；示例需要经审查的源码构建产物，不代表现在可以从 npm 安装。该基线没有内置 Observe query CLI、遥测存储或 collector。
+
+## stderr 日志只收集一次
+
+宿主向 `startApp` 传入 logger；插件通过 context 获得作用域日志，无需依赖 Pino：
+
+```ts
+import { definePlugin, startApp } from "@lenso/core";
+import { createLogger } from "@lenso/log";
+
+const greeting = definePlugin({
+  id: "greeting",
+  setup(context) {
+    return {
+      async greet(name: string) {
+        context.logger?.info({ operation: "greet" }, "Greeting requested");
+        return `Hello, ${name}`;
+      },
+    };
+  },
+});
+const app = await startApp({
+  plugins: [greeting],
+  logger: createLogger({ level: "info" }),
+});
+try {
+  await app.get(greeting).greet("Ada");
+} finally {
+  await app.stop();
+}
+```
+
+默认 JSON 发往 stderr，stdout 留给有限 CLI envelope 和 MCP protocol frame。进程 supervisor 负责收集一次 stderr。`@lenso/log` 不注册 SDK、不导出 OTel log；另加 log exporter 可能产生重复记录。
+
+`pretty: true` 适合开发时同步可读输出。`createLogger({ logger: existingPino })` 关联 trace，但不关闭借用 logger，transport 和生命周期仍归调用方。不要假设外部 logger 自动拥有默认 redaction 策略。
+
+## 在应用导入前初始化遥测
+
+Bun 宿主持有一次 SDK bootstrap。在 entry 或 preload 内初始化，先于 CLI/config/business 导入；应用工作 drain 后再 shutdown：
+
+```ts
+import { bootstrapTelemetry } from "@lenso/otel/bun";
+import { createORPCInstrumentation } from "@lenso/otel/orpc";
+
+const telemetry = await bootstrapTelemetry({
+  serviceName: "notes",
+  instrumentations: [createORPCInstrumentation()],
+});
+try {
+  const { main } = await import("./server.ts");
+  // 应用提供 main()：listener/worker drain 完成后才 resolve。
+  await main();
+} finally {
+  await telemetry.shutdown();
+}
+```
+
+这里的 `main` 是应用需要提供的生命周期契约，不是 Notes 示例承诺的导出。不要在插件 setup、config 模块或每个请求中 bootstrap。宿主通过可信部署配置提供授权的 OTLP 目的地/exporter 与凭据。仅导入 Lenso 不会安装 collector、自动 Node instrumentation 或 exception hook。
+
+`traceExporter`、`metricExporter`、`sampler`、`contextManager`、`propagator`、`instrumentations` 接受官方接口。传入 exporter/context manager 默认借用；`takeOwnership: true` 才转移生命周期。自有默认资源在失败路径也只清理一次。`mode: "external"` 不修改全局 provider/context，只管理显式传入 instrumentation 的登记；外部 SDK 所有者负责最终 flush/shutdown。
+
+`forceFlush()` 与 `shutdown()` 有界等待，timeout/export 失败会 reject。Timeout 不能停止任意自定义 exporter 代码；真实 cleanup 仍可能继续，归属保留到结束。Export 失败不证明业务操作失败。
+
+## 有限 CLI 命令
+
+源码 greeting 已提供设置 `flushOnCliExit: true` 的有限命令 preload。构建框架包，并配置授权的本地 OTLP receiver 后：
+
+```sh
+# 在审查后的源码根目录；endpoint 凭据留在环境中。
+bun --preload ./examples/greeting/src/telemetry.ts packages/cli/dist/bin.js \
+  call greeting greet '{"name":"Ada"}' --root examples/greeting --json
+```
+
+CLI 在 `finally` 结束 span 并等待有界 flush/shutdown。Export 失败输出固定 stderr diagnostic，保留业务 exit code。External SDK 模式仍由外部所有者管理。不要把有限命令 preload 当作 `dev` 子进程或长期 server 的生命周期方案。
+
+## HTTP propagation 只选一个 owner
+
+该源码的可选 `/orpc` 需要 `@orpc/opentelemetry@2.0.0-beta.42`，Web 与客户端也使用同一 oRPC beta；组合产物前核对已安装兼容性。
+
+若 Web `telemetry.requestLifetime` 或其他 Fetch/HTTP instrumentation 已持有 propagation，使用 `createORPCInstrumentation({ propagationEnabled: false })`。否则 oRPC 默认传播。oRPC HTTP/procedure span 与 Web 可选的 INTERNAL body/work/cleanup span 表示不同生命周期，避免两个 HTTP propagation owner。
+
+官方 oRPC exception instrumentation 可能捕获业务异常消息；消息里也不能包含凭据、body 或签名 URL。
+
+## Workers 使用平台 tracing
+
+浏览器安全的 `@lenso/otel/workers` 需要可选 peer `@orpc/cloudflare@2.0.0-beta.42` 和启用的 Wrangler traces。现有 [Worker entry](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/src/index.ts) 只调用一次 `bootstrapWorkerTracing()`，[配置](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/wrangler.jsonc) 启用 `observability.traces.enabled`。
+
+| Bun SDK 路径 | 原生 Workers 路径 |
+| --- | --- |
+| 显式 `/bun` bootstrap | 显式 `/workers` bootstrap |
+| 宿主负责 flush/shutdown | 平台负责 request span 和 export |
+| OTel API context 提供 trace 关联 | 原生 tracing 不桥接 Lenso OTel API span/context |
+| 可选 oRPC OTel instrumentation | 官方 Workers Traces 与 oRPC Cloudflare tracer |
+| Bun Pino 日志入口 | 平台日志或应用提供的 structural logger |
+
+不要混用两个 oRPC tracer owner，也不要每个 Worker 请求关闭 provider。原生路径目前没有自定义 OTLP export、可配置的 oRPC propagation 或 stream yielded/enqueued 事件；不会自动启用 Core/Tasks API span 或 Pino trace 关联。Isolate 终止不保证 app cleanup 完成。
+
+## 关联证据而不泄漏数据
+
+有用字段包括 instance/plugin/operation、`jobId`、attempt、`traceId`、`spanId`。持久 task attempt 创建链接到 producer 的新 root，不要求与 producer 同 trace ID。只有有界 `traceparent`/`tracestate` 单独保存；trace context 与 job ID 都不授予权限。高基数 ID 不应作为 metric label。
+
+默认 Log redaction 覆盖常见结构化 secret、body/payload 与 Error 文本/stack，但不是完整 secret 发现。自由文本、特殊深层 key 和自定义 serializer 仍需应用策略。记录固定事件与安全 code，不记录完整配置、payload 或未知异常。
+
+## 排查证据缺失
+
+| 症状 | 检查 |
+| --- | --- |
+| 有日志但没 trace | SDK bootstrap、导入顺序、sampling 和实际 exporter/receiver |
+| CLI 最终 span 丢失 | 有限命令 preload、`flushOnCliExit`，区分 export 与业务失败 |
+| HTTP span / 日志重复 | Propagation owner 和重复 stderr/OTel 收集 |
+| Worker 日志没 trace ID | 原生路径不桥接 OTel context，使用平台关联 |
+| 查询不到历史事件 | 查实际配置的存储/query backend；OTLP endpoint 本身不等于查询服务 |
+
+已有保留 stderr 或授权 backend 时使用它们；未配置收集意味着历史证据缺失，不能猜测 Observe 命令。[归属测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/test/ownership.test.ts)、[CLI export 测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/test/cli.test.ts)与 [Web lifetime 测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/test/telemetry.test.ts)验证各自边界。

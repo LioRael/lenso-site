@@ -1,0 +1,86 @@
+---
+title: MCP 与开发 Agent
+description: 为本地运行时 Agent 暴露审查过的现有操作，并为开发 Agent 提供版本匹配的事实与开发路径。
+---
+
+开发 Agent 编辑源码、使用开发工具；运行时 Agent 调用显式暴露的业务操作。加载开发 skill 不会授予身份或业务权限，也不会启动 MCP server。
+
+本页依据 `6e239c7` 的 [MCP 源码](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/mcp/README.md)与 [CLI 开发指南](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md)。Registry 存在 `@lenso/mcp@0.1.0`；使用较新的源码示例前核对安装声明及依赖。同一版本字符串不证明产物一致。
+
+## 用本地 stdio 暴露已有操作
+
+`@lenso/mcp` 导出 `serveStdio`，使用官方 MCP SDK `1.32.1` 并委托 CLI operation 边界。它不会自动暴露运行时方法、实现另一份业务 handler、加载 Engine config 或开启远程 listener。
+
+现有 Tasks 入口固定 root 和五个授权操作。只需要 query/report 的宿主可在 `examples/tasks/src/mcp-read.ts` 建立更窄的受信任入口：
+
+```ts
+import { serveStdio } from "@lenso/mcp";
+import { fileURLToPath } from "node:url";
+
+const adapter = await serveStdio({
+  root: fileURLToPath(new URL("../", import.meta.url)),
+  allow: [
+    { pluginId: "tasks", method: "query" },
+    { pluginId: "tasks", method: "report" },
+  ],
+});
+// 宿主有显式 shutdown 路径时，await adapter.close()。
+```
+
+让 MCP host 启动 `bun <absolute-path-to-entry>`，使用该应用已有的真实 `TASK_SESSION`、可信 `TASK_AUTH_SOURCE_MODULE`、数据库与 queue 配置。绝对路径属于宿主配置；不要在共享文档或配置中提交开发者个人路径。
+
+Root 和 allowlist 是可信启动决策，tool 参数不能选择模块、应用、method 或 shell。修改源码/allowlist 后启动新进程，正常模块缓存仍适用。该入口不启动 task worker。
+
+## 声明与 schema 必须可表示
+
+可信 `lenso.config.ts` 的 named `operations` export 必须已声明各操作，绑定精确安装的 plugin 对象与共享 input schema。启动时静态检查声明，不运行 app setup，但可信导入与 schema converter 仍会执行；inspect 不是 sandbox。
+
+重复或缺失 binding 会拒绝启动。输入必须转换为 SDK 可表示的**对象 JSON Schema**。`runtime-validation-only`、scalar 输入或缺少 converter 都不能用猜测的空 schema 替代。描述和语义 metadata 来自规范 operation 声明。
+
+Tool 名按 allowlist 顺序为 `operation_0`、`operation_1` 等。使用 `tools/list` 发现，不能跨宿主配置变更持久记忆索引。Title 标明规范 plugin/method，`_meta["lenso/operation"]` 保留 source/schema/语义信息。
+
+## 保留身份与授权
+
+每个接纳的调用通过共享 schema 验证，启动一个新 app，以原 service 作为 `this` 调用已有方法，再等待 cleanup。认证和授权始终属于应用。Allowlist 控制暴露范围，不授予 owner、tenant 或管理员权限。
+
+同一 stdio 进程的全部请求使用启动身份，没有逐请求远程登录或序列化 actor adapter。需要不同本地身份时启动分别授权的独立进程。业务 JSON 不接受 actor、session credential 或可信模块路径。
+
+现有 Notes 与 Tasks 展示共享边界：
+
+- [Notes operations](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/operations.ts) 从可信 session evidence 获得对应 audience actor，调用同一 owner-enforcing 服务。
+- [Tasks 授权服务](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/authorized-service.ts) 在私有 query/cancel/retry/report 前检查持久 owner。Job ID 不是权限。
+
+Notes 默认 MCP 入口仅暴露五个 Notes 操作，不暴露 session 签发或二进制 Files。服务存在某个 method 并不意味着应扩大 allowlist。
+
+## 正确理解输出与 hints
+
+成功 content 是单个 text block，包含确定且脱敏的 JSON。Undefined、cycle、nonfinite/nonplain 等输出会序列化失败。业务错误使用 `isError: true` 与安全 code/phase diagnostics，不输出原始输入、任意异常文本或 stack。`outputDescription` 是说明文字，不是 output schema。
+
+MCP hints 默认保守。`effect`、`destructive`、`retry` 与 cancellation metadata 描述意图，不授予权限，也不保证幂等、abort 传播或回滚。应用自己的 `CliError` message 必须安全。
+
+默认限制为 1 MiB SDK incoming read buffer、256 KiB 序列化业务输入、1 MiB 脱敏输出。可信 `maxFrameBytes`、`maxInputBytes`、`maxOutputBytes` 可调整；输出至少需要 91 bytes 安全 fallback。这些限制不能控制可信代码内部的任意分配。
+
+## 取消与关闭
+
+同一时间只接纳一个业务调用。并发请求得到 `adapter-busy`，不进入队列。Adapter 在等待 CLI call 前后检查 SDK cancellation。CLI 服务调用没有 signal，所以取消请求可以丢弃 response，而业务工作继续。
+
+`close()`、stdin EOF、SIGINT、SIGTERM 停止接纳新请求，等待已接纳调用和 cleanup，再关闭 transport。没有强制终止 handler 或 cleanup deadline。Detached work 仍需应用明确持有。
+
+MCP cancellation 不是 `tasks.cancel`。连接丢失、timeout 或未读 response 不证明业务写入失败；重放前查询已有授权业务/task 状态。见[持久化任务](/docs/zh/tasks)。
+
+SDK frame 是预期 stdout 内容；启动、调用、drain 时普通 console 重定向 stderr。但直接 `process.stdout.write`、native logging 或不安全可信代码仍可污染协议或泄漏 secret。该 adapter 不是 sandbox；发现 metadata、URL 与自由文本日志都必须安全。
+
+## 为开发 Agent 提供事实
+
+提供应用指令、manifest/lockfile 与匹配源码的公开参考。开发路径为：
+
+1. 确认宿主与实际 installed exports，找到要改的精确 assembly/plugin/schema。
+2. 根据 [CLI operation 契约](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md) inspect 已有声明，再修改共享 schema/service。
+3. 保留精确实例依赖、资源归属与真实服务授权，业务实现保持普通 async。
+4. 运行应用自己的重点 typecheck/test，在授权范围内调用已有入口。源码包变更后先构建 `dist`，避免内部 source import。
+
+本次核查时项目本地 `lenso-develop`、`lenso-diagnose` skill 文件夹仍为未提交工作，不在固定 revision 或当前 npm 文件清单内；本站不提供公开 skill 下载或安装契约。不要假设安装包会安装这些 skills。对单独提供的 skill 做审查，并使其参考与应用产物保持一致。
+
+开发指令不会增加通用 Manage SDK、Observe query CLI、身份 provider 或发布权限。支持的诊断循环见[测试与排错](/docs/zh/testing)。
+
+`adapter-busy` 应等待已有 call drain；发现失败应检查 binding/converter；授权失败应修复真实 evidence 或策略。[真实 stdio 测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/mcp/test/stdio.test.ts) 覆盖官方 SDK 发现、生命周期、脱敏、限制、取消和并发。该基线未声明 resources、prompts、tasks、elicitation 或较新 SDK v2 专有协议能力。

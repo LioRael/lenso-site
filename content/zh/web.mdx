@@ -1,0 +1,108 @@
+---
+title: Web 与 oRPC
+description: 通过 Fetch 和类型化 oRPC 过程暴露共享异步服务，明确监听器、身份和请求生命周期的归属。
+---
+
+`@lenso/web` 把 Lenso 服务图适配为 `Request → Promise<Response>`。它是可选组件：业务插件不需要 HTTP、oRPC 或监听器。包根入口导出 `createWebPlugin`、`WebService`、`WebContext` 和 Fetch 选项类型；Bun 监听器位于独立的 `@lenso/web/bun` 入口，Workers 则使用平台自己的 Fetch 入口。
+
+## 版本边界
+
+本文对应 **`6e239c71a38279885facce133ceb847bbfe12f2f` 源码预览**，使用 **oRPC `2.0.0-beta.42`**，传输协议仍是预发布版本。已发布的 `@lenso/web@0.1.0` 使用 oRPC `1.15.5`，且没有 `/bun` 导出；相同包版本号不代表相同实现。示例需要固定源码的已核实构建及配套包，获取方式见[安装与兼容性](/docs/zh/installation)。仅安装 npm 旧包无法复现本文。
+
+客户端与服务端必须一起升级。此源码版本没有 v1 协议兼容路径。应用源码预览教程前，先检查实际安装包的 `exports` 和依赖版本。
+
+## 以共享服务为边界
+
+现有 Notes 应用先组合数据库、身份认证和 Notes 服务。传输插件依赖精确的 Notes 与 Auth 插件对象。在 `examples/notes/src/web.ts` 中，oRPC 组合的核心形式如下：
+
+```ts
+import { createWebPlugin } from "@lenso/web";
+import type { Plugin } from "@lenso/core";
+import type { NotesService } from "./notes";
+import type { NotesAuthentication } from "./auth";
+import { createNotesRouter } from "./router";
+
+export function createNotesRpcPlugin(
+  notes: Plugin<NotesService>,
+  authentication: Plugin<NotesAuthentication>,
+) {
+  return createWebPlugin({
+    id: "notes-web",
+    requires: [notes, authentication],
+    prefix: "/rpc",
+    router(context) {
+      return createNotesRouter(
+        context.get(notes),
+        context.get(authentication),
+      );
+    },
+  });
+}
+```
+
+示例复用真实 Notes 路由和业务服务，不另写一套业务实现。把返回的 Web 插件及其依赖加入同一个应用；重新创建的同 ID 插件不是原来的依赖对象。参见[应用与插件组合](/docs/zh/composition)和[生命周期](/docs/zh/lifecycle)。
+
+现有路由提供 `create({ title, body? })`、`list()`、`read({ id })`、`update({ id, title, body? })` 和 `remove({ id })`。Zod 契约校验 RPC 输入，而服务层继续校验业务输入和对象授权，让 CLI 与原生 Fetch 调用遵守同样规则。
+
+## 过程身份认证
+
+Notes 路由对每个操作使用对应 audience。例如读取过程采用以下链式调用：
+
+```ts
+procedure
+  .use(requiredAuth(authentication.for(notesAudiences.read), bearerEvidence))
+  .input(noteLookupInput)
+  .handler(({ input, context }) => service.read(context.actor, input.id));
+```
+
+这里的 `procedure`、`authentication`、`notesAudiences`、`noteLookupInput` 和 `service` 来自[真实路由](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/router.ts)。`requiredAuth` 验证凭证并替换保留的 `actor` 上下文键。共享服务再次验证 actor，并检查从数据库加载的笔记所有者。登录成功不代表可以读取任意笔记。
+
+**oRPC v2 不会自动去重中间件**：同时在路由和过程层挂载身份认证，会重复执行。只应用一次；若应用有意重复挂载，应自行使用明确的请求上下文标记保护。Lenso 不提供隐式身份缓存。详见[Auth](/docs/zh/auth)。
+
+## 路由、客户端与错误
+
+默认前缀为 `/rpc`。自定义前缀必须以 `/` 开头且不能以 `/` 结尾。`fetch(context)` 先于 RPC 执行：返回 `Response` 表示已处理，返回 `undefined` 才继续进入 RPC。未匹配路由返回 `404`。RPC 使用 `POST`；`GET` 和 `HEAD` 不调用过程。
+
+浏览器只导入客户端入口，并把路由作为类型导入：
+
+```ts
+import { createClient } from "@lenso/web/client";
+import type { NotesRouter } from "./router";
+
+// credential 来自应用受保护的登录流程。
+export function notesClient(credential: string) {
+  return createClient<NotesRouter>("/rpc", {
+    headers: { Authorization: `Bearer ${credential}` },
+  });
+}
+```
+
+相对地址依据浏览器位置解析；服务端调用必须使用绝对地址。`createClient` 接受完整 endpoint、可选 `headers` 和自定义 `fetch`，保留嵌套过程类型推导。不要通过值导入把服务端组合带入浏览器包。参见[React 集成](/docs/zh/react)。
+
+`errorStatusMap` 扩展 oRPC 的通用 HTTP 映射。例如 `{ RATE_LIMITED: 429 }` 调整传输策略，不会给 oRPC 错误增加 `status` 属性。根据 `code` 和类型化 data 处理错误；在过程边界映射预期业务错误，避免公开未知提供方错误文本、凭证或私有对象细节。
+
+## 请求真正结束后再释放资源
+
+返回 `Response` 只表示响应头已就绪。`WebContext` 提供 `request`、`signal`、`onCleanup(callback)` 和 `waitUntil(promise)`。把 `signal` 传给提供方；获得请求资源后立即登记清理；对可独立运行的 producer，立即用 `waitUntil` 登记实际完成 Promise。应用会等请求真正完成清理后再释放依赖服务。
+
+原生流包装器不预读，同时只保留一个进行中的读取。默认源 chunk 上限为 **65,536 字节**，可通过 `maxChunkBytes` 调整。它限制包装器自身缓冲，不限制上游队列或 socket 缓冲。调用方必须读完或取消响应体。[原生 Fetch](/docs/zh/fetch)详细说明超时、取消与清理。
+
+## 选择运行宿主
+
+- **Bun：** `createBunListenerPlugin({ web, hostname, port, ingress })` 拥有监听器和关闭过程。必须提供 `ingress`，返回响应或以 `undefined` 放行。Notes 的 loopback Host/Origin 策略需要按实际生产入口重新审视。
+- **Workers：** `createWorkerHandler` 在每个请求内启动服务图。绑定由平台拥有，应用内存按请求重建。参见[Workers](/docs/zh/workers)。
+- **现有 Fetch 宿主：** 调用已启动的 `WebService.fetch(request)`，由自己的宿主管理关闭。Web 不替应用选择服务框架或部署平台。
+
+遥测只选择一个传播所有者。oRPC instrumentation 默认启用传播；Web 的 `telemetry: { requestLifetime: true }` 则负责提取上下文和内部生命周期 span，需要关闭 oRPC 传播，并避免重复的 HTTP instrumentation。参见[可观测性](/docs/zh/observability)。
+
+## 定位失败边界
+
+| 现象 | 首先检查 |
+| --- | --- |
+| 无法导入 `/bun` | 检查实际包导出；npm `0.1.0` 早于此源码预览。 |
+| RPC 返回 `404` | 对照客户端 endpoint、Web 前缀和 `POST` 方法。 |
+| 身份提供方执行两次 | 检查 oRPC v2 的路由/过程重复中间件。 |
+| 输入校验失败 | 使用实际 Notes schema 和 v2 客户端，不沿用旧传输 payload。 |
+| 关闭一直未完成 | 读完/取消响应体，定位已登记工作或忽略取消的提供方。 |
+
+[Web 源码](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/index.ts)、[客户端](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/client.ts)和[HTTP 契约测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/test/http.test.ts)定义本文对应行为。

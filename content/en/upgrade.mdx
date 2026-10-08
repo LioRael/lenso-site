@@ -1,0 +1,31 @@
+---
+title: Upgrade and archived documentation
+description: Move deliberately between published packages, the TypeScript preview and the retired Rust generation.
+---
+
+This is the TypeScript source-preview documentation at `6e239c71a38279885facce133ceb847bbfe12f2f`. It is not a compatible update to the old Rust Host/Capability runtime and is not a release announcement. [Installation](/docs/installation) records published package differences.
+
+## From published TypeScript 0.1.0 to the preview
+
+1. Record the application's lockfile, exact installed exports and runtime host. Source version strings alone are insufficient.
+2. Select a coherent, reviewed build of the pinned source. Keep all packed Core/Engine and transport dependencies from that build; do not replace only one transitive dependency with latest.
+3. Review configuration preflight and new resource lifetime behavior. Source `bindConfig` reads sources before business setup; inspection still executes trusted module top-level code.
+4. Upgrade oRPC client and server to `2.0.0-beta.42` together. The source has no v1 wire compatibility path. Review middleware repetition and client fetch behavior.
+5. For Bun HTTP, review the public `/bun` listener and explicit ingress policy. Listener availability does not make its loopback example a production ingress policy.
+6. Run focused service/entry tests and regenerate owned outputs. Review migration histories separately; package upgrade does not apply database migrations.
+
+See [configuration](/docs/configuration), [Web](/docs/web), [Auth](/docs/auth) and [testing](/docs/testing). New logging/telemetry entries are source-only at this check; there is no npm Log/OTel release to install. Manage remains an explicit-operation design boundary.
+
+## From the Rust generation
+
+Treat this as application migration, not a package rename. Inventory business services, stored data, authentication audiences, ownership policies and host effects. Reassemble ordinary TypeScript plugins with exact dependencies and cleanup. Move one entry at a time and test its shared service policy. Do not copy old Cargo/Host/Capability or dynamic Marketplace commands into a TypeScript application.
+
+No automatic Rust-to-TypeScript migrator or data conversion tool is provided. Preserve old data and review schema/identity changes explicitly. The existing Notes/Tasks cases demonstrate new boundaries; they do not automatically migrate arbitrary old applications.
+
+## Where the old pages went
+
+Old documentation is retained under `legacy/rust-site/content` in this repository and remains readable at the [pre-refactor source snapshot](https://github.com/LioRael/lenso-site/tree/bce1f2c08d238cec9e57a4c7a0218c8413b804c5/content/docs). It is excluded from the current sidebar, search, Markdown catalog and sitemap. This preserves history without presenting retired contracts as current facts.
+
+Former documentation routes redirect to this migration page in the same language. The redirect explains the generation change rather than claiming an exact tutorial correspondence. Old site/Marketplace source is also retained under `legacy/rust-site`; it is inactive in the docs CLI build. No Marketplace host cutover, catalog trust change or Console/Relay migration is part of this documentation update.
+
+For a deployed old application, use its version-matched archive and installed artifacts. For a new TypeScript application, start with [Quickstart](/docs/quickstart).

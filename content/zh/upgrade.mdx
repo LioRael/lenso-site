@@ -1,0 +1,31 @@
+---
+title: 升级与旧文档归档
+description: 明确区分发布包、TypeScript 预览和退役 Rust 一代，按应用边界迁移。
+---
+
+本站描述 TypeScript 源码预览 `6e239c71a38279885facce133ceb847bbfe12f2f`，不是旧 Rust Host/Capability 运行时的兼容更新，也不是发布公告。[安装](/docs/zh/installation)记录发布包差异。
+
+## 从发布 TypeScript 0.1.0 到预览
+
+1. 记录应用 lockfile、实际安装 exports 与运行宿主。源码版本字符串本身不足以确定接口。
+2. 选择一致、审阅过的固定源码构建。Core/Engine 与协议间接依赖均来自同一构建，不要只把一个包换成 latest。
+3. 检查配置 preflight 与资源生命周期变化。源码 bindConfig 在业务 setup 前读取来源；inspect 仍执行可信模块顶层代码。
+4. 将 oRPC 客户端与服务端一起升级至 2.0.0-beta.42。源码无 v1 协议兼容路径，需要检查重复 middleware 与客户端 fetch。
+5. Bun HTTP 检查公开 /bun listener 与显式 ingress 策略。listener 可用不表示 loopback 示例可直接用作生产入口策略。
+6. 运行聚焦服务/入口测试并重新生成拥有的产物。独立检查迁移历史；升级包不应用数据库迁移。
+
+参考[配置](/docs/zh/configuration)、[Web](/docs/zh/web)、[Auth](/docs/zh/auth)与[测试](/docs/zh/testing)。日志/遥测入口目前仅源码有实现，尚无 npm Log/OTel 包可安装。Manage 仍通过显式应用操作表达边界。
+
+## 从 Rust 一代迁移
+
+这属于应用迁移，不是包重命名。盘点业务服务、持久数据、身份 audience、归属策略与宿主副作用，以精确依赖和 cleanup 重新组装普通 TypeScript 插件。一次移动一个入口，测试共享服务策略。不要把旧 Cargo/Host/Capability 或动态 Marketplace 命令复制到 TS 应用。
+
+目前没有自动 Rust-to-TypeScript migrator 或数据转换工具。保留旧数据，明确审阅 schema/身份变更。现有 Notes/Tasks 案例展示新边界，不会自动迁移任意旧应用。
+
+## 旧页面去了哪里
+
+旧文档保留在仓库 legacy/rust-site/content，并可从[重构前源码快照](https://github.com/LioRael/lenso-site/tree/bce1f2c08d238cec9e57a4c7a0218c8413b804c5/content/docs)阅读。它们不进入当前侧栏、搜索、Markdown 目录或 sitemap，既保留历史，也不把退役契约当作当前事实。
+
+旧文档路由跳转到同语言迁移页，解释代际变化，不声称教程一一对应。旧站/Marketplace 源码也保留在 legacy/rust-site，不参与 docs CLI 构建。此文档更新不包含 Marketplace 宿主切换、catalog 信任变更或 Console/Relay 迁移。
+
+已有旧应用使用版本匹配归档与安装产物；新 TS 应用从[快速开始](/docs/zh/quickstart)开始。

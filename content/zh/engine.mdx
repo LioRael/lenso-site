@@ -1,0 +1,107 @@
+---
+title: Engine 约定与扩展
+description: 使用默认 Bun 工作流，显式替换约定，并通过公开 API 扩展发现、生成、构建目标与开发周期。
+---
+
+本页以 TypeScript 源码预览 [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f) 为基线。使用 authoring API 前，应核对实际安装 Engine 的 exports 与构建来源。
+
+## Engine 处理应用
+
+Engine 是由 Bun 托管的构建与开发层。Core 负责运行时插件实例；Engine 负责可信的发现、生成文件、打包与开发周期；CLI 负责参数、终端输出和退出码。业务服务和浏览器入口无需导入 Engine。
+
+没有 `lenso.engine.ts` 时，默认所有者 `lenso/defaults` 提供：
+
+| 约定或能力 | 默认行为 |
+| --- | --- |
+| 应用配置 | `lenso.config.ts` |
+| 构建入口 | 存在时使用 `src/server.ts`，否则使用生成的 `.lenso/server.ts` |
+| Router | 存在时使用 `src/router.ts`；Web 可选 |
+| 生成器 | 在 `.lenso` 中生成 `manifest`、`server`、`client` |
+| 构建目标 | `bun`，复用 Bun bundler，输出位于 `dist` |
+
+生成的 server 入口重新导出应用声明，不会自动创建监听器或启动应用。没有 router 时生成的 client 是空模块。自定义运行时宿主仍需启动应用并管理生命周期。
+
+## 从 lenso.engine.ts 扩展
+
+在构建配置或构建插件中导入 `@lenso/engine/authoring`。下面的完整配置为现有 Notes 服务源码生成索引；只在已经核实、存在 `src/notes.ts` 的 Notes 预览 checkout 中运行：
+
+```ts
+import { defineEngineConfig, defineEnginePlugin } from "@lenso/engine/authoring";
+
+const notesIndex = defineEnginePlugin({
+  name: "app/notes-index",
+  setup(context) {
+    context.watch("src/notes.ts");
+    context.discover("notes-source", () => ["src/notes.ts"]);
+    context.generate("notes-index", ({ sources }) => [
+      {
+        path: "notes-index.ts",
+        content: `export const sources = ${JSON.stringify(sources)};`,
+      },
+    ]);
+  },
+});
+
+export default defineEngineConfig({ plugins: [notesIndex] });
+```
+
+`discover` 增加经过验证、位于应用根目录内的现有源码路径。`generate` 返回相对于 `.lenso` 的文件，不直接写入任意项目位置。`watch` 注册静态 import 没有表达的读取；新增文件会影响结果时，应注册目录。
+
+这是应用扩展，无需复制 Engine 内部实现。[独立 content 插件](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/examples/content-plugin/index.ts) 展示发现与真实文件读取；[module target 插件](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/examples/module-target-plugin/index.ts) 复用 `build.bundle` 生成浏览器/Workers 模块，但不会部署输出。
+
+## 替换时指定当前所有者
+
+Engine 插件名和能力名必须唯一。`before`、`after` 声明排序约束；引用不存在的名称或形成环会失败，否则按稳定的配置顺序执行。
+
+替换能力时，在 `replace` 中指定确切的当前所有者，并保证替换者在它之后执行。例如在排序位于 `lenso/defaults` 之后的插件 setup 中：
+
+```ts
+context.convention(
+  () => ({ config: "app.ts", entry: "src/index.ts" }),
+  { replace: "lenso/defaults" },
+);
+```
+
+两个引用文件都必须存在。保留 canonical `lenso.config.ts`，例如从 `app.ts` 重新导出应用声明与 operations。`inspect` 与 `call` 始终读取 canonical 配置，不加载 Engine 配置；更改构建约定不会改变 CLI 调用边界。
+
+通过 `context.target("name", run)` 注册目标，再用 `defineEngineConfig({ target: "name", plugins })` 选择。Target 接收 `entry` 与共享 `bundle({ entry, platform?, packages?, directory? })`。输出位于 `dist` 内；bundler 支持 `bun`、`browser`、`node`，平台兼容性仍取决于入口导入的模块。
+
+能力注册和 `watch` 返回同步、幂等的 revoker。撤销影响之后的调用，包括本轮尚未到达的 hook，但不取消正在执行的 hook。旧所有者的 revoker 不能移除替代实现；移除替代实现也不会恢复原 provider。
+
+## 生成文件有明确归属
+
+`.lenso/.engine-files.json` 跟踪生成器归属。输出冲突、无归属的现有文件、已修改的生成内容、路径遍历与 symlink 输出路径，会在覆盖前失败。相同内容不会重写；删除生成器只会删除其跟踪且未被修改的输出。
+
+生成会先验证完整文件集合，但文件系统写入不是事务。应编辑应用源码或生成器，再重新生成，不应手改 `.lenso`，也不应把 `dist` 当作应用源码。
+
+元数据和生成器应保持确定性且不包含 secret。模块缓存与导入期依赖环境的声明可能改变结果。新 CLI 进程加载当前源码，同一进程中的重复有限调用遵循 Bun 模块缓存行为。
+
+## 手动工具要关闭 session
+
+有限 API `discover(root)`、`generate(root)`、`build(root, entry?)` 执行 Engine setup，并在成功或失败时关闭其注册资源，始终不运行应用插件 setup。需要在一次明确 session 中调用多个阶段的工具可以使用：
+
+```ts
+import { createEngineSession } from "@lenso/engine";
+
+const engine = createEngineSession(process.cwd(), "generate");
+try {
+  await engine.prepare();
+  await engine.session.generate();
+} finally {
+  await engine.session.close();
+}
+```
+
+Prepare 失败也需 close。希望同时保留阶段失败与清理失败时，可使用 `withEngine(session, run)`。Prepare 共享一次进行中的执行，处理阶段串行；阶段重叠或 close 后调用会产生诊断。Hook/finalizer 不得等待自身 session 的 close。
+
+取得资源后立即注册清理。Setup 返回后能力注册关闭；捕获的 `watch`/`onCleanup` 在清理开始前仍可从 hook 使用。清理串行 LIFO，尝试所有回调。`onCleanup` 返回的异步 disposer 与 session close 共享完成结果。
+
+## 开发就绪必须显式报告
+
+每个 dev 周期使用新的受监督 Engine worker 与应用进程。生成和 `beforeStart` hook 先于运行时启动；运行时通过 `@lenso/engine/dev-ready` 的 `reportDevReady` 报告实际启动，再执行 `ready` hook。只有进程启动而没有信号时，会一直显示 Starting。
+
+Dev 入口为 `--entry` 或 `src/server.ts`，构建 convention 的 entry 不会替代 dev 默认值。静态 import 触发周期失效；动态读取需要明确注册存在的 watch。生成与缓存路径被排除，避免重启循环。重启或关闭时先停止运行时，再清理 Engine。Engine worker 启动限制为 30 秒，关闭为 5 秒，强制终止会报告诊断。
+
+`EngineError.diagnostic` 提供 code、phase、所有者/source 和安全 cause。`engine-capability-conflict` 应检查显式 replacement，`invalid-engine-watch` 应检查路径存在与安全性，`generated-file-modified` 应检查手改输出，`unknown-engine-target` 应检查目标选择与撤销。Engine 配置/插件是可信代码；输出路径检查并不限制它们任意访问文件系统或进程的能力。
+
+完整契约见 [authoring 类型](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-authoring.ts)、[默认实现](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-defaults.ts) 与 [CLI 工作流](/docs/zh/cli)。

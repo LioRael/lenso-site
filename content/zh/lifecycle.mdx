@@ -1,0 +1,78 @@
+---
+title: 依赖生命周期与资源归属
+description: 理解串行启动、配置预检、启动回滚、提前释放，以及完整的 LIFO 清理。
+---
+
+本页描述 TypeScript 源码预览 [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f)。应核对实际安装声明，尤其是 `onCleanup` 返回的异步 disposer；版本号相同的 registry 包可能仍是较旧行为。
+
+## 启动有明确的资源边界
+
+`startApp` 先验证精确实例依赖，再解析所有已安装的配置实例，最后按依赖优先顺序逐个等待 setup。Setup 串行执行。依赖图或配置失败时，不运行任何业务插件 setup；配置读取器仍可能进行自己的预检 I/O。
+
+长期资源应在 setup 内获取，不应在导入 `lenso.config.ts` 时获取。每次取得资源后立即注册清理，再继续下一个可能失败的步骤。返回一个服务对象，不会让 Core 自动接管它的 socket、定时器或事件监听器。
+
+Bun SQLite 适配器直接表达了这个规则：
+
+```ts
+const client = options.client ?? new Database(options.filename, options.options);
+if (!options.client) context.onCleanup(() => client.close());
+return drizzle({ client, schema: options.schema });
+```
+
+该片段来自[真实适配器](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/src/bun-sqlite.ts)。插件创建的客户端由插件关闭；调用者传入的客户端仍归调用者。借用连接池、storage client 和 Workers 平台绑定时也需明确区分。
+
+## 关闭按注册顺序反向展开
+
+`context.onCleanup(callback)` 在 setup 中注册回调，并返回异步 disposer。自动关闭使用全局的后进先出栈，串行等待每个回调。依赖先启动，因此消费者通常先释放自己的资源，再释放依赖资源。
+
+在同一个 setup 中，应先注册底层资源，再注册上层服务。[Tasks](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/plugin.ts) 先注册归本实例所有的 Auth 连接，再注册数据库/队列资源，最后注册授权服务。关闭时先结束服务，再释放底层资源。
+
+依赖边不是子作用域：数据库拥有自己的资源，Notes 拥有自己的资源。不要因为消费者停止，就由消费者关闭借用的依赖。
+
+重复或并发调用 `app.stop()` 会取得同一个 Promise，包括同一次拒绝结果。清理会尝试所有已注册回调；即使部分失败，也继续尝试剩余项，最后用 `AggregateError` 报告错误。
+
+## 通过返回的 disposer 提前释放
+
+显式释放应调用返回的函数。直接调用底层 close 会绕过 Core 对一次性完成结果的跟踪。
+
+```ts
+import { defineApp, definePlugin, startApp } from "@lenso/core";
+
+const ownedTimer = definePlugin({
+  id: "owned-timer",
+  setup(context) {
+    const timer = setInterval(() => {}, 1000);
+    const release = context.onCleanup(() => clearInterval(timer));
+    return { release };
+  },
+});
+
+const app = await startApp(defineApp({ plugins: [ownedTimer] }));
+try {
+  await app.get(ownedTimer).release();
+} finally {
+  await app.stop();
+}
+```
+
+这个小型生命周期示例使用核实过的源码预览构建。提前释放和自动关闭共享一次完成结果。关闭会等待仍在运行的提前释放；提前释放失败也仍会在关闭时可见。注册只允许发生在 setup 中：保存 context 后在后续服务调用中新增 finalizer 会失败。
+
+Finalizer 不得等待自己的 disposer 或其应用的 `stop()` Promise，因为它们也在等待该 finalizer，形成死锁。Core 不设置清理超时，宿主需选择自己的关闭策略。
+
+## Setup 失败会回滚已获取资源
+
+插件在注册清理后失败时，回滚包括失败插件自己的资源，以及之前已初始化插件的资源。回滚成功则重新抛出原 setup 错误；回滚也失败则用 `AggregateError` 保留 setup 错误，随后按实际清理尝试顺序保留清理错误。
+
+`lifecycleFailure(error)` 可以读取对象/函数错误的 `phase`、`pluginId` 和可选 source，且不修改或包装原错误。抛出的原始值无法携带这种归属。除顶层 phase 外，也要查看 `AggregateError.errors`，不要让清理失败掩盖最初的 setup 失败。
+
+Stop 开始后，`app.get` 与 `context.get` 拒绝访问。但应用已保留的服务是普通对象，Core 无法撤销它的方法。服务自己的关闭状态与宿主入口应阻止继续使用已关闭资源。
+
+## 宿主负责入口与在途工作
+
+宿主决定何时停止接受请求、等待在途工作、发出协作式取消信号，最后调用 `app.stop()`。`startApp({ plugins }, { signal })` 将信号传给配置预检，不会自动把它传到每个业务方法或脱离调用链的任务。
+
+一次有限 CLI 调用启动并关闭整个应用。Bun HTTP 宿主通常跨请求持有应用。Workers 适配器创建请求拥有的应用并管理响应生命周期，D1/R2 等平台资源属于借用资源。Core 本身不会发现 detached promise，也不会安装进程信号处理器。
+
+资源泄漏或关闭卡住时，先找获取资源的所有者，再检查清理注册时机、finalizer 是否等待自身、drain 是否无界。业务写入后发生错误时，先查询授权的持久状态再重放：资源清理不会回滚已经提交的外部效果。
+
+实现见[生命周期源码](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/lifecycle.ts)，诊断入口见 [CLI 失败阶段](/docs/zh/cli)。

@@ -1,0 +1,59 @@
+---
+title: 管理操作与当前限制
+description: 使用已经交付的管理入口，复用授权后的 Notes/Tasks 服务，并区分静态声明与运行时状态。
+---
+
+**当前基线没有独立 Manage SDK 或 CLI。** TypeScript 源码预览 [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f) 没有公开 `@lenso/manage` 包、`manage` CLI 命令、通用管理服务或 Console 集成契约。不能把讨论中的 Manage API 当作已发布接口使用。
+
+## 按问题选择已支持的入口
+
+“管理”可以对应不同的应用职责。目前交付的是具体入口：
+
+| 问题 | 现有入口 | 边界 |
+| --- | --- | --- |
+| 声明了哪些实例和操作？ | `lenso inspect --json` | 静态声明，不反射运行时方法或检查健康。 |
+| 当前应用启动还是停止？ | 其拥有进程中的 `RunningApp.status()` | 生命周期状态，不是连通性或跨进程控制台。 |
+| 自己的持久报表任务是什么状态？ | 现有 Tasks `query` 操作 | 仍执行共享 Auth 和持久所有权检查。 |
+| 能否取消或重试任务？ | Tasks `cancel` / `retry` 操作 | 取决于实际状态，不回滚，也不授予通用管理员权限。 |
+| 执行为何失败？ | 结构化 CLI 诊断与配置后的日志/遥测 | 没有内置 Observe 查询命令或 collector。 |
+| Agent 能否调用业务操作？ | 显式 CLI 声明加可选 MCP 白名单 | 暴露与启动身份不提供提权。 |
+
+`Contribution` 或生成的 manifest 只描述声明，不证明实时健康，也不会授予路由、权限或远程管理能力。
+
+## 检查真实 Tasks 契约
+
+现有 [Tasks 配置](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/lenso.config.ts) 显式暴露 `submit`、`query`、`cancel`、`retry`、`report`。选择动作前先检查声明：
+
+```sh
+bun run cli inspect tasks query --root examples/tasks --json
+bun run cli inspect tasks cancel --root examples/tasks --json
+```
+
+这些命令从已准备好的预览 checkout 运行。完成示例数据库/迁移、真实 Auth source 和 session 配置后，用安全的业务输入查询自己拥有的 job：
+
+```sh
+printf '%s\n' '{"jobId":"<returned-job-id>"}' |
+  bun run cli call tasks query --root examples/tasks --stdin --json
+```
+
+把占位符替换为一次已授权提交返回的 job ID。知道 ID 不代表有权限。共享授权服务解析持久的 report/job 所有权，在访问队列之前拒绝其他所有者。旧记录缺少所有权时拒绝访问，setup 不会把它们归给第一个调用者。
+
+`query` 返回安全的状态、尝试预算和取消请求字段，或在清理后返回 `null`，不输出 payload、provider 原始错误或凭据。`report` 读取另一个归业务所有的表；队列成功与报表记录存在是不同观察。
+
+## 按真实语义进行恢复
+
+示例 `cancel` 可返回 `cancelled`、`requested`、`terminal`、`missing`。运行中返回 `requested` 表示已记录取消请求，不表示 handler 已停止。协作式检查能阻止尚未发生的写入，但不会撤销已提交写入或外部效果。
+
+`retry` 只接受最终失败，保留 job ID、payload 和尝试次数，再增加一次机会。不满足条件时返回 false。Retry 可能重复外部效果；写入或确认结果不确定时，应先检查授权的业务状态再重放。
+
+示例用 `reportId` 作为业务结果 upsert 的键，另用 queue deduplication key 去重入队。二者作用不同，不提供跨数据库的原子事务。详见 [Tasks 所有权与恢复](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/README.md#authentication-and-durable-ownership)。
+
+## 身份留在可信入口
+
+Notes 与 Tasks 暴露应用自有的薄操作，复用普通业务服务。凭据来自验证过的入口配置，不来自业务 JSON。Audience、subject、object、tenant 检查应保留在共享服务策略中，让 CLI、Web 和 agent 遵循同一规则。
+
+可选 `@lenso/mcp` 的 `serveStdio` 是独立本机 Bun 进程，固定可信应用根目录，再对白名单中的已声明操作开放工具。它一次只接纳一个 call，所有调用使用启动身份，不对每个远程请求认证不同用户。取消 MCP 请求不会调用 `tasks.cancel`、向服务传递 abort 或撤销效果。
+
+未来管理 UI 或远程入口需要已记录的公开契约，以及经过验证的认证、授权、生命周期边界。当前操作路径是现有授权操作、CLI 诊断和配置后的遥测后端。原始数据库访问、任意 shell 和凭据签发不属于已经暴露的业务管理操作。
+
+继续阅读 [CLI 声明与失败处理](/docs/zh/cli)、[MCP 契约](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/mcp/README.md)、[Task 授权实现](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/authorized-service.ts) 与[公开包目录](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f/packages)。

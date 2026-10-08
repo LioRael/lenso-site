@@ -1,0 +1,97 @@
+---
+title: Your first application
+description: Install the published Core package and run ordinary async services with exact instance dependencies.
+---
+
+This path uses **Bun 1.4.2** and published **`@lenso/core@0.1.0`**. It needs neither Engine nor Web. The example has been run against that actual npm artifact.
+
+## Create a directory
+
+Use a new directory:
+
+```sh
+mkdir lenso-first-app
+cd lenso-first-app
+bun init -y
+bun add --exact @lenso/core@0.1.0
+```
+
+Keep the generated `bun.lock`. These commands do not imply an application scaffolder. `create-lenso-docs@0.1.0` creates documentation sites, not runtime applications.
+
+## Write the service and assembly
+
+Replace `index.ts` with:
+
+```ts
+import { defineApp, definePlugin, startApp } from "@lenso/core";
+
+const greeting = definePlugin({
+  id: "greeting",
+  setup() {
+    return {
+      async greet(name: string) {
+        return { message: "Hello, " + name + "." };
+      },
+    };
+  },
+});
+
+const report = definePlugin({
+  id: "report",
+  requires: [greeting],
+  setup(context) {
+    const service = context.get(greeting);
+    return { async run() { return service.greet("Lenso"); } };
+  },
+});
+
+const app = await startApp(defineApp({ plugins: [report, greeting] }));
+try {
+  console.log(await app.get(report).run());
+} finally {
+  await app.stop();
+}
+```
+
+## Run it
+
+```sh
+bun index.ts
+```
+
+Expected business output:
+
+```text
+{ message: "Hello, Lenso." }
+```
+
+The array deliberately lists report first. Core initializes its declared greeting dependency before report setup. `context.get(greeting)` returns that exact object's service. `app.get(report)` reads an installed, initialized service; neither call discovers or installs a plugin by name.
+
+## Give resources an owner
+
+Register cleanup immediately after setup acquires a resource:
+
+```ts
+const ticker = definePlugin({
+  id: "ticker",
+  setup(context) {
+    const timer = setInterval(() => {}, 1000);
+    context.onCleanup(() => clearInterval(timer));
+    return { async ready() { return true; } };
+  },
+});
+```
+
+Add ticker to the assembly before accessing it. Keep `stop()` in finally so a failed service call still releases resources. Core attempts cleanup in reverse acquisition order and reports failures. It does not undo business effects.
+
+## If the first run fails
+
+| Symptom | Check |
+| --- | --- |
+| Import fails | Install from this directory; confirm the exact Core version in package.json. |
+| `missing-dependency` | Include the same greeting object in plugins and requires. |
+| `duplicate-id` | Give independently installed instances distinct IDs. |
+| Dependency access fails | Declare the exact object in requires; recreating its ID is insufficient. |
+| Process stays alive | Check owned timers/streams/listeners and whether stop settles. |
+
+Continue with [composition](/docs/composition) and [lifecycle](/docs/lifecycle). Before using configured instances or newer Web APIs, choose the verified preview workflow in [installation](/docs/installation).

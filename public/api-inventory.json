@@ -1,0 +1,2254 @@
+{
+  "schemaVersion": 1,
+  "checkedDate": "2026-10-08",
+  "sourceRef": "6e239c71a38279885facce133ceb847bbfe12f2f",
+  "documentationFramework": "@lenso/docs@0.1.0",
+  "packages": [
+    {
+      "name": "@lenso/core",
+      "sourceVersion": "0.1.0",
+      "sourceEntries": [
+        {
+          "subpath": ".",
+          "symbols": [
+            {
+              "name": "Cleanup",
+              "kind": "type",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "ConfigBinding",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigContract",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigDiagnostic",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigError",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "ConfigField",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigPath",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigProvenance",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigReadContext",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigSnapshot",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigSource",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigSourceDescription",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigSourceError",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "ConfigSourceResult",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfiguredPluginContext",
+              "kind": "type",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "Contribution",
+              "kind": "type",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "Diagnostic",
+              "kind": "type",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "DiagnosticError",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "LifecycleFailure",
+              "kind": "type",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "Logger",
+              "kind": "type",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "Plugin",
+              "kind": "type",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "PluginContext",
+              "kind": "type",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "PluginSource",
+              "kind": "type",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "RunningApp",
+              "kind": "type",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "bindConfig",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "defineApp",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "definePlugin",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "definePluginConfig",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "lifecycleFailure",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "preflightConfigs",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "resolveConfig",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "startApp",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "validatePlugins",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            },
+            {
+              "name": "valuesSource",
+              "kind": "value",
+              "declaration": "packages/lenso/src/index.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./plugin",
+          "symbols": [
+            {
+              "name": "Cleanup",
+              "kind": "type",
+              "declaration": "packages/lenso/src/plugin.ts"
+            },
+            {
+              "name": "ConfiguredPluginContext",
+              "kind": "type",
+              "declaration": "packages/lenso/src/plugin.ts"
+            },
+            {
+              "name": "Contribution",
+              "kind": "type",
+              "declaration": "packages/lenso/src/plugin.ts"
+            },
+            {
+              "name": "Logger",
+              "kind": "type",
+              "declaration": "packages/lenso/src/plugin.ts"
+            },
+            {
+              "name": "Plugin",
+              "kind": "type",
+              "declaration": "packages/lenso/src/plugin.ts"
+            },
+            {
+              "name": "PluginContext",
+              "kind": "type",
+              "declaration": "packages/lenso/src/plugin.ts"
+            },
+            {
+              "name": "PluginSource",
+              "kind": "type",
+              "declaration": "packages/lenso/src/plugin.ts"
+            },
+            {
+              "name": "defineApp",
+              "kind": "value",
+              "declaration": "packages/lenso/src/plugin.ts"
+            },
+            {
+              "name": "definePlugin",
+              "kind": "value",
+              "declaration": "packages/lenso/src/plugin.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./browser",
+          "symbols": [
+            {
+              "name": "Contribution",
+              "kind": "type",
+              "declaration": "packages/lenso/src/browser.ts"
+            },
+            {
+              "name": "Logger",
+              "kind": "type",
+              "declaration": "packages/lenso/src/browser.ts"
+            },
+            {
+              "name": "Plugin",
+              "kind": "type",
+              "declaration": "packages/lenso/src/browser.ts"
+            },
+            {
+              "name": "PluginContext",
+              "kind": "type",
+              "declaration": "packages/lenso/src/browser.ts"
+            },
+            {
+              "name": "defineApp",
+              "kind": "value",
+              "declaration": "packages/lenso/src/browser.ts"
+            },
+            {
+              "name": "definePlugin",
+              "kind": "value",
+              "declaration": "packages/lenso/src/browser.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./config",
+          "symbols": [
+            {
+              "name": "ConfigBinding",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigContract",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigDiagnostic",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigError",
+              "kind": "value",
+              "declaration": "packages/lenso/src/config.ts"
+            },
+            {
+              "name": "ConfigField",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigPath",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigProvenance",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigReadContext",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigSnapshot",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigSource",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigSourceDescription",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "ConfigSourceError",
+              "kind": "value",
+              "declaration": "packages/lenso/src/config.ts"
+            },
+            {
+              "name": "ConfigSourceResult",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-types.ts"
+            },
+            {
+              "name": "bindConfig",
+              "kind": "value",
+              "declaration": "packages/lenso/src/config.ts"
+            },
+            {
+              "name": "definePluginConfig",
+              "kind": "value",
+              "declaration": "packages/lenso/src/config.ts"
+            },
+            {
+              "name": "preflightConfigs",
+              "kind": "value",
+              "declaration": "packages/lenso/src/config.ts"
+            },
+            {
+              "name": "resolveConfig",
+              "kind": "value",
+              "declaration": "packages/lenso/src/config.ts"
+            },
+            {
+              "name": "valuesSource",
+              "kind": "value",
+              "declaration": "packages/lenso/src/config.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./config/env",
+          "symbols": [
+            {
+              "name": "EnvSourceOptions",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-env.ts"
+            },
+            {
+              "name": "envSource",
+              "kind": "value",
+              "declaration": "packages/lenso/src/config-env.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./config/file",
+          "symbols": [
+            {
+              "name": "JsonFileSourceOptions",
+              "kind": "type",
+              "declaration": "packages/lenso/src/config-file.ts"
+            },
+            {
+              "name": "jsonFileSource",
+              "kind": "value",
+              "declaration": "packages/lenso/src/config-file.ts"
+            }
+          ]
+        }
+      ],
+      "publishedVersion": "0.1.0",
+      "publishedExports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        },
+        "./plugin": {
+          "types": "./dist/plugin.d.ts",
+          "import": "./dist/plugin.js"
+        },
+        "./browser": {
+          "types": "./dist/browser.d.ts",
+          "import": "./dist/browser.js"
+        }
+      },
+      "integrity": "sha512-pswQR1Gf7ymCk8i1bDZpAfCFpWbWcnVF/z6xLSnP7vmpQs8inF6xt8pkc2NuI4VgdUPNH/UpU6X9wG9iiAxdjg==",
+      "sourceOnlySubpaths": [
+        "./config",
+        "./config/env",
+        "./config/file"
+      ],
+      "notes": [
+        "Published 0.1.0 exposes defineApp({ plugins }) only. PluginContext exposes get/onCleanup, and RunningApp exposes get/status/contributions/stop.",
+        "Source adds Logger, instanceId, logger, config binding/source APIs and config subpaths; these are absent from the published tarball.",
+        "Exact object identity applies to requires, context.get and running.get; duplicate IDs do not substitute dependencies."
+      ]
+    },
+    {
+      "name": "@lenso/engine",
+      "sourceVersion": "0.1.0",
+      "sourceEntries": [
+        {
+          "subpath": ".",
+          "symbols": [
+            {
+              "name": "AppDefinition",
+              "kind": "type",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "BuildContext",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "BundleOptions",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "Cleanup",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "DevEvent",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "DevSupervisor",
+              "kind": "type",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "DevSupervisorEvent",
+              "kind": "type",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "DevSupervisorOptions",
+              "kind": "type",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "Discovery",
+              "kind": "type",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "EngineConfig",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EngineContext",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EngineConvention",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EngineDevCycle",
+              "kind": "type",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "EngineDiagnostic",
+              "kind": "type",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "EngineError",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "EngineMode",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EnginePlugin",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EngineSession",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "EngineSnapshot",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EngineSource",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "GeneratedFile",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "Operation",
+              "kind": "type",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "PluginManifest",
+              "kind": "type",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "PreparedEngine",
+              "kind": "type",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "Registration",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "RegistrationOptions",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "SourceLocation",
+              "kind": "type",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "build",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "createDevSupervisor",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "createEngineSession",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "defaultEngineOwner",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "defaultEnginePlugins",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "defineEngineConfig",
+              "kind": "value",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "defineEnginePlugin",
+              "kind": "value",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "defineOperation",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "describePluginConfig",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "diagnostic",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "discover",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "generate",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "readApplication",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "startEngineDevCycle",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            },
+            {
+              "name": "withEngine",
+              "kind": "value",
+              "declaration": "packages/engine/src/index.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./authoring",
+          "symbols": [
+            {
+              "name": "BuildContext",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "BundleOptions",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "Cleanup",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "DevEvent",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EngineConfig",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EngineContext",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EngineConvention",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EngineMode",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EnginePlugin",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EngineSnapshot",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "EngineSource",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "GeneratedFile",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "Registration",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "RegistrationOptions",
+              "kind": "type",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "defineEngineConfig",
+              "kind": "value",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            },
+            {
+              "name": "defineEnginePlugin",
+              "kind": "value",
+              "declaration": "packages/engine/src/engine-authoring.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./application",
+          "symbols": [
+            {
+              "name": "AppDefinition",
+              "kind": "type",
+              "declaration": "packages/engine/src/application.ts"
+            },
+            {
+              "name": "Discovery",
+              "kind": "type",
+              "declaration": "packages/engine/src/application.ts"
+            },
+            {
+              "name": "PluginManifest",
+              "kind": "type",
+              "declaration": "packages/engine/src/application.ts"
+            },
+            {
+              "name": "readApplication",
+              "kind": "value",
+              "declaration": "packages/engine/src/application.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./operations",
+          "symbols": [
+            {
+              "name": "Operation",
+              "kind": "type",
+              "declaration": "packages/engine/src/operations.ts"
+            },
+            {
+              "name": "defineOperation",
+              "kind": "value",
+              "declaration": "packages/engine/src/operations.ts"
+            },
+            {
+              "name": "describeOperation",
+              "kind": "value",
+              "declaration": "packages/engine/src/operations.ts"
+            },
+            {
+              "name": "executeOperation",
+              "kind": "value",
+              "declaration": "packages/engine/src/operations.ts"
+            },
+            {
+              "name": "redactOperationDescription",
+              "kind": "value",
+              "declaration": "packages/engine/src/operations.ts"
+            },
+            {
+              "name": "safeInputSchema",
+              "kind": "value",
+              "declaration": "packages/engine/src/operations.ts"
+            },
+            {
+              "name": "validateOperations",
+              "kind": "value",
+              "declaration": "packages/engine/src/operations.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./diagnostics",
+          "symbols": [
+            {
+              "name": "EngineDiagnostic",
+              "kind": "type",
+              "declaration": "packages/engine/src/diagnostics.ts"
+            },
+            {
+              "name": "EngineError",
+              "kind": "value",
+              "declaration": "packages/engine/src/diagnostics.ts"
+            },
+            {
+              "name": "SourceLocation",
+              "kind": "type",
+              "declaration": "packages/engine/src/diagnostics.ts"
+            },
+            {
+              "name": "diagnostic",
+              "kind": "value",
+              "declaration": "packages/engine/src/diagnostics.ts"
+            },
+            {
+              "name": "environmentSecrets",
+              "kind": "value",
+              "declaration": "packages/engine/src/diagnostics.ts"
+            },
+            {
+              "name": "redact",
+              "kind": "value",
+              "declaration": "packages/engine/src/diagnostics.ts"
+            },
+            {
+              "name": "stableJson",
+              "kind": "value",
+              "declaration": "packages/engine/src/diagnostics.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./dev-ready",
+          "symbols": [
+            {
+              "name": "DevReadyInfo",
+              "kind": "type",
+              "declaration": "packages/engine/src/dev-ready.ts"
+            },
+            {
+              "name": "DevReadyMessage",
+              "kind": "type",
+              "declaration": "packages/engine/src/dev-ready.ts"
+            },
+            {
+              "name": "isDevReadyMessage",
+              "kind": "value",
+              "declaration": "packages/engine/src/dev-ready.ts"
+            },
+            {
+              "name": "reportDevReady",
+              "kind": "value",
+              "declaration": "packages/engine/src/dev-ready.ts"
+            }
+          ]
+        }
+      ],
+      "publishedVersion": "0.1.0",
+      "publishedExports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        },
+        "./authoring": {
+          "types": "./dist/engine-authoring.d.ts",
+          "import": "./dist/engine-authoring.js"
+        },
+        "./application": {
+          "types": "./dist/application.d.ts",
+          "import": "./dist/application.js"
+        },
+        "./operations": {
+          "types": "./dist/operations.d.ts",
+          "import": "./dist/operations.js"
+        },
+        "./diagnostics": {
+          "types": "./dist/diagnostics.d.ts",
+          "import": "./dist/diagnostics.js"
+        },
+        "./dev-ready": {
+          "types": "./dist/dev-ready.d.ts",
+          "import": "./dist/dev-ready.js"
+        },
+        "./dev-worker": "./dist/engine-dev-worker.js"
+      },
+      "integrity": "sha512-hdrr5bV/L6NeMJ3jNw8GHvp7o/7cV5A7llZ7MkkxP3kd7Yt+w+VyGKW1NgfDbxSxNseeuZcvqng0alYFFpkyZA==",
+      "sourceOnlySubpaths": [],
+      "notes": [
+        "Published 0.1.0 supports defineEngineConfig/defineEnginePlugin and explicit defineOperation.",
+        "Source adds describePluginConfig and config metadata; source operations subpath additionally exports executeOperation and safeInputSchema, absent from published 0.1.0.",
+        "App assembly is default defineApp plus named operations; there is no defineApplication export."
+      ]
+    },
+    {
+      "name": "@lenso/cli",
+      "sourceVersion": "0.18.0",
+      "sourceEntries": [
+        {
+          "subpath": ".",
+          "symbols": [
+            {
+              "name": "AppDefinition",
+              "kind": "type",
+              "declaration": "packages/cli/src/index.ts"
+            },
+            {
+              "name": "CliDiagnostic",
+              "kind": "type",
+              "declaration": "packages/cli/src/index.ts"
+            },
+            {
+              "name": "CliError",
+              "kind": "value",
+              "declaration": "packages/cli/src/index.ts"
+            },
+            {
+              "name": "Operation",
+              "kind": "type",
+              "declaration": "packages/cli/src/index.ts"
+            },
+            {
+              "name": "SourceLocation",
+              "kind": "type",
+              "declaration": "packages/cli/src/index.ts"
+            },
+            {
+              "name": "call",
+              "kind": "value",
+              "declaration": "packages/cli/src/index.ts"
+            },
+            {
+              "name": "defineOperation",
+              "kind": "value",
+              "declaration": "packages/cli/src/index.ts"
+            },
+            {
+              "name": "dev",
+              "kind": "value",
+              "declaration": "packages/cli/src/index.ts"
+            },
+            {
+              "name": "diagnostic",
+              "kind": "value",
+              "declaration": "packages/cli/src/index.ts"
+            },
+            {
+              "name": "inspect",
+              "kind": "value",
+              "declaration": "packages/cli/src/index.ts"
+            },
+            {
+              "name": "invoke",
+              "kind": "value",
+              "declaration": "packages/cli/src/index.ts"
+            }
+          ]
+        }
+      ],
+      "publishedVersion": "0.18.0",
+      "publishedExports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        }
+      },
+      "integrity": "sha512-c/iRdfZ/CaprFb1xYvQwdyqU1w3Pnim8ihS840DshFMNYQZZO7Qp7reDusOr9rArT8iBaMd2farx8XDB1VlAGA==",
+      "sourceOnlySubpaths": [],
+      "notes": [
+        "Version 0.1.0 is absent. Exact 0.18.0 is published and separately audited.",
+        "Published 0.18.0 is compatible with core/engine 0.1.0 for defineOperation, inspect and call; source has newer logging/config diagnostics."
+      ]
+    },
+    {
+      "name": "@lenso/web",
+      "sourceVersion": "0.1.0",
+      "sourceEntries": [
+        {
+          "subpath": ".",
+          "symbols": [
+            {
+              "name": "FetchContext",
+              "kind": "type",
+              "declaration": "packages/web/src/index.ts"
+            },
+            {
+              "name": "FetchHandler",
+              "kind": "type",
+              "declaration": "packages/web/src/index.ts"
+            },
+            {
+              "name": "FetchOptions",
+              "kind": "type",
+              "declaration": "packages/web/src/index.ts"
+            },
+            {
+              "name": "WebContext",
+              "kind": "type",
+              "declaration": "packages/web/src/index.ts"
+            },
+            {
+              "name": "WebPluginOptions",
+              "kind": "type",
+              "declaration": "packages/web/src/index.ts"
+            },
+            {
+              "name": "WebService",
+              "kind": "type",
+              "declaration": "packages/web/src/index.ts"
+            },
+            {
+              "name": "createWebPlugin",
+              "kind": "value",
+              "declaration": "packages/web/src/index.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./client",
+          "symbols": [
+            {
+              "name": "ClientOptions",
+              "kind": "type",
+              "declaration": "packages/web/src/client.ts"
+            },
+            {
+              "name": "createClient",
+              "kind": "value",
+              "declaration": "packages/web/src/client.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./bun",
+          "symbols": [
+            {
+              "name": "BunListenerOptions",
+              "kind": "type",
+              "declaration": "packages/web/src/bun.ts"
+            },
+            {
+              "name": "BunListenerService",
+              "kind": "type",
+              "declaration": "packages/web/src/bun.ts"
+            },
+            {
+              "name": "createBunListenerPlugin",
+              "kind": "value",
+              "declaration": "packages/web/src/bun.ts"
+            }
+          ]
+        }
+      ],
+      "publishedVersion": "0.1.0",
+      "publishedExports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "./client": {
+          "types": "./dist/client.d.ts",
+          "default": "./dist/client.js"
+        }
+      },
+      "integrity": "sha512-1ODYrDYZfpJ+AI7Fyksr+Nd7DxIwH4gr1ei6cBmv0NU988GRuifLqQv4qR7vaatNcVkQaoWoJAfKwt5zK9S3zA==",
+      "sourceOnlySubpaths": [
+        "./bun"
+      ],
+      "notes": [
+        "Published 0.1.0 uses @orpc/client/server 1.15.5, exposes root/client only and defines Router<any, WebContext>.",
+        "Source uses oRPC 2.0.0-beta.42 and Router<WebContext>, adds /bun, WebPluginOptions.errorStatusMap and telemetry.requestLifetime, plus logger/instance instrumentation.",
+        "Published createClient supports fetch and headers. React is a consumer integration through a typed client; no @lenso/web React export or hooks exist."
+      ]
+    },
+    {
+      "name": "@lenso/auth",
+      "sourceVersion": "0.1.0",
+      "sourceEntries": [
+        {
+          "subpath": ".",
+          "symbols": [
+            {
+              "name": "Access",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "Actor",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "ActorKind",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "ActorOf",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "Audience",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "Auth",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "AuthConfigurationError",
+              "kind": "value",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "AuthError",
+              "kind": "value",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "AuthErrorCode",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "AuthSource",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "AuthenticationOptions",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "AuthenticationResult",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "MembershipReader",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "Policy",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "PolicyContext",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "Realm",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "SessionEvidence",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "SessionRequirements",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "SourceCapabilities",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "SubjectRef",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "VerificationContext",
+              "kind": "type",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "allPolicies",
+              "kind": "value",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "allRequirements",
+              "kind": "value",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "audience",
+              "kind": "value",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "authenticatedWithin",
+              "kind": "value",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "authoritativeSession",
+              "kind": "value",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "createAuth",
+              "kind": "value",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "defineSource",
+              "kind": "value",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "realm",
+              "kind": "value",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "requireAssurance",
+              "kind": "value",
+              "declaration": "packages/auth/src/index.ts"
+            },
+            {
+              "name": "sessionCreatedWithin",
+              "kind": "value",
+              "declaration": "packages/auth/src/index.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./plugin",
+          "symbols": [
+            {
+              "name": "createAuthPlugin",
+              "kind": "value",
+              "declaration": "packages/auth/src/plugin.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./fetch",
+          "symbols": [
+            {
+              "name": "EvidenceInput",
+              "kind": "type",
+              "declaration": "packages/auth/src/fetch.ts"
+            },
+            {
+              "name": "FetchAuthContext",
+              "kind": "type",
+              "declaration": "packages/auth/src/fetch.ts"
+            },
+            {
+              "name": "authErrorResponse",
+              "kind": "value",
+              "declaration": "packages/auth/src/fetch.ts"
+            },
+            {
+              "name": "bearerEvidence",
+              "kind": "value",
+              "declaration": "packages/auth/src/fetch.ts"
+            },
+            {
+              "name": "headersEvidence",
+              "kind": "value",
+              "declaration": "packages/auth/src/fetch.ts"
+            },
+            {
+              "name": "requireSameOrigin",
+              "kind": "value",
+              "declaration": "packages/auth/src/fetch.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./orpc",
+          "symbols": [
+            {
+              "name": "optionalAuth",
+              "kind": "value",
+              "declaration": "packages/auth/src/orpc.ts"
+            },
+            {
+              "name": "requiredAuth",
+              "kind": "value",
+              "declaration": "packages/auth/src/orpc.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./session-source",
+          "symbols": [
+            {
+              "name": "sessionSource",
+              "kind": "value",
+              "declaration": "packages/auth/src/session-source.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./sessions",
+          "symbols": [
+            {
+              "name": "ManagedSession",
+              "kind": "type",
+              "declaration": "packages/auth/src/sessions.ts"
+            },
+            {
+              "name": "ManagedSessionsOptions",
+              "kind": "type",
+              "declaration": "packages/auth/src/sessions.ts"
+            },
+            {
+              "name": "SessionLifetime",
+              "kind": "type",
+              "declaration": "packages/auth/src/sessions.ts"
+            },
+            {
+              "name": "SessionMutation",
+              "kind": "type",
+              "declaration": "packages/auth/src/sessions.ts"
+            },
+            {
+              "name": "SessionRecord",
+              "kind": "type",
+              "declaration": "packages/auth/src/sessions.ts"
+            },
+            {
+              "name": "SessionStore",
+              "kind": "type",
+              "declaration": "packages/auth/src/sessions.ts"
+            },
+            {
+              "name": "createManagedSessions",
+              "kind": "value",
+              "declaration": "packages/auth/src/sessions.ts"
+            },
+            {
+              "name": "sessionLifetime",
+              "kind": "value",
+              "declaration": "packages/auth/src/sessions.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./drizzle/pg",
+          "symbols": [
+            {
+              "name": "postgresSessionStore",
+              "kind": "value",
+              "declaration": "packages/auth/src/drizzle/pg.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./drizzle/sqlite",
+          "symbols": [
+            {
+              "name": "sqliteSessionStore",
+              "kind": "value",
+              "declaration": "packages/auth/src/drizzle/sqlite.ts"
+            },
+            {
+              "name": "sqliteStore",
+              "kind": "value",
+              "declaration": "packages/auth/src/drizzle/sqlite.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./drizzle/d1",
+          "symbols": [
+            {
+              "name": "d1SessionStore",
+              "kind": "value",
+              "declaration": "packages/auth/src/drizzle/d1.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./drizzle/schema-pg",
+          "symbols": [
+            {
+              "name": "authSessions",
+              "kind": "value",
+              "declaration": "packages/auth/src/drizzle/schema-pg.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./drizzle/schema-sqlite",
+          "symbols": [
+            {
+              "name": "authSessions",
+              "kind": "value",
+              "declaration": "packages/auth/src/drizzle/schema-sqlite.ts"
+            }
+          ]
+        }
+      ],
+      "publishedVersion": "0.1.0",
+      "publishedExports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "./plugin": {
+          "types": "./dist/plugin.d.ts",
+          "default": "./dist/plugin.js"
+        },
+        "./fetch": {
+          "types": "./dist/fetch.d.ts",
+          "default": "./dist/fetch.js"
+        },
+        "./orpc": {
+          "types": "./dist/orpc.d.ts",
+          "default": "./dist/orpc.js"
+        },
+        "./session-source": {
+          "types": "./dist/session-source.d.ts",
+          "default": "./dist/session-source.js"
+        },
+        "./sessions": {
+          "types": "./dist/sessions.d.ts",
+          "default": "./dist/sessions.js"
+        },
+        "./drizzle/pg": {
+          "types": "./dist/drizzle/pg.d.ts",
+          "default": "./dist/drizzle/pg.js"
+        },
+        "./drizzle/sqlite": {
+          "types": "./dist/drizzle/sqlite.d.ts",
+          "default": "./dist/drizzle/sqlite.js"
+        },
+        "./drizzle/d1": {
+          "types": "./dist/drizzle/d1.d.ts",
+          "default": "./dist/drizzle/d1.js"
+        },
+        "./drizzle/schema-pg": {
+          "types": "./dist/drizzle/schema-pg.d.ts",
+          "default": "./dist/drizzle/schema-pg.js"
+        },
+        "./drizzle/schema-sqlite": {
+          "types": "./dist/drizzle/schema-sqlite.d.ts",
+          "default": "./dist/drizzle/schema-sqlite.js"
+        },
+        "./migrations/*": "./migrations/*"
+      },
+      "integrity": "sha512-5ToJqzeYSBCdk2o5W2O96P1zH6XuUgqrKpXyzftibmuRhZlbPAzpVgWmGIz4R/6kP4DYP08Gaz9Tepg9MvcCeg==",
+      "sourceOnlySubpaths": [],
+      "notes": [
+        "Published peer @orpc/server is ^1.15.5; source pins 2.0.0-beta.42. Keep adapter versions aligned.",
+        "Core Auth, Fetch, sessions, source and Drizzle entry names are published; optional peers need installation only when their entry is consumed."
+      ]
+    },
+    {
+      "name": "@lenso/db",
+      "sourceVersion": "0.1.0",
+      "sourceEntries": [
+        {
+          "subpath": ".",
+          "symbols": [
+            {
+              "name": "createDrizzlePlugin",
+              "kind": "value",
+              "declaration": "packages/db/src/index.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./bun-sql",
+          "symbols": [
+            {
+              "name": "BunPostgresConnection",
+              "kind": "type",
+              "declaration": "packages/db/src/bun-sql.ts"
+            },
+            {
+              "name": "BunSqlOptions",
+              "kind": "type",
+              "declaration": "packages/db/src/bun-sql.ts"
+            },
+            {
+              "name": "createBunSqlPlugin",
+              "kind": "value",
+              "declaration": "packages/db/src/bun-sql.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./bun-sqlite",
+          "symbols": [
+            {
+              "name": "BunSqliteOptions",
+              "kind": "type",
+              "declaration": "packages/db/src/bun-sqlite.ts"
+            },
+            {
+              "name": "createBunSqlitePlugin",
+              "kind": "value",
+              "declaration": "packages/db/src/bun-sqlite.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./d1",
+          "symbols": [
+            {
+              "name": "createD1Plugin",
+              "kind": "value",
+              "declaration": "packages/db/src/d1.ts"
+            }
+          ]
+        }
+      ],
+      "publishedVersion": "0.1.0",
+      "publishedExports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        },
+        "./bun-sql": {
+          "types": "./dist/bun-sql.d.ts",
+          "import": "./dist/bun-sql.js"
+        },
+        "./bun-sqlite": {
+          "types": "./dist/bun-sqlite.d.ts",
+          "import": "./dist/bun-sqlite.js"
+        },
+        "./d1": {
+          "types": "./dist/d1.d.ts",
+          "import": "./dist/d1.js"
+        }
+      },
+      "integrity": "sha512-STBuEfB8f7Cb0upkl4+lK/+kuJg/VhxGt+Tl6ma/Q0qlujQmiXpiN0Z+g9V6Qb40Aj69iVV0iBMpb6fho7UQQw==",
+      "sourceOnlySubpaths": [],
+      "notes": [
+        "Published entries are root, /bun-sql, /bun-sqlite and /d1. createDrizzlePlugin preserves native Drizzle types.",
+        "No common ORM, automatic migrations or database-independent query API is supplied."
+      ]
+    },
+    {
+      "name": "@lenso/workers",
+      "sourceVersion": "0.1.0",
+      "sourceEntries": [
+        {
+          "subpath": ".",
+          "symbols": [
+            {
+              "name": "WorkerApp",
+              "kind": "type",
+              "declaration": "packages/workers/src/index.ts"
+            },
+            {
+              "name": "WorkerExecutionContext",
+              "kind": "type",
+              "declaration": "packages/workers/src/index.ts"
+            },
+            {
+              "name": "WorkerRequestContext",
+              "kind": "type",
+              "declaration": "packages/workers/src/index.ts"
+            },
+            {
+              "name": "createBindingsPlugin",
+              "kind": "value",
+              "declaration": "packages/workers/src/index.ts"
+            },
+            {
+              "name": "createWorkerHandler",
+              "kind": "value",
+              "declaration": "packages/workers/src/index.ts"
+            }
+          ]
+        }
+      ],
+      "publishedVersion": "0.1.0",
+      "publishedExports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        }
+      },
+      "integrity": "sha512-sAaUD2Y4r3DzkIBoskCL2uzenZlv/+pW2VQyrT5y0A8aXYcZPLbP9FkoR53cNUmZjDbttlKoZFAHa8OjjWLOVA==",
+      "sourceOnlySubpaths": [],
+      "notes": [
+        "Published createWorkerHandler assembles/starts a separate app inside each incoming Fetch request.",
+        "Bindings are borrowed platform-owned resources; streamed body completion/cancellation controls app cleanup."
+      ]
+    },
+    {
+      "name": "@lenso/storage",
+      "sourceVersion": "0.1.0",
+      "sourceEntries": [
+        {
+          "subpath": ".",
+          "symbols": [
+            {
+              "name": "ListObjectsInput",
+              "kind": "type",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "ObjectDownload",
+              "kind": "type",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "ObjectMetadata",
+              "kind": "type",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "ObjectPage",
+              "kind": "type",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "ObjectStorage",
+              "kind": "type",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "PutObjectInput",
+              "kind": "type",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "ReadObjectOptions",
+              "kind": "type",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "SignDownloadInput",
+              "kind": "type",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "SignUploadInput",
+              "kind": "type",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "SignedObjectLink",
+              "kind": "type",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "StorageCapabilities",
+              "kind": "type",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "StorageError",
+              "kind": "value",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "StorageErrorCode",
+              "kind": "type",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "createStoragePlugin",
+              "kind": "value",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "unsupportedSigning",
+              "kind": "value",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "validateContentType",
+              "kind": "value",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "validateExpiry",
+              "kind": "value",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "validateKey",
+              "kind": "value",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "validateList",
+              "kind": "value",
+              "declaration": "packages/storage/src/index.ts"
+            },
+            {
+              "name": "validateRange",
+              "kind": "value",
+              "declaration": "packages/storage/src/index.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./local",
+          "symbols": [
+            {
+              "name": "createLocalStoragePlugin",
+              "kind": "value",
+              "declaration": "packages/storage/src/local.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./s3",
+          "symbols": [
+            {
+              "name": "S3StorageOptions",
+              "kind": "type",
+              "declaration": "packages/storage/src/s3.ts"
+            },
+            {
+              "name": "createS3StoragePlugin",
+              "kind": "value",
+              "declaration": "packages/storage/src/s3.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./r2",
+          "symbols": [
+            {
+              "name": "R2StorageBinding",
+              "kind": "type",
+              "declaration": "packages/storage/src/r2.ts"
+            },
+            {
+              "name": "R2StorageObject",
+              "kind": "type",
+              "declaration": "packages/storage/src/r2.ts"
+            },
+            {
+              "name": "createR2StoragePlugin",
+              "kind": "value",
+              "declaration": "packages/storage/src/r2.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./files",
+          "symbols": [
+            {
+              "name": "FileAction",
+              "kind": "type",
+              "declaration": "packages/storage/src/files.ts"
+            },
+            {
+              "name": "FileQueries",
+              "kind": "type",
+              "declaration": "packages/storage/src/files.ts"
+            },
+            {
+              "name": "FileRecord",
+              "kind": "type",
+              "declaration": "packages/storage/src/files.ts"
+            },
+            {
+              "name": "FileState",
+              "kind": "type",
+              "declaration": "packages/storage/src/files.ts"
+            },
+            {
+              "name": "FileUploadInput",
+              "kind": "type",
+              "declaration": "packages/storage/src/files.ts"
+            },
+            {
+              "name": "Files",
+              "kind": "type",
+              "declaration": "packages/storage/src/files.ts"
+            },
+            {
+              "name": "createFilesPlugin",
+              "kind": "value",
+              "declaration": "packages/storage/src/files.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./sqlite",
+          "symbols": [
+            {
+              "name": "createSqliteFileQueries",
+              "kind": "value",
+              "declaration": "packages/storage/src/sqlite.ts"
+            },
+            {
+              "name": "fileSchema",
+              "kind": "value",
+              "declaration": "packages/storage/src/sqlite.ts"
+            },
+            {
+              "name": "files",
+              "kind": "value",
+              "declaration": "packages/storage/src/sqlite.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./postgres",
+          "symbols": [
+            {
+              "name": "createPostgresFileQueries",
+              "kind": "value",
+              "declaration": "packages/storage/src/postgres.ts"
+            },
+            {
+              "name": "fileSchema",
+              "kind": "value",
+              "declaration": "packages/storage/src/postgres.ts"
+            },
+            {
+              "name": "files",
+              "kind": "value",
+              "declaration": "packages/storage/src/postgres.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./fetch",
+          "symbols": [
+            {
+              "name": "FileFetchContext",
+              "kind": "type",
+              "declaration": "packages/storage/src/fetch.ts"
+            },
+            {
+              "name": "createFileDownloadHandler",
+              "kind": "value",
+              "declaration": "packages/storage/src/fetch.ts"
+            },
+            {
+              "name": "createFileUploadHandler",
+              "kind": "value",
+              "declaration": "packages/storage/src/fetch.ts"
+            }
+          ]
+        }
+      ],
+      "publishedVersion": "0.1.0",
+      "publishedExports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "default": "./dist/index.js"
+        },
+        "./local": {
+          "types": "./dist/local.d.ts",
+          "default": "./dist/local.js"
+        },
+        "./s3": {
+          "types": "./dist/s3.d.ts",
+          "default": "./dist/s3.js"
+        },
+        "./r2": {
+          "types": "./dist/r2.d.ts",
+          "default": "./dist/r2.js"
+        },
+        "./files": {
+          "types": "./dist/files.d.ts",
+          "default": "./dist/files.js"
+        },
+        "./sqlite": {
+          "types": "./dist/sqlite.d.ts",
+          "default": "./dist/sqlite.js"
+        },
+        "./postgres": {
+          "types": "./dist/postgres.d.ts",
+          "default": "./dist/postgres.js"
+        },
+        "./fetch": {
+          "types": "./dist/fetch.d.ts",
+          "default": "./dist/fetch.js"
+        }
+      },
+      "integrity": "sha512-yn21sekwqvnjNFVCvdA8gezVYD5e4NLrFAaW418Bg0kE7vuenXSWlRN8nPdwEAY+f1P4KD7+es8WZ0RoLFlbGA==",
+      "sourceOnlySubpaths": [],
+      "notes": [
+        "Published providers are /local, /s3 and /r2. Files metadata/service adapters are /files, /sqlite, /postgres and /fetch.",
+        "Only declared export entries are public; /stream is not an exported subpath even though an internal declaration file exists.",
+        "S3 optional peers are ^3.1147.0 and Drizzle is exactly 0.45.3. Signed URL capabilities vary by provider."
+      ]
+    },
+    {
+      "name": "@lenso/tasks",
+      "sourceVersion": "0.1.0",
+      "sourceEntries": [
+        {
+          "subpath": ".",
+          "symbols": [
+            {
+              "name": "ClaimedJob",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "EnqueueOptions",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "ErrorCode",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "ExecutionResult",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "INPUT_LIMIT_BYTES",
+              "kind": "value",
+              "declaration": "packages/tasks/src/index.ts"
+            },
+            {
+              "name": "JobState",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "JobStatus",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "JsonValue",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "ProviderJob",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "RESULT_LIMIT_BYTES",
+              "kind": "value",
+              "declaration": "packages/tasks/src/index.ts"
+            },
+            {
+              "name": "Task",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "TaskContext",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "TaskProvider",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "TaskQueue",
+              "kind": "type",
+              "declaration": "packages/tasks/src/index.ts"
+            },
+            {
+              "name": "TaskQueueError",
+              "kind": "value",
+              "declaration": "packages/tasks/src/index.ts"
+            },
+            {
+              "name": "TaskWorker",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "WorkerOptions",
+              "kind": "type",
+              "declaration": "packages/tasks/src/contracts.ts"
+            },
+            {
+              "name": "createTaskPlugin",
+              "kind": "value",
+              "declaration": "packages/tasks/src/index.ts"
+            },
+            {
+              "name": "createTaskQueue",
+              "kind": "value",
+              "declaration": "packages/tasks/src/index.ts"
+            },
+            {
+              "name": "defineTask",
+              "kind": "value",
+              "declaration": "packages/tasks/src/index.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./postgres",
+          "symbols": [
+            {
+              "name": "PostgresTaskProviderOptions",
+              "kind": "type",
+              "declaration": "packages/tasks/src/postgres.ts"
+            },
+            {
+              "name": "createPostgresTaskProvider",
+              "kind": "value",
+              "declaration": "packages/tasks/src/postgres.ts"
+            },
+            {
+              "name": "migratePostgresTaskQueue",
+              "kind": "value",
+              "declaration": "packages/tasks/src/postgres.ts"
+            }
+          ]
+        }
+      ],
+      "publishedVersion": "0.1.0",
+      "publishedExports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        },
+        "./postgres": {
+          "types": "./dist/postgres.d.ts",
+          "import": "./dist/postgres.js"
+        }
+      },
+      "integrity": "sha512-7Ew9HSv2pNjfG8NRepwNxcbtRreEvvT6WMH+nWa3A011/ApbxbG2AS6VjL7S+a6NukTDnKA2hn5ALjU2/hl/bw==",
+      "sourceOnlySubpaths": [],
+      "notes": [
+        "Published task queue API and PostgreSQL provider exist; there is no Workers task provider.",
+        "Source adds createTaskQueue instanceId/pluginId/logger options, TaskContext logger/identity and provider traceMetadata. Published 0.1.0 has none of these telemetry fields.",
+        "Only root and /postgres are exported; internal /worker and /contracts are not exported subpaths."
+      ]
+    },
+    {
+      "name": "@lenso/log",
+      "sourceVersion": "0.1.0",
+      "sourceEntries": [
+        {
+          "subpath": ".",
+          "symbols": [
+            {
+              "name": "CreateLoggerOptions",
+              "kind": "type",
+              "declaration": "packages/log/src/index.ts"
+            },
+            {
+              "name": "Logger",
+              "kind": "type",
+              "declaration": "packages/log/src/index.ts"
+            },
+            {
+              "name": "LoggerOptions",
+              "kind": "type",
+              "declaration": "packages/log/src/index.ts"
+            },
+            {
+              "name": "createLogger",
+              "kind": "value",
+              "declaration": "packages/log/src/index.ts"
+            }
+          ]
+        }
+      ],
+      "publishedVersion": null,
+      "publishedExports": null,
+      "integrity": null,
+      "sourceOnlySubpaths": [],
+      "notes": [
+        "Entire package name returned registry 404. Source 0.1.0 implements Pino logger support, but it is not a published npm install path at audit time."
+      ]
+    },
+    {
+      "name": "@lenso/otel",
+      "sourceVersion": "0.1.0",
+      "sourceEntries": [
+        {
+          "subpath": ".",
+          "symbols": [
+            {
+              "name": "ROOT_CONTEXT",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            },
+            {
+              "name": "SpanKind",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            },
+            {
+              "name": "SpanStatusCode",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            },
+            {
+              "name": "context",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            },
+            {
+              "name": "metrics",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            },
+            {
+              "name": "propagation",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            },
+            {
+              "name": "trace",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./browser",
+          "symbols": [
+            {
+              "name": "ROOT_CONTEXT",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            },
+            {
+              "name": "SpanKind",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            },
+            {
+              "name": "SpanStatusCode",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            },
+            {
+              "name": "context",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            },
+            {
+              "name": "metrics",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            },
+            {
+              "name": "propagation",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            },
+            {
+              "name": "trace",
+              "kind": "value",
+              "declaration": "packages/otel/src/index.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./bun",
+          "symbols": [
+            {
+              "name": "Telemetry",
+              "kind": "type",
+              "declaration": "packages/otel/src/bun.ts"
+            },
+            {
+              "name": "TelemetryOptions",
+              "kind": "type",
+              "declaration": "packages/otel/src/bun.ts"
+            },
+            {
+              "name": "bootstrapTelemetry",
+              "kind": "value",
+              "declaration": "packages/otel/src/bun.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./orpc",
+          "symbols": [
+            {
+              "name": "createORPCInstrumentation",
+              "kind": "value",
+              "declaration": "packages/otel/src/orpc.ts"
+            }
+          ]
+        },
+        {
+          "subpath": "./workers",
+          "symbols": [
+            {
+              "name": "bootstrapWorkerTracing",
+              "kind": "value",
+              "declaration": "packages/otel/src/workers.ts"
+            }
+          ]
+        }
+      ],
+      "publishedVersion": null,
+      "publishedExports": null,
+      "integrity": null,
+      "sourceOnlySubpaths": [],
+      "notes": [
+        "Entire package name returned registry 404. Source 0.1.0 has root/browser/bun/orpc/workers entries, but none are a published npm install path at audit time."
+      ]
+    },
+    {
+      "name": "@lenso/mcp",
+      "sourceVersion": "0.1.0",
+      "sourceEntries": [
+        {
+          "subpath": ".",
+          "symbols": [
+            {
+              "name": "StdioOptions",
+              "kind": "type",
+              "declaration": "packages/mcp/src/index.ts"
+            },
+            {
+              "name": "serveStdio",
+              "kind": "value",
+              "declaration": "packages/mcp/src/index.ts"
+            }
+          ]
+        }
+      ],
+      "publishedVersion": "0.1.0",
+      "publishedExports": {
+        ".": {
+          "types": "./dist/index.d.ts",
+          "import": "./dist/index.js"
+        }
+      },
+      "integrity": "sha512-iwh3/PIw1UNRokt3f3gnfVx+3YbpA46dlwBvARnbwTOobH/i28FddsAmVw3y6YzVjWrlsgHRD7wz512E3nctJQ==",
+      "sourceOnlySubpaths": [],
+      "notes": [
+        "Published 0.1.0 exports serveStdio only and depends on cli ^0.18.0, engine ^0.1.0 and official MCP SDK 1.32.1.",
+        "Trusted launch root/allowlist select existing declared CLI operations. No remote auth, resources, prompts, task capability or shell adapter is advertised.",
+        "One admitted business call at a time; cancellation is request-only, close drains the call; all tool calls use trusted process launch identity."
+      ]
+    }
+  ]
+}

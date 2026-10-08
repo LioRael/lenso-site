@@ -1,0 +1,104 @@
+---
+title: 数据库与迁移
+description: 保留原生 Drizzle 类型，绑定精确数据库实例，并通过显式的应用迁移流程管理 schema。
+---
+
+`@lenso/db` 将原生 Drizzle 数据库绑定为插件资源。它不会替代 Drizzle、选择全局默认数据库或在启动时迁移。应用负责选择适合宿主的驱动、定义 schema 和业务查询。
+
+本页依据 TypeScript 源码预览 [`6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/DATABASE.md)。使用前核对已安装包的 exports 与构建来源；同为 `0.1.0` 不代表发布产物包含这份源码的全部接口。
+
+## 选择 provider
+
+| 公开入口 | 工厂 | 数据库与资源归属 |
+| --- | --- | --- |
+| `@lenso/db/bun-sql` | `createBunSqlPlugin({ id, schema, connection })` | Bun SQL PostgreSQL；插件关闭自己创建的连接池 |
+| `@lenso/db/bun-sqlite` | `createBunSqlitePlugin({ id, schema, filename })` | Bun SQLite；插件关闭自己创建的连接 |
+| `@lenso/db/d1` | `createD1Plugin({ id, schema, binding })` | Workers D1；binding 归平台所有 |
+| `@lenso/db` | `createDrizzlePlugin({ id, requires?, connect })` | 自定义驱动；工厂显式登记自己持有资源的清理 |
+
+Bun 工厂也允许传入已有 `client`，替代 `connection` 或 `filename`。已有 client 的生命周期仍归调用方。PostgreSQL 接受 URL 或原生 PostgreSQL 连接选项，拒绝 MySQL client。SQLite 新建连接时接受原生构造器 `options`。该源码基线固定 Drizzle ORM `0.45.3` 与 Drizzle Kit `0.31.11`。
+
+D1 独立入口不导入 Bun 运行时代码。Worker 的 import graph 应排除 Bun SQL、Bun SQLite 和本地文件适配器；宿主装配见[部署](/docs/zh/deployment)。
+
+## 组合多个数据库
+
+不同 ID 描述不同实例；依赖绑定的是精确对象。以下 Bun 示例检查两条独立持有的连接，不创建任何表：
+
+```ts
+import { definePlugin, startApp } from "@lenso/core";
+import { createBunSqlitePlugin } from "@lenso/db/bun-sqlite";
+import { sql } from "drizzle-orm";
+
+const primaryDb = createBunSqlitePlugin({
+  id: "notes.primary.db", filename: ":memory:", schema: {},
+});
+const archiveDb = createBunSqlitePlugin({
+  id: "notes.archive.db", filename: ":memory:", schema: {},
+});
+const connections = definePlugin({
+  id: "notes.connections",
+  requires: [primaryDb, archiveDb],
+  setup(context) {
+    return { primary: context.get(primaryDb), archive: context.get(archiveDb) };
+  },
+});
+const app = await startApp({ plugins: [connections, primaryDb, archiveDb] });
+try {
+  const databases = app.get(connections);
+  databases.primary.run(sql`select 1`);
+  databases.archive.run(sql`select 1`);
+} finally {
+  await app.stop();
+}
+```
+
+重新创建一个同 ID 的插件对象不能满足原有依赖。自定义驱动在 `connect(context)` 内获取资源，立即调用 `context.onCleanup`，再返回原生数据库。只登记工厂自己拥有的资源。启动回滚和正常关闭遵循同样的归属规则；依赖数据库的业务插件先释放，数据库后释放。
+
+## 用 Notes 复用业务边界
+
+现有 Notes 已示范跨 dialect 的合理范围：
+
+1. [`schema-pg.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/schema-pg.ts) 使用 UUID 与带时区时间戳；[`schema-sqlite.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/schema-sqlite.ts) 使用文本 ID 与毫秒时间戳。
+2. 不同 dialect 的查询工厂保留原生 Drizzle 类型，共享 `NotesQueries` 只包含 Notes 真正需要的业务操作。
+3. `createNotesPlugin({ id, database, authentication, queries })` 绑定精确资源，同一普通 async 服务供 CLI、Fetch 与 oRPC 使用。
+
+这不代表所有驱动共享事务或连接 API。D1 Notes 查询使用单条 mutation 与 `RETURNING`，不假设 PostgreSQL 事务或同步 SQLite 访问。
+
+## 显式执行迁移
+
+下列命令属于**经过核对的源码 checkout**。先构建框架包，并由应用所有者创建、授权修改目标数据库。它们不是 DB 包安装后自动提供的命令：
+
+```sh
+# 在 examples/notes 内；DATABASE_URL 已指向隔离 PostgreSQL 数据库。
+bun run generate:pg
+# 审查生成的 SQL 后再应用。
+bun run migrate:pg
+
+# 本地 SQLite 文件由应用所有者通过 SQLITE_PATH 指定。
+bun run generate:sqlite
+bun run migrate:sqlite
+```
+
+只有 schema 变更才需要生成新迁移，不必为启动例子重新生成已提交文件。安装、`startApp` 和 provider 工厂不会执行这些命令。迁移脚本遵循自己的工作目录语义；Notes 运行时则按应用根目录解析配置路径。
+
+D1 的 Worker 配置把 `migrations_dir` 指向审查后的 SQLite 迁移目录，由所有者显式运行 `wrangler d1 migrations apply <database-name> --local`。Wrangler 使用 `d1_migrations`，Bun SQLite 使用 Drizzle journal；同一 store 只使用一种迁移 runner。
+
+Notes 的 `0001_owner` 在既有应用迁移历史内包含 Auth session 基线。不要再对同一数据库执行独立 Auth migrator。Auth 拥有 session schema，Notes 快照只跟踪 Notes。旧记录使用保留的 `__legacy_unowned__` owner，该 owner 不能登录；迁移不会把私有旧数据分配给第一个配置用户。详见[迁移归属记录](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/migrations/OWNERSHIP.md)。
+
+## 在服务边界保护数据
+
+数据库连接是基础设施权限，不是用户授权。Notes 验证特定 audience 的 actor、重新验证 session、检查实际 owner，并在 update/delete SQL 条件内包含 owner。列表只查询当前 owner 的记录。业务 JSON 不能指定 actor、owner 或创建时间。
+
+不要通过 Web、CLI 或 MCP 暴露原始 DB client。连接 secret 来自宿主的 secret 管理渠道，不进入源码、argv 或日志。Files 与 Tasks 需要各自的持久关联及策略；共用一个数据库不会授予访问权限。
+
+## 定位资源问题
+
+| 症状 | 最小检查 |
+| --- | --- |
+| `missing-dependency` / `duplicate-id` | 先检查安装的 ID 和精确引用，再排查连接 |
+| 缺少表 | 核对选中的 store、迁移历史与显式迁移结果；启动不是迁移 runner |
+| client 意外关闭 | 检查传入的借用 client 是否在别处被错误登记为自有资源 |
+| D1 构建包含 Bun 导入 | 沿 import 找到 `/bun-sql`、`/bun-sqlite` 或文件模块，改选 `/d1` |
+| 泄漏其他用户记录 | 验证共享服务的 audience/owner 策略与 SQL 条件，不能只测 HTTP middleware |
+
+[`packages/db/test/resources.test.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/test/resources.test.ts) 验证实例隔离、不自动迁移、自有资源关闭与借用 client 存活。真实 Notes PostgreSQL 和本地 workerd/D1 的验证入口见[测试与排错](/docs/zh/testing)。

@@ -1,0 +1,79 @@
+---
+title: Applications and plugin composition
+description: Bind exact plugin instances, keep business services ordinary, and assemble only the capabilities your application needs.
+---
+
+This page follows the TypeScript source preview at [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f). Check installed exports before adopting preview APIs; matching `0.1.0` version strings do not prove that the registry artifact contains this revision.
+
+## An application is a graph of instances
+
+A `Plugin<T>` declares one service instance: its `id`, exact `requires` references, optional metadata, and `setup(context)` function. `definePlugin` returns that declaration. `defineApp({ plugins })` collects declarations; neither helper starts a database, listener or service.
+
+`startApp` validates the graph and starts dependencies before their consumers. The array is the installation set, not a list of commands. Every required instance must appear in that set. Listing only a consumer does not recursively install its dependencies.
+
+| Reference | Meaning |
+| --- | --- |
+| `id` | Names an instance for diagnostics and explicit operation selection. Distinct instances need distinct, nonempty IDs. |
+| `requires: [database]` | Declares a mandatory edge to that exact Plugin object. |
+| `context.get(database)` / `app.get(database)` | Resolves the service belonging to that object in the current app. |
+
+Creating another plugin with the same ID or service type does not satisfy an edge. Recreating a provider inside a consumer factory and installing a separately created provider produces `missing-dependency`; installing both with the same ID also produces `duplicate-id`.
+
+## Follow the Notes assembly
+
+The existing Notes application accepts a structural database plugin, an adapter for its session store, and the queries its service needs. PostgreSQL, Bun SQLite and Workers D1 retain their native database types. The business layer depends on `NotesQueries`.
+
+The following is the actual plugin factory in [Notes](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/notes.ts). Its imports, service and types are defined in that same file:
+
+```ts
+export function createNotesPlugin<TDatabase>(options: {
+  id: string;
+  database: Plugin<TDatabase>;
+  authentication: Plugin<NotesAuthentication>;
+  queries(database: TDatabase): NotesQueries;
+}): Plugin<NotesService> {
+  return definePlugin({
+    id: options.id,
+    requires: [options.database, options.authentication],
+    setup(context) {
+      return createNotesService(
+        options.queries(context.get(options.database)),
+        context.get(options.authentication),
+      );
+    },
+  });
+}
+```
+
+[The application factory](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/application.ts) creates authentication once, passes the same object into the Notes factory, and returns `plugins: [database, authentication, notes]`. Each host installs that returned set. This keeps CLI and Web attached to the same service rules without forcing Web into the database or business plugin.
+
+When you add a second database, create it once, give it a distinct ID, pass its reference to the intended consumer, and install both providers. Lenso does not choose a provider by type, name convention, creation order or “primary” status.
+
+## Factories express optional features
+
+`requires` contains mandatory edges. To support an optional provider, make its factory argument optional, add the edge only when the argument is supplied, and give setup an explicit absent-provider branch. An undeclared `context.get` is an error; it does not wait for a provider to appear later.
+
+A consumer can accept `Plugin<SmallServiceInterface>` so applications can replace the provider. The replacement must implement the required service behavior and be passed explicitly. There is no global container or implicit provider selection.
+
+Notes also exposes `createNotesService(queries, authentication)` independently of its plugin factory. Plugin composition handles initialization and ownership; it need not become a constraint on every unit test or business function.
+
+## Metadata does not execute behavior
+
+`contributions` is declared metadata. `app.contributions(kind?)` collects it; core does not turn it into routes, commands or permissions. CLI operations have their own [explicit declarations](/docs/cli). A `source: { file, export?, line?, column? }` can identify a declaration in diagnostics. Keep that metadata free of secrets.
+
+`app.status()` reports installed instances as `ready` or `stopped`. It describes this app's lifecycle, not database reachability, authentication status or durable worker health.
+
+## Find assembly failures before opening resources
+
+`validatePlugins(plugins)` returns a dependency-first order or throws `DiagnosticError` with structured diagnostics. `startApp` uses it before configuration preflight and setup.
+
+| Code | Check |
+| --- | --- |
+| `missing-dependency` | Is the exact referenced object installed, rather than another factory result? |
+| `duplicate-id` | Was an object installed twice, or do separate instances share an ID? |
+| `cyclic-dependency` | Does a consumer depend back on itself through another plugin? Move shared behavior into a lower-level service. |
+| `invalid-id` / `invalid-source` | Is the ID nonempty and the explicit source metadata well formed? |
+
+In the verified Notes preview checkout, `lenso inspect --root examples/notes --json` shows the declared graph without running setup. It still imports trusted config code. See [lifecycle ownership](/docs/lifecycle) before acquiring resources and [configuration](/docs/configuration) before adding source readers.
+
+The authoritative contracts are [Plugin](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/plugin.ts) and [graph validation](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/diagnostics.ts).

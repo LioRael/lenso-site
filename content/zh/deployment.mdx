@@ -1,0 +1,83 @@
+---
+title: 构建与部署边界
+description: 准备真实 Bun 或 Worker 产物、显式迁移和宿主入口，并区分本地验证与生产部署。
+---
+
+Lenso 提供运行时与构建契约；宿主负责进程监管、入口、secret、平台绑定和发布流程。明确选择 Bun 进程或 module Worker。本地 build、Notes 请求成功或 Wrangler dry run，只证明该本地产物的部分行为，不代表完成生产部署。
+
+本文固定在 **`6e239c71a38279885facce133ceb847bbfe12f2f` 源码预览**，源码工作区使用 Bun **`1.4.2`** 与 Web/oRPC **`2.0.0-beta.42`**。已发布 `@lenso/web@0.1.0` 使用 oRPC `1.15.5`，没有 `/bun`。使用预览监听器或 v2 client 前，先确认匹配产物；见[安装与兼容性](/docs/zh/installation)。
+
+## 选择运行时服务图
+
+| 职责 | Bun | Workers |
+| --- | --- | --- |
+| 入口 | 应用拥有的长运行 Bun 进程。 | 平台调用 module `fetch`。 |
+| HTTP | 现有 Fetch 宿主或可选 `/bun` 监听器。 | 每个请求内调用 `createWorkerHandler`。 |
+| 数据库示例 | Bun SQL PostgreSQL 或 Bun SQLite。 | 原生 D1 绑定。 |
+| 对象存储示例 | 本地文件系统、S3 兼容服务及已支持数据库存储。 | 借用原生 R2；选择其他可移植适配需单独验证。 |
+| 状态/生命周期 | App 持续到宿主停止，等待拥有资源清理。 | App 按请求/body 存活，平台可终止执行。 |
+| 构建 | 应用 Bun build 脚本或 Engine `bun` target。 | Wrangler bundle/dry run，无需 Bun Engine。 |
+
+两种运行时都不会自动创建数据库、应用迁移、安装 Auth 路由或授予权限。现有 Tasks PostgreSQL worker 不是 D1/Workers queue 实现。参见[Workers](/docs/zh/workers)中的平台契约。
+
+## 构建 Bun 产物
+
+在已经消费匹配构建包的应用中使用实际脚本。现有 `templates/bun-web` 使用：
+
+```sh
+bun install --frozen-lockfile
+bun run typecheck
+bun run lint
+bun run build
+```
+
+其 `build` 执行 `lenso build`；默认 Engine target 将所选入口按 Bun 打包到 `dist`。按约定先选择 `src/server.ts`，否则 `.lenso/server.ts`，除非已核实的自定义 target 改变该行为。写启动命令前检查命令输出和实际生成入口。Engine 输出可重建：修改源码/config 后重新生成和构建，不修补 `.lenso` 或 `dist`。
+
+真实 Notes 应用使用另一条显式脚本：`bun build src/cli.ts src/server.ts --outdir dist --target bun --packages external`。其 server 可通过 `bun dist/server.js` 启动，**前提是匹配的 external 包及已审阅运行时配置存在**。`--packages external` 的 bundle 不是独立可执行文件。发布包应包含 manifest、唯一 lockfile 和所需安装/packed 产物。
+
+不要把 `lenso dev` 当作生产进程监管器。其重启/readiness worker 是开发契约；生产 process manager 或部署平台负责启动构建入口并安排关闭。
+
+## 监听器与入口策略
+
+预览的 `createBunListenerPlugin` 依赖精确 Web 实例，拥有 `Bun.serve`，获取后立即登记清理，应用关闭等待 `server.stop(true)`。必填 `ingress(request, actualListenerUrl)` 决定处理或放行；实际监听器 URL 与 request 的 Host 派生 URL 不同。
+
+Notes 绑定 `127.0.0.1`，拒绝非 loopback Host，并拒绝与监听器 origin 不同的已提交 Origin。这是开发策略。生产反向代理、外部 origin 或 TLS terminator 需要明确允许的 host/origin 与 forwarding-header 策略，以及请求/body 限制和所选身份流程。不能直接复制示例后假定任意外部入口都能工作。
+
+Auth 不安装 CORS、cookie 路由或账号 UI。可信入口验证身份，共享服务保留对象策略。Proxy header、JSON actor、trace context 或登录成功都不是对象授权。参见[Web](/docs/zh/web)与[Auth](/docs/zh/auth)。
+
+## 单独应用已审阅迁移
+
+数据库 setup 不创建表、不运行迁移。消费者启动前，通过应用唯一的迁移历史执行迁移。Notes 实际脚本为 `bun run migrate:pg` 与 `bun run migrate:sqlite`，选择与组合一致的数据库和配置；Worker 的 `bun run migrate:notes` 只针对本地 D1。
+
+Auth 提供的 baseline SQL 不是迁移 runner。Notes 已把会话 schema 和 ownership 变更纳入自己的迁移历史，不应通过两条历史重复应用同一 baseline。按发布节奏设计 schema/代码兼容性，在可丢弃数据库上使用真实驱动测试。见[数据库](/docs/zh/database)与[升级迁移](/docs/zh/upgrade)。
+
+通过运行环境 secret 权威提供 `DATABASE_URL`、登录 key 等敏感值，不写入受跟踪配置、client bundle、生成 manifest、命令日志或 URL。示例路径和标识属于应用配置，不要求特定本机目录。
+
+## 准备 Worker 产物
+
+真实 Worker 示例使用生成绑定类型和平台 bundler：
+
+```sh
+cd examples/workers
+bun run types
+bun run typecheck
+bun run build:notes
+```
+
+`build:notes` 实际为 `wrangler deploy --config wrangler.notes.jsonc --dry-run --outdir dist/notes`，只在本地打包，**不创建资源或发布 Worker**。示例配置的 `remote: false` 和 D1 占位值专用于本地。生产发布需要实际授权资源绑定、已审阅迁移、secret 和账户专属 Wrangler 配置。Lenso 不提供一键部署承诺。
+
+保留 `enable_request_signal`，并按选定 workerd 运行时核对 compatibility date/flags。Bun 监听器、Bun DB 驱动、文件系统 config reader、CLI/Engine 不进入 Worker 运行时图。平台 `waitUntil` 不会在响应 EOF 后保留此适配器的 app 资源；isolate 终止可能打断清理。
+
+## 关闭与可观测性归属
+
+Bun 宿主处理终止信号、停止 app，等待监听器、响应体、登记工作和拥有资源结束。资源获取后立即登记清理；借用 client 与平台绑定仍由原所有者关闭。忽略取消的提供方可能延迟 shutdown，deadline 不证明工作已停止。清理不能补偿已提交修改。
+
+在 Bun entry/preload 中、应用导入之前初始化一个 OTel 所有者，等待 app drain 后才关闭遥测。Workers 使用可选原生 tracer 和平台 export 生命周期，不把 Bun SDK bootstrap 放进每个请求。不向日志/span 写入凭证或不安全提供方错误。见[可观测性](/docs/zh/observability)。
+
+## 验证准备发布的真实产物
+
+对实际打包产物运行应用已有检查。确认它能以预期非敏感配置启动，在隔离环境执行已认证读取和受控写入，验证错误 owner/credential 拒绝，读完或取消流 body，并确认拥有资源关闭。响应或清理失败后，不要直接重放结果不确定的修改，先查询有权限访问的状态。
+
+Workers 的本地 workerd/D1 测试证明本地运行时行为，不证明生产复制/地域行为；Bun loopback 测试不证明 TLS/proxy 策略。报告产物 revision、协议版本、命令和实际环境，以及剩余平台不确定性。[测试与排错](/docs/zh/testing)提供聚焦检查与失败边界。
+
+源码依据：[Bun 模板](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/templates/bun-web/package.json)、[Notes 构建与迁移脚本](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/package.json)、[监听器所有权](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/bun.ts)与[Worker 脚本](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/package.json)。

@@ -1,0 +1,107 @@
+---
+title: Engine conventions and extensions
+description: Use the default Bun workflow, replace conventions explicitly, and extend discovery, generation, targets and development through public APIs.
+---
+
+This page targets the TypeScript source preview at [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f). Verify your installed Engine exports and build provenance before using these authoring APIs.
+
+## Engine processes an application
+
+Engine is the Bun-hosted build and development layer. Core owns runtime plugin instances; Engine owns trusted discovery, generated files, bundling and development cycles. CLI owns command arguments, terminal output and exit codes. Business services and browser entries do not need Engine imports.
+
+Without `lenso.engine.ts`, the default owner `lenso/defaults` supplies:
+
+| Convention or capability | Default behavior |
+| --- | --- |
+| Application config | `lenso.config.ts` |
+| Build entry | `src/server.ts` when present; otherwise the generated `.lenso/server.ts` entry |
+| Router | `src/router.ts` when present; Web is optional |
+| Generators | `manifest`, `server`, `client` under `.lenso` |
+| Target | `bun`, using the shared Bun bundler and output under `dist` |
+
+A generated server entry re-exports the application declaration. It does not invent a listener or start your app. With no router, the generated client is an empty module. A custom runtime host must still start the app and own its lifetime.
+
+## Extend through lenso.engine.ts
+
+Use `@lenso/engine/authoring` from a build config or build plugin. The following complete config adds an index of the existing Notes service source; run it only in a verified Notes preview checkout where `src/notes.ts` exists:
+
+```ts
+import { defineEngineConfig, defineEnginePlugin } from "@lenso/engine/authoring";
+
+const notesIndex = defineEnginePlugin({
+  name: "app/notes-index",
+  setup(context) {
+    context.watch("src/notes.ts");
+    context.discover("notes-source", () => ["src/notes.ts"]);
+    context.generate("notes-index", ({ sources }) => [
+      {
+        path: "notes-index.ts",
+        content: `export const sources = ${JSON.stringify(sources)};`,
+      },
+    ]);
+  },
+});
+
+export default defineEngineConfig({ plugins: [notesIndex] });
+```
+
+`discover` adds validated existing source paths inside the application root. `generate` returns files with paths relative to `.lenso`; it does not directly write to arbitrary project locations. `watch` registers reads not expressed through static imports, including directories when newly added files matter.
+
+This is an application extension, not a requirement to copy Engine internals. The [standalone content plugin](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/examples/content-plugin/index.ts) shows discovery plus real file reads. The [module target plugin](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/examples/module-target-plugin/index.ts) reuses `build.bundle` for browser/Workers output. It does not deploy that output.
+
+## Replacement names the current owner
+
+Engine plugin names and capability names are unique. `before` and `after` declare ordering constraints; absent names and cycles fail. Otherwise configuration order is stable.
+
+To replace a capability, name its exact current owner in `replace` and ensure the replacement runs after that owner. For example, inside a plugin setup ordered after `lenso/defaults`:
+
+```ts
+context.convention(
+  () => ({ config: "app.ts", entry: "src/index.ts" }),
+  { replace: "lenso/defaults" },
+);
+```
+
+Both referenced files must exist. Retain canonical `lenso.config.ts`, for example by re-exporting the declaration and operations from `app.ts`: `inspect` and `call` always read that canonical config and never load Engine config. Changing the build convention does not change the CLI invocation boundary.
+
+Register `context.target("name", run)` and select it with `defineEngineConfig({ target: "name", plugins })`. A target receives `entry` and the shared `bundle({ entry, platform?, packages?, directory? })`. Output stays inside `dist`; supported bundler platforms are `bun`, `browser` and `node`. Compatibility still depends on the imports in your entry.
+
+Capability registrations and `watch` return synchronous idempotent revokers. Revocation affects future invocation, including hooks not yet reached, but does not cancel a running hook. An old owner's revoker cannot remove a replacement. Removing the replacement does not restore the old provider.
+
+## Generated files have explicit ownership
+
+`.lenso/.engine-files.json` tracks generator ownership. Conflicting outputs, unowned existing files, edited generated content, traversal and symlink output paths fail before overwrite. Unchanged bytes are not rewritten. Removing a generator removes only its tracked, unmodified outputs.
+
+Generation validates the full file set before writes, but filesystem writes are not transactional. Edit application sources or generator code, then regenerate. Avoid patching `.lenso` or using `dist` as application source.
+
+Metadata and generators must be deterministic and contain no secrets. Module caching and import-time environment-dependent declarations can change results; a new CLI process loads current source, while repeated finite calls in one process follow normal Bun module caching.
+
+## Own programmatic sessions
+
+Finite `discover(root)`, `generate(root)` and `build(root, entry?)` run Engine setup and close registered Engine resources on success or failure. They never run application plugin setup. For tools that need stages within one explicit session:
+
+```ts
+import { createEngineSession } from "@lenso/engine";
+
+const engine = createEngineSession(process.cwd(), "generate");
+try {
+  await engine.prepare();
+  await engine.session.generate();
+} finally {
+  await engine.session.close();
+}
+```
+
+Close even when preparation fails. `withEngine(session, run)` is available when both stage and cleanup failures must be preserved together. Preparation is single-flight; processing stages are serial. Overlapping stages and calls after close produce diagnostics. A hook/finalizer must not await its own session's close.
+
+Register resource cleanup immediately. Capability registration closes when setup returns; captured `watch`/`onCleanup` remain usable from hooks until cleanup starts. Cleanup is sequential LIFO and attempts every callback. The async disposer returned by `onCleanup` shares completion with session close.
+
+## Development readiness is explicit
+
+`dev` uses a fresh supervised Engine worker and application process per cycle. Generation and `beforeStart` hooks precede runtime launch. The runtime reports actual startup via `reportDevReady` from `@lenso/engine/dev-ready`; `ready` hooks then run. A spawned process without that signal remains Starting.
+
+Dev entry is `--entry` or `src/server.ts`; the convention's build entry does not replace the dev default. Static imports invalidate cycles. Dynamic reads need existing explicit watches, and generated/cache paths are excluded from watching. Runtime termination precedes Engine cleanup on restart or shutdown. Engine worker startup is bounded to 30 seconds and shutdown to 5 seconds; forced termination is reported.
+
+`EngineError.diagnostic` identifies code, phase, owner/source and safe causes. Check `engine-capability-conflict` for missing explicit replacement, `invalid-engine-watch` for absent/unsafe paths, `generated-file-modified` for edited output, and `unknown-engine-target` for selection or revoked targets. Engine config/plugins are trusted code; output path checks do not sandbox their arbitrary filesystem or process access.
+
+See [authoring contracts](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-authoring.ts), [default implementation](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-defaults.ts) and [CLI workflow](/docs/cli).

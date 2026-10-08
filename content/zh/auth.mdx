@@ -1,0 +1,116 @@
+---
+title: 身份认证与服务授权
+description: 验证可信凭证、生成绑定 audience 的 actor、执行当前对象策略，并为会话选择唯一所有者。
+---
+
+`@lenso/auth` 区分已验证身份与操作资源的权限。应用拥有账号、组织、成员关系和业务对象；Auth 只在配置的 realm 中引用稳定字符串 `subjectId`，不要求 User 表、角色 schema、Better Auth 或 Web 服务。
+
+本文描述 **`6e239c71a38279885facce133ceb847bbfe12f2f` 源码预览中已实现的契约**，可选 oRPC 适配使用 **`2.0.0-beta.42`**。已发布 Web `0.1.0` 仍使用 oRPC `1.15.5`；组合 Auth、Web 与 client 前应核对构建产物及 peer 要求。见[安装与兼容性](/docs/zh/installation)。
+
+## 按职责选择公开入口
+
+| 导入 | 职责 |
+| --- | --- |
+| `@lenso/auth` | source、realm、audience、actor、access view、requirement 和 policy。 |
+| `@lenso/auth/plugin` | 把 Auth 关闭纳入 Lenso 插件生命周期。 |
+| `@lenso/auth/sessions` | 可选不透明托管会话和 `SessionStore`。 |
+| `@lenso/auth/session-source` | 对接现有会话 API，保留原所有者。 |
+| `@lenso/auth/fetch` | 显式凭证提取、同源写入门禁和安全错误响应。 |
+| `@lenso/auth/orpc` | 类型化 required/optional 身份中间件。 |
+| `@lenso/auth/drizzle/pg`、`/sqlite`、`/d1` | 托管会话的原生 Drizzle store。 |
+| `@lenso/auth/drizzle/schema-pg`、`/schema-sqlite` | Auth 拥有的会话 schema。 |
+
+根入口不导入 Lenso、oRPC、Drizzle 或 Bun 运行时。按所用入口选择可选 peer。可以手动使用根入口并自己关闭，也可以接入插件生命周期。
+
+## Source → Actor → 服务策略
+
+`defineSource` 的实现是受信任安装代码。其 `verify(evidence, { signal, authoritative? })` 必须通过所选身份权威验证凭证。仅解码 JWT、接受 JSON `userId` 或找到 session cookie 都不是验证。source 负责 issuer、签名/key 和 token profile；Auth 不替应用实现 JWT/OIDC。
+
+`createAuth(realm("notes", source))` 确定信任 realm；`auth.for(audience("notes:read"))` 创建操作专属 access view。realm 是信任权威，不是租户；JWT 外部 `aud` 也不是这里的本地操作 audience。Audience 精确匹配标识，没有通配规则。
+
+在 HTTP 入口提取凭证并获取 actor。以下完整 helper 使用真实 Notes 类型：
+
+```ts
+import { bearerEvidence, authErrorResponse } from "@lenso/auth/fetch";
+import type { NotesAuthentication } from "./auth";
+import { notesAudiences, type NotesService } from "./notes";
+
+export async function listPrivateNotes(
+  request: Request,
+  authentication: NotesAuthentication,
+  service: NotesService,
+): Promise<Response> {
+  try {
+    const input = bearerEvidence({ request });
+    const actor = await authentication
+      .for(notesAudiences.list)
+      .required(input.evidence, input);
+    return Response.json(await service.list(actor));
+  } catch (error) {
+    request.signal.throwIfAborted();
+    return authErrorResponse(error);
+  }
+}
+```
+
+真实 Notes 服务调用 `enforce(actor, resource, policy)`，重新验证凭证并检查对象所有者。Create 根据可信 subject 分配 `ownerId`；read/update/delete 先加载真实记录；update/delete 在 SQL 条件中保留 owner。输入不能指定所有者，也不能提交可信 actor。CLI、Fetch、oRPC 都复用此服务。
+
+Actor 是冻结的安全投影，只含 `realmId`、`subjectId`、`audience`、`kind`（`user`、`guest`、`service`）。类型品牌与运行时检查绑定**精确 Auth 实例、audience 和原对象身份**。JSON、对象展开、其他实例的 actor 都不能授权。跨进程调用必须重新提交凭证。这防止意外信任 DTO，不会把恶意已安装插件变成沙箱。
+
+## 匿名、拒绝与不可用要区分
+
+`optional(evidence)` 返回 `Actor | null`；`required(evidence)` 返回 actor。只有 source 返回 `absent` 才允许匿名。`rejected`、`unresolved` 和格式错误的 verified 结果都失败为 `UNAUTHORIZED`。持久 guest 必须来自明确验证的 source，登录失败不会自动成为 guest。
+
+`enforce` 检查 actor 来源、重新验证 source，读取已配置的当前 membership，再执行 policy。没有只按 Request 的身份缓存或持久角色快照。只有精确 `true` 才允许访问；调用信号中止后，应重新取得 actor。
+
+| Code | 含义 | 原生 Fetch status |
+| --- | --- | --- |
+| `UNAUTHORIZED` | 必要凭证缺失或无效。 | `401` |
+| `FORBIDDEN` | 已验证主体没有所请求的策略许可。 | `403` |
+| `REAUTHENTICATION_REQUIRED` | 必要的新鲜度/assurance 证据缺失或过期。 | `401` |
+| `SERVICE_UNAVAILABLE` | 身份、membership 或 policy 基础设施失败。 | `503` |
+
+已知错误使用安全消息，未知 Auth/提供方失败归为 `SERVICE_UNAVAILABLE`；取消保留 signal reason。oRPC 适配把 `REAUTHENTICATION_REQUIRED` 转为 `UNAUTHORIZED` 并保留安全消息；原生 Fetch 保留 Auth code。中间件不会把非 Auth 业务异常重新解释为身份异常。
+
+## 当前成员关系与更严格的入口要求
+
+Access view 的 `.memberships(reader)` 直接查询应用现有成员表。先加载真实对象，再根据它选择租户。客户端 `tenantId`、会话 active organization 和角色 claim 都不是当前 membership 证明。返回类型化活动 grant 或 `null`；数据库/提供方错误必须抛出，不应假装没有 membership。
+
+`requireSession` 接受公开构造器 `authoritativeSession()`、`sessionCreatedWithin(ms)`、`authenticatedWithin(ms)` 和 `requireAssurance("mfa")`。Source 必须声明相应 capability 并返回已验证证据。不支持的能力在构造 view 时失败，通常发生于 setup。重复要求取交集，后续 view 不能放宽。创建会话不证明最近完成密码或 MFA 认证。
+
+身份检查与稍后的数据库修改不会自动成为同一事务。敏感写入仍需业务自己的条件更新或事务；在一库读取策略不会与另一库建立分布式事务。
+
+## 为会话选择唯一所有者
+
+**托管会话：** `createManagedSessions({ realmId, login, store, lifetime, subjectActive })` 使用已验证登录 source 和领域 `SessionStore`。`sessionLifetime({ idle, absolute, renewAfter })` 的时长单位为毫秒。`subjectActive` 在 issue 和每次使用时都必须返回精确 `true`。Notes 根据已配置主体实现它，再用 `sessions.source` 创建 Auth。
+
+客户端取得 `sessionId`、`credential` 和 `expiresAt`。不透明 credential 含 UUID locator 和 32 随机字节；持久化只存 SHA-256 摘要，不存原始 secret。WebCrypto 提供随机数与哈希。通过受保护登录通道返回凭证，不放入日志/URL，并由前端选择凭证存储方式。
+
+| 托管操作 | 行为 |
+| --- | --- |
+| `source.verify(token)` | 只读验证。 |
+| `issue(loginEvidence)` | 验证登录凭证与活动主体后创建会话。 |
+| `touch(token)` | 显式推进活动时间，不轮换凭证。 |
+| `renew(token)` | 满足间隔后原子轮换，过期并发写入者失败。 |
+| `revoke(token)` | 要求持有凭证，撤销稳定 session，包括并发轮换产生的后继凭证。 |
+| `close()` | 拒绝新工作、发出取消并等待进行中工作结束。 |
+
+Idle/absolute 不超过记录中存储的上限，轮换不能更频繁。当前配置可以进一步收紧。只读 verify 不把收紧写回记录，成功 touch/renew 才冻结更严格边界。以后放宽配置只能在已存上限内撤除临时只读限制。
+
+**现有会话：** `sessionSource({ getSession, subjectId, hasCredential?, session?, capabilities? })` 通过 headers 与 verification context 接入现有 API。缺少可靠 `hasCredential` 时，null session 是 `unresolved`，不是匿名；提供它后，缺少凭证可以匿名，已提交凭证却无有效 session 则拒绝。Header 存在不验证 cookie 签名。包装器负责所支持的绕过缓存/只读配置；不可取消 API 只能前后检查，不能强制中断。
+
+原所有者继续负责签名、存储、续期和撤销。替换 Lenso `SessionStore` 不会改变其他库的 session。如果对接库需要 User 表，该要求只属于该可选集成。
+
+## 存储与生命周期
+
+托管会话只拥有 `auth_sessions`，以 `(realm_id, id)` 分区，有唯一 token digest 和 realm/subject 索引。账号与成员表仍归应用所有。可选外键由应用迁移决定。同库 Auth 实例按 realm 分区；需要独立资源边界时选择独立数据库。
+
+审阅并显式执行所选 baseline SQL：`@lenso/auth/migrations/pg/0000_auth_sessions.sql` 或 `/migrations/sqlite/0000_auth_sessions.sql`。这些是 SQL 文件，不是自动 migrator 或 Drizzle journal。由应用维护唯一迁移历史，启动不创建表。Notes 已把会话迁移纳入自身历史；见[数据库](/docs/zh/database)。
+
+获取 sessions 后立即登记 `sessions.close()`。`createAuthPlugin` 在 setup 完成后登记返回 Auth 服务的 `close()`，所以反序清理先关闭 Auth，再关闭其 sessions。拥有的数据库 client 随依赖生命周期稍后关闭；借用 client 与 D1 绑定仍由原所有者负责。回调必须在取消后结束，不能等待自身所有者的 close Promise。清理不能逆转已提交写入。
+
+## HTTP 与验证边界
+
+`bearerEvidence` 只接受 Bearer Authorization，格式错误不回退 cookie；`headersEvidence` 为 session source 复制 headers。`requireSameOrigin(request, allowedOrigin)` 是显式 cookie 写入门禁，拒绝 `GET`/`HEAD`/`OPTIONS`、缺失/不匹配 Origin 和跨站写入。Auth 不挂载路由、CORS、安全 cookie 或监听器。登录/续期 handler 需保留提供方 response headers/Set-Cookie，并自己保护对应入口。
+
+[Auth 契约](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/README.md)、[Notes 会话所有者](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/auth.ts)和[共享策略](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/notes.ts)定义此行为。验证伪造/复制 actor、错误实例/audience、他人对象、撤销会话和提供方失败。已有真实本地 workerd/D1 与 PostgreSQL 竞态检查，但不证明生产复制或未经验证驱动行为。此预览不提供密码系统、登录 UI、自动账号关联、cookie 签发、JWT/OIDC 实现或旧 Rust 会话迁移。

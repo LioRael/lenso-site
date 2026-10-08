@@ -1,0 +1,174 @@
+---
+title: Public API index
+description: Find public package entries and distinguish published artifacts, source-preview APIs and host constraints.
+---
+
+This index uses the public source exports at **6e239c7** and actual registry artifacts. Entry links point to exact-revision declarations rather than duplicating every method signature.
+
+[Installation](/docs/installation) explains coherent package consumption. The [machine-readable inventory](/api-inventory.json) includes public symbols, artifact integrity and publication boundaries. Ordinary service methods do not automatically become CLI/Web/MCP operations.
+
+## @lenso/core
+
+Source manifest: `0.1.0` · Published: `0.1.0`
+
+| Public entry | Exported functions / values | Current artifact boundary |
+| --- | --- | --- |
+| [`@lenso/core`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/index.ts) | `ConfigError`, `ConfigSourceError`, `DiagnosticError`, `bindConfig`, `defineApp`, `definePlugin`, `definePluginConfig`, `lifecycleFailure`, `preflightConfigs`, `resolveConfig`, `startApp`, `validatePlugins`, `valuesSource` | Entry exists; verify signatures |
+| [`@lenso/core/plugin`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/plugin.ts) | `defineApp`, `definePlugin` | Entry exists; verify signatures |
+| [`@lenso/core/browser`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/browser.ts) | `defineApp`, `definePlugin` | Entry exists; verify signatures |
+| [`@lenso/core/config`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config.ts) | `ConfigError`, `ConfigSourceError`, `bindConfig`, `definePluginConfig`, `preflightConfigs`, `resolveConfig`, `valuesSource` | Source preview entry |
+| [`@lenso/core/config/env`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config-env.ts) | `envSource` | Source preview entry |
+| [`@lenso/core/config/file`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config-file.ts) | `jsonFileSource` | Source preview entry |
+
+Usage and boundaries: [core](/docs/composition).
+
+## @lenso/engine
+
+Source manifest: `0.1.0` · Published: `0.1.0`
+
+| Public entry | Exported functions / values | Current artifact boundary |
+| --- | --- | --- |
+| [`@lenso/engine`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/index.ts) | `EngineError`, `EngineSession`, `build`, `createDevSupervisor`, `createEngineSession`, `defaultEngineOwner`, `defaultEnginePlugins`, `defineEngineConfig`, `defineEnginePlugin`, `defineOperation`, `describePluginConfig`, `diagnostic`, `discover`, `generate`, `readApplication`, `startEngineDevCycle`, `withEngine` | Entry exists; verify signatures |
+| [`@lenso/engine/authoring`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-authoring.ts) | `defineEngineConfig`, `defineEnginePlugin` | Entry exists; verify signatures |
+| [`@lenso/engine/application`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/application.ts) | `readApplication` | Entry exists; verify signatures |
+| [`@lenso/engine/operations`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/operations.ts) | `defineOperation`, `describeOperation`, `executeOperation`, `redactOperationDescription`, `safeInputSchema`, `validateOperations` | Entry exists; verify signatures |
+| [`@lenso/engine/diagnostics`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/diagnostics.ts) | `EngineError`, `diagnostic`, `environmentSecrets`, `redact`, `stableJson` | Entry exists; verify signatures |
+| [`@lenso/engine/dev-ready`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/dev-ready.ts) | `isDevReadyMessage`, `reportDevReady` | Entry exists; verify signatures |
+
+Usage and boundaries: [engine](/docs/engine).
+
+## @lenso/cli
+
+Source manifest: `0.18.0` · Published: `0.18.0`
+
+| Public entry | Exported functions / values | Current artifact boundary |
+| --- | --- | --- |
+| [`@lenso/cli`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/src/index.ts) | `CliError`, `call`, `defineOperation`, `dev`, `diagnostic`, `inspect`, `invoke` | Entry exists; verify signatures |
+
+Usage and boundaries: [cli](/docs/cli).
+
+## @lenso/web
+
+Source manifest: `0.1.0` · Published: `0.1.0`
+
+| Public entry | Exported functions / values | Current artifact boundary |
+| --- | --- | --- |
+| [`@lenso/web`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/index.ts) | `createWebPlugin` | Entry exists; verify signatures |
+| [`@lenso/web/client`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/client.ts) | `createClient` | Entry exists; verify signatures |
+| [`@lenso/web/bun`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/bun.ts) | `createBunListenerPlugin` | Source preview entry |
+
+Usage and boundaries: [web](/docs/web).
+
+## @lenso/auth
+
+Source manifest: `0.1.0` · Published: `0.1.0`
+
+| Public entry | Exported functions / values | Current artifact boundary |
+| --- | --- | --- |
+| [`@lenso/auth`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/index.ts) | `AuthConfigurationError`, `AuthError`, `allPolicies`, `allRequirements`, `audience`, `authenticatedWithin`, `authoritativeSession`, `createAuth`, `defineSource`, `realm`, `requireAssurance`, `sessionCreatedWithin` | Entry exists; verify signatures |
+| [`@lenso/auth/plugin`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/plugin.ts) | `createAuthPlugin` | Entry exists; verify signatures |
+| [`@lenso/auth/fetch`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/fetch.ts) | `authErrorResponse`, `bearerEvidence`, `headersEvidence`, `requireSameOrigin` | Entry exists; verify signatures |
+| [`@lenso/auth/orpc`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/orpc.ts) | `optionalAuth`, `requiredAuth` | Entry exists; verify signatures |
+| [`@lenso/auth/session-source`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/session-source.ts) | `sessionSource` | Entry exists; verify signatures |
+| [`@lenso/auth/sessions`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/sessions.ts) | `createManagedSessions`, `sessionLifetime` | Entry exists; verify signatures |
+| [`@lenso/auth/drizzle/pg`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/drizzle/pg.ts) | `postgresSessionStore` | Entry exists; verify signatures |
+| [`@lenso/auth/drizzle/sqlite`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/drizzle/sqlite.ts) | `sqliteSessionStore`, `sqliteStore` | Entry exists; verify signatures |
+| [`@lenso/auth/drizzle/d1`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/drizzle/d1.ts) | `d1SessionStore` | Entry exists; verify signatures |
+| [`@lenso/auth/drizzle/schema-pg`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/drizzle/schema-pg.ts) | `authSessions` | Entry exists; verify signatures |
+| [`@lenso/auth/drizzle/schema-sqlite`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/drizzle/schema-sqlite.ts) | `authSessions` | Entry exists; verify signatures |
+
+Usage and boundaries: [auth](/docs/auth).
+
+## @lenso/db
+
+Source manifest: `0.1.0` · Published: `0.1.0`
+
+| Public entry | Exported functions / values | Current artifact boundary |
+| --- | --- | --- |
+| [`@lenso/db`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/src/index.ts) | `createDrizzlePlugin` | Entry exists; verify signatures |
+| [`@lenso/db/bun-sql`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/src/bun-sql.ts) | `createBunSqlPlugin` | Entry exists; verify signatures |
+| [`@lenso/db/bun-sqlite`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/src/bun-sqlite.ts) | `createBunSqlitePlugin` | Entry exists; verify signatures |
+| [`@lenso/db/d1`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/src/d1.ts) | `createD1Plugin` | Entry exists; verify signatures |
+
+Usage and boundaries: [db](/docs/database).
+
+## @lenso/workers
+
+Source manifest: `0.1.0` · Published: `0.1.0`
+
+| Public entry | Exported functions / values | Current artifact boundary |
+| --- | --- | --- |
+| [`@lenso/workers`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/workers/src/index.ts) | `createBindingsPlugin`, `createWorkerHandler` | Entry exists; verify signatures |
+
+Usage and boundaries: [workers](/docs/workers).
+
+## @lenso/storage
+
+Source manifest: `0.1.0` · Published: `0.1.0`
+
+| Public entry | Exported functions / values | Current artifact boundary |
+| --- | --- | --- |
+| [`@lenso/storage`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/index.ts) | `StorageError`, `createStoragePlugin`, `unsupportedSigning`, `validateContentType`, `validateExpiry`, `validateKey`, `validateList`, `validateRange` | Entry exists; verify signatures |
+| [`@lenso/storage/local`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/local.ts) | `createLocalStoragePlugin` | Entry exists; verify signatures |
+| [`@lenso/storage/s3`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/s3.ts) | `createS3StoragePlugin` | Entry exists; verify signatures |
+| [`@lenso/storage/r2`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/r2.ts) | `createR2StoragePlugin` | Entry exists; verify signatures |
+| [`@lenso/storage/files`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/files.ts) | `createFilesPlugin` | Entry exists; verify signatures |
+| [`@lenso/storage/sqlite`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/sqlite.ts) | `createSqliteFileQueries`, `fileSchema`, `files` | Entry exists; verify signatures |
+| [`@lenso/storage/postgres`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/postgres.ts) | `createPostgresFileQueries`, `fileSchema`, `files` | Entry exists; verify signatures |
+| [`@lenso/storage/fetch`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/fetch.ts) | `createFileDownloadHandler`, `createFileUploadHandler` | Entry exists; verify signatures |
+
+Usage and boundaries: [storage](/docs/files).
+
+## @lenso/tasks
+
+Source manifest: `0.1.0` · Published: `0.1.0`
+
+| Public entry | Exported functions / values | Current artifact boundary |
+| --- | --- | --- |
+| [`@lenso/tasks`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/tasks/src/index.ts) | `INPUT_LIMIT_BYTES`, `RESULT_LIMIT_BYTES`, `TaskQueueError`, `createTaskPlugin`, `createTaskQueue`, `defineTask` | Entry exists; verify signatures |
+| [`@lenso/tasks/postgres`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/tasks/src/postgres.ts) | `createPostgresTaskProvider`, `migratePostgresTaskQueue` | Entry exists; verify signatures |
+
+Usage and boundaries: [tasks](/docs/tasks).
+
+## @lenso/log
+
+Source manifest: `0.1.0` · No npm package at this check.
+
+| Public entry | Exported functions / values | Current artifact boundary |
+| --- | --- | --- |
+| [`@lenso/log`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/log/src/index.ts) | `createLogger` | Source preview entry |
+
+Usage and boundaries: [log](/docs/observability).
+
+## @lenso/otel
+
+Source manifest: `0.1.0` · No npm package at this check.
+
+| Public entry | Exported functions / values | Current artifact boundary |
+| --- | --- | --- |
+| [`@lenso/otel`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/src/index.ts) | `ROOT_CONTEXT`, `SpanKind`, `SpanStatusCode`, `context`, `metrics`, `propagation`, `trace` | Source preview entry |
+| [`@lenso/otel/browser`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/src/index.ts) | `ROOT_CONTEXT`, `SpanKind`, `SpanStatusCode`, `context`, `metrics`, `propagation`, `trace` | Source preview entry |
+| [`@lenso/otel/bun`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/src/bun.ts) | `bootstrapTelemetry` | Source preview entry |
+| [`@lenso/otel/orpc`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/src/orpc.ts) | `createORPCInstrumentation` | Source preview entry |
+| [`@lenso/otel/workers`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/src/workers.ts) | `bootstrapWorkerTracing` | Source preview entry |
+
+Usage and boundaries: [otel](/docs/observability).
+
+## @lenso/mcp
+
+Source manifest: `0.1.0` · Published: `0.1.0`
+
+| Public entry | Exported functions / values | Current artifact boundary |
+| --- | --- | --- |
+| [`@lenso/mcp`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/mcp/src/index.ts) | `serveStdio` | Entry exists; verify signatures |
+
+Usage and boundaries: [mcp](/docs/agents).
+
+## Experimental, in-progress and platform limits
+
+- Source oRPC v2 pins prerelease `2.0.0-beta.42`; published Web 0.1.0 still uses v1.
+- Core configuration and Web `/bun` are implemented source-preview APIs absent from the same-version npm artifacts.
+- Log/OTel have source implementations but return registry 404 at this check. Workers uses platform-native telemetry by default; do not assume Bun SDK behavior.
+- No independent Manage package/command exists. Explicit app operations are the supported entry. A configuration center, subscriptions/hot reload and Observe query CLI are not provided.
+- The shipped durable task queue is PostgreSQL. D1/R2 bindings remain platform-owned and cannot be closed like Bun clients.
+- The browser entry does not export startApp. Server resources, secrets and identity adapters must stay out of client bundles.

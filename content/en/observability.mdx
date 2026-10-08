@@ -1,0 +1,121 @@
+---
+title: Logging and telemetry
+description: Collect safe structured logs, bootstrap a host-owned OpenTelemetry SDK, and choose the separate Workers tracing path.
+---
+
+Logging and telemetry are independent optional integrations. `@lenso/log` emits structured Pino logs; `@lenso/otel` exposes the official OpenTelemetry API. Core, Engine and Tasks can record API spans without initializing an SDK. Without host bootstrap, those API calls are no-ops.
+
+This page documents [Log](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/log/README.md) and [OTel](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/README.md) at source revision `6e239c7`. **Neither `@lenso/log` nor `@lenso/otel` is currently available in the regular npm registry**; both package lookups returned 404 during this site's version audit. The examples require reviewed source-built artifacts, not an npm install promise. There is no built-in Observe query CLI, telemetry store or collector in this baseline.
+
+## Collect stderr logs once
+
+Pass a logger from the host to `startApp`; plugin contexts receive scoped logging without depending on Pino:
+
+```ts
+import { definePlugin, startApp } from "@lenso/core";
+import { createLogger } from "@lenso/log";
+
+const greeting = definePlugin({
+  id: "greeting",
+  setup(context) {
+    return {
+      async greet(name: string) {
+        context.logger?.info({ operation: "greet" }, "Greeting requested");
+        return `Hello, ${name}`;
+      },
+    };
+  },
+});
+const app = await startApp({
+  plugins: [greeting],
+  logger: createLogger({ level: "info" }),
+});
+try {
+  await app.get(greeting).greet("Ada");
+} finally {
+  await app.stop();
+}
+```
+
+Default JSON goes to stderr. Keep stdout for finite CLI envelopes and MCP protocol frames. Configure the process supervisor to collect stderr once. `@lenso/log` does not register an SDK or export OTel logs; adding a separate log exporter can duplicate records.
+
+`pretty: true` provides synchronous readable development output. `createLogger({ logger: existingPino })` enriches a borrowed logger without closing it; the caller retains transports and lifetime. Do not assume a supplied logger inherits the default redaction configuration.
+
+## Initialize telemetry before application imports
+
+The Bun host owns one SDK bootstrap. Put it in an entry or preload, before CLI/config/business imports, then drain application work before shutdown:
+
+```ts
+import { bootstrapTelemetry } from "@lenso/otel/bun";
+import { createORPCInstrumentation } from "@lenso/otel/orpc";
+
+const telemetry = await bootstrapTelemetry({
+  serviceName: "notes",
+  instrumentations: [createORPCInstrumentation()],
+});
+try {
+  const { main } = await import("./server.ts");
+  // The application provides main(): it resolves after listener/workers drain.
+  await main();
+} finally {
+  await telemetry.shutdown();
+}
+```
+
+The `main` lifecycle above is an application contract, not an export promised by the Notes example. Do not bootstrap in plugin setup, a config module, or each request. The host supplies an authorized OTLP destination/exporter and its credentials through trusted deployment configuration. Importing Lenso alone installs neither a collector nor automatic Node instrumentation or exception hooks.
+
+`traceExporter`, `metricExporter`, `sampler`, `contextManager`, `propagator` and `instrumentations` accept official interfaces. Supplied exporters/context managers are borrowed by default; `takeOwnership: true` explicitly transfers lifetime. Owned defaults dispose once, including failure paths. `mode: "external"` leaves global providers/context untouched and only manages explicitly supplied instrumentation registrations; the external SDK owner flushes and shuts down.
+
+`forceFlush()` and `shutdown()` are bounded and reject on timeout/export failure. A timeout does not stop arbitrary custom exporter code; actual cleanup can continue, with ownership reserved until it settles. An export failure is telemetry evidence, not proof the business operation failed.
+
+## Finite CLI commands
+
+The source greeting already contains a finite-command preload with `flushOnCliExit: true`. After building framework packages and configuring an authorized local OTLP receiver:
+
+```sh
+# From the reviewed framework checkout; endpoint credentials stay in the environment.
+bun --preload ./examples/greeting/src/telemetry.ts packages/cli/dist/bin.js \
+  call greeting greet '{"name":"Ada"}' --root examples/greeting --json
+```
+
+CLI ends its span and performs bounded final flush/shutdown in `finally`. Export failure prints a fixed stderr diagnostic and preserves the business exit code. External SDK mode retains external ownership. Do not reuse a finite-command preload as a lifecycle solution for `dev` children or a long-running server.
+
+## Choose one HTTP propagation owner
+
+Optional `/orpc` requires `@orpc/opentelemetry@2.0.0-beta.42` for this source baseline. The corresponding Web and clients use the same oRPC beta; verify installed compatibility before combining artifacts.
+
+If Web's `telemetry.requestLifetime` or another Fetch/HTTP instrumentation owns propagation, use `createORPCInstrumentation({ propagationEnabled: false })`. Otherwise oRPC instrumentation propagates by default. Its HTTP/procedure spans and Web's optional INTERNAL body/work/cleanup span describe different lifetimes. Avoid two HTTP propagation owners.
+
+Official oRPC exception instrumentation can capture business exception messages. Keep credentials, bodies and signed URLs out of those messages as well as ordinary logs.
+
+## Workers uses platform tracing
+
+The browser-safe `@lenso/otel/workers` entry requires the optional `@orpc/cloudflare@2.0.0-beta.42` peer and enabled Wrangler traces. The existing [Worker entry](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/src/index.ts) calls `bootstrapWorkerTracing()` once; its [configuration](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/wrangler.jsonc) enables `observability.traces.enabled`.
+
+| Bun SDK route | Native Workers route |
+| --- | --- |
+| Explicit `/bun` bootstrap | Explicit `/workers` bootstrap |
+| Host owns flush/shutdown | Platform owns request spans and export |
+| OTel API context supplies trace correlation | Native tracing does not bridge Lenso OTel API spans/context |
+| Optional oRPC OTel instrumentation | Official Workers Traces and oRPC Cloudflare tracer |
+| Bun Pino logging entry | Platform logs or an application-supplied structural logger |
+
+Do not combine the two oRPC tracer owners or shut down a provider per Worker request. Native Workers tracing currently supplies no custom OTLP export, no configurable oRPC propagation and no yielded/enqueued stream events. It does not automatically activate Core/Tasks API spans or Pino trace enrichment. Isolate termination does not guarantee app cleanup.
+
+## Correlate without leaking data
+
+Useful log/trace fields include instance/plugin/operation, `jobId`, attempt, `traceId` and `spanId`. A durable task attempt starts a fresh root linked to the original producer; it need not share the producer trace ID. Only bounded `traceparent`/`tracestate` are stored separately from task payload. Neither trace context nor job ID authorizes a caller. Keep high-cardinality IDs out of metric labels.
+
+Default Log redaction covers common structured secrets, body/payload keys and Error text/stacks. It is not comprehensive secret discovery: free-form messages, unusual nested keys and custom serializers need application policy. Log fixed events and safe codes, not full configs, payloads or unknown exceptions.
+
+## Diagnose missing evidence
+
+| Symptom | Check |
+| --- | --- |
+| Logs exist, no traces | SDK bootstrap, import order, sampling and actual exporter/receiver |
+| CLI loses final spans | Finite-command preload and `flushOnCliExit`; distinguish export failure from command failure |
+| Duplicate HTTP spans/records | Propagation owner and duplicate stderr/OTel collection |
+| No trace IDs in Workers logs | Native route does not bridge OTel API context; use platform correlation |
+| Old events cannot be queried | Find the configured storage/query backend; an OTLP endpoint alone is not a query service |
+
+Use retained stderr or the authorized backend when available. Missing collection means missing historical evidence, not an invitation to guess an Observe command. [Bootstrap/ownership tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/test/ownership.test.ts), [CLI export tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/test/cli.test.ts), and [Web lifetime tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/test/telemetry.test.ts) establish the respective boundaries.

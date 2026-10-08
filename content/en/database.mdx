@@ -1,0 +1,104 @@
+---
+title: Databases and migrations
+description: Keep native Drizzle types, bind exact database instances, and migrate through an explicit application workflow.
+---
+
+`@lenso/db` makes a native Drizzle database a plugin resource. It does not replace Drizzle, choose a global database, or migrate on startup. Choose the driver for the host and keep the schema and queries in the application.
+
+This page describes the TypeScript source preview at [`6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/DATABASE.md). Verify installed exports and build provenance before using it; a package version of `0.1.0` alone does not establish equivalence to this source.
+
+## Choose a provider
+
+| Public entry | Factory | Database and resource owner |
+| --- | --- | --- |
+| `@lenso/db/bun-sql` | `createBunSqlPlugin({ id, schema, connection })` | Bun SQL PostgreSQL; plugin closes its new pool |
+| `@lenso/db/bun-sqlite` | `createBunSqlitePlugin({ id, schema, filename })` | Bun SQLite; plugin closes its new connection |
+| `@lenso/db/d1` | `createD1Plugin({ id, schema, binding })` | Workers D1; platform owns the binding |
+| `@lenso/db` | `createDrizzlePlugin({ id, requires?, connect })` | Custom driver; factory explicitly registers owned cleanup |
+
+The Bun factories accept an existing `client` instead of `connection` or `filename`. That client remains caller-owned. PostgreSQL accepts a URL or native PostgreSQL connection options; passing a MySQL client is rejected. SQLite accepts native constructor `options` when creating its connection. The source baseline pins Drizzle ORM `0.45.3` and Drizzle Kit `0.31.11`.
+
+D1 is a separate import with no Bun runtime code. Keep Bun SQL, Bun SQLite and filesystem adapters out of the Worker import graph. See [deployment](/docs/deployment) for host assembly.
+
+## Compose multiple databases
+
+Distinct IDs describe instances; dependencies bind the exact objects. This small Bun example checks two independently owned connections without creating tables:
+
+```ts
+import { definePlugin, startApp } from "@lenso/core";
+import { createBunSqlitePlugin } from "@lenso/db/bun-sqlite";
+import { sql } from "drizzle-orm";
+
+const primaryDb = createBunSqlitePlugin({
+  id: "notes.primary.db", filename: ":memory:", schema: {},
+});
+const archiveDb = createBunSqlitePlugin({
+  id: "notes.archive.db", filename: ":memory:", schema: {},
+});
+const connections = definePlugin({
+  id: "notes.connections",
+  requires: [primaryDb, archiveDb],
+  setup(context) {
+    return { primary: context.get(primaryDb), archive: context.get(archiveDb) };
+  },
+});
+const app = await startApp({ plugins: [connections, primaryDb, archiveDb] });
+try {
+  const databases = app.get(connections);
+  databases.primary.run(sql`select 1`);
+  databases.archive.run(sql`select 1`);
+} finally {
+  await app.stop();
+}
+```
+
+A new plugin object with the same ID does not satisfy an existing dependency. For a custom driver, acquire inside `connect(context)`, register `context.onCleanup` immediately, then return the native database. Register cleanup only for resources that factory owns. Setup rollback and normal shutdown use the same ownership rules; a dependent service releases before its database.
+
+## Reuse Notes across dialects
+
+The existing Notes application supplies a useful boundary:
+
+1. [`schema-pg.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/schema-pg.ts) uses UUIDs and timestamps with time zones. [`schema-sqlite.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/schema-sqlite.ts) uses text IDs and millisecond timestamps.
+2. Dialect-specific query factories accept native Drizzle types. The shared `NotesQueries` interface contains only the business operations Notes needs.
+3. `createNotesPlugin({ id, database, authentication, queries })` binds those exact resources. The same ordinary async service serves CLI, Fetch and oRPC.
+
+This does not promise that all drivers share transactions or connection APIs. The D1 Notes queries use single-statement mutations and `RETURNING`, without assuming PostgreSQL transactions or synchronous SQLite access.
+
+## Apply migrations explicitly
+
+Run these commands **in the reviewed source checkout**, after building framework packages, against a database you have created and are authorized to change. They are example scripts, not commands installed by the DB package:
+
+```sh
+# From examples/notes; DATABASE_URL already identifies an isolated PostgreSQL DB.
+bun run generate:pg
+# Review generated SQL before applying it.
+bun run migrate:pg
+
+# For a local SQLite file; SQLITE_PATH is set by the application owner.
+bun run generate:sqlite
+bun run migrate:sqlite
+```
+
+Generation is for a schema change; do not regenerate committed migrations merely to start the example. Installation, `startApp` and the provider factories apply none of them. Migration scripts use their documented working-directory semantics; the Notes runtime separately resolves configured paths against its app root.
+
+For D1, the Worker configuration points `migrations_dir` at the reviewed SQLite migration directory and the owner invokes `wrangler d1 migrations apply <database-name> --local`. Wrangler records D1 history in `d1_migrations`; Bun SQLite uses Drizzle's journal. Use one runner for each store.
+
+Notes' `0001_owner` migration includes the Auth session baseline in its existing application history. Do not additionally run a separate Auth migrator on that database. Auth owns the session schema; Notes snapshots track Notes. Older rows receive the reserved `__legacy_unowned__` owner, which cannot log in. Migration does not assign old private records to the first configured user. See the [migration ownership record](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/migrations/OWNERSHIP.md).
+
+## Protect data at the service boundary
+
+A connection is privileged infrastructure access, not user authorization. Notes authenticates an audience-specific actor, revalidates its session, and checks the actual record owner. It also includes owner identity in update/delete SQL conditions. Lists select only that owner's rows. Owner, creation time and actor are not assignable through business JSON.
+
+Do not expose a raw DB client through Web, CLI or MCP. Obtain connection secrets through the host's secret authority and keep them out of source, argv and logs. Files and Tasks require their own durable associations and policies; sharing a database does not confer permission.
+
+## Diagnose the resource boundary
+
+| Symptom | Smallest useful check |
+| --- | --- |
+| `missing-dependency` or `duplicate-id` | Inspect exact references and installed IDs before testing connectivity |
+| Missing table | Confirm selected store, migration history and explicit migration completion; startup is not a migration runner |
+| Client closed unexpectedly | Check whether a supplied client was incorrectly registered as owned elsewhere |
+| D1 build includes Bun imports | Trace imports to `/bun-sql`, `/bun-sqlite`, or filesystem code; select `/d1` |
+| Another user's row is visible | Test the shared service's audience/owner policy and query predicate, not only the HTTP middleware |
+
+[`packages/db/test/resources.test.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/test/resources.test.ts) verifies exact-instance isolation, no implicit migration, owned shutdown and borrowed-client survival. Real Notes PostgreSQL and local workerd/D1 checks are described in [testing and troubleshooting](/docs/testing).

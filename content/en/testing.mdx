@@ -1,0 +1,119 @@
+---
+title: Testing and troubleshooting
+description: Test the boundary you changed, interpret safe diagnostics, and separate local fixtures from real database and platform evidence.
+---
+
+Start with the failing entry, exact app root, installed package artifacts and runtime. Record the reproducible command and expected behavior. Inspect only necessary environment-key presence; do not dump configuration or secrets to diagnose a missing setting.
+
+These workflows refer to the TypeScript source at [`6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md). Source checkout commands and unpublished APIs must be matched to an external app's real package exports and scripts.
+
+## Keep the feedback loop narrow
+
+In the framework checkout, package exports resolve to `dist`. Build changed framework packages and dependencies before consumer tests/typechecks. Do not typecheck a consumer while another build clears that output. In an external application, use its installed artifacts and existing scripts; no framework checkout is required.
+
+From the reviewed checkout root:
+
+```sh
+bun run cli help --json
+bun run cli inspect notes-operations create --root examples/notes --json
+bun run --filter @lenso/example-notes typecheck
+bun test examples/notes/test/operations.test.ts
+```
+
+The operation test uses isolated temporary SQLite/files and test-only identities. A read command still starts every installed plugin and may acquire resources. Only call a business operation after understanding the whole app's setup, trusted identity and target:
+
+```sh
+# Database, migration and a verified NOTES_SESSION are already configured.
+printf '%s\n' '{}' |
+  bun run cli call notes-operations list --root examples/notes --stdin --json
+```
+
+`inspect` imports trusted canonical config and converters but starts neither app nor Engine setup. It describes declarations, not database health or resolved config. `check/generate/build` run trusted Engine setup; generation/build write owned output. `dev` also runs the app. Those are different diagnostic effects.
+
+## Test ordinary services and ownership
+
+Shared service tests should cover valid/invalid business input and the actual owner/tenant policy. An HTTP middleware test alone cannot establish that CLI/MCP/direct calls enforce the same rules. Keep fixed tokens and actors confined to fixtures; a production Auth source must verify real evidence.
+
+Test resource failure paths as well as successful startup. This Bun unit test checks cleanup registered by a setup that later fails:
+
+```ts
+import { expect, test } from "bun:test";
+import { definePlugin, startApp } from "@lenso/core";
+
+test("failing setup releases its acquired resource", async () => {
+  let released = false;
+  const resource = definePlugin({
+    id: "resource",
+    setup(context) {
+      context.onCleanup(() => { released = true; });
+      throw new Error("test setup failure");
+    },
+  });
+  await expect(startApp({ plugins: [resource] })).rejects.toThrow("test setup failure");
+  expect(released).toBe(true);
+});
+```
+
+The [lifecycle tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/test/lifecycle.test.ts) additionally cover global LIFO, disposer sharing, repeated stop and aggregated failures. For a real resource, verify that owned clients close and borrowed clients survive. Streaming entries must test body completion/cancellation, not just response creation.
+
+## Use real integration evidence where it matters
+
+| Check from source root | What it establishes and prerequisites |
+| --- | --- |
+| `bun test packages/db/test/resources.test.ts` | Real Bun SQLite ownership/isolation, no implicit migration |
+| `bun test examples/notes/test/notes.test.ts examples/notes/test/operations.test.ts` | Shared Notes/CLI validation and owner boundaries with isolated local resources |
+| `bun test packages/mcp/test/stdio.test.ts` | Real subprocess and official SDK stdio behavior |
+| `bun test packages/storage/test/files.test.ts` | File-state/compensation races using controlled providers; not live cloud behavior |
+| `bun test packages/tasks/test/worker.test.ts` | Controlled worker drain/cancellation/slot semantics; not persistence |
+| `bun test packages/otel/test/cli.test.ts` | Finite CLI export behavior with test receivers/exporters |
+
+Database/platform checks need their explicit prerequisites:
+
+```sh
+# Dedicated disposable DB; environment already contains its URL.
+LENSO_TEST_DATABASE_URL="$DATABASE_URL" bun test examples/notes/test/postgres.test.ts
+TASK_TEST_DATABASE_URL="$DATABASE_URL" bun test packages/tasks/test/postgres.test.ts
+
+# Existing local workerd/D1 setup, from the source root.
+bun run --cwd examples/workers test:notes
+```
+
+The Notes PostgreSQL test exercises real CLI/HTTP. The Tasks provider test creates uniquely named queues and exercises real processes/SIGKILL. The Tasks **example** integration test is separate: run its explicit migration on an isolated DB first, then `TASK_TEST_DATABASE_URL="$DATABASE_URL" bun test src/postgres.test.ts src/entry.test.ts` from `examples/tasks`. Those example tests do not migrate or delete shared data.
+
+Auth's `LENSO_REQUIRE_POSTGRES=1 bun test packages/auth/test/postgres.test.ts` requires installed PostgreSQL binaries and starts private loopback clusters; the required flag fails instead of skipping if unavailable. Local workerd tests establish local D1 behavior, not production replication. Report missing prerequisites and skipped tests as gaps, never as passing persistence/deployment checks.
+
+## Read code, phase and ordered causes
+
+Finite CLI commands put one `schemaVersion: 1` JSON envelope on stdout and logs on stderr. Exit 2 identifies arguments/input, 3 identifies discovery/assembly, and 1 identifies runtime/build/output failure. `dev --json` is unsupported. Use the diagnostic's actual `code`, `phase`, source and ordered causes before deciding on a fix.
+
+For example, Notes rejects a blank title before setup:
+
+```sh
+printf '%s\n' '{"title":" "}' |
+  bun run cli call notes-operations create --root examples/notes --stdin --json
+```
+
+Expected evidence is `code: "invalid-input"`, `phase: "input"`, exit 2 and a safe field path for `title`; no DB or session should be needed to reject it. The existing [operation tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/test/operations.test.ts) verify that validation happens before setup.
+
+| Evidence | Likely boundary and next check |
+| --- | --- |
+| `missing-dependency`, `duplicate-id`, `cyclic-dependency` | Assembly: installed IDs, exact references and source locations |
+| `unknown-operation`, `invalid-operations` | Explicit declarations: exact plugin object, named export and shared schema |
+| `config-invalid`, phase `config` | All-instance preflight: safe nested cause code, field path and source ID |
+| `UNAUTHORIZED` / `FORBIDDEN` | Trusted evidence, realm/audience and actual object owner; never inject an actor into JSON |
+| `invocation-failed` | Unknown business failure: consult authorized safe logs; client exception text is intentionally opaque |
+| `invocation-and-cleanup-failed` | Both invocation and cleanup failed: preserve both ordered causes |
+| `serialization-failed` | Output is not plain finite JSON, including undefined; business work may already have committed |
+| MCP `adapter-busy` | Existing call still owns admission; it is not queued or safe to duplicate |
+
+Configuration preflight may read sources but begins before business setup. Static inspect never invokes `source.read`. A missing file/source, invalid env conversion and trusted TS config import are different failures; see [configuration](/docs/configuration).
+
+## Avoid replay after uncertainty
+
+Cleanup is resource release, not compensation. An output error, cleanup error, lost response or telemetry timeout can follow a committed business write. Query the application's authorized state before retrying. Task cancellation and final status do not prove all external effects were rolled back; use [task recovery rules](/docs/tasks).
+
+Check generated-output failures at the source/owner boundary. `.lenso` and `dist` are reproducible output: edit source/config and regenerate, rather than patching generated files or deleting unrelated work. Missing/mismatched database schema calls for an explicit authorized migration workflow, not a startup workaround.
+
+## Finish with a useful report
+
+Report the runtime/package baseline, reproduced command, diagnostic code/phase/source, focused changes and checks actually run. Separate local fixtures, real DB/workerd evidence and skips. Mention unresolved state after uncertain side effects and name a missing authorized status/log interface when it prevents diagnosis. Use [observability](/docs/observability) for the existing stderr/backend evidence; no generic Manage or Observe command is supplied by this baseline.

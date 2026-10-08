@@ -1,0 +1,101 @@
+---
+title: Inspect, call, dev and build
+description: Declare callable operations, understand command effects, and locate failures with structured CLI diagnostics.
+---
+
+This page targets the TypeScript source preview at [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f). The source CLI package is `@lenso/cli@0.18.0`; do not infer these commands or recent configuration behavior from a registry version string. Check the installed launcher's `lenso help --json`.
+
+## Choose a command by what it runs
+
+| Command | Main effect |
+| --- | --- |
+| `help --json` | Lists commands, flags, error codes and exit codes; imports no app config. |
+| `inspect [plugin-id [method]] --json` | Imports canonical trusted `lenso.config.ts`; describes declarations without setup. |
+| `check --json` | Runs trusted Engine setup/discovery and validates assembly; no application setup. |
+| `generate --json` | Runs Engine and writes owned `.lenso` files. |
+| `build [--entry file] --json` | Generates, then bundles into `dist`. |
+| `call plugin-id method` | Validates input, starts the full app, invokes one explicit operation, then stops. |
+| `dev [--entry file]` | Watches and supervises owned Engine/runtime processes. `--json` is unsupported. |
+
+All commands accept `--root directory`. `--entry` is available only for build/dev. Inspection is not a sandbox: imports and trusted schema converters execute top-level code even though plugin setup and configuration source reads do not run.
+
+## Declare operations alongside the application
+
+`lenso.config.ts` default-exports `defineApp({ plugins })`. Its separate named `operations` export is the invocation allowlist. Do not place `operations` inside `defineApp` or expect all returned service methods to be exposed automatically.
+
+[Notes](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/operations.ts) uses a companion factory returning `{ plugin, operations }`. A declaration inside that factory is:
+
+```ts
+const operations = [
+  defineOperation({
+    plugin,
+    method: "list",
+    input: notesListInput,
+    effect: "read",
+    destructive: false,
+    retry: "safe",
+    cancellation: "none",
+    outputDescription: "The authenticated user's private notes.",
+    source,
+    description: "List the authenticated user's private notes.",
+  }),
+];
+```
+
+The actual file imports `defineOperation` from `@lenso/cli`, creates `plugin` once and uses its shared contracts. [The config](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/lenso.config.ts) installs `notesOperations.plugin` and exports `notesOperations.operations`. That exact installed object must appear in every declaration.
+
+`defineOperation` checks the service method's input type against the Standard Schema v1 output. Invocation requires an own callable method on the returned service and calls it with the service as `this`. Multi-argument or actor-aware services need a thin application-owned single-input method that obtains identity from its trusted entry and delegates to the shared service.
+
+Notes takes its credential from the trusted environment, verifies it with Auth and keeps owner checks in the Notes service. `actor`, `subjectId` or a permission flag in business JSON is not evidence. A declared operation grants exposure; it does not grant permission.
+
+## Inspect first, call with one input source
+
+From a prepared framework preview checkout, the real Notes operation can be inspected without opening its database or Auth connection:
+
+```sh
+bun run cli inspect notes-operations list --root examples/notes --json
+```
+
+After explicit migrations and the Notes authentication setup are complete, call it using the existing authorized launch environment:
+
+```sh
+printf '%s\n' '{}' |
+  bun run cli call notes-operations list --root examples/notes --stdin --json
+```
+
+These commands use the repository's existing launcher. An external app uses its installed `lenso` binary. Notes call requires the example's selected database/storage setup and a valid `NOTES_SESSION`; inspection does not prove those runtime prerequisites.
+
+Choose exactly one input source: nonsensitive inline JSON, `--stdin`, or `--input-file file`. Omitting all three uses `{}`. Invalid JSON/input and unknown operations fail before startup. A valid call resolves every installed configured instance and starts all installed plugins, even when the selected operation is a read.
+
+Each call owns a fresh app. In-memory state is not shared with an already running HTTP server or a previous call. Both invocation and cleanup failures are preserved. An output or cleanup failure can follow a committed business write; query authorized state before repeating an uncertain mutation.
+
+## Treat metadata as descriptions
+
+`effect` is `read`, `write` or `unknown`. `destructive`, `retry` and `cancellation` describe operation semantics for users and adapters. They do not authorize a call, make it idempotent, retry it, pass an AbortSignal or roll back an effect. Omitted retry/cancellation are `unknown`; omitted destructive/output metadata are `null`.
+
+`outputDescription` is prose, not an output validator. Return finite, acyclic plain JSON, with explicit `null` or a result object instead of `undefined`. Dates, functions and other unsupported values cause `serialization-failed` at the JSON output boundary.
+
+Input inspection uses the validator's Standard JSON Schema converter when available. Otherwise it reports `schemaAvailability: "runtime-validation-only"` and `inputSchema: null`; runtime validation still applies. Defaults/examples are omitted. Field names and constraints remain discoverable, so never embed secrets in schemas or metadata.
+
+## Read phase, code and ordered causes
+
+Finite commands with `--json` emit one envelope on stdout: `{ schemaVersion: 1, ok: true, data }` or `{ schemaVersion: 1, ok: false, error }`. Logs use stderr.
+
+| Exit | Meaning | First boundary to check |
+| --- | --- | --- |
+| `0` | Success | Inspect the command's returned data. |
+| `2` | Arguments/input | Flags, JSON source, shared input schema. |
+| `3` | Discovery/assembly | Config import, exact instances, operation declarations. |
+| `1` | Runtime/build/output | Config preflight, setup, invoke, cleanup, bundling or JSON serialization. |
+
+A trusted config import failure differs from runtime configuration preflight. Preview configuration failures use phase `config` and top-level `config-invalid`, with ordered safe causes naming instance, field path and source. Setup/invoke/cleanup can each fail independently; preserve `invocation-and-cleanup-failed` causes instead of choosing one.
+
+Unknown application error text, raw input and stacks are omitted because they can contain secrets. Console methods are routed to stderr with redaction, but arbitrary direct stdout writes and secrets under innocuous names are not reliably isolated. Keep stdout protocol-only and avoid logging sensitive values.
+
+## Start dev after actual startup is reported
+
+In an existing server entry, call `reportDevReady({ urls: [actualUrl], capabilities })` from `@lenso/engine/dev-ready` after app startup and binding succeed. Service-only entries can omit URLs. The helper is a no-op outside supervised dev; no hand-written IPC is needed.
+
+Run `lenso dev --root .` or choose an existing entry with `--entry`. Failed starts keep watching. `build` writes bundles; it does not publish npm packages, provision a database or deploy Workers. Custom generation/targets and file ownership are documented in [Engine](/docs/engine).
+
+For programmatic use, `inspect(root, pluginId?, method?)`, `call(root, pluginId, method, input)` and `invoke(appDefinition, pluginId, method, input)` are public `@lenso/cli` exports. Use Engine for programmatic build stages. See [CLI contract](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md) and [parser implementation](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/src/bin.ts).

@@ -1,0 +1,108 @@
+---
+title: Web and oRPC
+description: Expose shared async services through Fetch and typed oRPC procedures, with explicit listener and request ownership.
+---
+
+`@lenso/web` adapts a Lenso service graph to `Request → Promise<Response>`. It is optional: business plugins do not need HTTP, oRPC, or a listener. The root entry exports `createWebPlugin`, `WebService`, `WebContext` and the Fetch option types. A Bun listener lives in the separate `@lenso/web/bun` entry; Workers supplies its own Fetch entrypoint.
+
+## Version boundary
+
+This page describes the **source preview at `6e239c71a38279885facce133ceb847bbfe12f2f`**, using **oRPC `2.0.0-beta.42`**. This is a prerelease transport contract. The published `@lenso/web@0.1.0` artifact uses oRPC `1.15.5` and does not export `/bun`; the same package version string does not identify the same implementation. These examples require a verified build of the pinned source and matching packages, as described in [installation](/docs/installation). Installing the older npm artifact will not reproduce them.
+
+Upgrade client and server together. There is no v1 wire compatibility path in this source revision. Check the installed `exports` and dependency versions before applying a source-preview tutorial.
+
+## Keep the service as the shared boundary
+
+The existing Notes application assembles a database, authentication and Notes service first. Its transport depends on the exact Notes and Auth plugin objects. In `examples/notes/src/web.ts`, the essential oRPC assembly is:
+
+```ts
+import { createWebPlugin } from "@lenso/web";
+import type { Plugin } from "@lenso/core";
+import type { NotesService } from "./notes";
+import type { NotesAuthentication } from "./auth";
+import { createNotesRouter } from "./router";
+
+export function createNotesRpcPlugin(
+  notes: Plugin<NotesService>,
+  authentication: Plugin<NotesAuthentication>,
+) {
+  return createWebPlugin({
+    id: "notes-web",
+    requires: [notes, authentication],
+    prefix: "/rpc",
+    router(context) {
+      return createNotesRouter(
+        context.get(notes),
+        context.get(authentication),
+      );
+    },
+  });
+}
+```
+
+This uses the existing Notes router and service, rather than defining another business implementation. Include the returned Web plugin and its dependencies in the same application. A fresh plugin with an identical ID is not the declared dependency. See [composition](/docs/composition) and [lifecycle](/docs/lifecycle).
+
+The real router exposes `create({ title, body? })`, `list()`, `read({ id })`, `update({ id, title, body? })` and `remove({ id })`. Its Zod contracts validate RPC inputs. Service validation and object authorization remain in `NotesService`, so CLI and raw Fetch callers obey the same rules.
+
+## Procedure authentication
+
+The Notes router applies authentication to each operation audience. For example, its read procedure uses this chain:
+
+```ts
+procedure
+  .use(requiredAuth(authentication.for(notesAudiences.read), bearerEvidence))
+  .input(noteLookupInput)
+  .handler(({ input, context }) => service.read(context.actor, input.id));
+```
+
+Here `procedure`, `authentication`, `notesAudiences`, `noteLookupInput` and `service` come from the [existing router](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/router.ts). `requiredAuth` verifies evidence and replaces the reserved `actor` context key. The shared service revalidates the actor and checks the loaded note's owner. An authenticated request is not permission to read any note.
+
+**oRPC v2 does not deduplicate middleware** applied at router and procedure levels. Apply authentication once, or implement an explicit request-context guard if your application deliberately repeats it. Lenso adds no implicit authentication cache. See [Auth](/docs/auth).
+
+## Routes, clients and errors
+
+The default prefix is `/rpc`. A custom prefix must begin with `/` and have no trailing slash. `fetch(context)` runs before the RPC handler: a `Response` handles the request; `undefined` falls through to RPC. Unmatched routes return `404`. RPC calls use `POST`; `GET` and `HEAD` do not invoke procedures.
+
+Browser code imports the client entry and the router as a type:
+
+```ts
+import { createClient } from "@lenso/web/client";
+import type { NotesRouter } from "./router";
+
+// `credential` is obtained from the application's protected login flow.
+export function notesClient(credential: string) {
+  return createClient<NotesRouter>("/rpc", {
+    headers: { Authorization: `Bearer ${credential}` },
+  });
+}
+```
+
+Relative URLs resolve against the browser location; server callers must supply an absolute URL. `createClient` accepts the full endpoint URL, plus optional `headers` and a custom `fetch`. It preserves nested procedure inference. The server assembly must not enter a browser bundle through a value import. See [React integration](/docs/react).
+
+`errorStatusMap` extends oRPC's common mapping with application codes. For example, `{ RATE_LIMITED: 429 }` changes HTTP policy; it does not add a `status` property to an oRPC error. Inspect its `code` and typed data. Map expected domain failures at the procedure boundary and keep unknown provider error text, credentials and private object details out of public messages.
+
+## Own the request until it settles
+
+Returning a `Response` only makes headers available. `WebContext` supplies `request`, `signal`, `onCleanup(callback)` and `waitUntil(promise)`. Pass `signal` to providers, register cleanup immediately after acquiring a request resource, and register independently running producer work with `waitUntil`. The app waits for actual request finalization before releasing dependent services.
+
+For raw streams, the wrapper performs no read-ahead and permits one outstanding read. Its default maximum source chunk is **65,536 bytes**, configurable with `maxChunkBytes`. This bounds the wrapper's buffering, not upstream queues or socket buffers. Consumers must drain or cancel bodies. [Native Fetch](/docs/fetch) explains deadlines, cancellation and stream cleanup.
+
+## Choose the host
+
+- **Bun:** `createBunListenerPlugin({ web, hostname, port, ingress })` owns the listener and shutdown. `ingress` is required; it returns a response or passes the request through with `undefined`. Notes uses a loopback Host/Origin policy, which must be reviewed for an actual production ingress.
+- **Workers:** `createWorkerHandler` starts the graph inside each incoming request. Bindings stay platform-owned; application memory is per request. See [Workers](/docs/workers).
+- **An existing Fetch host:** call the initialized `WebService.fetch(request)` and arrange application shutdown in the host you own. Web does not choose a server framework or deployment platform for you.
+
+For telemetry, choose one propagation owner. oRPC instrumentation defaults to propagation enabled. Web's optional `telemetry: { requestLifetime: true }` owns extraction and an internal lifetime span; pair it with oRPC propagation disabled and avoid a duplicate instrumented HTTP boundary. See [observability](/docs/observability).
+
+## Diagnose at the failing boundary
+
+| Symptom | First check |
+| --- | --- |
+| `/bun` cannot be imported | Inspect installed package exports; the npm `0.1.0` artifact is older than this preview. |
+| RPC route returns `404` | Match client endpoint, Web prefix and `POST` method. |
+| Authentication provider runs twice | Check repeated router/procedure middleware under oRPC v2. |
+| Input validation fails | Use the actual Notes schema and v2 client, rather than an old transport payload. |
+| Shutdown does not finish | Drain/cancel the body and identify registered work or a provider ignoring cancellation. |
+
+The [Web package source](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/index.ts), [client](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/client.ts) and [HTTP contract tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/test/http.test.ts) define this preview's behavior.

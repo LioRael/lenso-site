@@ -1,27 +1,9 @@
-# AGENTS.md
+# Lenso site
 
-Guidance for coding agents working in this repository.
+Work only in the assigned checkout. Preserve other changes. Local commits are allowed; merging, pushing, npm publishing and deployment need separate authorization. Console, Relay and the framework source checkout are outside this task.
 
-## Agent skills
+Consume @lenso/docs@0.1.0 through public exports and lenso-docs CLI. Do not replace its shell, search, Markdown or renderer with a second engine, copy package source, use latest or add source-wide UI compilation. Generated .lenso/ and out/ are owned outputs. Source and published Lenso APIs differ despite matching package version strings: use the installation/API inventory and pinned source ref.
 
-### Issue tracker
+Content parity lives in content/en and content/zh; docs.source.mjs owns slugs/order. Keep application examples on the existing Notes/Tasks contracts, identify runnable complete examples versus excerpts, and keep identity, ownership and host limitations explicit. Legacy Rust content under legacy/rust-site is reference-only and must not enter current search/navigation.
 
-Issues and PRDs are tracked in the central `LioRael/lenso` GitHub repository. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Triage uses the five canonical labels in the central tracker. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Domain documentation uses a single-context layout. See `docs/agents/domain.md`.
-
-<!-- BEGIN:nextjs-agent-rules -->
-
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+Use pnpm 11.7.0 and Node 26.10+. There is one pnpm-lock.yaml; runtime examples use Bun separately. Run pnpm check plus appropriate browser checks for visible changes. When routing or custom Next consumers change, read the installed next/dist/docs guides resolved through @lenso/docs dependencies. Read docs/agents/domain.md for terminology rules; issue/triage conventions remain under docs/agents.

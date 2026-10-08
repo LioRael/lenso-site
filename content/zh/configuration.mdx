@@ -1,0 +1,113 @@
+---
+title: 验证后的实例配置
+description: 按需采用类型化配置、显式 values/env/file 来源、安全诊断与启动预检，无需强制依赖 Web。
+---
+
+**源码预览，已核实的 registry 包尚未发布此能力。** API 已在 [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f) 实现，但 registry `@lenso/core@0.1.0` 没有导出 `@lenso/core/config`、`/config/env` 或 `/config/file`。下列示例需要该提交的经过核实的构建，不能安装 registry `0.1.0` 后直接假设这些 import 可用。
+
+## 按插件需要选择边界
+
+普通插件工厂可以继续接收普通选项。需要共享验证、多来源或全实例启动预检时，再采用 `definePluginConfig` 与 `bindConfig`。这是实例配置；`lenso.config.ts` 声明应用组合，`lenso.engine.ts` 声明[构建期扩展](/docs/zh/engine)。
+
+Contract 定义 Standard Schema v1 验证器和可选的安全说明。Source 读取原始普通值。Binding 把契约与来源列表绑定到一个精确插件实例。`startApp` 在所有业务 setup 之前解析全部已安装 binding，再把验证后的输出交给 bound setup。
+
+Schema 输入与输出可以因默认值、transform、异步验证而不同。资源和函数属于依赖或工厂参数，不应放进序列化配置。
+
+## 绑定 Notes 监听器风格的契约
+
+[Notes](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/server.ts) 把端口契约与 Web 监听器分开定义。下面这个可独立使用的预览示例保留同一契约和显式环境读取器，不要求 Web：
+
+```ts
+import { startApp } from "@lenso/core";
+import { bindConfig, definePluginConfig, valuesSource } from "@lenso/core/config";
+import { envSource } from "@lenso/core/config/env";
+import { z } from "zod";
+
+const listenerConfig = definePluginConfig({
+  schema: z.strictObject({
+    port: z.number().int().min(0).max(65535).default(3001),
+  }),
+  description: "Port selected for one listener instance.",
+});
+
+const listenerSettings = bindConfig(listenerConfig, [
+  valuesSource({ port: 3001 }, { id: "defaults" }),
+  envSource({
+    id: "deployment",
+    read: (name) => process.env[name],
+    bindings: { port: { name: "LENSO_PORT", type: "number" } },
+  }),
+], {
+  id: "listener-settings",
+  setup(_context, config) {
+    return { port: config.port };
+  },
+});
+
+const app = await startApp({ plugins: [listenerSettings] });
+try {
+  console.log(app.get(listenerSettings).port);
+} finally {
+  await app.stop();
+}
+```
+
+向 `bindConfig` 传入普通输入对象，会创建一个 values source。每个绑定实例、每次应用启动都有独立的复制并冻结的快照。普通 `PluginContext` 实现无需提供 `config()`；bound setup 需要 `startApp` 提供的支持预检的 context。
+
+## 来源按顺序替换顶层字段
+
+来源按声明顺序读取。后一个来源中实际存在的顶层字段替换前一个字段；嵌套对象和数组整体替换，不做深合并。先组合，再进行一次 schema 验证。
+
+例如后来的 `{ database: { host: "db.local" } }` 会替换先前完整的 `database` 对象，包括其中的 `port`。随后由 schema 提供默认端口或要求输入端口。对象中的显式 `undefined` 属性被省略，`null` 是真实输入，默认值仅来自 schema。
+
+同一实例内 source ID 必须唯一，多个 values source 应显式命名。输入和验证后输出必须是有限、无环、包含普通数据的普通对象。函数、Date、资源句柄、accessor、稀疏数组和原型污染键都会被拒绝。解析器复制调用者对象，不直接冻结调用者的对象。
+
+## 显式授予环境和文件读取能力
+
+`envSource` 只通过传入的 reader 读取已声明的绑定，不枚举环境，也不假设特定运行时。
+
+| 绑定 | 转换规则 |
+| --- | --- |
+| `type: "string"` 或省略 | 保留字符串，默认也保留空字符串。 |
+| `type: "number"` | 要求有限十进制数，可接受有效的十进制指数形式；不接受十六进制、空白或空字符串。 |
+| `type: "boolean"` | 只接受精确的 `"true"` 或 `"false"`。 |
+| `empty: "omit"` | 省略空值，让 schema 应用默认值。 |
+| `empty: "error"` | 拒绝空值；数字和布尔绑定默认采用此规则。 |
+
+Workers 可以提供只读取所选字符串绑定的 reader。D1/R2 仍是结构化依赖，不是配置字段。配置 reader 不会授予网络权限或创建可信用户身份。
+
+本机宿主可以增加 JSON 来源：
+
+```ts
+import { jsonFileSource } from "@lenso/core/config/file";
+
+const projectFile = jsonFileSource({
+  id: "project-file",
+  root: import.meta.dir,
+  path: "settings.json",
+  select: ["notes", "listener"],
+  optional: true,
+});
+```
+
+把 `projectFile` 放到 binding 来源数组的目标优先级位置。`root` 必须是绝对路径，`path` 必须为词法上处于 root 内的相对路径，选中的值必须是对象。`optional: true` 只允许文件缺失（`ENOENT`）；权限、解析和 selection 失败仍然失败。词法路径检查不是文件系统沙箱，也不能阻止每种 symlink 越界。Workers 和浏览器入口不应导入这个文件系统子路径。
+
+## 可以手动解析，也可以替换适配器
+
+`resolveConfig(instanceId, { contract, sources }, { signal? })` 不启动应用，直接验证并返回 `{ value, provenance, revisions }`。[Tasks](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/config.ts) 在 worker 和显式迁移入口使用这个底层 API；插件通过 `bindConfig` 使用同一契约。
+
+自定义 `ConfigSource` 需要 `descriptor: { id, kind, location?, fields? }` 和返回 `{ values, revision? }` 的 `async read({ signal })`。通过来源自己的工厂授予所需能力。临时 I/O 资源应在 `finally` 中释放，预检不会创建订阅生命周期。
+
+Provenance 记录原始输入的顶层来源历史与累积敏感标记，不为 schema 派生输出字段推测来源。Revision 是每个来源独立的不透明 token：解析器不比较它们，不提供 compare-and-swap、不建立信任，也不写入 manifest。
+
+来源失败时直接失败，不隐式 fallback 或使用缓存。取消检查是协作式的，AbortSignal 无法终止任意自定义代码。
+
+## 诊断定位字段，不泄露值
+
+Secret 契约字段或 env binding 应标记 `sensitive: true`，仅靠字段名称不够。不要把 secret 放在描述、源码位置、schema 约束或快照日志中。
+
+`ConfigError.diagnostics` 暴露安全的 `code`、`pluginId`、字段路径和来源归属，不包含被拒绝的值、原始 schema 消息或原始 cause。`config-env-invalid` 定位转换，`config-file-missing`/`config-file-invalid` 定位文件，`config-source-failed` 定位读取，`config-invalid` 定位契约验证，`config-invalid-data` 定位非普通数据或错误的来源声明。
+
+静态 `inspect` 描述契约和来源声明，不调用 `source.read`。配置 JSON Schema 需要显式 `jsonSchema: () => ...` converter，验证能力本身不保证转换能力。敏感 schema 子树会隐藏，defaults/examples 会省略，元数据本身也必须安全。可信配置的顶层代码与 converter 仍会执行。
+
+当前提交只交付启动配置。配置中心 SDK、订阅、远程写入和热重载尚未交付。应用可以手动使用底层 API，或替换来源适配器，无需引入 Web。实现见[配置解析](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config.ts)、[环境适配器](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config-env.ts)、[文件适配器](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config-file.ts)。

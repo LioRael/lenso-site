@@ -1,0 +1,120 @@
+---
+title: Cloudflare Workers
+description: 在每个 Fetch 请求内组合应用、注入平台绑定、复用真实 Notes 服务，并遵守 workerd 生命周期限制。
+---
+
+`@lenso/workers` 把公开 Lenso 服务图转换为 module Worker 的 Fetch 入口。组合在**每个请求内**执行，读取该请求的实际绑定。它不导入 Bun 监听器，也不调用远程 Bun 后端。
+
+本文对应 **`6e239c71a38279885facce133ceb847bbfe12f2f` 源码预览**。Web 示例使用 oRPC **`2.0.0-beta.42`**，已发布 `@lenso/web@0.1.0` 则使用 `1.15.5`。选择同一基线的已验证包，不混用未核实产物；见[安装与兼容性](/docs/zh/installation)。
+
+## 公开组合契约
+
+```ts
+createWorkerHandler<Env>((env, { request, executionContext }) => ({
+  plugins,
+  web,
+}));
+```
+
+这表示 API 形状，不是独立程序：`plugins` 是实际安装的服务图，`web` 是其中一个精确插件对象。适配器结构性要求插件暴露 `fetch(request): Promise<Response>`；它可以是 Web，也可以是原生 Fetch，Workers 本身不要求 oRPC。真实绑定使用 Wrangler 生成的 `Env` 类型。
+
+`createBindingsPlugin({ id, bindings })` 在 setup 中返回绑定，不获取也不关闭它们。依赖插件的 `requires` 使用其精确引用。在组合内注入 D1/R2，不在模块顶层获取资源，也不缓存来自其他 workerd 请求上下文的资源。
+
+## 用 D1 复用 Notes
+
+真实 `examples/workers/src/notes.ts` 复用 Notes 应用、SQLite schema/query factory 和 Web 路由。核心组合如下，相对导入即现有示例路径：
+
+```ts
+import { createWorkerHandler } from "@lenso/workers";
+import { createD1Plugin } from "@lenso/db/d1";
+import { d1SessionStore } from "@lenso/auth/drizzle/d1";
+import { envSource } from "@lenso/core/config/env";
+import { createNotesApplication } from "../../notes/src/application";
+import { createSqliteNotesQueries } from "../../notes/src/queries-sqlite";
+import { createNotesWebPlugin } from "../../notes/src/web";
+import * as schema from "../../notes/src/schema-sqlite";
+
+interface AuthenticatedNotesEnv extends NotesEnv {
+  NOTES_LOGIN_KEYS: string;
+  NOTES_RENEW_AFTER_MS?: string;
+}
+
+export default createWorkerHandler<AuthenticatedNotesEnv>((env) => {
+  const database = createD1Plugin({ id: "notes-db", binding: env.DB, schema });
+  const application = createNotesApplication({
+    database,
+    store: d1SessionStore,
+    queries: createSqliteNotesQueries,
+    principals: {
+      sources: [envSource({
+        id: "notes-worker-env",
+        read: (name) => name === "NOTES_LOGIN_KEYS"
+          ? env.NOTES_LOGIN_KEYS
+          : env.NOTES_RENEW_AFTER_MS,
+        bindings: {
+          principals: { name: "NOTES_LOGIN_KEYS", sensitive: true },
+          renewAfter: { name: "NOTES_RENEW_AFTER_MS", type: "number" },
+        },
+      })],
+    },
+  });
+  const web = createNotesWebPlugin(application.notes, application.authentication);
+  return { plugins: [...application.plugins, web], web };
+});
+```
+
+`NotesEnv` 来自示例生成的绑定声明。Query 模块中的 Bun SQLite 引用是 type-only，运行时使用原生异步 D1 驱动。`NOTES_LOGIN_KEYS` 是由应用权威提供的 secret，不写入受跟踪配置；它选择 Notes 自己拥有的登录 source，不定义通用账号模型。参见[Auth](/docs/zh/auth)与[配置来源](/docs/zh/configuration)。
+
+原生 `/notes` 与 `/rpc` 都调用同一服务，检查精确 audience、当前 session 和对象 owner。匿名调用拒绝，每个用户只能看到自己的笔记。
+
+## 请求与响应体生命周期
+
+每次 Fetch 启动一个应用。没有 body 的响应立即停止应用；有 body 时保留应用直到 EOF、失败或取消。不存在跨请求初始化缓存；内存计数器会在下一次请求重置。持久数据应放在 D1、R2 或明确的持久化所有者中。
+
+示例配置包含：
+
+```json
+{
+  "compatibility_date": "2026-10-08",
+  "compatibility_flags": ["nodejs_compat", "enable_request_signal"]
+}
+```
+
+保留 `enable_request_signal`，让客户端断连传播到 `Request.signal`。适配器将该 signal 传给 `startApp`，并用平台 `executionContext.waitUntil` 保留断连后的异步清理。Web 在释放依赖前取消活动源。进程内调用仍需读完或取消响应 body。
+
+区分两种归属机制：
+
+- `WebContext.waitUntil(promise)` 把请求 producer 工作登记到 Web，finalization 等待其结束。
+- `executionContext.waitUntil(promise)` 登记平台后台工作，**不会**在响应 EOF 后延长此适配器的应用生命周期。使用 app 资源的工作应在 EOF 前完成，或选择与 app 生命周期兼容的显式所有者。
+
+Workers 没有进程 shutdown hook；isolate 终止会打断 finalizer。不可取消 producer 仍受平台生命周期限制。不要把关闭清理当成持久化保证或写入补偿。
+
+## 绑定与可选能力
+
+D1/R2 是借用的平台资源。Setup 不迁移 D1，也不关闭绑定。Bun SQL/SQLite、文件系统配置 reader、`@lenso/web/bun`、CLI 和 Engine 不应进入 Worker 运行时图。环境 source 可读取实际 `env` 对象，不需要 `process.env`。
+
+可选[Workers storage 示例](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/src/storage.ts)展示两个精确 R2 实例，不创建 bucket、不授权公共访问，也不挂载私有下载路由。绑定上传需要已知字节长度，不支持 presigned URL。见[Files 与存储](/docs/zh/files)。
+
+此适配器只处理普通 HTTP Fetch body，不实现 WebSocket upgrade、Durable Object 生命周期、scheduled event、queue 或部署 API。PostgreSQL 持久 Tasks worker 是另一套运行时契约，不是 Workers queue 适配器。
+
+## 运行现有本地示例
+
+在自己的 checkout 获取固定源码并构建匹配包后，真实示例脚本为：
+
+```sh
+cd examples/workers
+bun run types
+bun run typecheck
+bun run migrate:notes
+bun run dev:notes
+```
+
+`migrate:notes` 对 **本地** Wrangler D1 应用已审阅 Notes/session SQLite 迁移。启动前通过被忽略的本地 secret 配置提供 `NOTES_LOGIN_KEYS`。示例数据库 UUID 是本地占位值，`remote: false` 保持本地执行，不代表已有云数据库。数据保存在 `.wrangler/state`。`bun run build:notes` 只生成 dry-run bundle，不部署；见[部署](/docs/zh/deployment)。
+
+## 遥测与验证
+
+Greeting 示例可在 Worker 入口调用一次 `@lenso/otel/workers` 的 `bootstrapWorkerTracing()`，需要匹配的 `@orpc/cloudflare@2.0.0-beta.42` 和 Wrangler traces 配置。此实验性原生 tracer 使用平台请求 span/export，不启动 Bun OTel SDK。同一宿主不能再安装 oRPC OTel instrumentation。它不把原生 span 桥接到 OTel API-only 生命周期 span，也不提供 OTel trace-ID 日志关联。使用平台日志或应用 structural logger；见[可观测性](/docs/zh/observability)。
+
+现有 `bun run test:notes` 通过真实本地 Miniflare/workerd 和 D1 验证私有 REST/RPC CRUD、owner/realm 拒绝、撤销会话及续期/撤销竞态，不证明生产地域、复制或生命周期行为。本地失败时先查生成的 `Env`、绑定名、已审阅迁移、secret key 是否存在和 Worker 导入图，再决定是否修改共享服务。
+
+来源：[Workers 适配器](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/workers/src/index.ts)、[Notes 入口](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/src/notes.ts)和[本地示例说明](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/README.md)。

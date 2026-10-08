@@ -1,0 +1,119 @@
+---
+title: 测试与排错
+description: 验证真正变化的边界，理解安全 diagnostic，并区分本地 fixture 与真实数据库、平台证据。
+---
+
+从失败入口、精确 app root、实际包产物及宿主开始，记录可复现命令和期望行为。只检查必要环境 key 是否存在，不为定位缺少设置而输出完整配置或 secret。
+
+本页流程对应 TypeScript 源码 [`6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/docs/CLI.md)。源码 checkout 命令和未发布 API 必须与外部应用的真实 exports、scripts 匹配。
+
+## 保持反馈路径短
+
+框架 checkout 的 package exports 指向 `dist`。Consumer 测试/typecheck 前先构建变更框架包及依赖；不能一边清空 dist 构建，一边 typecheck 使用它的应用。外部应用使用已安装产物和自己的 scripts，不需要 framework checkout。
+
+在审查后的源码根目录：
+
+```sh
+bun run cli help --json
+bun run cli inspect notes-operations create --root examples/notes --json
+bun run --filter @lenso/example-notes typecheck
+bun test examples/notes/test/operations.test.ts
+```
+
+Operation 测试使用隔离临时 SQLite/files 与测试身份。只读命令也启动全部安装插件，可能获取资源；调用业务操作前理解全 app setup、启动身份与目标：
+
+```sh
+# 已配置数据库、迁移和验证过的 NOTES_SESSION。
+printf '%s\n' '{}' |
+  bun run cli call notes-operations list --root examples/notes --stdin --json
+```
+
+`inspect` 导入可信 canonical config 和 converter，不启动 app 或 Engine setup；它描述声明，不检查 DB 健康或 resolved config。`check/generate/build` 执行可信 Engine setup，generate/build 写自有输出，`dev` 还运行 app；这些诊断行为有不同影响。
+
+## 测普通服务和资源归属
+
+共享服务测试覆盖有效/无效输入及真实 owner/tenant 策略。单独 HTTP middleware 测试不能证明 CLI/MCP/direct call 也执行规则。固定 token/actor 只用于 fixture，生产 Auth source 必须验证真实 evidence。
+
+除了成功启动，也测试资源失败路径。以下 Bun 单测验证 setup 自己登记的 cleanup 在后续失败时执行：
+
+```ts
+import { expect, test } from "bun:test";
+import { definePlugin, startApp } from "@lenso/core";
+
+test("failing setup releases its acquired resource", async () => {
+  let released = false;
+  const resource = definePlugin({
+    id: "resource",
+    setup(context) {
+      context.onCleanup(() => { released = true; });
+      throw new Error("test setup failure");
+    },
+  });
+  await expect(startApp({ plugins: [resource] })).rejects.toThrow("test setup failure");
+  expect(released).toBe(true);
+});
+```
+
+[生命周期测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/test/lifecycle.test.ts)还覆盖全局 LIFO、disposer 共享、重复 stop 与聚合失败。真实资源应验证自有 client 已关闭、借用 client 仍存活；流式入口要测 body 完成/取消，不能仅测 response 已创建。
+
+## 按证据选择集成测试
+
+| 源码根目录命令 | 覆盖与前提 |
+| --- | --- |
+| `bun test packages/db/test/resources.test.ts` | 真实 Bun SQLite 归属/隔离，不自动迁移 |
+| `bun test examples/notes/test/notes.test.ts examples/notes/test/operations.test.ts` | 隔离本地资源上的共享 Notes/CLI 验证与 owner 边界 |
+| `bun test packages/mcp/test/stdio.test.ts` | 真子进程与官方 SDK stdio |
+| `bun test packages/storage/test/files.test.ts` | 受控 provider 的状态/补偿竞争，不代表真实云行为 |
+| `bun test packages/tasks/test/worker.test.ts` | 受控 worker drain/取消/slot 语义，不证明持久性 |
+| `bun test packages/otel/test/cli.test.ts` | 测试 receiver/exporter 上的有限 CLI export |
+
+数据库与平台检查需要显式准备：
+
+```sh
+# 独立可丢弃测试 DB，其 URL 已由环境提供。
+LENSO_TEST_DATABASE_URL="$DATABASE_URL" bun test examples/notes/test/postgres.test.ts
+TASK_TEST_DATABASE_URL="$DATABASE_URL" bun test packages/tasks/test/postgres.test.ts
+
+# 已准备本地 workerd/D1；从源码根目录执行。
+bun run --cwd examples/workers test:notes
+```
+
+Notes PostgreSQL 检查真实 CLI/HTTP。Tasks provider 测试建立唯一 queue，并使用真实进程/SIGKILL。Tasks **应用示例**集成检查另有入口：先在独立 DB 运行示例的显式迁移，再在 `examples/tasks` 执行 `TASK_TEST_DATABASE_URL="$DATABASE_URL" bun test src/postgres.test.ts src/entry.test.ts`；这些示例测试不自动迁移、不删除共享数据。
+
+Auth 的 `LENSO_REQUIRE_POSTGRES=1 bun test packages/auth/test/postgres.test.ts` 要求安装 PostgreSQL binaries，启动私有 loopback cluster；required flag 在缺少 binaries 时失败而非 skip。本地 workerd 只证明本地 D1 行为，不验证生产复制。缺少前提或 skipped 都应报告为验证缺口，不能写成持久性/部署通过。
+
+## 看 code、phase 与有序 causes
+
+有限 CLI 命令在 stdout 输出单个 `schemaVersion: 1` JSON envelope，日志走 stderr。Exit 2 对应 arguments/input，3 对应 discovery/assembly，1 对应 runtime/build/output。`dev --json` 不支持。先看实际 `code`、`phase`、source 和 ordered causes，再决定修复。
+
+例如 Notes 在 setup 前拒绝空白 title：
+
+```sh
+printf '%s\n' '{"title":" "}' |
+  bun run cli call notes-operations create --root examples/notes --stdin --json
+```
+
+预期证据是 `code: "invalid-input"`、`phase: "input"`、exit 2，以及安全的 `title` field path；拒绝该输入无需 DB 或 session。[Operation 测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/test/operations.test.ts)验证 input validation 先于 setup。
+
+| 证据 | 边界与下一步 |
+| --- | --- |
+| `missing-dependency`、`duplicate-id`、`cyclic-dependency` | Assembly：安装 ID、精确对象引用与 source location |
+| `unknown-operation`、`invalid-operations` | 显式声明：精确 plugin 对象、named export 与共享 schema |
+| `config-invalid`，phase `config` | 全实例 preflight：安全 nested code、field path 与 source ID |
+| `UNAUTHORIZED` / `FORBIDDEN` | 真实 evidence、realm/audience、实际 owner；不向 JSON 注入 actor |
+| `invocation-failed` | 未知业务错误：查询授权安全日志，客户端故意不展示任意异常文本 |
+| `invocation-and-cleanup-failed` | 调用与 cleanup 都失败，保留两个有序 causes |
+| `serialization-failed` | 包括 undefined 在内的非 plain finite JSON；业务可能已提交 |
+| MCP `adapter-busy` | 已有调用持有 admission，不排队，也不意味着可以重复业务 |
+
+Config preflight 可以读取 source，但先于业务 setup；静态 inspect 不调用 `source.read`。缺少文件/source、env 转换失败与可信 TS config 导入失败是不同问题，见[配置](/docs/zh/configuration)。
+
+## 不确定时先查状态
+
+Cleanup 是资源释放，不是补偿。输出失败、cleanup 失败、response 丢失或 telemetry timeout 都可能发生在业务写入提交之后。重试前查询已有授权状态。Task cancellation 和 final state 不证明外部副作用已回滚，遵循[任务恢复规则](/docs/zh/tasks)。
+
+Generated output 错误回到 source/owner 边界检查。`.lenso` 与 `dist` 可重复生成，应改源码/config 后重新生成，不手改产物或删除无关工作。数据库缺少或不匹配 schema 应走显式授权迁移，不加启动绕过。
+
+## 给出可用的结果报告
+
+报告宿主/包基线、复现命令、diagnostic code/phase/source、重点修改和真正执行的检查。区分 fixture、真实 DB/workerd 和 skips。不确定副作用后的状态需要明确；缺少授权 status/log 入口阻止诊断时，说明这个接口缺口。现有 stderr/backend 证据见[可观测性](/docs/zh/observability)；该基线没有通用 Manage 或 Observe 查询命令。

@@ -1,0 +1,97 @@
+---
+title: 第一个应用
+description: 安装已发布 Core 包，用精确实例依赖运行普通异步服务。
+---
+
+本页使用 **Bun 1.4.2** 与已发布 **`@lenso/core@0.1.0`**，无需 Engine 或 Web。示例已用实际 npm 包运行验证。
+
+## 创建目录
+
+使用新目录：
+
+```sh
+mkdir lenso-first-app
+cd lenso-first-app
+bun init -y
+bun add --exact @lenso/core@0.1.0
+```
+
+保留生成的 `bun.lock`。这些命令不表示存在应用脚手架。`create-lenso-docs@0.1.0` 创建文档站，不创建运行时应用。
+
+## 编写服务与组装
+
+将 `index.ts` 替换为：
+
+```ts
+import { defineApp, definePlugin, startApp } from "@lenso/core";
+
+const greeting = definePlugin({
+  id: "greeting",
+  setup() {
+    return {
+      async greet(name: string) {
+        return { message: "Hello, " + name + "." };
+      },
+    };
+  },
+});
+
+const report = definePlugin({
+  id: "report",
+  requires: [greeting],
+  setup(context) {
+    const service = context.get(greeting);
+    return { async run() { return service.greet("Lenso"); } };
+  },
+});
+
+const app = await startApp(defineApp({ plugins: [report, greeting] }));
+try {
+  console.log(await app.get(report).run());
+} finally {
+  await app.stop();
+}
+```
+
+## 运行
+
+```sh
+bun index.ts
+```
+
+预期业务输出：
+
+```text
+{ message: "Hello, Lenso." }
+```
+
+数组刻意先列 report。Core 先初始化其声明的 greeting 依赖，再执行 report setup。`context.get(greeting)` 返回确切对象的服务；`app.get(report)` 读取已安装、已初始化服务。它们不会按名字发现或安装插件。
+
+## 为资源确定归属
+
+setup 获取资源后立即登记 cleanup：
+
+```ts
+const ticker = definePlugin({
+  id: "ticker",
+  setup(context) {
+    const timer = setInterval(() => {}, 1000);
+    context.onCleanup(() => clearInterval(timer));
+    return { async ready() { return true; } };
+  },
+});
+```
+
+访问前需将 ticker 加入组装。将 stop 放在 finally 中，业务调用失败后也能释放资源。Core 逆获取顺序尝试 cleanup 并报告失败，不会撤销业务副作用。
+
+## 第一次运行失败时
+
+| 现象 | 检查 |
+| --- | --- |
+| 导入失败 | 在当前目录安装；确认 package.json 精确 Core 版本。 |
+| `missing-dependency` | plugins 与 requires 使用同一个 greeting 对象。 |
+| `duplicate-id` | 独立安装实例使用不同 ID。 |
+| 依赖访问失败 | requires 声明确切对象；重新创建相同 ID 不够。 |
+| 进程不退出 | 检查拥有的计时器/流/listener 和 stop 是否完成。 |
+
+接下来读[组合](/docs/zh/composition)和[生命周期](/docs/zh/lifecycle)。使用实例配置或新版 Web API 前，先按[安装](/docs/zh/installation)选择已核对的源码预览路径。

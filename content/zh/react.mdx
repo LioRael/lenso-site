@@ -1,0 +1,108 @@
+---
+title: React 前端集成
+description: 在现有 React 应用中使用 Lenso 类型化客户端，隔离服务端组合，并明确没有专属前端生命周期 SDK。
+---
+
+Lenso 当前的 React 集成是 `@lenso/web/client` 提供的浏览器安全类型化传输，可接入现有前端架构。此源码版本没有 React hooks 包、Provider、查询缓存、Suspense 适配、SSR hydration 层或浏览器 `startApp` 生命周期。
+
+本文对应 **`6e239c71a38279885facce133ceb847bbfe12f2f` 源码预览**与 **oRPC `2.0.0-beta.42`**。已发布 `@lenso/web@0.1.0` 使用 oRPC `1.15.5`，客户端构建来源和协议必须与服务端匹配。使用[安装与兼容性](/docs/zh/installation)中的已核实预览产物，不要把 npm v1 客户端与 v2 服务端混用。
+
+## 隔离浏览器与服务端依赖图
+
+| 入口 | 浏览器中的职责 |
+| --- | --- |
+| `@lenso/web/client` | 创建带 endpoint、headers 和可选自定义 Fetch 的类型化 RPC 传输。 |
+| 用 `import type` 导入路由模块 | 推导过程输入/输出，不导入其运行时代码。 |
+| `@lenso/core/browser` | `defineApp`/`definePlugin` 声明辅助和类型，不包含运行时生命周期或服务端导入。 |
+| `@lenso/core`、Web 服务端根入口、`/bun`、DB、Engine | 服务端/开发职责，排除在浏览器值导入图之外。 |
+
+`@lenso/core/browser` 不会把服务端插件转换为浏览器安全插件。声明若导入数据库或 secret 提供方，仍会带入这些依赖。业务资源和服务端凭证应留在服务端。
+
+## 调用现有 Notes 路由
+
+服务端的 `NotesRouter` 从 `examples/notes/src/router.ts` 导出，提供受保护的私有 Notes 操作。客户端只需要类型导入，不创建服务端 router，也不接收 Auth actor。
+
+```ts
+import { createClient } from "@lenso/web/client";
+import type { NotesRouter } from "./router";
+
+export function createNotesClient(credential: string) {
+  return createClient<NotesRouter>("/rpc", {
+    headers: { Authorization: `Bearer ${credential}` },
+  });
+}
+```
+
+`./router` 指真实 Notes 路由模块。前端在其他目录时，调整这个**仅类型**路径。`/rpc` 假定前端与 API 同源，或开发代理转发该路径；它依据浏览器位置解析。SSR 调用需要绝对 endpoint 和请求专属凭证，不能全局共享某个用户的已认证 client。
+
+包装器接受静态 `HeadersInit`。会话轮换后应重建 client，或使用支持的自定义 Fetch 附加应用当前凭证。它不会自动持久化或续期会话。不要把 Notes 登录 key 写入前端源码或公开环境变量。会话 credential 也属于敏感值，其存储和 XSS 暴露由前端安全设计负责。参见[Auth](/docs/zh/auth)。
+
+## 使用真实客户端的组件
+
+下面组件使用标准 React state/effect 和真实 Notes `list()` 过程。可放在 Notes 类型模块旁边并通过独立前端构建消费；前端分目录时调整两个类型导入到共享服务端类型位置。React 是应用自己的依赖，Lenso 不替应用安装。
+
+```tsx
+import { useEffect, useState } from "react";
+import { createClient } from "@lenso/web/client";
+import type { NotesRouter } from "./router";
+import type { Note } from "./notes";
+
+export function NotesList({ credential }: { credential: string }) {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [status, setStatus] = useState("正在加载笔记…");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const client = createClient<NotesRouter>("/rpc", {
+      headers: { Authorization: `Bearer ${credential}` },
+      fetch: (input, init) =>
+        fetch(input, { ...init, signal: controller.signal }),
+    });
+    setNotes([]);
+    setStatus("正在加载笔记…");
+    void client.list().then(
+      (result) => {
+        if (controller.signal.aborted) return;
+        setNotes(result);
+        setStatus(result.length ? "笔记已加载。" : "还没有笔记。");
+      },
+      () => {
+        if (!controller.signal.aborted) setStatus("无法加载笔记。");
+      },
+    );
+    return () => controller.abort();
+  }, [credential]);
+
+  return (
+    <section aria-label="你的笔记">
+      <p role="status">{status}</p>
+      <ul>
+        {notes.map((note) => <li key={note.id}>{note.title}</li>)}
+      </ul>
+    </section>
+  );
+}
+```
+
+自定义 Fetch 是公开扩展点。示例给当前组件请求提供 abort signal，并在卸载或凭证变化后忽略过期 UI 更新。React 开发模式可能多次执行 effect；这里调用读取操作。不要把创建/删除放进 effect，再假定开发重试无副作用。取消仍是协作式的，不会回滚服务端修改。
+
+较大前端可用已有请求/缓存库包装类型化 client，按已认证用户和租户划分缓存键；Lenso 本身不实现缓存。根据操作语义决定 loading、重试、重新认证和乐观更新。盲目重试可能重复业务效果，先核对实际服务契约。
+
+## 生成客户端是可选约定
+
+默认 Engine 检查 `src/router.ts`，使用该模块导出的 `AppRouter` 类型生成 `.lenso/client.ts`。没有路由时生成模块不导出 client。Notes 实际导出 `NotesRouter`，因此直接用该类型调用 `@lenso/web/client` 是当前可用路径；选择默认生成约定的应用应明确提供 `AppRouter`。
+
+生成 client 是小型类型化传输包装，不是 React SDK，也不会扫描任意服务生成接口。调整路由约定后运行应用现有 generate 命令。修改源码后重新生成，不手改 `.lenso`。参见[Engine](/docs/zh/engine)。
+
+## 定位浏览器错误
+
+| 现象 | 检查 |
+| --- | --- |
+| 浏览器能调用，SSR 失败 | 相对地址依赖浏览器位置；服务端使用绝对 URL。 |
+| `404` 或返回 HTML | 前端代理、路由前缀或 origin 指向文档页面而非 RPC。 |
+| 续期后 `UNAUTHORIZED` | 旧凭证已轮换；更新应用当前凭证/client。 |
+| 跨域 Fetch 失败 | 入口/CORS 策略与浏览器凭证模式需要一致；Web 不自动挂载 CORS。 |
+| 前端 bundle 出现 Bun/DB 模块 | 检查值导入；router 和业务类型只用 `import type`。 |
+| 响应无法正常解码 | 对齐客户端/服务端构建与精确 oRPC v2 协议版本。 |
+
+[客户端实现](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/client.ts)、[浏览器导出](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/browser.ts)与[生成约定](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-defaults.ts)定义当前支持范围。

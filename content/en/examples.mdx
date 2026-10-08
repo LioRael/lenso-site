@@ -1,0 +1,40 @@
+---
+title: Learn from Notes and Tasks
+description: Follow maintained examples to see shared business services, durable ownership and multiple entrypoints working together.
+---
+
+The source preview already contains complete Notes and Tasks applications. Use their reviewed files as a connected example, rather than assembling isolated fragments from unrelated versions. [Installation](/docs/installation) explains how to obtain and build the exact source revision first.
+
+## Notes: one service, several entries
+
+Start with the [Notes assembly](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/application.ts). It receives a selected database instance, session store, dialect queries and principals, then creates exact Auth and Notes instances. The shared service handles object ownership; CLI, raw Fetch and oRPC adapt the same business operations.
+
+Read the files in this order:
+
+1. `contracts.ts` and `notes.ts`: input validation, authenticated audience and object ownership.
+2. `application.ts`, `auth.ts`, `application-auth.ts`: selected resources and verified service identity.
+3. `queries-sqlite.ts` or `queries-pg.ts`: native dialect-specific data access.
+4. `operations.ts`, `router.ts`, `web.ts`: explicit entry adapters.
+5. `server.ts` and `lenso.config.ts`: local host assembly and runtime configuration.
+
+The [database guide](/docs/database) explains migration ownership, including Auth sessions and legacy unowned rows. [Auth](/docs/auth) covers login evidence and shared-service revalidation. Do not assign record ownership from request JSON or treat CLI access as an authorization bypass.
+
+For a local SQLite walkthrough, use the app's declared configuration keys and scripts from its [configuration guide](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/CONFIGURATION.md). Inspect required key names and provide credentials through a private local environment or secret mechanism. No personal path or working credential is included in this documentation.
+
+## Tasks: producer and worker share a contract
+
+The [Tasks example](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/README.md) uses a real PostgreSQL queue. Its producer accepts an authenticated report request; durable ownership associates the task with that principal. The worker consumes the shared validated contract and writes through the reviewed report service.
+
+Read `contracts.ts`, `task.ts`, `ownership.ts` and `authorized-service.ts` before invoking producer or recovery operations. Then read `resources.ts`, `producer.ts`, `worker.ts` and `mcp.ts`. PostgreSQL provisioning and migrations are explicit. The worker does not turn an arbitrary JSON task into an authorized operation.
+
+[Tasks](/docs/tasks) covers leases, retries, cooperative cancellation, retention and failure recovery. [MCP and agents](/docs/agents) explains its independent operation allowlist. A retry can repeat a side effect; query durable state after an uncertain result before replaying.
+
+## Workers: Notes on D1 and R2
+
+The [Workers Notes example](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/README.md) uses platform bindings with request-owned application graphs. It does not run the Bun CLI Engine or PostgreSQL task worker in a Worker. Its greeting counter is per-request memory, not durable storage.
+
+Use [Workers](/docs/workers), [Files](/docs/files) and [deployment](/docs/deployment) to select D1/R2 entries and local Wrangler checks. A successful dry-run bundle does not provision cloud resources or establish production readiness.
+
+## Make one change at a time
+
+Choose a real operation, inspect its shared schema and identify its service policy. Change that service or contract, run the focused example tests, and only then verify each entry that uses it. Keep the exact plugin objects through assembly. Do not patch `.lenso` or `dist` outputs. [Testing and troubleshooting](/docs/testing) gives checks for each boundary.

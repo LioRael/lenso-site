@@ -1,0 +1,174 @@
+---
+title: 公开 API 索引
+description: 按包公开入口查找 API，区分已发布产物、源码预览与运行平台。
+---
+
+本索引基于源码 **6e239c7** 的公开 exports 与实际 registry 产物。它不是对全部方法签名的复制；每个入口链接到精确 revision 的类型/源码定义。
+
+[安装与兼容性](/docs/zh/installation)说明如何获得一致的包；[机器可读索引](/api-inventory.json)包含公开符号、产物 integrity 和发布边界。普通业务方法来自应用服务，不会自动变成公开 CLI/Web/MCP 操作。
+
+## @lenso/core
+
+源码版本：`0.1.0` · 已发布：`0.1.0`
+
+| 公开入口 | 导出的函数/值 | 当前发布边界 |
+| --- | --- | --- |
+| [`@lenso/core`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/index.ts) | `ConfigError`, `ConfigSourceError`, `DiagnosticError`, `bindConfig`, `defineApp`, `definePlugin`, `definePluginConfig`, `lifecycleFailure`, `preflightConfigs`, `resolveConfig`, `startApp`, `validatePlugins`, `valuesSource` | 入口存在；核对实际签名 |
+| [`@lenso/core/plugin`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/plugin.ts) | `defineApp`, `definePlugin` | 入口存在；核对实际签名 |
+| [`@lenso/core/browser`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/browser.ts) | `defineApp`, `definePlugin` | 入口存在；核对实际签名 |
+| [`@lenso/core/config`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config.ts) | `ConfigError`, `ConfigSourceError`, `bindConfig`, `definePluginConfig`, `preflightConfigs`, `resolveConfig`, `valuesSource` | 源码预览入口 |
+| [`@lenso/core/config/env`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config-env.ts) | `envSource` | 源码预览入口 |
+| [`@lenso/core/config/file`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config-file.ts) | `jsonFileSource` | 源码预览入口 |
+
+用法与边界：[core](/docs/zh/composition)。
+
+## @lenso/engine
+
+源码版本：`0.1.0` · 已发布：`0.1.0`
+
+| 公开入口 | 导出的函数/值 | 当前发布边界 |
+| --- | --- | --- |
+| [`@lenso/engine`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/index.ts) | `EngineError`, `EngineSession`, `build`, `createDevSupervisor`, `createEngineSession`, `defaultEngineOwner`, `defaultEnginePlugins`, `defineEngineConfig`, `defineEnginePlugin`, `defineOperation`, `describePluginConfig`, `diagnostic`, `discover`, `generate`, `readApplication`, `startEngineDevCycle`, `withEngine` | 入口存在；核对实际签名 |
+| [`@lenso/engine/authoring`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-authoring.ts) | `defineEngineConfig`, `defineEnginePlugin` | 入口存在；核对实际签名 |
+| [`@lenso/engine/application`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/application.ts) | `readApplication` | 入口存在；核对实际签名 |
+| [`@lenso/engine/operations`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/operations.ts) | `defineOperation`, `describeOperation`, `executeOperation`, `redactOperationDescription`, `safeInputSchema`, `validateOperations` | 入口存在；核对实际签名 |
+| [`@lenso/engine/diagnostics`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/diagnostics.ts) | `EngineError`, `diagnostic`, `environmentSecrets`, `redact`, `stableJson` | 入口存在；核对实际签名 |
+| [`@lenso/engine/dev-ready`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/dev-ready.ts) | `isDevReadyMessage`, `reportDevReady` | 入口存在；核对实际签名 |
+
+用法与边界：[engine](/docs/zh/engine)。
+
+## @lenso/cli
+
+源码版本：`0.18.0` · 已发布：`0.18.0`
+
+| 公开入口 | 导出的函数/值 | 当前发布边界 |
+| --- | --- | --- |
+| [`@lenso/cli`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/cli/src/index.ts) | `CliError`, `call`, `defineOperation`, `dev`, `diagnostic`, `inspect`, `invoke` | 入口存在；核对实际签名 |
+
+用法与边界：[cli](/docs/zh/cli)。
+
+## @lenso/web
+
+源码版本：`0.1.0` · 已发布：`0.1.0`
+
+| 公开入口 | 导出的函数/值 | 当前发布边界 |
+| --- | --- | --- |
+| [`@lenso/web`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/index.ts) | `createWebPlugin` | 入口存在；核对实际签名 |
+| [`@lenso/web/client`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/client.ts) | `createClient` | 入口存在；核对实际签名 |
+| [`@lenso/web/bun`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/bun.ts) | `createBunListenerPlugin` | 源码预览入口 |
+
+用法与边界：[web](/docs/zh/web)。
+
+## @lenso/auth
+
+源码版本：`0.1.0` · 已发布：`0.1.0`
+
+| 公开入口 | 导出的函数/值 | 当前发布边界 |
+| --- | --- | --- |
+| [`@lenso/auth`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/index.ts) | `AuthConfigurationError`, `AuthError`, `allPolicies`, `allRequirements`, `audience`, `authenticatedWithin`, `authoritativeSession`, `createAuth`, `defineSource`, `realm`, `requireAssurance`, `sessionCreatedWithin` | 入口存在；核对实际签名 |
+| [`@lenso/auth/plugin`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/plugin.ts) | `createAuthPlugin` | 入口存在；核对实际签名 |
+| [`@lenso/auth/fetch`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/fetch.ts) | `authErrorResponse`, `bearerEvidence`, `headersEvidence`, `requireSameOrigin` | 入口存在；核对实际签名 |
+| [`@lenso/auth/orpc`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/orpc.ts) | `optionalAuth`, `requiredAuth` | 入口存在；核对实际签名 |
+| [`@lenso/auth/session-source`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/session-source.ts) | `sessionSource` | 入口存在；核对实际签名 |
+| [`@lenso/auth/sessions`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/sessions.ts) | `createManagedSessions`, `sessionLifetime` | 入口存在；核对实际签名 |
+| [`@lenso/auth/drizzle/pg`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/drizzle/pg.ts) | `postgresSessionStore` | 入口存在；核对实际签名 |
+| [`@lenso/auth/drizzle/sqlite`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/drizzle/sqlite.ts) | `sqliteSessionStore`, `sqliteStore` | 入口存在；核对实际签名 |
+| [`@lenso/auth/drizzle/d1`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/drizzle/d1.ts) | `d1SessionStore` | 入口存在；核对实际签名 |
+| [`@lenso/auth/drizzle/schema-pg`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/drizzle/schema-pg.ts) | `authSessions` | 入口存在；核对实际签名 |
+| [`@lenso/auth/drizzle/schema-sqlite`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/src/drizzle/schema-sqlite.ts) | `authSessions` | 入口存在；核对实际签名 |
+
+用法与边界：[auth](/docs/zh/auth)。
+
+## @lenso/db
+
+源码版本：`0.1.0` · 已发布：`0.1.0`
+
+| 公开入口 | 导出的函数/值 | 当前发布边界 |
+| --- | --- | --- |
+| [`@lenso/db`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/src/index.ts) | `createDrizzlePlugin` | 入口存在；核对实际签名 |
+| [`@lenso/db/bun-sql`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/src/bun-sql.ts) | `createBunSqlPlugin` | 入口存在；核对实际签名 |
+| [`@lenso/db/bun-sqlite`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/src/bun-sqlite.ts) | `createBunSqlitePlugin` | 入口存在；核对实际签名 |
+| [`@lenso/db/d1`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/src/d1.ts) | `createD1Plugin` | 入口存在；核对实际签名 |
+
+用法与边界：[db](/docs/zh/database)。
+
+## @lenso/workers
+
+源码版本：`0.1.0` · 已发布：`0.1.0`
+
+| 公开入口 | 导出的函数/值 | 当前发布边界 |
+| --- | --- | --- |
+| [`@lenso/workers`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/workers/src/index.ts) | `createBindingsPlugin`, `createWorkerHandler` | 入口存在；核对实际签名 |
+
+用法与边界：[workers](/docs/zh/workers)。
+
+## @lenso/storage
+
+源码版本：`0.1.0` · 已发布：`0.1.0`
+
+| 公开入口 | 导出的函数/值 | 当前发布边界 |
+| --- | --- | --- |
+| [`@lenso/storage`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/index.ts) | `StorageError`, `createStoragePlugin`, `unsupportedSigning`, `validateContentType`, `validateExpiry`, `validateKey`, `validateList`, `validateRange` | 入口存在；核对实际签名 |
+| [`@lenso/storage/local`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/local.ts) | `createLocalStoragePlugin` | 入口存在；核对实际签名 |
+| [`@lenso/storage/s3`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/s3.ts) | `createS3StoragePlugin` | 入口存在；核对实际签名 |
+| [`@lenso/storage/r2`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/r2.ts) | `createR2StoragePlugin` | 入口存在；核对实际签名 |
+| [`@lenso/storage/files`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/files.ts) | `createFilesPlugin` | 入口存在；核对实际签名 |
+| [`@lenso/storage/sqlite`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/sqlite.ts) | `createSqliteFileQueries`, `fileSchema`, `files` | 入口存在；核对实际签名 |
+| [`@lenso/storage/postgres`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/postgres.ts) | `createPostgresFileQueries`, `fileSchema`, `files` | 入口存在；核对实际签名 |
+| [`@lenso/storage/fetch`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/src/fetch.ts) | `createFileDownloadHandler`, `createFileUploadHandler` | 入口存在；核对实际签名 |
+
+用法与边界：[storage](/docs/zh/files)。
+
+## @lenso/tasks
+
+源码版本：`0.1.0` · 已发布：`0.1.0`
+
+| 公开入口 | 导出的函数/值 | 当前发布边界 |
+| --- | --- | --- |
+| [`@lenso/tasks`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/tasks/src/index.ts) | `INPUT_LIMIT_BYTES`, `RESULT_LIMIT_BYTES`, `TaskQueueError`, `createTaskPlugin`, `createTaskQueue`, `defineTask` | 入口存在；核对实际签名 |
+| [`@lenso/tasks/postgres`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/tasks/src/postgres.ts) | `createPostgresTaskProvider`, `migratePostgresTaskQueue` | 入口存在；核对实际签名 |
+
+用法与边界：[tasks](/docs/zh/tasks)。
+
+## @lenso/log
+
+源码版本：`0.1.0` · 此次检查尚无 npm 发布包。
+
+| 公开入口 | 导出的函数/值 | 当前发布边界 |
+| --- | --- | --- |
+| [`@lenso/log`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/log/src/index.ts) | `createLogger` | 源码预览入口 |
+
+用法与边界：[log](/docs/zh/observability)。
+
+## @lenso/otel
+
+源码版本：`0.1.0` · 此次检查尚无 npm 发布包。
+
+| 公开入口 | 导出的函数/值 | 当前发布边界 |
+| --- | --- | --- |
+| [`@lenso/otel`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/src/index.ts) | `ROOT_CONTEXT`, `SpanKind`, `SpanStatusCode`, `context`, `metrics`, `propagation`, `trace` | 源码预览入口 |
+| [`@lenso/otel/browser`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/src/index.ts) | `ROOT_CONTEXT`, `SpanKind`, `SpanStatusCode`, `context`, `metrics`, `propagation`, `trace` | 源码预览入口 |
+| [`@lenso/otel/bun`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/src/bun.ts) | `bootstrapTelemetry` | 源码预览入口 |
+| [`@lenso/otel/orpc`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/src/orpc.ts) | `createORPCInstrumentation` | 源码预览入口 |
+| [`@lenso/otel/workers`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/otel/src/workers.ts) | `bootstrapWorkerTracing` | 源码预览入口 |
+
+用法与边界：[otel](/docs/zh/observability)。
+
+## @lenso/mcp
+
+源码版本：`0.1.0` · 已发布：`0.1.0`
+
+| 公开入口 | 导出的函数/值 | 当前发布边界 |
+| --- | --- | --- |
+| [`@lenso/mcp`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/mcp/src/index.ts) | `serveStdio` | 入口存在；核对实际签名 |
+
+用法与边界：[mcp](/docs/zh/agents)。
+
+## 实验、开发中与平台限制
+
+- oRPC v2 固定 `2.0.0-beta.42`，属于预发行协议，发布 Web 0.1.0 仍使用 v1。
+- Core 配置及 Web `/bun` 为已实现源码预览，尚不在相同版本的 npm 包中。
+- Log/OTel 有源码实现，但本次 registry 404。Workers 默认使用平台原生遥测，不能假设 Bun SDK 行为。
+- Manage 没有独立公开包或命令；显式应用操作才是当前可用入口。配置中心、订阅/hot reload、Observe query CLI 尚未提供。
+- Tasks 的持久队列实现是 PostgreSQL；D1/R2 绑定归平台所有，不能当作 Bun client 关闭。
+- browser 入口不导出 startApp；服务端资源、secret 与身份适配器不得进入客户端包。

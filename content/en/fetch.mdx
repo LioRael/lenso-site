@@ -1,0 +1,103 @@
+---
+title: Native Fetch and streaming
+description: Use Request and Response directly, compose raw Notes endpoints, and keep bodies, producers and resources under explicit ownership.
+---
+
+Fetch is an application boundary, not a required Lenso protocol. An ordinary plugin can expose `fetch(request): Promise<Response>` without installing the Web plugin or creating an oRPC router. Use Web when you want its RPC integration and request-lifetime management; use a native Fetch service when your existing host already owns those responsibilities.
+
+The Web-specific behavior below describes source preview **`6e239c71a38279885facce133ceb847bbfe12f2f`** with oRPC **`2.0.0-beta.42`**. The npm `@lenso/web@0.1.0` artifact has the older oRPC `1.15.5` contract and no `/bun` export. Use a verified matching source build for preview examples; see [installation](/docs/installation).
+
+## A Fetch service without Web
+
+This complete in-process example uses only the core runtime. It acquires no listener, storage or producer:
+
+```ts
+import { definePlugin, startApp } from "@lenso/core";
+
+const health = definePlugin({
+  id: "health-fetch",
+  setup() {
+    return {
+      async fetch(request: Request): Promise<Response> {
+        request.signal.throwIfAborted();
+        const path = new URL(request.url).pathname;
+        if (path !== "/health") return new Response("Not found", { status: 404 });
+        if (request.method !== "GET") {
+          return new Response("Method not allowed", {
+            status: 405,
+            headers: { Allow: "GET" },
+          });
+        }
+        return Response.json({ status: "ok" });
+      },
+    };
+  },
+});
+
+const app = await startApp({ plugins: [health] });
+try {
+  const response = await app.get(health).fetch(new Request("https://example.test/health"));
+  console.log(await response.json());
+} finally {
+  await app.stop();
+}
+```
+
+This reports only that the handler ran. It does not establish database health or deployment readiness. An existing host can call the same service; it owns ingress policy, body handling and shutdown. A native Fetch function has `Request.signal`, but does not automatically gain Web's `onCleanup`, `waitUntil`, deadline or active-request drain. Do not close its application while a response body still uses application resources.
+
+## Raw endpoints alongside RPC
+
+The existing Notes Web plugin serves raw endpoints before falling through to RPC:
+
+| Route | Methods | Behavior |
+| --- | --- | --- |
+| `/notes` | `GET`, `POST` | List the authenticated user's notes; create a note owned by that verified subject. |
+| `/notes/:id` | `GET`, `PATCH`, `DELETE` | Read, update or remove a UUID note after service authorization. |
+| `/session` | `POST` | Verify the Notes login key and issue an opaque session. |
+| `/session/renew` | `POST` | Rotate the presented Bearer session after its renewal interval. |
+| `/session/revoke` | `POST` | Revoke the presented session. |
+
+There is no cookie fallback in this example. Its method checks return `405` with `Allow`; schema failures return `400`; known Auth errors use safe `401`/`403`/`503` responses. Login keys are a Notes-owned demonstration source, not a production account system.
+
+In `createWebPlugin({ fetch: pluginContext => handler })`, the outer function reads exact plugin dependencies once during setup. The inner function receives a fresh `WebContext` per request. For an unmatched path, return `undefined`, not a `404`, so RPC gets a chance to handle it. For a matched raw path, return the response explicitly. The [complete Notes adapter](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/web.ts) validates JSON with the same contracts used by RPC and calls the same service.
+
+## Protect the service at every entry
+
+`bearerEvidence(webContext)` extracts a selected credential and combines the request and Web signals. Then `auth.for(theOperationAudience).required(evidence, options)` derives a trusted actor. Pass that actor to the shared Notes method. The service revalidates the credential and checks the actual stored owner; JSON `ownerId`, `subjectId` or a copied actor is not trusted identity.
+
+Host and Origin validation belongs to your ingress or credential-bearing routes. Auth's `requireSameOrigin` is an explicit gate for cookie writes; it rejects safe methods, missing/mismatched Origin and cross-site requests. The loopback Notes listener's policy differs: it allows absent Origin and rejects a present foreign Origin. Neither policy replaces authentication or object authorization. See [Auth](/docs/auth).
+
+## Streaming ownership
+
+Raw Web responses retain their status, headers and bytes. You do not need to encode each byte as an RPC event. Use oRPC's `asyncIteratorObject` only when typed RPC events are the intended contract.
+
+For a request resource, apply this order:
+
+1. Open it with `webContext.signal` passed to the provider.
+2. Register `webContext.onCleanup(() => resource.close())` immediately after acquisition.
+3. If a producer can continue independently of body reads, register its actual completion promise with `webContext.waitUntil(resource.finished)` immediately.
+4. Return its body. Ensure the source responds to cancellation and has a bounded queue/chunk size.
+
+`resource.close`, `resource.body` and `resource.finished` describe your provider's contract; Lenso does not export a generic stream-resource factory. The adapter's [request-lifetime source](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/lifetime.ts) owns body settlement and registered work. Finalizers run once in reverse registration order after EOF, failure or completed source cancellation and after registered work settles. One failing finalizer does not prevent others.
+
+The wrapper has zero read-ahead, one outstanding read and a default **64 KiB** source-chunk limit. `maxChunkBytes` must be a positive safe integer. This limit does not bound provider queues, tee/clone branches, socket buffers or total response size. Consumers must drain or cancel the body, including in in-process tests. Avoid unconsumed clones and unbounded push producers.
+
+## Deadlines and cancellation
+
+`timeoutMs` must be positive and finite. When supplied, it covers headers and body; omitting it sets no application deadline.
+
+| Boundary | Result |
+| --- | --- |
+| Handler fails before headers | `500` response. |
+| Deadline expires before headers | `504` response. |
+| Cancellation occurs before headers | `499` response. |
+| A failure occurs after headers | The body errors; the already sent HTTP status cannot be replaced. |
+| Web service has stopped | New requests receive `503`. |
+
+`onError` receives only `handler`, `body`, `work` or `cleanup`, not unsafe exception text. Cancellation is cooperative: a provider ignoring a signal or source cancellation can continue running. A timed-out response is not proof that its work stopped. Registered producer work remains owned; cleanup and app shutdown wait for its actual settlement, potentially indefinitely. Cancellation also does not undo a committed business write.
+
+On app stop, Web rejects new requests, aborts active requests and waits for finalization before dependencies are released. Bun must propagate disconnect through `Request.signal` or body cancellation; the preview tests exercise Bun `1.4.2`. Workers requires its request-signal compatibility flag and has different platform termination limits; see [Workers](/docs/workers).
+
+## Find a stuck response
+
+Separate **headers ready**, **body completed**, **producer settled** and **resources released**. A resolved Fetch promise proves only the first. Check whether the client consumed/cancelled the body, the source acknowledged cancellation, registered work settled, and finalizers returned. Log sanitized phases or safe identifiers through your existing logger; keep tokens, request bodies and session URLs out of diagnostics. The [stream tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/test/stream.test.ts) exercise these boundaries; [testing](/docs/testing) covers application-level verification.

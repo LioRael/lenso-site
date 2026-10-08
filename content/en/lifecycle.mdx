@@ -1,0 +1,78 @@
+---
+title: Dependency lifecycle and resource ownership
+description: Understand serial startup, configuration preflight, rollback, early release, and complete LIFO cleanup.
+---
+
+This page documents the TypeScript source preview at [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f). Verify installed declarations, especially the async disposer returned by `onCleanup`; a registry package with the same version number can contain older behavior.
+
+## Startup has one resource boundary
+
+`startApp` first validates exact instance dependencies, then resolves every installed configured instance, then awaits each plugin's setup in dependency-first order. Setup is serial. If graph validation or configuration fails, no business plugin setup runs. Configuration readers can still perform their own preflight I/O.
+
+Acquire long-lived resources inside setup, not when importing `lenso.config.ts`. Register each acquired resource's cleanup immediately, before another step can fail. A returned service does not automatically make its sockets, intervals or listeners owned by core.
+
+The Bun SQLite adapter implements this ownership rule directly:
+
+```ts
+const client = options.client ?? new Database(options.filename, options.options);
+if (!options.client) context.onCleanup(() => client.close());
+return drizzle({ client, schema: options.schema });
+```
+
+This excerpt comes from [the real adapter](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/db/src/bun-sqlite.ts). A client created by the plugin is closed by it; a supplied client remains owned by its caller. The distinction also matters for borrowed pools, storage clients and Workers platform bindings.
+
+## Shutdown unwinds registrations
+
+`context.onCleanup(callback)` registers a callback during setup and returns an async disposer. Automatic shutdown uses a single global stack in last-in-first-out order and awaits callbacks sequentially. Dependencies start first, so consumers normally release their resources before their dependencies.
+
+Within one setup, register lower-level resources before higher-level services. [Tasks](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/plugin.ts) registers the owned Auth connection, then database/queue resources, then its authorized service. Shutdown closes the service before those underlying resources.
+
+A dependency edge does not create a child scope: the database owns its resources; Notes owns its own resources. Do not close a dependency from a consumer merely because the consumer is stopping.
+
+Repeated or concurrent `app.stop()` calls return the same Promise, including its rejection. Cleanup attempts every registered callback. If callbacks fail, `stop()` rejects with an `AggregateError` after the remaining callbacks have been attempted.
+
+## Release early through the returned disposer
+
+Use the returned function for explicit release. Calling the underlying close function separately bypasses core's once-only completion tracking.
+
+```ts
+import { defineApp, definePlugin, startApp } from "@lenso/core";
+
+const ownedTimer = definePlugin({
+  id: "owned-timer",
+  setup(context) {
+    const timer = setInterval(() => {}, 1000);
+    const release = context.onCleanup(() => clearInterval(timer));
+    return { release };
+  },
+});
+
+const app = await startApp(defineApp({ plugins: [ownedTimer] }));
+try {
+  await app.get(ownedTimer).release();
+} finally {
+  await app.stop();
+}
+```
+
+This small lifecycle example runs against the verified preview build. Early release and automatic shutdown share one completion. Shutdown waits for an early release still in progress, and an early failure remains visible during shutdown. Registration is setup-only: saving the context and registering new finalizers from later service calls fails.
+
+A finalizer must not await its own disposer or its application's `stop()` Promise. Both await that finalizer, creating a deadlock. Core does not impose a cleanup timeout; the host must choose its own shutdown policy.
+
+## Failed setup rolls back acquired resources
+
+If a plugin fails after registering cleanup, rollback includes that failing plugin's resources and resources from previously initialized plugins. If rollback succeeds, the original setup error is rethrown. If rollback also fails, an `AggregateError` preserves the setup error followed by cleanup errors in their attempted order.
+
+`lifecycleFailure(error)` reads core's `phase`, `pluginId` and optional source attribution for object/function errors without mutating or wrapping them. Primitive thrown values cannot carry this attribution. Inspect `AggregateError.errors` as well as the top-level phase; a cleanup failure must not hide the original setup failure.
+
+After stop begins, `app.get` and `context.get` reject. Services already retained by application code are ordinary objects; core cannot revoke their methods. Design your service's close state and host ingress so callers cannot keep using closed resources.
+
+## The host owns incoming work
+
+The host decides when to stop accepting requests, drain existing work, signal cooperative cancellation and finally call `app.stop()`. `startApp({ plugins }, { signal })` passes a signal into configuration preflight; it does not automatically send that signal into every business method or detached task.
+
+A finite CLI call starts and stops one complete app. A Bun HTTP host normally keeps an app alive across requests. The Workers adapter starts a request-owned app and manages its response lifetime; platform resources such as D1/R2 are borrowed. Core alone does not discover detached promises or install process signal handlers.
+
+For a leak or stuck shutdown, identify the acquiring owner, check when cleanup was registered, and check for self-awaiting finalizers or unbounded drain. For failures after a business write, query authorized durable state before replaying: resource cleanup does not roll back committed external effects.
+
+See [the lifecycle implementation](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/lifecycle.ts) and [CLI failure phases](/docs/cli).

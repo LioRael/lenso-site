@@ -1,0 +1,40 @@
+---
+title: Lenso 是什么？
+description: 用普通异步服务、明确的插件实例和按需选择的适配器构建 TypeScript 应用。
+---
+
+Lenso 是 Bun 优先的 TypeScript 应用框架。插件声明服务如何启动、依赖哪些确切实例，以及如何释放自己拥有的资源。业务方法保持普通 async 函数。同一个服务可以由应用代码、显式 CLI 操作、Fetch 入口或经过授权的 agent 工具调用。
+
+## 从一个服务开始
+
+[快速开始](/docs/zh/quickstart) 安装已发布 Core 包并运行应用，无需服务器或数据库。先认识三个对象：插件声明、应用组装和已启动的应用。
+
+| 你的任务 | 下一步 |
+| --- | --- |
+| 连接服务并释放资源 | [组合](/docs/zh/composition)、[生命周期](/docs/zh/lifecycle) |
+| 配置某个实例 | [配置](/docs/zh/configuration) |
+| 检查或调用显式操作 | [CLI](/docs/zh/cli) |
+| 增加浏览器/API 入口 | [Web](/docs/zh/web)、[原生 Fetch](/docs/zh/fetch)、[React](/docs/zh/react) |
+| 保护业务对象 | [Auth](/docs/zh/auth) |
+| 持久化 Notes 或生成报告 | [现有示例](/docs/zh/examples) |
+| 选择宿主 | [部署](/docs/zh/deployment) |
+
+## 分清三个边界
+
+**运行时。** Core 校验依赖，初始化服务并拥有 cleanup。依赖的键是确切插件对象；相同 ID 不让另一个实例等价。业务策略属于服务。
+
+**构建期 Engine。** Engine 发现可信应用声明，扩展生成、构建和受监督开发。约定可通过公开扩展接口替换，它与应用 setup 有独立生命周期。
+
+**适配器。** Web、Auth、DB、Storage、Tasks、MCP、日志与遥测均可选。安装它们不会让每个服务自动可被远程调用；操作与身份仍需明确声明。应用也可直接使用底层 Fetch、Drizzle、Pino 或 OpenTelemetry API。
+
+## 了解文档基线
+
+大部分页面描述 [TypeScript 源码 `6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f)。快速开始单独用已发布 `@lenso/core@0.1.0` 验证。新配置、Bun listener 与可观测性 API 尚未全部发布，即使源码和 registry 使用相同版本号。
+
+[安装](/docs/zh/installation)记录这些差异。源码 oRPC v2 使用预发行 `2.0.0-beta.42`，客户端与服务端必须匹配。本站是源码预览，不是每个框架包的发布快照。
+
+## 应用拥有的部分
+
+应用选择 listener、部署、secret 来源、schema、迁移、身份提供者和对象/租户策略。cleanup 释放资源，不会撤销已提交写入。操作的 effect 元数据不授予执行权限。此 revision 没有独立通用 Manage SDK、配置中心或内建 Observe 查询服务。
+
+旧 Rust/Host/Capability 一代已[归档](/docs/zh/upgrade)，其命令和契约不是 TypeScript API。Console 与 Relay 是独立产品。

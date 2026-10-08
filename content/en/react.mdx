@@ -1,0 +1,108 @@
+---
+title: React frontend integration
+description: Use Lenso's typed Web client in an existing React application without importing server assembly or inventing a frontend lifecycle SDK.
+---
+
+Lenso's current React integration is the browser-safe typed transport from `@lenso/web/client`. It works in your existing frontend architecture. This source revision supplies no React hooks package, provider, query cache, Suspense adapter, SSR hydration layer or browser `startApp` lifecycle.
+
+This page targets **source preview `6e239c71a38279885facce133ceb847bbfe12f2f`** and **oRPC `2.0.0-beta.42`**. Published `@lenso/web@0.1.0` uses oRPC `1.15.5`, so build provenance and transport version must match the server. Use verified preview artifacts from [installation](/docs/installation); do not combine the npm v1 client with a v2 server.
+
+## Separate the browser and server graphs
+
+| Entry | Browser responsibility |
+| --- | --- |
+| `@lenso/web/client` | Create a typed RPC transport with endpoint, headers and optional custom Fetch. |
+| Router module through `import type` | Infer procedure inputs and outputs without importing its runtime. |
+| `@lenso/core/browser` | Declaration helpers `defineApp`/`definePlugin` and types; no runtime lifecycle or server imports. |
+| `@lenso/core`, Web server root, `/bun`, DB adapters, Engine | Server/development responsibilities; exclude from the browser value-import graph. |
+
+`@lenso/core/browser` does not make server plugins safe in a browser. A declaration importing a database or secret provider still brings those imports into its graph. Keep business resources and credentials used by the server on the server.
+
+## Call the existing Notes router
+
+The server's `NotesRouter` is exported from `examples/notes/src/router.ts`. It exposes authenticated private Notes operations. Its type import is sufficient for the client; the browser does not construct a server router or receive an Auth actor.
+
+```ts
+import { createClient } from "@lenso/web/client";
+import type { NotesRouter } from "./router";
+
+export function createNotesClient(credential: string) {
+  return createClient<NotesRouter>("/rpc", {
+    headers: { Authorization: `Bearer ${credential}` },
+  });
+}
+```
+
+Here `./router` refers to the actual Notes router module; adjust that **type-only** path when the frontend lives in another directory. `/rpc` assumes the frontend and API share an origin or your dev proxy forwards that path. It resolves against browser location. Server-rendered callers need an absolute endpoint and request-specific credentials; never share one user's authenticated client globally.
+
+The wrapper accepts static `HeadersInit`. Recreate the client after a session rotation, or use the supported custom Fetch function to attach your application-owned current credential. It does not renew or persist sessions automatically. Do not put the Notes login key into frontend source or a public environment variable. The returned session credential is sensitive too; its storage and XSS exposure belong to your frontend security design. See [Auth](/docs/auth).
+
+## A component using the supported client
+
+This component uses standard React state/effects and the real Notes `list()` procedure. Place it alongside the Notes type modules in a separate frontend build, or adjust the two type-only imports to your shared server type location. React is an application dependency; Lenso does not install it.
+
+```tsx
+import { useEffect, useState } from "react";
+import { createClient } from "@lenso/web/client";
+import type { NotesRouter } from "./router";
+import type { Note } from "./notes";
+
+export function NotesList({ credential }: { credential: string }) {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [status, setStatus] = useState("Loading notes…");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const client = createClient<NotesRouter>("/rpc", {
+      headers: { Authorization: `Bearer ${credential}` },
+      fetch: (input, init) =>
+        fetch(input, { ...init, signal: controller.signal }),
+    });
+    setNotes([]);
+    setStatus("Loading notes…");
+    void client.list().then(
+      (result) => {
+        if (controller.signal.aborted) return;
+        setNotes(result);
+        setStatus(result.length ? "Notes loaded." : "No notes yet.");
+      },
+      () => {
+        if (!controller.signal.aborted) setStatus("Unable to load notes.");
+      },
+    );
+    return () => controller.abort();
+  }, [credential]);
+
+  return (
+    <section aria-label="Your notes">
+      <p role="status">{status}</p>
+      <ul>
+        {notes.map((note) => <li key={note.id}>{note.title}</li>)}
+      </ul>
+    </section>
+  );
+}
+```
+
+The custom Fetch is a public extension point. This example gives one component request an abort signal and suppresses stale UI updates after unmount or credential change. React development effects may run more than once; the request is a read operation. Do not move a create/delete mutation into an effect and assume development retries are harmless. Cancellation remains cooperative and does not roll back a server mutation.
+
+For a larger frontend, use your existing request/cache library around the typed client, with cache keys scoped to the authenticated user and tenant. Lenso itself does not implement that cache. Choose loading, retry, reauthentication and optimistic-update behavior according to operation semantics. Blind retries can duplicate effects; inspect the actual service contract.
+
+## Generated clients are an optional convention
+
+The default Engine checks for `src/router.ts` and generates `.lenso/client.ts` using its exported `AppRouter` type. If no router exists, the generated module exports nothing. Notes exports `NotesRouter`, so importing `@lenso/web/client` directly with that type is the immediate supported path; an application choosing the default generated convention must deliberately provide `AppRouter`.
+
+The generated client is a small typed transport wrapper, not a React SDK or an API scan of arbitrary services. Run the application's existing generate command after changing the router convention. Edit source and regenerate; do not edit `.lenso` output. See [Engine](/docs/engine).
+
+## Browser failures to localize
+
+| Symptom | Check |
+| --- | --- |
+| Client works in browser but fails during SSR | Relative endpoint requires browser location; use an absolute URL server-side. |
+| `404` or unexpected HTML | The frontend proxy, route prefix or origin points at the frontend document rather than the RPC endpoint. |
+| `UNAUTHORIZED` after renewal | Old credential was rotated; update the application-owned credential/client. |
+| Cross-origin Fetch failure | The selected server ingress/CORS policy and browser credential mode must agree; Web does not install CORS automatically. |
+| Bun/DB modules appear in the frontend bundle | Inspect value imports; keep the router and business types behind `import type`. |
+| Unexpected response decoding | Match client/server build and exact oRPC v2 transport version. |
+
+The [client implementation](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/client.ts), [browser exports](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/browser.ts) and [generation convention](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/engine/src/engine-defaults.ts) define the supported scope.

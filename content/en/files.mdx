@@ -1,0 +1,98 @@
+---
+title: Files and object storage
+description: Stream private objects through explicit providers and add authorized file records when the product needs ownership and lifecycle state.
+---
+
+Use object storage for trusted internal object operations. Add Files when users need stable file IDs, metadata, owner/tenant policies and upload/deletion states. A storage ID, object key or file ID grants no caller permission.
+
+Contracts below follow the [Storage source at `6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/README.md). Check the installed package's exports; the source preview and a published `0.1.0` artifact can differ.
+
+## Select the runtime entry
+
+| Entry | Purpose and ownership |
+| --- | --- |
+| `@lenso/storage` | Types, `StorageError`, custom plugin factory; no filesystem, AWS, DB or Web import |
+| `/local` | Bun local directories, controlled by the application |
+| `/s3` | Bun AWS SDK v3 adapter; supplied clients remain caller-owned |
+| `/r2` | Native Workers R2 binding; platform-owned, no AWS SDK |
+| `/files` | Optional authorized records and conditional lifecycle transitions |
+| `/sqlite`, `/postgres` | Drizzle file schema and query factories |
+| `/fetch` | Raw Fetch upload/download helpers; no listener or automatic routes |
+
+`/s3` requires the optional peers `@aws-sdk/client-s3`, `@aws-sdk/lib-storage` and `@aws-sdk/s3-request-presigner`; the source tests use `3.1147.0`. Database entries require Drizzle ORM `0.45.3`. Import only the needed adapter. Workers cannot import `/local` or the Bun `/s3` entry.
+
+## Start with the Notes Files integration
+
+[`examples/notes/src/files.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/files.ts) reuses the Notes database and Auth instance, with two local storage instances. It includes `fileSchema` in that database's schema and supplies `createSqliteFileQueries`. Its `createNotesFiles` factory registers an action-specific audience policy requiring a real user, the actual owner and the fixed `local-notes` tenant.
+
+Inside that existing example, after startup and verified login, the upload is streamed:
+
+```ts
+const auth = app.get(definition.authentication);
+const access = await auth.for(notesAudiences.create).required(session.credential);
+const files = app.get(definition.files);
+const record = await files.upload(access, {
+  storageId: definition.privateFiles.id,
+  filename: "private-note.txt",
+  contentType: "text/plain",
+  ownerId: access.subjectId,
+  tenantId: notesFileTenant,
+  body: new Blob(["A private attachment.\n"]).stream(),
+  maxBytes: 1024,
+});
+const readAccess = await auth.for(notesAudiences.read).required(session.credential);
+const download = await files.read(readAccess, record.fileId);
+// Return through the application's owned Fetch response lifecycle.
+return new Response(download.body, {
+  headers: {
+    "content-type": download.metadata.contentType,
+    "content-disposition": "attachment",
+    "x-content-type-options": "nosniff",
+    "cache-control": "private, no-store",
+  },
+});
+```
+
+The snippet uses the existing example's `app`, `definition`, `session`, `notesAudiences` and `notesFileTenant`. It is not an additional endpoint installed by Files. Keep the app alive until the response body settles; do not wrap a streaming return in an immediate `app.stop()` finalizer.
+
+The complete local demo is `bun run files:demo` in `examples/notes`, after setting the documented login configuration, `SQLITE_PATH` and `STORAGE_ROOT` and explicitly applying `migrate:sqlite` and `files:migrate` to a dedicated local store. These are reviewed checkout scripts. Storage ships SQL files but exports no migration subpaths: do not guess imports such as `@lenso/storage/migrations/...`. Integrate version-matched SQL through your application's migration workflow.
+
+## Keep authorization explicit
+
+`createFilesPlugin({ id, storages, database, queries, authorize })` requires a positive authorization decision for every action; missing `authorize` denies access. The callback receives `{ access, action, file }`, with a frozen record view. It does not verify the identity inside arbitrary access data for you.
+
+Authenticate at the trusted entry and revalidate through the shared application policy. Derive owner/tenant assignments from trusted identity and application context. Never trust those assignments, limits or storage selection merely because a browser supplied them. Notes declares Auth as an exact dependency in its wrapper so the policy can use the initialized Auth service.
+
+Names such as `publicAssets` select instances; they do not enable public ACLs. Internal object `put/get/head/list/delete` methods do not enforce a user policy. Uploads create new keys and reject replacement with `conflict`. Use generated keys, not original filenames as paths.
+
+## Inspect provider capabilities
+
+Read `storage.capabilities` before choosing signing, range reads, conditional reads, upload size or cancellation behavior. Unsupported operations throw `StorageError` with `code: "unsupported"`.
+
+Local and native R2 adapters cannot issue signed URLs. Use an authorized application Fetch endpoint. Native R2 uploads require known `size` and Workers `FixedLengthStream`; cancellation interrupts the source, while an already-running platform operation still has to settle.
+
+S3-compatible adapters require conditional create. Multipart additionally requires conditional completion support. Known R2 S3 endpoints select single PUT; use `multipart: false` for another provider lacking conditional multipart completion and supply `size`. Do not attach a payload-logging logger to the SDK client. Capabilities describe this adapter's behavior, not every provider's complete API.
+
+## Direct upload and download
+
+For a signing-capable provider, the authorized flow is `beginUpload(access, input)` → provider PUT → `completeUpload(access, fileId)` → `signDownload(access, fileId, expiresIn)`.
+
+Send every returned link header, including the create-only condition. Completion verifies the actual object's existence, size, content type and metadata before publishing a ready record. `maxBytes` on a signed upload is a **completion check**, not a provider traffic cap. The application owns bucket CORS and quota policy.
+
+A signed URL and its headers are bearer credentials. Do not place them in logs, analytics or durable metadata. Temporary credentials can expire sooner than the requested TTL. Changing application permissions does not revoke a previously issued link. Deletion refuses while a PUT link remains live; wait for expiry before retrying or reconciling orphan objects.
+
+## Understand failure states
+
+File records track `pending`, `uploading`, `ready`, `failed`, `deleting` and `deleted`. Object writes and database commits are separate operations. Conditional revision transitions prevent stale work from publishing or deleting an already-ready object. Compensation can itself fail and is preserved in the error; no cross-resource transaction or background reconciler is implied.
+
+| Symptom | What to inspect |
+| --- | --- |
+| `forbidden` | Verified access, action audience, actual owner/tenant and positive policy result |
+| `unsupported` | Selected instance's signing/range/condition capabilities |
+| `too-large` | Server limit and actual object size; a signed PUT may already have transferred bytes |
+| `conflict` | Existing object, concurrent revision change, non-ready record or live upload link |
+| `provider` / aggregated failure | Safe provider evidence plus current file state before retry or reconciliation |
+
+`createFileUploadHandler` and `createFileDownloadHandler` in `/fetch` keep bytes as streams and require application authentication/routing. CLI/MCP expose metadata or business commands, not binary data. Local roots must be dedicated app-controlled directories; traversal/symlink checks are not a sandbox against a hostile local process.
+
+Virus scanning, transformations, CDN provisioning and resumable client multipart sessions are outside this baseline. The [Files tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/test/files.test.ts) cover state races and failure handling; [Notes Files tests](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/test/files.test.ts) cover the application's owner/tenant policy. Continue with [testing](/docs/testing) or [Tasks](/docs/tasks) for separately owned background work.

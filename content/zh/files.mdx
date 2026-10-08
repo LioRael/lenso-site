@@ -1,0 +1,98 @@
+---
+title: Files 与对象存储
+description: 通过显式 provider 流式处理私有对象，并在产品需要时增加授权文件记录、归属与生命周期状态。
+---
+
+对象存储用于受信任的内部操作。用户需要稳定文件 ID、metadata、owner/tenant 策略和上传删除状态时，再加入 Files。storage ID、object key 或 file ID 都不授予调用方权限。
+
+本页契约依据 [Storage 源码 `6e239c7`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/README.md)。使用前核对安装产物的 exports；源码预览与已发布的 `0.1.0` 可能不同。
+
+## 按宿主选择入口
+
+| 入口 | 用途与归属 |
+| --- | --- |
+| `@lenso/storage` | 类型、`StorageError`、自定义工厂；不导入文件系统、AWS、DB 或 Web |
+| `/local` | Bun 本地目录，由应用控制 |
+| `/s3` | Bun AWS SDK v3 adapter；传入 client 仍归调用方 |
+| `/r2` | 原生 Workers R2 binding；归平台所有，不含 AWS SDK |
+| `/files` | 可选授权记录和条件化生命周期转换 |
+| `/sqlite`、`/postgres` | Drizzle file schema 与查询工厂 |
+| `/fetch` | 原始 Fetch 上传下载 helper；不监听端口或自动添加路由 |
+
+`/s3` 需要可选 peer `@aws-sdk/client-s3`、`@aws-sdk/lib-storage` 与 `@aws-sdk/s3-request-presigner`，源码测试版本为 `3.1147.0`。数据库入口需要 Drizzle ORM `0.45.3`。只导入所需 adapter，Worker 不应导入 `/local` 或 Bun `/s3`。
+
+## 从现有 Notes Files 开始
+
+[`examples/notes/src/files.ts`](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/files.ts) 复用 Notes 数据库与 Auth，组合两个 local storage 实例。它将 `fileSchema` 加入数据库 schema，提供 `createSqliteFileQueries`。`createNotesFiles` 按 action 选择 audience，并验证真实用户、实际 owner 和固定 `local-notes` tenant。
+
+在该例子已启动、已验证登录的上下文内，上传保持流式处理：
+
+```ts
+const auth = app.get(definition.authentication);
+const access = await auth.for(notesAudiences.create).required(session.credential);
+const files = app.get(definition.files);
+const record = await files.upload(access, {
+  storageId: definition.privateFiles.id,
+  filename: "private-note.txt",
+  contentType: "text/plain",
+  ownerId: access.subjectId,
+  tenantId: notesFileTenant,
+  body: new Blob(["A private attachment.\n"]).stream(),
+  maxBytes: 1024,
+});
+const readAccess = await auth.for(notesAudiences.read).required(session.credential);
+const download = await files.read(readAccess, record.fileId);
+// 交给应用持有的 Fetch response 生命周期。
+return new Response(download.body, {
+  headers: {
+    "content-type": download.metadata.contentType,
+    "content-disposition": "attachment",
+    "x-content-type-options": "nosniff",
+    "cache-control": "private, no-store",
+  },
+});
+```
+
+这里使用现有例子的 `app`、`definition`、`session`、`notesAudiences` 和 `notesFileTenant`，不是 Files 自动安装的 endpoint。app 要存活到 response body 结束；不能在返回流的 `finally` 中立即 `app.stop()`。
+
+完整本地示例位于 `examples/notes`，命令为 `bun run files:demo`。先按说明配置登录参数、`SQLITE_PATH`、`STORAGE_ROOT`，再对独立本地 store 显式运行 `migrate:sqlite` 与 `files:migrate`。这些是源码 checkout 脚本。Storage 虽包含 SQL 文件，但没有迁移 subpath exports；不要猜测 `@lenso/storage/migrations/...`。应通过应用迁移流程整合经审查、版本匹配的 SQL。
+
+## 明确授权职责
+
+`createFilesPlugin({ id, storages, database, queries, authorize })` 的每个 action 都需要肯定的授权结果；缺少 `authorize` 默认拒绝。callback 获得 `{ access, action, file }`，其中 file 是冻结的记录视图。它不会替应用验证任意 access 数据里的身份。
+
+在受信任入口验证身份，在共享策略中再次验证。owner/tenant 来自可信身份和应用上下文，限额与 storage 选择由服务端决定，不能仅因浏览器提交便相信这些字段。Notes wrapper 将 Auth 声明为精确依赖，策略才能使用已初始化的 Auth 服务。
+
+`publicAssets` 之类的名字只是选择实例，不会开启 public ACL。内部对象 `put/get/head/list/delete` 不执行用户策略。上传只创建新 key，覆盖已有对象会得到 `conflict`；key 应生成，不应把原始文件名当路径。
+
+## 检查 provider 能力
+
+选择签名、range、条件读取、上传大小及取消方式前先检查 `storage.capabilities`。不支持的操作抛出 `StorageError`，`code: "unsupported"`。
+
+Local 与原生 R2 不能生成签名 URL，应通过应用授权的 Fetch endpoint 读取。原生 R2 上传要求已知 `size` 与 Workers `FixedLengthStream`；取消可以中断源流，但已运行的平台操作仍需完成。
+
+S3 compatible adapter 要求条件创建；multipart 还要求条件完成支持。已知 R2 S3 endpoint 自动采用 single PUT；其他不支持条件 multipart completion 的 provider 显式设 `multipart: false`，并提供 `size`。不要给 SDK client 接入会记录 payload 的 logger。capabilities 描述当前 adapter，而不是 provider 的全部产品 API。
+
+## 直接上传与签名下载
+
+支持签名的 provider 使用授权流程：`beginUpload(access, input)` → provider PUT → `completeUpload(access, fileId)` → `signDownload(access, fileId, expiresIn)`。
+
+客户端发送 link 返回的全部 headers，包括 create-only 条件。完成时读取真实对象，检查存在性、大小、content type 和 metadata，之后才发布 ready 记录。签名上传的 `maxBytes` 是**完成检查**，不是 provider 强制执行的流量上限。Bucket CORS 与 quota 属于应用职责。
+
+签名 URL 和 headers 是 bearer 凭据，不进入日志、analytics 或持久记录。临时 provider 凭据可能早于请求的 TTL 到期。修改应用权限不会撤销已发出的 link。PUT link 仍有效时删除会拒绝；重试或清理孤儿对象前先等待过期。
+
+## 理解失败状态
+
+记录包含 `pending`、`uploading`、`ready`、`failed`、`deleting`、`deleted`。对象写入与数据库提交是不同操作。revision 条件转换避免旧工作发布记录或删除已经 ready 的对象。补偿本身可能失败并保留在错误中；没有跨资源事务或自动后台 reconciliation。
+
+| 症状 | 检查内容 |
+| --- | --- |
+| `forbidden` | 真实身份、action audience、实际 owner/tenant 和策略返回值 |
+| `unsupported` | 当前实例的签名、range、条件能力 |
+| `too-large` | 服务端限制与对象实际大小；签名 PUT 可能已传输字节 |
+| `conflict` | key 已存在、revision 并发变化、记录未 ready 或上传 link 未过期 |
+| `provider` / 聚合错误 | 安全 provider 证据与当前 file 状态，再决定重试或对账 |
+
+`/fetch` 的 `createFileUploadHandler`、`createFileDownloadHandler` 保持字节流式处理，认证与路由由应用提供。CLI/MCP 适合 metadata 或业务命令，不承载二进制。Local root 必须是应用专用且可控的目录；路径和 symlink 检查不构成对恶意本地进程的 sandbox。
+
+该基线不提供病毒扫描、图像处理、CDN provisioning 或可恢复的客户端 multipart session。[Files 测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/storage/test/files.test.ts) 验证状态竞争及故障处理，[Notes Files 测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/test/files.test.ts) 验证应用 owner/tenant 策略。继续阅读[测试](/docs/zh/testing)或独立拥有后台工作的 [Tasks](/docs/zh/tasks)。

@@ -1,0 +1,103 @@
+---
+title: 原生 Fetch 与流式响应
+description: 直接使用 Request 和 Response，组合 Notes 原生端点，并明确响应体、producer 与资源清理的归属。
+---
+
+Fetch 是应用边界，不是 Lenso 的必选协议。普通插件可以暴露 `fetch(request): Promise<Response>`，无需安装 Web 插件或创建 oRPC 路由。需要 RPC 和请求生命周期管理时选择 Web；现有宿主已经拥有这些职责时，可以直接使用原生 Fetch 服务。
+
+下文 Web 行为对应 **`6e239c71a38279885facce133ceb847bbfe12f2f` 源码预览**及 oRPC **`2.0.0-beta.42`**。npm `@lenso/web@0.1.0` 仍是 oRPC `1.15.5` 契约，且没有 `/bun` 导出。预览示例需要已核实的配套构建；见[安装与兼容性](/docs/zh/installation)。
+
+## 不依赖 Web 的 Fetch 服务
+
+下面是完整的进程内示例，仅使用 Core，不获取监听器、存储或 producer：
+
+```ts
+import { definePlugin, startApp } from "@lenso/core";
+
+const health = definePlugin({
+  id: "health-fetch",
+  setup() {
+    return {
+      async fetch(request: Request): Promise<Response> {
+        request.signal.throwIfAborted();
+        const path = new URL(request.url).pathname;
+        if (path !== "/health") return new Response("Not found", { status: 404 });
+        if (request.method !== "GET") {
+          return new Response("Method not allowed", {
+            status: 405,
+            headers: { Allow: "GET" },
+          });
+        }
+        return Response.json({ status: "ok" });
+      },
+    };
+  },
+});
+
+const app = await startApp({ plugins: [health] });
+try {
+  const response = await app.get(health).fetch(new Request("https://example.test/health"));
+  console.log(await response.json());
+} finally {
+  await app.stop();
+}
+```
+
+它只证明 handler 执行成功，不证明数据库健康或部署就绪。现有宿主可以调用同一服务，并负责入口策略、响应体和关闭。原生 Fetch 有 `Request.signal`，但不会自动获得 Web 的 `onCleanup`、`waitUntil`、deadline 或活动请求 drain。响应体仍使用应用资源时，不应提前关闭应用。
+
+## 原生端点与 RPC 共存
+
+真实 Notes Web 插件先处理原生端点，再决定是否进入 RPC：
+
+| 路径 | 方法 | 行为 |
+| --- | --- | --- |
+| `/notes` | `GET`、`POST` | 列出当前用户的笔记；创建归属已验证 subject 的笔记。 |
+| `/notes/:id` | `GET`、`PATCH`、`DELETE` | 服务授权后读取、修改或删除 UUID 笔记。 |
+| `/session` | `POST` | 验证 Notes 登录 key 并签发不透明会话。 |
+| `/session/renew` | `POST` | 满足轮换间隔后轮换提交的 Bearer 会话。 |
+| `/session/revoke` | `POST` | 撤销提交的会话。 |
+
+该示例没有 cookie 回退。方法检查返回带 `Allow` 的 `405`，schema 失败返回 `400`，已知 Auth 错误使用安全的 `401`/`403`/`503` 响应。登录 key 是 Notes 自己拥有的演示身份源，不是一套生产账号系统。
+
+`createWebPlugin({ fetch: pluginContext => handler })` 的外层在 setup 时读取精确插件依赖；内层每次收到新的 `WebContext`。未匹配路径应返回 `undefined` 而不是 `404`，让 RPC 继续匹配；已匹配路径明确返回响应。[完整 Notes 适配器](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/web.ts)复用 RPC 的输入契约和同一个业务服务。
+
+## 每个入口都验证身份，共享服务负责对象授权
+
+`bearerEvidence(webContext)` 提取指定凭证并合并 Request 与 Web 信号。然后通过 `auth.for(对应操作Audience).required(evidence, options)` 得到可信 actor，再传给 Notes 服务。服务重新验证凭证并检查真实所有者。JSON 中的 `ownerId`、`subjectId` 或复制的 actor 都不能成为可信身份。
+
+Host 与 Origin 验证属于入口或带凭证路由。Auth 的 `requireSameOrigin` 是显式 cookie 写入门禁：它拒绝安全方法、缺失/不匹配 Origin 和跨站请求。Notes loopback 监听器采用另一条策略：允许没有 Origin 的请求，拒绝已提交的外部 Origin。两者都不能替代身份认证和对象授权。参见[Auth](/docs/zh/auth)。
+
+## 流式资源归属
+
+Web 的原生响应保留 status、headers 和字节，不需要把每段字节编码成 RPC 事件。只有需要类型化 RPC 事件时才使用 oRPC 的 `asyncIteratorObject`。
+
+请求资源按以下顺序处理：
+
+1. 获取资源时把 `webContext.signal` 传给提供方。
+2. 获取成功后立即登记 `webContext.onCleanup(() => resource.close())`。
+3. 若 producer 可以脱离 body 读取独立运行，立即用 `webContext.waitUntil(resource.finished)` 登记其真实完成 Promise。
+4. 返回 body，确保源能响应取消，并限制其队列和 chunk 大小。
+
+`resource.close`、`resource.body` 和 `resource.finished` 是应用提供方的契约描述；Lenso 没有导出通用流资源工厂。[请求生命周期实现](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/lifetime.ts)负责等待 body 与已登记工作。EOF、失败或源取消完成，且登记工作结束后，finalizer 按登记反序执行一次。单个清理失败不会阻止其他清理。
+
+包装器不预读，同时只有一个进行中的读取；默认源 chunk 上限为 **64 KiB**。`maxChunkBytes` 必须是正安全整数。该限制不覆盖提供方队列、tee/clone 分支、socket 缓冲或响应总大小。调用方必须读完或取消 body，进程内测试也一样。避免未消费 clone 和无限 push producer。
+
+## 超时与取消
+
+`timeoutMs` 必须为正有限值，覆盖响应头和响应体；不指定则没有应用 deadline。
+
+| 边界 | 结果 |
+| --- | --- |
+| 响应头之前 handler 失败 | 返回 `500`。 |
+| 响应头之前 deadline 到期 | 返回 `504`。 |
+| 响应头之前取消 | 返回 `499`。 |
+| 响应头之后失败 | body 报错，已发送 HTTP status 无法改写。 |
+| Web 服务已停止 | 新请求返回 `503`。 |
+
+`onError` 只接收 `handler`、`body`、`work` 或 `cleanup` 阶段，不接收不安全的异常文本。取消是协作式的：忽略 signal 或源取消的提供方可能继续运行。超时响应不证明业务工作已停止。已登记 producer 仍有所有者，清理和关闭会等待实际结束，可能无限等待。取消也不能撤销已提交的业务写入。
+
+应用关闭时，Web 拒绝新请求、取消活动请求，并等待 finalization 后再释放依赖。Bun 必须通过 `Request.signal` 或 body 取消传播断连；预览测试使用 Bun `1.4.2`。Workers 需要请求信号 compatibility flag，并受不同的平台终止限制；见[Workers](/docs/zh/workers)。
+
+## 定位不结束的响应
+
+区分**响应头就绪、body 完成、producer 结束、资源释放**。Fetch Promise 已 resolve 只证明第一步。检查客户端是否读完/取消、源是否确认取消、登记工作是否结束、finalizer 是否返回。用现有 logger 记录安全阶段或必要标识，不记录 token、请求体或会话 URL。[流测试](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/test/stream.test.ts)覆盖这些边界；[测试与排错](/docs/zh/testing)说明应用层验证。

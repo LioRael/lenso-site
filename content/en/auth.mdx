@@ -1,0 +1,116 @@
+---
+title: Authentication and service authorization
+description: Verify trusted evidence, derive audience-bound actors, enforce current object policy, and choose one session owner.
+---
+
+`@lenso/auth` separates verified identity from permission to act on a resource. Your application owns accounts, organizations, membership and business objects. Auth refers to a stable string `subjectId` inside a configured realm; it does not require a User table, role schema, Better Auth dependency or Web server.
+
+This is the implemented **source-preview contract at `6e239c71a38279885facce133ceb847bbfe12f2f`**. Its optional oRPC adapter uses **`2.0.0-beta.42`**. Published Web `0.1.0` still uses oRPC `1.15.5`; match verified artifacts and peer requirements before combining Auth, Web and clients. See [installation](/docs/installation).
+
+## Choose the public entry for the responsibility
+
+| Import | Responsibility |
+| --- | --- |
+| `@lenso/auth` | Sources, realms, audiences, actors, access views, requirements and policies. |
+| `@lenso/auth/plugin` | Bind Auth shutdown to a Lenso plugin lifetime. |
+| `@lenso/auth/sessions` | Optional opaque managed sessions and `SessionStore`. |
+| `@lenso/auth/session-source` | Bridge an existing session API while retaining its owner. |
+| `@lenso/auth/fetch` | Explicit evidence extraction, same-origin write gate and safe error responses. |
+| `@lenso/auth/orpc` | Typed required/optional authentication middleware. |
+| `@lenso/auth/drizzle/pg`, `/sqlite`, `/d1` | Native Drizzle stores for managed sessions. |
+| `@lenso/auth/drizzle/schema-pg`, `/schema-sqlite` | Auth-owned session schema. |
+
+The root imports no Lenso, oRPC, Drizzle or Bun runtime. Select optional peer dependencies through the entry you use. You can use the root manually and close the instance yourself, or opt into the plugin lifecycle.
+
+## Source → actor → service policy
+
+A `defineSource` implementation is trusted installed code. Its `verify(evidence, { signal, authoritative? })` must verify credentials through the chosen identity authority. Decoding JWT claims, accepting a JSON `userId` or finding a session cookie is not verification. The source owns issuer, signature/key and token-profile checks; Auth does not implement JWT/OIDC for you.
+
+`createAuth(realm("notes", source))` establishes that trust realm. `auth.for(audience("notes:read"))` creates an operation-specific access view. A realm is a trust authority, not a tenant, and an external JWT `aud` claim is not this local operation audience. Audiences use exact identifiers with no wildcard rules.
+
+At an HTTP entry, extract evidence and request an actor. This complete helper uses the existing Notes types:
+
+```ts
+import { bearerEvidence, authErrorResponse } from "@lenso/auth/fetch";
+import type { NotesAuthentication } from "./auth";
+import { notesAudiences, type NotesService } from "./notes";
+
+export async function listPrivateNotes(
+  request: Request,
+  authentication: NotesAuthentication,
+  service: NotesService,
+): Promise<Response> {
+  try {
+    const input = bearerEvidence({ request });
+    const actor = await authentication
+      .for(notesAudiences.list)
+      .required(input.evidence, input);
+    return Response.json(await service.list(actor));
+  } catch (error) {
+    request.signal.throwIfAborted();
+    return authErrorResponse(error);
+  }
+}
+```
+
+The actual Notes service calls `enforce(actor, resource, policy)`, revalidates credentials and checks object ownership. Create assigns `ownerId` from the verified subject; read/update/delete load the real note first; update/delete retain the owner in the SQL condition. Transport input cannot select an owner or supply a trusted actor. Reuse this service from CLI, Fetch and oRPC.
+
+An actor is a frozen safe projection of `realmId`, `subjectId`, `audience` and `kind` (`user`, `guest`, `service`). Type branding and runtime checks bind it to the **exact Auth instance, audience and original object**. JSON, object spread and another instance's actor cannot authorize. Cross-process callers must present credentials again. This protects against accidental DTO trust; it does not sandbox malicious installed plugins.
+
+## Anonymous, rejected and unavailable are different
+
+`optional(evidence)` returns `Actor | null`; `required(evidence)` returns an actor. Only the source's `absent` outcome permits anonymous access. `rejected`, `unresolved` and malformed verified results fail with `UNAUTHORIZED`. An explicit verified source can create a persistent guest identity; failed login never becomes a guest automatically.
+
+`enforce` checks provenance, revalidates the source, reads current membership when configured and runs the policy. There is no Request-only auth cache or durable role snapshot. Only exact `true` grants access. Obtain a new actor after the invocation signal aborts.
+
+| Code | Meaning | Raw Fetch status |
+| --- | --- | --- |
+| `UNAUTHORIZED` | Required evidence is absent or invalid. | `401` |
+| `FORBIDDEN` | A verified caller lacks the requested policy grant. | `403` |
+| `REAUTHENTICATION_REQUIRED` | Required freshness/assurance evidence is missing or stale. | `401` |
+| `SERVICE_UNAVAILABLE` | Verification, membership or policy infrastructure failed. | `503` |
+
+Known errors use safe messages; unknown Auth/provider failures become `SERVICE_UNAVAILABLE`. Cancellation retains its signal reason. The oRPC adapter maps `REAUTHENTICATION_REQUIRED` to `UNAUTHORIZED` with a safe message; raw Fetch retains the Auth code. Non-Auth business exceptions remain business exceptions in middleware.
+
+## Membership and stronger entry requirements
+
+Use `.memberships(reader)` on an access view to query your existing membership tables. Load the actual object before choosing its tenant. Client `tenantId`, session active-organization state and role claims are not current membership proof. Return a typed active grant or `null`; database/provider errors must throw, not masquerade as no membership.
+
+`requireSession` accepts the exported requirement builders `authoritativeSession()`, `sessionCreatedWithin(ms)`, `authenticatedWithin(ms)` and `requireAssurance("mfa")`. The source must advertise and return the corresponding evidence. Unsupported capabilities fail when constructing the view, normally during setup. Repeated requirements intersect and cannot be relaxed by a later view. Session creation alone is not recent password or MFA authentication.
+
+Authentication and a later database mutation are not automatically transactional. Sensitive writes still need business-owned conditional updates or transactions; a policy read in one database does not create a distributed transaction with another.
+
+## Choose one session owner
+
+**Managed sessions:** `createManagedSessions({ realmId, login, store, lifetime, subjectActive })` uses a verified login source and a domain `SessionStore`. `sessionLifetime({ idle, absolute, renewAfter })` expresses durations in milliseconds. `subjectActive` must return exact `true` on issue and every use. Notes wires this to its configured subjects, then creates Auth from `sessions.source`.
+
+The client receives `sessionId`, `credential` and `expiresAt`. The opaque credential contains a UUID locator and 32 random bytes; storage contains its SHA-256 digest, never the raw secret. WebCrypto supplies randomness and hashing. Return credentials through the protected login channel, keep them out of logs/URLs and let the frontend own its credential-storage choice.
+
+| Managed operation | Behavior |
+| --- | --- |
+| `source.verify(token)` | Read-only validation. |
+| `issue(loginEvidence)` | Verify login evidence and active subject, then create a session. |
+| `touch(token)` | Explicitly advance activity without credential rotation. |
+| `renew(token)` | Respect the interval and atomically rotate; stale concurrent writers lose. |
+| `revoke(token)` | Require possession and revoke the stable session, including a concurrently rotated successor. |
+| `close()` | Reject new work, signal cancellation and drain in-flight work. |
+
+Idle/absolute limits cannot exceed stored ceilings, and renewal cannot become more frequent. Current configuration may narrow limits. Read-only verification does not persist that narrowing; a successful touch/renew freezes tighter bounds. Later configuration loosening can remove a temporary read-only restriction only within stored ceilings.
+
+**Existing sessions:** `sessionSource({ getSession, subjectId, hasCredential?, session?, capabilities? })` bridges your existing API using headers and verification context. Without a reliable `hasCredential`, a null session is `unresolved`, not anonymous. With one, absent credentials may be anonymous; a presented credential with no valid session rejects. Header presence does not verify a cookie signature. The wrapper owns supported cache-bypass/read-only options; a non-cancellable API is checked before/after but cannot be forcibly interrupted.
+
+Keep the external owner responsible for signing, storage, renewal and revocation. Replacing a Lenso `SessionStore` cannot change another library's sessions. A User-table requirement from that library stays with that optional integration.
+
+## Storage and lifetime
+
+Managed sessions own only `auth_sessions`, partitioned by `(realm_id, id)`, with a unique token digest and realm/subject index. Account and membership tables remain application-owned. An optional foreign key is an application migration decision. Same-database Auth instances are partitioned by realm; use independent databases when required by your ownership design.
+
+Review and apply the selected baseline SQL explicitly: `@lenso/auth/migrations/pg/0000_auth_sessions.sql` or `/migrations/sqlite/0000_auth_sessions.sql`. These are SQL scripts, not an automatic migrator or Drizzle journal. Use one application-owned migration history. Startup never creates tables. The Notes example integrates reviewed session migrations into its own history; see [database](/docs/database).
+
+Register `sessions.close()` immediately after acquisition. `createAuthPlugin` registers the returned Auth service's `close()` after setup, so shutdown closes Auth before the underlying sessions. Owned database clients close later through their own dependency lifetime; borrowed clients and D1 bindings stay with their owner. Callbacks must settle after cancellation and must not await their own owner's close promise. Cleanup does not reverse a committed write.
+
+## HTTP and verification boundaries
+
+`bearerEvidence` accepts only Bearer Authorization and rejects malformed values without cookie fallback. `headersEvidence` copies headers for a session source. `requireSameOrigin(request, allowedOrigin)` is an explicit cookie-write gate; it rejects `GET`/`HEAD`/`OPTIONS`, missing/mismatched Origin and cross-site cookie writes. Auth mounts no routes, CORS policy, secure cookies or listener. Preserve provider response headers/Set-Cookie in application login/renew handlers and protect the selected routes yourself.
+
+The [Auth contracts](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/auth/README.md), [Notes Auth owner](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/auth.ts) and [shared policy](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/notes.ts) define this behavior. Verify forged/copied actors, wrong instance/audience, another owner's object, revoked sessions and provider failure. Real local workerd/D1 and PostgreSQL race checks exist; production replication and untested drivers are not proven by them. No password system, login UI, automatic account linking, cookie issuance, JWT/OIDC implementation or old Rust session migration is provided by this preview.

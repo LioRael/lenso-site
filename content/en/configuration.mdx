@@ -1,0 +1,113 @@
+---
+title: Validated instance configuration
+description: Opt into typed configuration, explicit values/env/file sources, safe diagnostics, and startup preflight without forcing Web.
+---
+
+**Source preview, currently unpublished in the verified registry artifact.** This API is implemented at [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f), but registry `@lenso/core@0.1.0` does not export `@lenso/core/config`, `/config/env` or `/config/file`. The examples below require a verified build of that source revision. Do not install registry `0.1.0` and assume these imports exist.
+
+## Use the boundary that fits the plugin
+
+Ordinary plugin factories can keep accepting ordinary options. Opt into `definePluginConfig` and `bindConfig` when you need shared validation, multiple sources or all-instance startup preflight. This is instance configuration; `lenso.config.ts` declares application assembly, while `lenso.engine.ts` declares [build-time extensions](/docs/engine).
+
+A contract defines a Standard Schema v1 validator and optional safe descriptions. A source reads raw plain values. A binding attaches that contract and source list to one exact plugin instance. `startApp` resolves all installed bindings before any business setup, then passes the validated output to bound setup.
+
+Schema input and output can differ through defaults, transforms and async validation. Resources and functions belong in dependencies or factory arguments, not serialized configuration.
+
+## Bind a Notes listener-style contract
+
+[Notes](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/src/server.ts) defines a port contract separately from its Web listener. This standalone preview example demonstrates the same contract and explicit environment reader without requiring Web:
+
+```ts
+import { startApp } from "@lenso/core";
+import { bindConfig, definePluginConfig, valuesSource } from "@lenso/core/config";
+import { envSource } from "@lenso/core/config/env";
+import { z } from "zod";
+
+const listenerConfig = definePluginConfig({
+  schema: z.strictObject({
+    port: z.number().int().min(0).max(65535).default(3001),
+  }),
+  description: "Port selected for one listener instance.",
+});
+
+const listenerSettings = bindConfig(listenerConfig, [
+  valuesSource({ port: 3001 }, { id: "defaults" }),
+  envSource({
+    id: "deployment",
+    read: (name) => process.env[name],
+    bindings: { port: { name: "LENSO_PORT", type: "number" } },
+  }),
+], {
+  id: "listener-settings",
+  setup(_context, config) {
+    return { port: config.port };
+  },
+});
+
+const app = await startApp({ plugins: [listenerSettings] });
+try {
+  console.log(app.get(listenerSettings).port);
+} finally {
+  await app.stop();
+}
+```
+
+Passing an ordinary input object to `bindConfig` creates one values source. Each bound instance and each app start gets its own copied, frozen snapshot. Ordinary `PluginContext` implementations need not implement `config()`; bound setup requires the preflight-capable context supplied by `startApp`.
+
+## Composition is ordered top-level replacement
+
+Sources run in declaration order. A later present top-level field replaces the earlier field. Nested objects and arrays are replaced whole; they are never deep-merged. Composition happens before one schema validation.
+
+For example, a later `{ database: { host: "db.local" } }` replaces an earlier complete `database` object, including its `port`. The schema must then supply or require that port. Explicit object properties with `undefined` are omitted; `null` is real input. Defaults come from the schema.
+
+Every source ID must be unique within its instance. Name multiple values sources explicitly. Input and validated output must be finite, acyclic plain objects containing plain data. Functions, Dates, resource handles, accessors, sparse arrays and prototype-pollution keys are rejected. Caller objects are copied, rather than frozen in place.
+
+## Environment and files grant explicit capabilities
+
+`envSource` reads only declared bindings through the reader you supply. It does not enumerate the environment or assume a particular runtime.
+
+| Binding | Conversion |
+| --- | --- |
+| `type: "string"` or omitted | Preserves strings, including empty strings by default. |
+| `type: "number"` | Requires a finite decimal number, including valid decimal exponent notation; no hex, whitespace or empty string. |
+| `type: "boolean"` | Accepts exactly `"true"` or `"false"`. |
+| `empty: "omit"` | Omits an empty value so the schema can apply a default. |
+| `empty: "error"` | Rejects an empty value. Numeric and boolean bindings use this by default. |
+
+Workers can supply a reader for selected string bindings. D1/R2 bindings remain structured dependencies, not config fields. A configuration reader does not authorize network access or create a trusted user identity.
+
+Local hosts can add a JSON source:
+
+```ts
+import { jsonFileSource } from "@lenso/core/config/file";
+
+const projectFile = jsonFileSource({
+  id: "project-file",
+  root: import.meta.dir,
+  path: "settings.json",
+  select: ["notes", "listener"],
+  optional: true,
+});
+```
+
+Install `projectFile` in a binding's source array at the intended precedence. `root` must be absolute; `path` must be relative and lexically inside that root. The selected value must be an object. `optional: true` permits a missing file (`ENOENT`) only: permission, parse and selection failures still fail. Lexical path checks are not a filesystem sandbox and do not prevent every symlink escape. Keep this filesystem subpath out of Workers and browser imports.
+
+## Resolve directly or replace the adapter
+
+`resolveConfig(instanceId, { contract, sources }, { signal? })` validates without starting an app and returns `{ value, provenance, revisions }`. [Tasks](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/config.ts) uses this lower-level API for its worker and explicit migration entry; the plugin uses `bindConfig` for the same contract.
+
+A custom `ConfigSource` needs `descriptor: { id, kind, location?, fields? }` and `async read({ signal })` returning `{ values, revision? }`. Give it the capabilities it needs through its own factory. Release temporary I/O resources in `finally`; preflight creates no subscription lifetime.
+
+Provenance records raw-input top-level source history and accumulated sensitivity. It does not invent provenance for schema-derived output fields. Revisions are opaque, per-source tokens: the resolver does not compare them, provide compare-and-swap, establish trust or serialize them into manifests.
+
+Sources fail closed, without implicit fallback or cache. Cancellation checks are cooperative; an AbortSignal cannot kill arbitrary custom code.
+
+## Diagnose without exposing values
+
+Mark secret contract fields or env bindings with `sensitive: true`; a field name alone is not sufficient. Keep secret values out of descriptions, source locations, schema constraints and logged snapshots.
+
+`ConfigError.diagnostics` exposes safe `code`, `pluginId`, field path and source attribution. It omits rejected values, raw schema messages and original causes. `config-env-invalid` identifies conversion, `config-file-missing`/`config-file-invalid` identify files, `config-source-failed` identifies reads, and `config-invalid` identifies contract validation. `config-invalid-data` identifies non-plain data or malformed source declarations.
+
+Static `inspect` describes contracts and source declarations without calling `source.read`. Config JSON Schema needs an explicit `jsonSchema: () => ...` converter; validation alone does not promise conversion. Sensitive schema subtrees are hidden, defaults/examples are omitted, and metadata must itself be safe. Trusted config top-level code and converters still execute.
+
+This revision includes startup configuration only. Configuration-center SDKs, subscriptions, remote writes and hot reload are not delivered. An application can use lower-level APIs manually or replace its source adapters without adding Web. See [source implementation](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config.ts), [env adapter](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config-env.ts) and [file adapter](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/lenso/src/config-file.ts).

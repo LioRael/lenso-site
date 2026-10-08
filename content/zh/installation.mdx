@@ -1,0 +1,66 @@
+---
+title: 安装与兼容性
+description: 选择已核对发布包或精确源码预览，保持运行时、协议与宿主版本一致。
+---
+
+站点渲染器使用 **`@lenso/docs@0.1.0`**，初始化器使用 **`create-lenso-docs@0.1.0`**；npm 已确认两个精确版本存在。它们是独立文档包，不决定 Lenso 运行时发布版本。
+
+## 已发布 Core
+
+[快速开始](/docs/zh/quickstart) 使用 `bun add --exact @lenso/core@0.1.0`，已在 Bun `1.4.2` 验证。该包导出 Core、`/plugin`、`/browser`，没有较新的配置 API。browser 提供声明/辅助能力，不是浏览器应用运行时。
+
+## 源码预览
+
+高级页面描述[源码 `6e239c71a38279885facce133ceb847bbfe12f2f`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f)。运行示例时使用独立、审阅过的新 checkout：
+
+```sh
+git clone https://github.com/LioRael/lenso.git lenso-preview
+cd lenso-preview
+git checkout 6e239c71a38279885facce133ceb847bbfe12f2f
+bun install --frozen-lockfile
+bun run build
+bun dev
+```
+
+使用 checkout 声明的 Bun `1.4.2`。bun dev 在 loopback 启动 greeting，打印实际 URL。不要在无关既有项目运行这些命令，也不要假设 listener 已存在。
+
+另一个终端从 checkout 根目录执行：
+
+```sh
+bun run cli inspect greeting greet --root examples/greeting --json
+bun run cli call greeting greet '{"name":"Ada"}' --root examples/greeting --json
+```
+
+inspect 导入可信配置但不执行应用 setup；call 校验输入、启动整个应用、调用一个操作并停止。[CLI](/docs/zh/cli)说明副作用、输出与失败语义。
+
+## Registry 与源码是不同证据
+
+实际 registry 包已于 2026-10-08 核对：
+
+| 包 | 发布版本 | 预览差异 |
+| --- | --- | --- |
+| `@lenso/core` | `0.1.0` | 增加 config 入口、logger/遥测集成 |
+| `@lenso/web` | `0.1.0`，oRPC `1.15.5` | 使用 `2.0.0-beta.42`，增加 `/bun` |
+| `@lenso/engine` | `0.1.0` | 较新的配置检查与 dev 行为 |
+| `@lenso/cli` | `0.18.0` | 独立版本化，没有 `0.1.0` 发布 |
+| Auth、DB、Workers、Storage、Tasks、MCP | 各有 `0.1.0` | 包存在不证明与预览 API 等价 |
+| `@lenso/log`、`@lenso/otel` | 此次核对尚未发布 | 仅源码/打包预览 |
+
+[API 索引](/docs/zh/api)区分公开入口与宿主限制。不要混用源码 v2 服务端与 npm v1 客户端；预览全部 oRPC 入口固定预发行 `2.0.0-beta.42`。预览 Drizzle 示例使用 ORM `0.45.3` 与 Kit `0.31.11`。
+
+## 独立应用消费预览
+
+维护中的 [templates](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/templates/README.md) 是 CLI、Bun Web 和 Workers 目录内容，不是应用创建命令。只将选中模板复制到新应用。构建同一固定框架，用 `bun pm pack --filename <绝对归档路径>` 打包所需包，将真实归档放入 vendor。
+
+模板的 `file:./vendor/*.tgz` 与 overrides 保持间接 Core/Engine 解析在同一组产物。用 Bun 安装并保留单一 bun.lock。不要改为 latest、框架源码深层导入或手抄框架。[Engine](/docs/zh/engine)解释生成目录，[部署](/docs/zh/deployment)说明目标选择。
+
+## 宿主兼容性
+
+| 宿主 | 入口 | 边界 |
+| --- | --- | --- |
+| Bun | Core、Engine/CLI、Bun DB/storage/listener、任务 worker | 源码声明 Bun 1.4.2 |
+| Workers | Core、Workers、D1、R2、Fetch | 每请求应用图；无 Bun 文件系统/socket 或 Engine dev |
+| 浏览器/React | 仅类型契约、browser声明、Web client | 客户端包不包含 DB provider、secret 或 startApp |
+| 文档站 | Node 26.10+，生成的 Next 应用 | 静态 out 目录，与业务运行时独立 |
+
+公开 exports 是导入边界。Auth 导出迁移子路径；Storage/Tasks SQL 资产有打包缺口，不要猜深层包路径。Tasks 有公开 PostgreSQL migrator。源码合并、本地构建、npm 发布与生产部署分别是不同事实；本站只声明列明的源码基线与产物核对。

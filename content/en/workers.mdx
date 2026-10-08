@@ -1,0 +1,120 @@
+---
+title: Cloudflare Workers
+description: Assemble an app per Fetch request, inject platform bindings, reuse the real Notes service, and respect workerd lifetime limits.
+---
+
+`@lenso/workers` turns a public Lenso service graph into a module Worker Fetch entrypoint. Assembly happens **inside each request**, with that request's bindings. It imports no Bun listener and does not call a remote Bun backend.
+
+This guide describes source preview **`6e239c71a38279885facce133ceb847bbfe12f2f`**. Its Web examples use oRPC **`2.0.0-beta.42`**; published `@lenso/web@0.1.0` uses `1.15.5`. Use verified packages built from the same baseline, not an unverified mixture. [Installation](/docs/installation) explains artifact availability.
+
+## Public assembly contract
+
+```ts
+createWorkerHandler<Env>((env, { request, executionContext }) => ({
+  plugins,
+  web,
+}));
+```
+
+This is the API shape, not a standalone program: `plugins` is your exact installed graph and `web` is one object from it. The adapter requires a plugin exposing `fetch(request): Promise<Response>` structurally. It can be a Web plugin, or a native Fetch plugin; oRPC is not required by Workers. Use Wrangler-generated `Env` types for real bindings.
+
+`createBindingsPlugin({ id, bindings })` returns bindings from setup without acquiring or closing them. Declare its exact reference in dependent plugins' `requires`. Inject D1/R2 bindings inside assembly rather than creating resources at module top level or caching resources acquired in another workerd request context.
+
+## Reuse Notes with D1
+
+The existing `examples/workers/src/notes.ts` reuses the Notes application, SQLite schema/query factory and Web routes. Its essential assembly is below; the relative imports are the real example paths:
+
+```ts
+import { createWorkerHandler } from "@lenso/workers";
+import { createD1Plugin } from "@lenso/db/d1";
+import { d1SessionStore } from "@lenso/auth/drizzle/d1";
+import { envSource } from "@lenso/core/config/env";
+import { createNotesApplication } from "../../notes/src/application";
+import { createSqliteNotesQueries } from "../../notes/src/queries-sqlite";
+import { createNotesWebPlugin } from "../../notes/src/web";
+import * as schema from "../../notes/src/schema-sqlite";
+
+interface AuthenticatedNotesEnv extends NotesEnv {
+  NOTES_LOGIN_KEYS: string;
+  NOTES_RENEW_AFTER_MS?: string;
+}
+
+export default createWorkerHandler<AuthenticatedNotesEnv>((env) => {
+  const database = createD1Plugin({ id: "notes-db", binding: env.DB, schema });
+  const application = createNotesApplication({
+    database,
+    store: d1SessionStore,
+    queries: createSqliteNotesQueries,
+    principals: {
+      sources: [envSource({
+        id: "notes-worker-env",
+        read: (name) => name === "NOTES_LOGIN_KEYS"
+          ? env.NOTES_LOGIN_KEYS
+          : env.NOTES_RENEW_AFTER_MS,
+        bindings: {
+          principals: { name: "NOTES_LOGIN_KEYS", sensitive: true },
+          renewAfter: { name: "NOTES_RENEW_AFTER_MS", type: "number" },
+        },
+      })],
+    },
+  });
+  const web = createNotesWebPlugin(application.notes, application.authentication);
+  return { plugins: [...application.plugins, web], web };
+});
+```
+
+`NotesEnv` comes from the example's generated binding declarations. The query module's Bun SQLite reference is type-only; D1 uses its native async driver at runtime. The `NOTES_LOGIN_KEYS` binding is secret material supplied by the application's authority, not a tracked config value. It selects a Notes-owned login source, not a general account model. See [Auth](/docs/auth) and [configuration](/docs/configuration).
+
+The same service enforces exact audience, current session and object owner for raw `/notes` routes and `/rpc` operations. Anonymous access rejects, and users see only their own notes.
+
+## Request and body lifetime
+
+Every Fetch request starts an application. A response without a body stops the app immediately. A response body retains its app until EOF, failure or cancellation. There is no cross-request initialization cache; an in-memory counter resets for the next request. Durable data must live in D1, R2 or another explicit persistence owner.
+
+The example config includes:
+
+```json
+{
+  "compatibility_date": "2026-10-08",
+  "compatibility_flags": ["nodejs_compat", "enable_request_signal"]
+}
+```
+
+Preserve `enable_request_signal` so client disconnect reaches `Request.signal`. The adapter passes that signal into `startApp` and registers disconnect cleanup with platform `executionContext.waitUntil`. Web aborts its active sources before dependencies are released. In-process callers must still consume or cancel the response body.
+
+Distinguish two ownership mechanisms:
+
+- `WebContext.waitUntil(promise)` keeps request producer work under Web ownership; finalization waits for it.
+- `executionContext.waitUntil(promise)` schedules platform background work. It does **not** extend this adapter's app lifetime after response EOF. Work using app resources must finish before EOF or use an explicit app-compatible owner.
+
+Workers has no process shutdown hook. Isolate termination can interrupt finalizers, and a non-cancellable producer remains subject to platform lifetime. Do not use shutdown cleanup as guaranteed persistence or compensation for a write.
+
+## Bindings and optional capabilities
+
+D1 and R2 bindings are borrowed platform resources. Plugin setup neither migrates D1 nor closes these bindings. Keep Bun SQL/SQLite adapters, filesystem configuration readers, `@lenso/web/bun`, CLI and Engine imports out of the Worker runtime graph. Environment source adapters can read the actual `env` binding object without `process.env`.
+
+The optional [Workers storage example](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/src/storage.ts) shows two exact R2 instances. It does not provision buckets, grant public access or mount private download routes. Binding uploads need known byte length and do not support presigned URLs. See [files and storage](/docs/files).
+
+This adapter implements ordinary HTTP Fetch bodies. It does not implement WebSocket upgrades, Durable Object lifecycle, scheduled events, queues or a deployment API. The PostgreSQL durable Tasks worker is a separate runtime contract, not a Workers queue adapter.
+
+## Run the existing local example
+
+After obtaining the pinned source and building its matching packages in your own checkout, the actual example scripts are:
+
+```sh
+cd examples/workers
+bun run types
+bun run typecheck
+bun run migrate:notes
+bun run dev:notes
+```
+
+`migrate:notes` applies reviewed Notes/session SQLite migrations to **local** Wrangler D1. Supply `NOTES_LOGIN_KEYS` through ignored local secret configuration before starting Notes. The example's database UUID is a local placeholder and `remote: false` keeps it local; it is not a provisioned cloud database. Local data persists in `.wrangler/state`. Use `bun run build:notes` for a dry-run bundle; it does not deploy. [Deployment](/docs/deployment) explains the separate host responsibilities.
+
+## Telemetry and verification
+
+The greeting example optionally calls `bootstrapWorkerTracing()` from `@lenso/otel/workers` once in the Worker entry with matching `@orpc/cloudflare@2.0.0-beta.42` and Wrangler traces enabled. This experimental native tracer uses platform request spans/export, not a Bun OTel SDK. Do not also install oRPC OTel instrumentation in that host. It does not bridge native spans into OTel API-only lifecycle spans or supply OTel trace-ID log enrichment. Use platform logs or an application structural logger; see [observability](/docs/observability).
+
+The existing `bun run test:notes` drives actual local Miniflare/workerd with D1 and checks private REST/RPC CRUD, owner/realm rejection, revoked credentials and renewal/revocation races. It does not prove production region, replication or lifetime behavior. When a local Worker fails, inspect generated `Env`, binding names, reviewed migrations, secret-key presence and the Worker import graph before changing the shared service.
+
+Sources: [Workers adapter](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/workers/src/index.ts), [Notes entry](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/src/notes.ts) and [local example guide](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/README.md).

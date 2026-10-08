@@ -1,0 +1,66 @@
+---
+title: Installation and compatibility
+description: Choose a verified published artifact or an exact source preview, and keep runtime, transport and host versions coherent.
+---
+
+The site renderer is **`@lenso/docs@0.1.0`**; its initializer is **`create-lenso-docs@0.1.0`**. Both exact versions exist in npm. They are independent documentation packages and do not select a Lenso runtime release.
+
+## Published Core
+
+[Quickstart](/docs/quickstart) uses `bun add --exact @lenso/core@0.1.0`, verified with Bun `1.4.2`. That artifact exports Core, `/plugin` and `/browser`; it does not export the newer configuration API. The browser entry supplies declarations/helpers, not a browser application runtime.
+
+## Source preview
+
+Advanced pages describe [source `6e239c71a38279885facce133ceb847bbfe12f2f`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f). Use a new reviewed checkout to run its examples:
+
+```sh
+git clone https://github.com/LioRael/lenso.git lenso-preview
+cd lenso-preview
+git checkout 6e239c71a38279885facce133ceb847bbfe12f2f
+bun install --frozen-lockfile
+bun run build
+bun dev
+```
+
+Use the checkout's declared Bun `1.4.2`. `bun dev` starts greeting on loopback and prints its actual URL. Do not run these commands inside an unrelated existing project or assume a listener already exists.
+
+From a second terminal at the checkout root:
+
+```sh
+bun run cli inspect greeting greet --root examples/greeting --json
+bun run cli call greeting greet '{"name":"Ada"}' --root examples/greeting --json
+```
+
+Inspect imports trusted configuration without application setup. Call validates input, starts the entire application, invokes one operation and stops it. See [CLI](/docs/cli) for effects, output and failure semantics.
+
+## Registry and source are different receipts
+
+Actual registry artifacts were checked on 2026-10-08:
+
+| Package | Published version | Preview difference |
+| --- | --- | --- |
+| `@lenso/core` | `0.1.0` | Adds config entries and logger/telemetry integration |
+| `@lenso/web` | `0.1.0`, oRPC `1.15.5` | Uses `2.0.0-beta.42`, adds `/bun` |
+| `@lenso/engine` | `0.1.0` | Newer configuration inspection and dev behavior |
+| `@lenso/cli` | `0.18.0` | Independently versioned; no `0.1.0` release |
+| Auth, DB, Workers, Storage, Tasks, MCP | Each has `0.1.0` | Existence does not establish preview API equivalence |
+| `@lenso/log`, `@lenso/otel` | Not published at this check | Source/packed preview only |
+
+[API index](/docs/api) separates public entries from host constraints. Do not mix the source v2 server with the npm v1 client. All preview oRPC entries use exact prerelease `2.0.0-beta.42`. Preview Drizzle examples use ORM `0.45.3` and Kit `0.31.11`.
+
+## Independent preview consumers
+
+Maintained [templates](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/templates/README.md) are directory contents for CLI, Bun Web and Workers, not an application-create command. Copy only a selected template into a new app. Build the same pinned framework, pack needed packages with `bun pm pack --filename <absolute archive path>`, and put the real archives in its `vendor/`.
+
+The template's `file:./vendor/*.tgz` dependencies and overrides keep indirect Core/Engine resolution on those same artifacts. Install with Bun and retain one `bun.lock`. Do not substitute latest, framework source deep imports or handwritten framework code. [Engine](/docs/engine) explains generated directories; [deployment](/docs/deployment) covers targets.
+
+## Host compatibility
+
+| Host | Entries | Boundary |
+| --- | --- | --- |
+| Bun | Core, Engine/CLI, Bun DB/storage/listener, task worker | Source declares Bun 1.4.2 |
+| Workers | Core, Workers, D1, R2, Fetch | Per-request graph; no Bun filesystem/sockets or Engine dev |
+| Browser/React | Type-only contracts, browser declarations, Web client | No DB providers, secrets or startApp in client bundles |
+| Documentation site | Node 26.10+, generated Next application | Static out directory, independent from app runtime |
+
+Public exports are the import boundary. Auth exports migration subpaths. Storage/Tasks SQL assets have a packaging gap; do not guess deep package paths. Tasks has a public PostgreSQL migrator. A source merge, local build, npm release and production deployment are separate facts; this site claims only its stated source baseline and artifact checks.

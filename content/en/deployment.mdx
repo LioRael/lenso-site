@@ -1,0 +1,83 @@
+---
+title: Build and deployment boundaries
+description: Prepare real Bun or Worker artifacts, explicit migrations and host-owned ingress without mistaking local checks for deployment.
+---
+
+Lenso supplies runtime and build contracts; your host owns process supervision, ingress, secrets, platform bindings and release rollout. Choose a Bun process or a module Worker deliberately. A local build, successful Notes request or Wrangler dry run is evidence about that local artifact, not a production deployment.
+
+This page is pinned to **source preview `6e239c71a38279885facce133ceb847bbfe12f2f`**, with Bun **`1.4.2`** and Web/oRPC **`2.0.0-beta.42`** in the source workspace. Published `@lenso/web@0.1.0` instead uses oRPC `1.15.5` and has no `/bun` entry. Verify matching artifacts before using the preview listener or v2 clients; see [installation](/docs/installation).
+
+## Choose a runtime graph
+
+| Concern | Bun | Workers |
+| --- | --- | --- |
+| Entry | An owned long-running Bun process. | Platform invokes module `fetch`. |
+| HTTP | Existing Fetch host or optional `/bun` listener. | `createWorkerHandler` inside each request. |
+| Database examples | Bun SQL PostgreSQL or Bun SQLite. | Native D1 binding. |
+| Object storage examples | Local filesystem, S3-compatible service and supported database stores. | Borrowed native R2 binding; selected portable adapters need their own verification. |
+| State/lifetime | App lives until host stops it; owned resources drain. | App lives per request/body; platform can terminate execution. |
+| Build path | App's Bun build script or Engine `bun` target. | Wrangler bundle/dry run; no Bun Engine required. |
+
+Neither runtime automatically provisions databases, applies migrations, installs Auth routes or grants permissions. The built-in Tasks PostgreSQL worker is not a D1/Workers queue implementation. Use [Workers](/docs/workers) for its narrower platform contract.
+
+## Build a Bun artifact
+
+In an application already consuming matching built packages, use its actual scripts. The existing `templates/bun-web` uses:
+
+```sh
+bun install --frozen-lockfile
+bun run typecheck
+bun run lint
+bun run build
+```
+
+The template's `build` runs `lenso build`; the default Engine target bundles the chosen entry for Bun into `dist`. It conventionally selects `src/server.ts`, otherwise `.lenso/server.ts`, unless a verified custom target changes that. Inspect the command output and emitted entry before writing a start command. Engine output is reproducible: edit source/config, regenerate, and build rather than patching `.lenso` or `dist`.
+
+The real Notes application has a different explicit script: `bun build src/cli.ts src/server.ts --outdir dist --target bun --packages external`. Its emitted server can be launched with `bun dist/server.js` **with the matching external packages and reviewed runtime configuration present**. A bundle using `--packages external` is not a standalone executable. Include its package manifest, single lockfile and required installed/packed artifacts in your release packaging.
+
+Do not use `lenso dev` as a production supervisor. Its restart/readiness worker is a development contract. The process manager or deployment platform must start the built entry and arrange its shutdown.
+
+## Listener and ingress policy
+
+The source-preview `createBunListenerPlugin` declares the exact Web instance, owns `Bun.serve`, registers cleanup immediately and waits for `server.stop(true)` when the app stops. Its required `ingress(request, actualListenerUrl)` decides whether to handle or pass through a request. The actual listener URL is separate from the request's Host-derived URL.
+
+The Notes example binds `127.0.0.1`, rejects non-loopback Host values and rejects a present Origin that differs from its listener origin. This is a development policy. A production reverse proxy, external origin or TLS terminator needs a deliberate allowed-host/origin and forwarding-header policy, along with request/body limits and the chosen authentication flow. Do not copy the example policy and assume arbitrary external ingress will work.
+
+Auth installs no CORS, cookie routes or account UI. Apply authentication at trusted entries and retain object policy in the shared service. Never treat a proxy header, JSON actor, trace context or successful login as object authorization. See [Web](/docs/web) and [Auth](/docs/auth).
+
+## Apply reviewed migrations separately
+
+Database plugin setup never creates tables or runs migrations. Use your application's one migration history before starting consumers. The actual Notes scripts are `bun run migrate:pg` and `bun run migrate:sqlite`; select the database and configuration that match your assembly. The Worker example's `bun run migrate:notes` targets local D1 only.
+
+Auth's shipped baseline SQL is not a migration runner. Notes integrates Auth's session schema and ownership changes into its own reviewed migrations. Avoid applying the same baseline through two histories. Plan schema/code compatibility for your rollout, and test on a disposable database using the real selected driver. See [database](/docs/database) and [upgrade](/docs/upgrade).
+
+Supply `DATABASE_URL`, login keys and other sensitive values through your runtime's secret authority. Keep them out of tracked configs, client bundles, generated manifests, command logs and URLs. Paths and identifiers in examples are application configuration, not a requirement to use a particular filesystem layout.
+
+## Prepare a Worker artifact
+
+The real Worker example uses generated binding types and the platform's bundler:
+
+```sh
+cd examples/workers
+bun run types
+bun run typecheck
+bun run build:notes
+```
+
+`build:notes` is `wrangler deploy --config wrangler.notes.jsonc --dry-run --outdir dist/notes`. It bundles locally; it does **not** create resources or publish a Worker. The example config's `remote: false` and local D1 placeholder are intentionally local. A production rollout requires real approved resource bindings, reviewed migrations, secrets and account-specific Wrangler configuration. No one-command deployment is supplied by Lenso.
+
+Keep `enable_request_signal` for disconnect cleanup and review the compatibility date/flags against your selected workerd runtime. Exclude Bun listeners, Bun database drivers, filesystem configuration readers and CLI/Engine from the Worker graph. Platform `waitUntil` does not preserve this adapter's app resources after response EOF; isolate termination can interrupt finalizers.
+
+## Shutdown and observability ownership
+
+For Bun, handle the host's termination signal, stop the app and wait for listeners, response bodies, registered work and owned resources to settle. Register cleanup immediately after acquisition. Borrowed clients and platform bindings close through their owner. A provider that ignores cancellation can delay shutdown; a deadline is not proof it stopped. Cleanup cannot compensate for a committed mutation.
+
+Initialize one OTel owner in the Bun entry/preload before application imports. Drain the app before final telemetry shutdown. Workers instead uses its optional native platform tracer and platform export lifetime; do not copy the Bun SDK bootstrap into each request. Keep credentials and unsafe provider errors out of logs and spans. See [observability](/docs/observability).
+
+## Verify what you are releasing
+
+Use the application's existing checks once against the actual packaged artifact. Confirm the entry can start with intended non-secret configuration, invoke an authenticated read and a controlled write in an isolated environment, exercise a wrong-owner/credential rejection, consume or cancel a streaming body, and confirm owned resources stop. Do not replay an uncertain mutation merely because the response or cleanup failed; query authorized state first.
+
+For Workers, local workerd/D1 tests establish local runtime behavior; they do not establish production replication or regional behavior. For Bun, a loopback listener test does not establish TLS/proxy policy. Report the artifact revision, transport versions, commands and actual environment with any remaining platform-specific uncertainty. [Testing](/docs/testing) gives the focused checks and error boundaries.
+
+Source evidence: [Bun template](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/templates/bun-web/package.json), [Notes build and migration scripts](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/notes/package.json), [listener ownership](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/web/src/bun.ts) and [Worker scripts](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/workers/package.json).

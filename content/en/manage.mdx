@@ -1,0 +1,59 @@
+---
+title: Management operations and current limits
+description: Discover the delivered management surfaces, reuse authorized Notes and Tasks services, and distinguish declarations from runtime status.
+---
+
+**No independent Manage SDK or CLI is delivered in this baseline.** At TypeScript source preview [`6e239c7`](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f), there is no public `@lenso/manage` package, `manage` CLI command, general management server or Console integration contract. Do not build against a proposed Manage API as if it were released.
+
+## Use the supported surface for the question
+
+“Management” can mean different application responsibilities. The delivered interfaces are specific:
+
+| Question | Existing surface | Limit |
+| --- | --- | --- |
+| What instances and operations are declared? | `lenso inspect --json` | Static declarations; no runtime health or service reflection. |
+| Has this app started or stopped? | `RunningApp.status()` in its owning process | Lifecycle state only; not connectivity or a cross-process dashboard. |
+| What is the status of an owned durable report job? | Existing Tasks `query` operation | Shared Auth and durable ownership checks still apply. |
+| Can a job be cancelled or retried? | Tasks `cancel` / `retry` operations | State-dependent behavior; no rollback or unrestricted administration. |
+| Why did execution fail? | Structured CLI diagnostics, configured logs/telemetry | No built-in Observe query command or collector. |
+| Can an agent call a business operation? | Explicit CLI declaration plus optional MCP allowlist | Exposure and launch identity do not grant elevated authority. |
+
+A `Contribution` or generated manifest describes declarations. Neither proves live health nor grants a route, permission or remote management capability.
+
+## Inspect the real Tasks contract
+
+The existing [Tasks config](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/lenso.config.ts) explicitly exposes `submit`, `query`, `cancel`, `retry` and `report`. Inspect the existing declaration before selecting an action:
+
+```sh
+bun run cli inspect tasks query --root examples/tasks --json
+bun run cli inspect tasks cancel --root examples/tasks --json
+```
+
+Run these in a prepared preview checkout. Once the example's database/migrations, real Auth source and session are configured, query an owned job using safe business input:
+
+```sh
+printf '%s\n' '{"jobId":"<returned-job-id>"}' |
+  bun run cli call tasks query --root examples/tasks --stdin --json
+```
+
+Replace the placeholder with a job ID returned by an authorized submission. A job ID alone is not permission. The shared authorized service resolves durable report/job ownership and denies another owner before queue access. Missing legacy ownership records deny access; setup does not assign them to the first caller.
+
+`query` returns safe state, attempt budget and cancellation-request fields, or `null` after pruning. It does not dump payloads, provider error text or credentials. `report` reads the separately owned business table; queue success and a report record are different observations.
+
+## Recover with the operation's actual semantics
+
+The example's `cancel` can return `cancelled`, `requested`, `terminal` or `missing`. For running work, `requested` records a cancellation request; it does not mean the handler has stopped. Cooperative handler checks can prevent a future write, but already committed writes and external effects are not undone.
+
+`retry` accepts a final failure, preserves job ID/payload and attempt count, and adds one attempt. It returns false when the job is ineligible. Retry can repeat an external effect. After an uncertain write or acknowledgement failure, inspect authorized business state before replaying.
+
+The example uses `reportId` for an upserted business result and separately uses queue deduplication keys. The two mechanisms have different purposes and do not provide a cross-database atomic transaction. See [Tasks ownership and recovery](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/README.md#authentication-and-durable-ownership).
+
+## Keep identity at the trusted entry
+
+Notes and Tasks expose thin application-owned operations over their ordinary services. Credentials come from verified entry configuration, not business JSON. Keep audience, subject, object and tenant checks in shared service policy so CLI, Web and an agent follow the same rules.
+
+The optional `@lenso/mcp` `serveStdio` adapter is a dedicated local Bun process with a fixed trusted root and a separate allowlist of already declared operations. It admits one call at a time. All calls use launch identity; the adapter does not authenticate a different remote user per request. Cancelling an MCP request does not call `tasks.cancel`, propagate abort into the service or undo effects.
+
+A future management UI or remote entry needs a documented public contract and verified authentication, authorization and lifecycle boundaries. The current operational path is to use the existing authorized operations, CLI diagnostics and configured telemetry backend. Raw database access, arbitrary shell execution and credential issuance are not exposed business management operations.
+
+See [CLI declarations and failure handling](/docs/cli), [MCP contract](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/packages/mcp/README.md), [Task authorization](https://github.com/LioRael/lenso/blob/6e239c71a38279885facce133ceb847bbfe12f2f/examples/tasks/src/authorized-service.ts) and [public package map](https://github.com/LioRael/lenso/tree/6e239c71a38279885facce133ceb847bbfe12f2f/packages).
