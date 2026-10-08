@@ -1,0 +1,20 @@
+.github/workflows/quality.yml
+  h_9d56aba080c170 33-65
+README.md
+  h_9d56aba080c170 36-37
+package.json
+  h_9d56aba080c170 12
+scripts/check-site-integration.mjs
+  h_9d56aba080c170 1-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ad616b7f5d672e4644a8e291775cf47fdbc8e8b8",
+  "prompts": {},
+  "humans": {
+    "h_9d56aba080c170": {
+      "author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
