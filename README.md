@@ -33,6 +33,8 @@ The previous site baseline was bce1f2c08d238cec9e57a4c7a0218c8413b804c5. Its Rus
 
 pnpm check runs bilingual navigation/link/fence validation, TypeScript, oxlint, the real static build, and exported HTML/search/Markdown/catalog checks. Optional upstream file verification: set LENSO_SOURCE_CHECKOUT to a read-only checkout containing the pinned commit before pnpm check:docs. This compares source targets against git ls-tree at that exact ref, without requiring private paths in repository files.
 
+The protected-main checks remain quality and linked-site-integration. The latter now serves the exact quality job's exported artifact through the published docs CLI and verifies real HTTP pages, Markdown integrity, search, assets, redirects and 404 behavior. It does not reactivate the archived Rust Marketplace or claim a signed-catalog integration. Locally, run pnpm check:site-integration after pnpm build. Candidate branches run both checks before a normal fast-forward push to main; branch protection is unchanged.
+
 Generated .lenso/ and out/ are framework-owned and ignored. Do not edit them. The site imports the package's compiled CSS once; it does not build Lenso UI source, regenerate component APIs or add a raw StyleX compilation union.
 
 Chinese search uses the public static-index override and DocumentationSearch.initOrama with a shared Han tokenizer. Fumadocs' lightweight Markdown structure pass runs only when Chinese content changes; the generated .lenso-search/ index is ignored. English keeps the framework default. No second document renderer or search service is involved.

@@ -9,6 +9,7 @@
     "preview": "lenso-docs preview",
     "start": "lenso-docs preview",
     "check:docs": "node scripts/check-content.mjs",
+    "check:site-integration": "node scripts/check-site-integration.mjs",
     "types:check": "tsc --noEmit",
     "lint": "oxlint --deny-warnings components routes docs.components.tsx docs.config.ts scripts docs.source.mjs",
     "check": "pnpm check:docs && pnpm types:check && pnpm lint && pnpm build",
