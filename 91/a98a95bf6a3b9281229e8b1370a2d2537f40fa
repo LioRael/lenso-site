@@ -1,0 +1,51 @@
+components/chinese-tokenizer.d.mts
+  s_e3dbe949a951a5::t_cb576bfea637d0 1-2
+content/en/api.mdx
+  s_e3dbe949a951a5::t_3399a7e1685b6a 1-174
+content/en/installation.mdx
+  s_e3dbe949a951a5::t_acbd42d34c234c 1-66
+content/en/react.mdx
+  s_e3dbe949a951a5::t_97c8d12fe0568c 1-108
+content/en/web.mdx
+  s_e3dbe949a951a5::t_8750ceb86c89c9 1-108
+content/zh/cli.mdx
+  s_e3dbe949a951a5::t_0a39cd07e88cbc 1-101
+content/zh/database.mdx
+  s_e3dbe949a951a5::t_48aeaf599ffb93 1-104
+content/zh/engine.mdx
+  s_e3dbe949a951a5::t_45a0e1d9289af0 1-107
+content/zh/files.mdx
+  s_e3dbe949a951a5::t_3d5a21404e90fd 1-98
+content/zh/installation.mdx
+  s_e3dbe949a951a5::t_d28d3849f0e17a 1-66
+content/zh/manage.mdx
+  s_e3dbe949a951a5::t_003117f0c4cae4 1-59
+content/zh/tasks.mdx
+  s_e3dbe949a951a5::t_96b82070a40288 1-109
+content/zh/testing.mdx
+  s_e3dbe949a951a5::t_fdd1a26edb4dbe 1-119
+docs.config.ts
+  s_e3dbe949a951a5::t_633b0948e68209 1-18
+routes/home.css
+  s_e3dbe949a951a5::t_5fe57930677a51 1-796
+scripts/check-content.mjs
+  s_e3dbe949a951a5::t_0217c9038f0fa0 1-43
+scripts/finalize-output.mjs
+  s_e3dbe949a951a5::t_a2d8555cd250e8 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "91a98a95bf6a3b9281229e8b1370a2d2537f40fa",
+  "prompts": {},
+  "sessions": {
+    "s_e3dbe949a951a5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a4a-829c-7a91-8ac5-ef4c67bb9d37",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
