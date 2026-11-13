@@ -1,0 +1,37 @@
+{
+  "name": "lenso-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "lenso-docs dev",
+    "build": "lenso-docs build",
+    "preview": "lenso-docs preview",
+    "test": "bun run build && bun test tests"
+  },
+  "dependencies": {
+    "@gravity-ui/icons": "2.23.1",
+    "@lenso/docs": "0.3.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "typescript": "7.0.2"
+  },
+  "browserslist": [
+    "chrome 111",
+    "edge 111",
+    "firefox 111",
+    "safari 16.4"
+  ],
+  "engines": {
+    "bun": ">=1.4.4",
+    "node": ">=22.12.0"
+  },
+  "packageManager": "bun@1.4.4",
+  "patchedDependencies": {
+    "@lenso/docs@0.3.1": "patches/@lenso%2Fdocs@0.3.1.patch"
+  }
+}

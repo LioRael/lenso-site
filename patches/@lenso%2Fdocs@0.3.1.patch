@@ -1,0 +1,28 @@
+diff --git a/src/generate-host.ts b/src/generate-host.ts
+index 1351609874d08e94b71838247e097eb6296b803b..33a6fae77bbbcd97d6414a59ad5de4570034cb34 100644
+--- a/src/generate-host.ts
++++ b/src/generate-host.ts
+@@ -296,6 +296,11 @@ export function getRouter() {
+   );
+   function routeFile(url: string): { file: string; route: string } {
+     const route = routePath(url, config.basePath);
++    const hasChildren =
++      route !== "/" &&
++      [...urls, ...host.redirects.map((redirect) => redirect.from)].some((candidate) =>
++        routePath(candidate, config.basePath).startsWith(`${route}/`),
++      );
+     // Route tokens are escaped so authored dots, underscores and dollar signs stay literal.
+     const segments = route
+       .slice(1)
+@@ -306,9 +311,9 @@ export function getRouter() {
+       file: path.join(
+         directory,
+         "src/routes",
+-        segments.length ? `${segments.join(".")}.tsx` : "index.tsx",
++        segments.length ? `${segments.join(".")}${hasChildren ? ".index" : ""}.tsx` : "index.tsx",
+       ),
+-      route,
++      route: hasChildren ? `${route}/` : route,
+     };
+   }
+   for (const [index, page] of host.pages.entries()) {

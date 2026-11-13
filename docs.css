@@ -1,0 +1,6 @@
+@media (max-width: 767px) {
+  .lenso-prose pre[aria-label="Example source"] {
+    /* Clear the copy button despite StyleX's high-specificity padding rule. */
+    padding-block-start: 44px !important;
+  }
+}
