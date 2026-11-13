@@ -1,0 +1,81 @@
+.gitignore
+  s_fc9d04ec742532::t_9f962e4e8bb584 1-3
+README.md
+  s_c5695907fe744f::t_476a9badbfcd45 1-24
+bun.lock
+  s_c5695907fe744f::t_acfd309558dbd9 1-875
+content-en/cli/authoring.md
+  s_c5695907fe744f::t_3f2f423c55c9eb 1-32
+content-en/cli/automation.md
+  s_c5695907fe744f::t_6826d7ad833b91 1-38
+content-en/cli/configuration.md
+  s_c5695907fe744f::t_c15d80406c6c87 1-45
+content-en/cli/embedding.md
+  s_c5695907fe744f::t_d253bc97585e68 1-46
+content-en/cli/shadcn.md
+  s_c5695907fe744f::t_52f6711816d5b0 1-45
+content-en/docs/configuration.md
+  s_c5695907fe744f::t_0bda11501b853d 1-53
+content-en/docs/content.md
+  s_c5695907fe744f::t_a78645935ca1e4 1-59
+content-en/docs/index.md
+  s_c5695907fe744f::t_26740f4ec7dacf 1-24
+content-en/docs/quickstart.md
+  s_c5695907fe744f::t_7c814a9097a3b1 1-46
+content/cli/authoring.md
+  s_c5695907fe744f::t_1078c7803b6b01 1-32
+content/cli/automation.md
+  s_c5695907fe744f::t_891021d4f7bd72 1-38
+content/cli/code.md
+  s_c5695907fe744f::t_5fda562b28437d 1-46
+content/cli/configuration.md
+  s_c5695907fe744f::t_33f6ed7fecc468 1-45
+content/cli/embedding.md
+  s_c5695907fe744f::t_064f9fe7181c88 1-46
+content/cli/extensions.md
+  s_fc9d04ec742532::t_70c9c9d9b4d923 1-42
+content/cli/shadcn.md
+  s_c5695907fe744f::t_7b19d487a30eda 1-45
+content/docs/configuration.md
+  s_c5695907fe744f::t_c2545edf7dbeab 1-53
+content/docs/content.md
+  s_c5695907fe744f::t_57bae2c5d388bc 1-59
+content/docs/index.md
+  s_c5695907fe744f::t_f99dc61a24cf89 1-24
+content/docs/quickstart.md
+  s_c5695907fe744f::t_eb3e6c89efab25 1-46
+docs-components.tsx
+  s_c5695907fe744f::t_80bb048ad5022b 1-58
+docs.css
+  s_c5695907fe744f::t_ce2dd5ae107225 1-6
+package.json
+  s_c5695907fe744f::t_9920a69a751c15 1-37
+patches/@lenso%2Fdocs@0.3.1.patch
+  s_c5695907fe744f::t_1de25f12c51038 1-28
+tests/site.test.ts
+  s_c5695907fe744f::t_091a382a0ff57a 1-137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3a0cce4defe27b570f70f99a408d729efb0c5f16",
+  "prompts": {},
+  "sessions": {
+    "s_c5695907fe744f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d06d-149b-7062-aa67-3c0145df9d90",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    },
+    "s_fc9d04ec742532": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d132-30d4-7b91-ab51-ed03f8289424",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
