@@ -1,0 +1,47 @@
+content-en/cli/index.md
+  s_c5695907fe744f::t_7274fb4dd50960 14-17,21,23
+content-en/cli/quickstart.md
+  s_c5695907fe744f::t_9f99ed45b8c616 40
+content-en/docs/configuration.md
+  s_c5695907fe744f::t_f539f0f1968181 49,51
+content-en/docs/content.md
+  s_c5695907fe744f::t_63693dc991ee02 16,59
+content-en/docs/index.md
+  s_c5695907fe744f::t_a4750885ef5ff5 8,14-18
+content-en/docs/quickstart.md
+  s_c5695907fe744f::t_0f908947a35cfa 33,46
+content-en/index.md
+  s_c5695907fe744f::t_ec256d9ed90c14 12-13
+content/cli/index.md
+  s_c5695907fe744f::t_0de90a040fa99c 14-17,21,23
+content/cli/quickstart.md
+  s_c5695907fe744f::t_29f274eb1e7250 40
+content/docs/configuration.md
+  s_c5695907fe744f::t_053f787feab8d1 49,51
+content/docs/content.md
+  s_c5695907fe744f::t_09254272b21012 16,59
+content/docs/index.md
+  s_c5695907fe744f::t_60aad8dfb97475 8,14-18
+content/docs/quickstart.md
+  s_c5695907fe744f::t_eb70cc5cca7d52 33,46
+content/index.md
+  s_c5695907fe744f::t_e87e66c3cd52ca 12-13
+redirects.ts
+  s_c5695907fe744f::t_360fbf549fb89d 1-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d295c2c8314a0f2d7ffad5267cfc8da6ab5a634c",
+  "prompts": {},
+  "sessions": {
+    "s_c5695907fe744f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d06d-149b-7062-aa67-3c0145df9d90",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "LioRael <leo@lenso.dev>"
+    }
+  }
+}
