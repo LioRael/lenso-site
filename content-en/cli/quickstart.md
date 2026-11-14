@@ -37,4 +37,4 @@ Replace `ITEM` with the name of a resource in the catalog. `preview` shows the p
 
 Extensions automatically prepare the dependencies they need; there is no need to run an install command first. Commit the generated `lenso.toml` and `lenso.lock` to version control so others can use the same declarations and locked resolution.
 
-Continue with the [Code extension](/en/cli/code/) or the [shadcn extension](/en/cli/shadcn/).
+Continue with the [Code extension](/cli/code/) or the [shadcn extension](/cli/shadcn/).

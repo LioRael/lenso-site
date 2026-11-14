@@ -20,7 +20,7 @@ Run `bun run build` to generate the static site in `out/`, and `bun run preview`
 
 ## Content and configuration
 
-Chinese content lives in `content/` and English content in `content-en/`. Both languages use matching filenames so the language switcher can open the corresponding page. Within each language, `cli/` and `docs/` hold their respective topics.
+Chinese content lives in `content/` and English content in `content-en/`. English is served at the root, and Chinese at `/zh/`. Both languages use matching filenames so the language switcher can open the corresponding page. Within each language, `cli/` and `docs/` hold their respective topics.
 
 When updating a page, check both language versions and the project navigation in `docs-components.tsx`.
 `docs.config.ts` configures the site and its languages. `.lenso/` and `out/` are generated directories.
@@ -30,3 +30,4 @@ The Bun patch in `patches/` fixes route generation in `@lenso/docs` 0.3.1 for si
 ## Deployment
 
 Publish `out/` to a static host that supports directory indexes and `404.html`.
+The build also generates a Cloudflare Pages `_redirects` file for the previous `/en/` URLs.

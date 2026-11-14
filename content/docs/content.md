@@ -13,7 +13,7 @@ description: 使用文件路由、frontmatter 和 MDX 编写文档。
 | `content/guides/install.md` | `guides/install` | `/guides/install/` |
 | `content/guides/index.mdx` | `guides/index` | `/guides/` |
 
-不要同时创建映射到同一路由的文件，例如 `guides.md` 和 `guides/index.mdx`。0.3.1 存在已知限制：非根首页和它的子页面同时存在时，子路由可能显示首页内容。例如 `/guides/` 与 `/guides/install/`，或 `/en/` 与 `/en/guides/`。未打补丁的站点可以用 `guides/getting-started.mdx` 和 `guides/content.mdx` 这样的普通页面代替 `guides/index.mdx` 与其子页面的组合；这个站点通过本地补丁修复了该问题。[快速开始](/docs/quickstart/)说明了如何修改默认模板。
+不要同时创建映射到同一路由的文件，例如 `guides.md` 和 `guides/index.mdx`。0.3.1 存在已知限制：非根首页和它的子页面同时存在时，子路由可能显示首页内容。例如 `/guides/` 与 `/guides/install/`，或 `/en/` 与 `/en/guides/`。未打补丁的站点可以用 `guides/getting-started.mdx` 和 `guides/content.mdx` 这样的普通页面代替 `guides/index.mdx` 与其子页面的组合；这个站点通过本地补丁修复了该问题。[快速开始](/zh/docs/quickstart/)说明了如何修改默认模板。
 
 ## Frontmatter 和标题
 
@@ -56,4 +56,4 @@ Install the project before continuing.
 
 `Step` 的标题写在子内容中，不使用 `title` 属性。代码围栏支持语法高亮，表格支持横向滚动。`ComponentExample`、`ReferenceTable`、`ApiOperation` 和 `ApiResponses` 是手写参考内容的组件，不会自动生成 API 或发送请求。
 
-可以在 MDX 中用相对路径导入本地组件。静态图片放在 `public/`，例如 `public/logo.svg` 对应 `/logo.svg`。Markdown 内部链接使用不带 `basePath` 的根路径，框架会添加部署前缀；详情见[站点配置](/docs/configuration/)。源码解析规则见上游 [`content.ts`](https://github.com/LioRael/lenso-ui/blob/main/packages/docs/src/content.ts) 和 [MDX 组件](https://github.com/LioRael/lenso-ui/blob/main/packages/docs/src/mdx.tsx)。
+可以在 MDX 中用相对路径导入本地组件。静态图片放在 `public/`，例如 `public/logo.svg` 对应 `/logo.svg`。Markdown 内部链接使用不带 `basePath` 的根路径，框架会添加部署前缀；详情见[站点配置](/zh/docs/configuration/)。源码解析规则见上游 [`content.ts`](https://github.com/LioRael/lenso-ui/blob/main/packages/docs/src/content.ts) 和 [MDX 组件](https://github.com/LioRael/lenso-ui/blob/main/packages/docs/src/mdx.tsx)。

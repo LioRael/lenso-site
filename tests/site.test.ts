@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { serve } from "../node_modules/@lenso/docs/src/serve.ts";
 
 const pages = [
   ["", "Lenso 文档"],
@@ -42,9 +43,43 @@ const englishPages = [
   ["docs/deployment", "Build and deployment"],
 ] as const;
 
+test("English is the default and Chinese pages have matching routes", () => {
+  for (const [route, heading] of englishPages) {
+    const english = readFileSync(join("out", route, "index.html"), "utf8");
+    const chineseFile = join("out", "zh", route, "index.html");
+    expect(english).toContain('<html lang="en"');
+    expect(english.match(/<h1\b[^>]*>(.*?)<\/h1>/)?.[1]).toBe(heading);
+    expect(existsSync(chineseFile)).toBe(true);
+    if (existsSync(chineseFile)) {
+      expect(readFileSync(chineseFile, "utf8")).toContain('<html lang="zh-CN"');
+    }
+  }
+});
+
+test("previous English URLs redirect to the same page", async () => {
+  const server = await serve("out", { port: 0 });
+  try {
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("Preview server did not start");
+    for (const [oldPath, newPath] of [
+      ["/en/", "/"],
+      ["/en/cli/quickstart/", "/cli/quickstart/"],
+      ["/en/docs/content/", "/docs/content/"],
+    ] as const) {
+      const response = await fetch(`http://127.0.0.1:${address.port}${oldPath}`, {
+        redirect: "manual",
+      });
+      expect(response.status).toBe(301);
+      expect(response.headers.get("location")).toBe(newPath);
+    }
+  } finally {
+    server.close();
+  }
+});
+
 test("the static export contains the documented pages and their headings", () => {
   for (const [route, heading] of pages) {
-    const file = join("out", route, "index.html");
+    const file = join("out", "zh", route, "index.html");
     expect(existsSync(file)).toBe(true);
     const html = readFileSync(file, "utf8");
     expect(html.match(/<h1\b[^>]*>(.*?)<\/h1>/)?.[1]).toBe(heading);
@@ -53,12 +88,12 @@ test("the static export contains the documented pages and their headings", () =>
 
 test("translated pages expose the built-in language menu", () => {
   for (const [route, heading] of englishPages) {
-    const englishFile = join("out", "en", route, "index.html");
+    const englishFile = join("out", route, "index.html");
     expect(existsSync(englishFile)).toBe(true);
     if (!existsSync(englishFile)) continue;
 
     const english = readFileSync(englishFile, "utf8");
-    const chinese = readFileSync(join("out", route, "index.html"), "utf8");
+    const chinese = readFileSync(join("out", "zh", route, "index.html"), "utf8");
 
     expect(english).toContain('<html lang="en"');
     expect(chinese).toContain('<html lang="zh-CN"');
@@ -73,7 +108,7 @@ test("translated pages expose the built-in language menu", () => {
 test("both topics are reachable from the home page in each language", () => {
   for (const [locale, prefix] of [
     ["", ""],
-    ["en", "/en"],
+    ["zh", "/zh"],
   ] as const) {
     const html = readFileSync(join("out", locale, "index.html"), "utf8");
     expect(html).toContain(`href="${prefix}/cli/"`);
@@ -82,14 +117,14 @@ test("both topics are reachable from the home page in each language", () => {
 });
 
 test("English navigation and search use the English collection", () => {
-  const html = readFileSync(join("out", "en", "index.html"), "utf8");
+  const html = readFileSync(join("out", "index.html"), "utf8");
   expect(html).toContain("Lenso CLI");
   expect(html).toContain("Lenso Docs");
   expect(existsSync(join("out", "_lenso", "search", "en.json"))).toBe(true);
 });
 
 test("the header links to the Lenso repository in both languages and topics", () => {
-  for (const prefix of ["", "en"] as const) {
+  for (const prefix of ["", "zh"] as const) {
     for (const route of ["cli", "docs"] as const) {
       const html = readFileSync(join("out", prefix, route, "index.html"), "utf8");
       const header = html.match(/<header\b[\s\S]*?<\/header>/)?.[0] ?? "";
@@ -100,7 +135,7 @@ test("the header links to the Lenso repository in both languages and topics", ()
 });
 
 test("topic sections switch between separate navigation lists in each language", () => {
-  for (const prefix of ["", "/en"] as const) {
+  for (const prefix of ["", "/zh"] as const) {
     for (const [route, topic, ownPage, otherPage] of [
       ["cli", "cli", "cli/installation", "docs/customization"],
       ["cli/quickstart", "cli", "cli/installation", "docs/customization"],
@@ -108,8 +143,8 @@ test("topic sections switch between separate navigation lists in each language",
       ["docs/quickstart", "docs", "docs/customization", "cli/installation"],
     ] as const) {
       const html = readFileSync(join("out", prefix, route, "index.html"), "utf8");
-      const sectionLabel = prefix ? "Documentation sections" : "文档分区";
-      const pageLabel = prefix ? "Documentation pages" : "文档页面";
+      const sectionLabel = prefix ? "文档分区" : "Documentation sections";
+      const pageLabel = prefix ? "文档页面" : "Documentation pages";
       const sections =
         html.match(new RegExp(`<nav aria-label="${sectionLabel}"[\\s\\S]*?<\\/nav>`))?.[0] ?? "";
       const pages =

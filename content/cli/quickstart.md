@@ -37,4 +37,4 @@ lenso code add ITEM
 
 扩展会自动准备所需依赖，无须先运行安装命令。将生成的 `lenso.toml` 和 `lenso.lock` 提交到版本控制，帮助其他人使用相同的声明和锁定结果。
 
-继续了解 [Code 扩展](/cli/code/) 或 [shadcn 扩展](/cli/shadcn/)。
+继续了解 [Code 扩展](/zh/cli/code/) 或 [shadcn 扩展](/zh/cli/shadcn/)。

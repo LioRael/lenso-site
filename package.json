@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "lenso-docs dev",
-    "build": "lenso-docs build",
+    "build": "lenso-docs build && bun redirects.ts",
     "preview": "lenso-docs preview",
     "test": "bun run build && bun test tests"
   },

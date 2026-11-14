@@ -2,12 +2,12 @@ import { defineDocs } from "@lenso/docs";
 
 export default defineDocs({
   title: "Lenso",
-  description: "Lenso 项目文档，包括 CLI 与 Docs。",
-  language: "zh-CN",
-  defaultLocale: "zh",
+  description: "Documentation for Lenso, including CLI and Docs.",
+  language: "en",
+  defaultLocale: "en",
   locales: [
-    { code: "zh", label: "中文", language: "zh-CN", routePrefix: "/", contentDir: "content" },
-    { code: "en", label: "English", language: "en", routePrefix: "/en", contentDir: "content-en" },
+    { code: "en", label: "English", language: "en", routePrefix: "/", contentDir: "content-en" },
+    { code: "zh", label: "中文", language: "zh-CN", routePrefix: "/zh", contentDir: "content" },
   ],
   components: "docs-components.tsx",
   styles: ["docs.css"],

@@ -30,7 +30,7 @@ The 0.3.1 default template contains both `content/guides/index.mdx` and `content
 mv content/guides/index.mdx content/guides/getting-started.mdx
 ```
 
-Then change `guides/index` to `guides/getting-started` in the `navigation` in `docs.config.ts`; change the `/guides/` link in `content/guides/content.mdx` to `/guides/getting-started/`, and update the file and URL listed in `content/index.mdx`. The pages will then use `/guides/getting-started/` and `/guides/content/` respectively. Alternatively, apply the local patch used by this site. See [Writing content](/en/docs/content/) for more about the limitation.
+Then change `guides/index` to `guides/getting-started` in the `navigation` in `docs.config.ts`; change the `/guides/` link in `content/guides/content.mdx` to `/guides/getting-started/`, and update the file and URL listed in `content/index.mdx`. The pages will then use `/guides/getting-started/` and `/guides/content/` respectively. Alternatively, apply the local patch used by this site. See [Writing content](/docs/content/) for more about the limitation.
 
 To build and preview the release output:
 
@@ -43,4 +43,4 @@ The build writes to `out/`; preview uses port 4173 by default. `.lenso/` is gene
 
 Run `bun pm ls` in the project to check the installed `@lenso/docs` version. In 0.3.1, `bun x lenso-docs --version` still reports `0.2.0` because the value is hard-coded in the CLI; do not use it to determine the package version.
 
-Continue with [Writing content](/en/docs/content/) and [Site configuration](/en/docs/configuration/). The initializer's usage is also documented in the [upstream source](https://github.com/LioRael/lenso-ui/tree/main/packages/create-docs).
+Continue with [Writing content](/docs/content/) and [Site configuration](/docs/configuration/). The initializer's usage is also documented in the [upstream source](https://github.com/LioRael/lenso-ui/tree/main/packages/create-docs).

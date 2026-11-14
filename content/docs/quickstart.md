@@ -30,7 +30,7 @@ bun run dev --host 127.0.0.1 --port 3001
 mv content/guides/index.mdx content/guides/getting-started.mdx
 ```
 
-然后在 `docs.config.ts` 的 `navigation` 中将 `guides/index` 改为 `guides/getting-started`；在 `content/guides/content.mdx` 中将链接 `/guides/` 改为 `/guides/getting-started/`，并更新 `content/index.mdx` 中列出的文件和 URL。这样两个页面分别使用 `/guides/getting-started/` 和 `/guides/content/`。也可以应用本网站使用的本地补丁。更多限制见[编写内容](/docs/content/)。
+然后在 `docs.config.ts` 的 `navigation` 中将 `guides/index` 改为 `guides/getting-started`；在 `content/guides/content.mdx` 中将链接 `/guides/` 改为 `/guides/getting-started/`，并更新 `content/index.mdx` 中列出的文件和 URL。这样两个页面分别使用 `/guides/getting-started/` 和 `/guides/content/`。也可以应用本网站使用的本地补丁。更多限制见[编写内容](/zh/docs/content/)。
 
 要生成并预览发布版本：
 
@@ -43,4 +43,4 @@ bun run preview
 
 在项目中运行 `bun pm ls` 可查看已安装的 `@lenso/docs` 版本。0.3.1 的 `bun x lenso-docs --version` 因 CLI 中的硬编码仍输出 `0.2.0`，不要用该输出判断包版本。
 
-接下来阅读[编写内容](/docs/content/)和[站点配置](/docs/configuration/)。初始化器的用法也可参阅[上游源码](https://github.com/LioRael/lenso-ui/tree/main/packages/create-docs)。
+接下来阅读[编写内容](/zh/docs/content/)和[站点配置](/zh/docs/configuration/)。初始化器的用法也可参阅[上游源码](https://github.com/LioRael/lenso-ui/tree/main/packages/create-docs)。

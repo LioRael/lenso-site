@@ -11,15 +11,15 @@ You can also embed the Rust workflow engine in your own CLI and register native 
 
 ## Where to start
 
-- [Install Lenso](/en/cli/installation/) using the method that suits your platform.
-- Follow the [quickstart](/en/cli/quickstart/) to create a project and add your first extension.
-- Read [Extensions and presets](/en/cli/extensions/) to manage extensions in your project.
-- Read [Automation and JSON](/en/cli/automation/) to handle inputs and results in agents or CI.
+- [Install Lenso](/cli/installation/) using the method that suits your platform.
+- Follow the [quickstart](/cli/quickstart/) to create a project and add your first extension.
+- Read [Extensions and presets](/cli/extensions/) to manage extensions in your project.
+- Read [Automation and JSON](/cli/automation/) to handle inputs and results in agents or CI.
 
 ## Official extensions
 
-[Code](/en/cli/code/) lets you browse, preview, and apply code resources, and supports module composition and generation. [shadcn](/en/cli/shadcn/) lets you consume components and other resources from shadcn registries.
+[Code](/cli/code/) lets you browse, preview, and apply code resources, and supports module composition and generation. [shadcn](/cli/shadcn/) lets you consume components and other resources from shadcn registries.
 
-Extensions are selected per project; there is no global extension installation. The project's `lenso.toml` stores declarations and permissions, while `lenso.lock` pins the resolution result. See [Configuration, lockfile, and cache](/en/cli/configuration/).
+Extensions are selected per project; there is no global extension installation. The project's `lenso.toml` stores declarations and permissions, while `lenso.lock` pins the resolution result. See [Configuration, lockfile, and cache](/cli/configuration/).
 
 For full protocol and development details, see the [lenso-cli source repository](https://github.com/LioRael/lenso-cli).

@@ -13,7 +13,7 @@ The default content directory is `content/`; both `.md` and `.mdx` are supported
 | `content/guides/install.md` | `guides/install` | `/guides/install/` |
 | `content/guides/index.mdx` | `guides/index` | `/guides/` |
 
-Do not create files that map to the same route, such as `guides.md` and `guides/index.mdx`. Version 0.3.1 has a known limitation: when a non-root index and its descendants coexist, a child route can display the index content. Examples include `/guides/` with `/guides/install/`, or `/en/` with `/en/guides/`. An unpatched site can use ordinary pages such as `guides/getting-started.mdx` and `guides/content.mdx` instead of combining `guides/index.mdx` with its descendants; this site fixes the issue with a local patch. [Quickstart](/en/docs/quickstart/) explains how to adjust the default template.
+Do not create files that map to the same route, such as `guides.md` and `guides/index.mdx`. Version 0.3.1 has a known limitation: when a non-root index and its descendants coexist, a child route can display the index content. Examples include `/guides/` with `/guides/install/`, or `/en/` with `/en/guides/`. An unpatched site can use ordinary pages such as `guides/getting-started.mdx` and `guides/content.mdx` instead of combining `guides/index.mdx` with its descendants; this site fixes the issue with a local patch. [Quickstart](/docs/quickstart/) explains how to adjust the default template.
 
 ## Frontmatter and titles
 
@@ -56,4 +56,4 @@ Use `.mdx` to write JSX or import local React components. Default components inc
 
 Write a `Step` heading in its children, not as a `title` prop. Fenced code supports syntax highlighting and tables can scroll horizontally. `ComponentExample`, `ReferenceTable`, `ApiOperation`, and `ApiResponses` are authored reference blocks; they do not generate an API or send requests.
 
-You can import local components into MDX using relative paths. Put static images in `public/`; for example, `public/logo.svg` maps to `/logo.svg`. Use root-relative internal Markdown links without `basePath`; the framework adds the deployment prefix. See [Site configuration](/en/docs/configuration/) for details. For parsing rules, see upstream [`content.ts`](https://github.com/LioRael/lenso-ui/blob/main/packages/docs/src/content.ts) and the [MDX components](https://github.com/LioRael/lenso-ui/blob/main/packages/docs/src/mdx.tsx).
+You can import local components into MDX using relative paths. Put static images in `public/`; for example, `public/logo.svg` maps to `/logo.svg`. Use root-relative internal Markdown links without `basePath`; the framework adds the deployment prefix. See [Site configuration](/docs/configuration/) for details. For parsing rules, see upstream [`content.ts`](https://github.com/LioRael/lenso-ui/blob/main/packages/docs/src/content.ts) and the [MDX components](https://github.com/LioRael/lenso-ui/blob/main/packages/docs/src/mdx.tsx).

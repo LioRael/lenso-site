@@ -34,7 +34,7 @@ const topics = {
 
 export function getSiteOptions({ page }: DocumentationCustomizationContext) {
   const english = page.locale === "en";
-  const prefix = english ? "/en" : "";
+  const prefix = english ? "" : "/zh";
   const activeSection = page.slug === "docs" || page.slug.startsWith("docs/") ? "docs" : "cli";
   const topic = topics[activeSection];
   return {

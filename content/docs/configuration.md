@@ -46,8 +46,8 @@ export default defineDocs({
 
 例如 `content/index.md` 对应 `/`，`content-en/index.md` 对应 `/en/`。每种语言分别生成搜索索引和 HTML 语言标记。只设置 `language` 会改变界面和 HTML 语言，不会创建翻译路由。每个语言的内容目录都需要已发布页面；若设置显式 `navigation`，其中列出的 ID 必须在每种语言中存在。
 
-页面有对应翻译时，框架会自动显示语言菜单，默认按相同 slug 匹配页面。自定义 source 适配器可用 `translationKey` 匹配不同 slug 的页面。菜单保留语言路由前缀和 `basePath`；替换桌面或抽屉操作区时，需自行包含 `DocumentationLanguageToggle`，详见[界面定制](/docs/customization/)。
+页面有对应翻译时，框架会自动显示语言菜单，默认按相同 slug 匹配页面。自定义 source 适配器可用 `translationKey` 匹配不同 slug 的页面。菜单保留语言路由前缀和 `basePath`；替换桌面或抽屉操作区时，需自行包含 `DocumentationLanguageToggle`，详见[界面定制](/zh/docs/customization/)。
 
-未打补丁的 0.3.1 在 `/en/` 首页和 `/en/.../` 子页面同时存在时，子路由可能显示首页内容。若需要两者共存，需应用等效补丁；也可以移除英文 `index` 页面及其导航引用，只保留英文普通页面，此时 `/en/` 没有首页。这个站点已使用本地补丁，详见[编写内容](/docs/content/)。
+未打补丁的 0.3.1 在 `/en/` 首页和 `/en/.../` 子页面同时存在时，子路由可能显示首页内容。若需要两者共存，需应用等效补丁；也可以移除英文 `index` 页面及其导航引用，只保留英文普通页面，此时 `/en/` 没有首页。这个站点已使用本地补丁，详见[编写内容](/zh/docs/content/)。
 
 其他字段包括 `components`、`root`、`source`、`build`、`aliases`、`styles`、`stylesheet` 和 `trailingSlash`。`source` 用于高级内容适配，`build` 用于 Vite 配置；普通内容站点不需要它们。完整类型和校验规则见上游 [`config.ts`](https://github.com/LioRael/lenso-ui/blob/main/packages/docs/src/config.ts)。

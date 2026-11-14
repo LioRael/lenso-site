@@ -11,15 +11,15 @@ Lenso 是一个原生 CLI。它在项目中加载扩展，让你通过命令运�
 
 ## 从哪里开始
 
-- [安装 Lenso](/cli/installation/)，选择适合你的平台和安装方式。
-- [快速开始](/cli/quickstart/)，创建项目并添加第一个扩展。
-- [扩展与预设](/cli/extensions/)，了解如何管理项目中的扩展。
-- [自动化与 JSON](/cli/automation/)，在 Agent 或 CI 中处理输入与结果。
+- [安装 Lenso](/zh/cli/installation/)，选择适合你的平台和安装方式。
+- [快速开始](/zh/cli/quickstart/)，创建项目并添加第一个扩展。
+- [扩展与预设](/zh/cli/extensions/)，了解如何管理项目中的扩展。
+- [自动化与 JSON](/zh/cli/automation/)，在 Agent 或 CI 中处理输入与结果。
 
 ## 官方扩展
 
-[Code](/cli/code/) 用于浏览、预览和应用代码资源，也支持模块组合与生成。[shadcn](/cli/shadcn/) 用于消费 shadcn Registry 中的组件和其他资源。
+[Code](/zh/cli/code/) 用于浏览、预览和应用代码资源，也支持模块组合与生成。[shadcn](/zh/cli/shadcn/) 用于消费 shadcn Registry 中的组件和其他资源。
 
-扩展按项目选择，不存在全局扩展安装。项目的 `lenso.toml` 保存声明和权限，`lenso.lock` 固定解析结果。详见[配置、锁文件与缓存](/cli/configuration/)。
+扩展按项目选择，不存在全局扩展安装。项目的 `lenso.toml` 保存声明和权限，`lenso.lock` 固定解析结果。详见[配置、锁文件与缓存](/zh/cli/configuration/)。
 
 需要完整的协议和开发细节时，参阅 [lenso-cli 源码仓库](https://github.com/LioRael/lenso-cli)。
